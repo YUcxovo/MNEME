@@ -10,3 +10,7 @@ A mobile-native AI research agent.
 - Ruiyu Jiang
 
 ## License
+
+This project is licensed under MIT License.
+
+See [LICENSE](./LICENSE) for full license text.
