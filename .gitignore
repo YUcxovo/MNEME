@@ -1,0 +1,97 @@
+**
+
+!.gitignore
+!.gitattributes
+!lefthook.yml
+!.commitlintrc.yml
+!README.md
+!CHANGELOG.md
+!LICENSE
+!.github/
+!.github/**
+!android/
+!backend/
+!docs/
+!/docs/**
+!/tools/
+!/tools/**
+
+# Android
+!android/build.gradle.kts
+!android/settings.gradle.kts
+!android/gradle.properties
+!android/gradlew
+!android/gradlew.bat
+!android/gradle/
+!android/gradle/wrapper/
+!android/gradle/wrapper/**
+!android/gradle/libs.versions.toml
+!android/app/
+!android/app/build.gradle.kts
+!android/app/proguard-rules.pro
+!android/app/src/
+!android/app/src/**
+
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Backend
+!backend/pyproject.toml
+!backend/uv.lock
+!backend/.python-version
+!backend/alembic.ini
+!backend/src/
+!backend/src/**
+!backend/tests/
+!backend/tests/**
+!backend/alembic/
+!backend/alembic/**
+!backend/prompts/
+!backend/prompts/**
+!backend/Makefile
+!backend/.env.example
+
+# Global Blacklist
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Kotlin
+.kotlin/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Secrets
+.env
+*.env.local
+credentials.json
+google-services.json
+*.pem
+*.key
+
+# Misc
+*.log
+tmp/
+temp/
+.claude/
+.agents/
