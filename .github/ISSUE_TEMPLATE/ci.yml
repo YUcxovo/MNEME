@@ -1,0 +1,56 @@
+name: CI / Infra
+description: Repo maintenance, CI/CD, tooling
+title: "[CI] "
+labels: ["type/chore", "area/infra"]
+body:
+    - type: markdown
+      attributes:
+          value: |
+              ***NOTES: For developers assigned, all code related to the CI / Infra change should be explain in detail here. Then, link this issue to the corresponding pull request.***
+
+    - type: textarea
+      id: summary
+      attributes:
+          label: Summary
+          description: A clear and short summary of what the CI / Infra change is about.
+      validations:
+          required: true
+
+    - type: textarea
+      id: description
+      attributes:
+          label: Description
+          description: A clear and concise description of the CI / Infra change in details.
+          placeholder: |
+              - [ ] 
+              - [ ]
+
+    - type: dropdown
+      id: area
+      attributes:
+          label: Related Area
+          description: Select the area of the codebase where the CI / Infra change is related to.
+          options:
+              - Android
+              - Backend
+              - Repo Maintenance
+              - Other
+      validations:
+          required: true
+
+    - type: checkboxes
+      id: checklist
+      attributes:
+          label: Checklist
+          description: Please check following before submitting this issue.
+          options:
+              - label: I have checked the contributing guidelines carefully.
+                required: true
+              - label: I have set the assignees, labels, and milestones and going to set relationships and development for this issue.
+                required: true
+
+    - type: textarea
+      id: additional-context
+      attributes:
+          label: Additional Context
+          description: Add any other context about the problem here.

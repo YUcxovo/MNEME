@@ -1,0 +1,121 @@
+name: New Feature
+description: Add a new feature
+title: "[FEAT] "
+labels: ["type/feature"]
+body:
+    - type: markdown
+      attributes:
+          value: |
+              ***NOTES: For developers assigned, all code related to the feature should be explain in detail here, recording the whole process of achieving the acceptance criteria. Then, link this issue to the corresponding pull request.***
+
+    - type: textarea
+      id: feature-summary
+      attributes:
+          label: Feature Summary
+          description: A clear and short summary of what the feature is.
+      validations:
+          required: true
+
+    - type: textarea
+      id: full-description
+      attributes:
+          label: Full Description
+          description: A clear and concise description and requirements in details.
+          placeholder: |
+              - [ ] 
+              - [ ] 
+              - [ ]
+      validations:
+          required: true
+
+    - type: textarea
+      id: acceptance-criteria
+      attributes:
+          label: Acceptance Criteria
+          description: The criteria that must be met for the feature to be considered complete.
+          placeholder: |
+              1. **GIVEN** [context]
+
+                  **WHEN** [action]
+
+                  **THEN** [outcome]
+
+              2. **GIVEN** [context]
+
+                  **WHEN** [action]
+
+                  **THEN** [outcome]
+      validations:
+          required: true
+
+    - type: dropdown
+      id: area
+      attributes:
+          label: Related Area
+          description: Select the area of the codebase where the bug was found.
+          options:
+              - Android/UI
+              - Android/Network
+              - Android/Database
+              - Android/Other
+              - Backend/API
+              - Backend/Database
+              - Backend/RAG
+              - Backend/Pipeline
+              - Backend/Other
+              - Other
+      validations:
+          required: true
+
+    - type: input
+      id: time-estimate
+      attributes:
+          label: Rough time Estimate
+          description: Rough time estimate to develop the feature.
+          placeholder: |
+              x hours
+      validations:
+          required: true
+
+    - type: textarea
+      id: fallback-plan
+      attributes:
+          label: Fallback Plan
+          description: A fallback plan for features that are not tech barriers in case cannot be implemented in time.
+          placeholder: |
+              ***Core Tech Barrier, No Fallback Possible***
+
+              or 
+
+              - [ ]
+      validations:
+          required: true
+
+    - type: textarea
+      id: verification
+      attributes:
+          label: Verification
+          description: Check all acceptance criteria here.
+          placeholder: |
+              - [ ] Acceptance Criteria 1
+              - [ ] Acceptance Criteria 2
+              - [ ] Acceptance Criteria 3
+      validations:
+          required: true
+
+    - type: checkboxes
+      id: checklist
+      attributes:
+          label: Checklist
+          description: Please check following before submitting this issue.
+          options:
+              - label: I have checked the contributing guidelines carefully.
+                required: true
+              - label: I have set the assignees, labels, and milestones and going to set relationships and development for this issue.
+                required: true
+
+    - type: textarea
+      id: additional-context
+      attributes:
+          label: Additional Context
+          description: Add any other context about the problem here.

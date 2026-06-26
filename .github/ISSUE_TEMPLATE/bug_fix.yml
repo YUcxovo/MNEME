@@ -1,0 +1,124 @@
+name: Bug Fix
+description: Fixing a bug
+title: "[FIX] "
+labels: ["type/bug"]
+body:
+    - type: markdown
+      attributes:
+          value: |
+              ***NOTES: For developers assigned, all code related to the fixing should be explain in detail here, recording the whole process of achieving the acceptance criteria. Then, link this issue to the corresponding pull request and related feature issues.***
+
+    - type: textarea
+      id: bugs-summary
+      attributes:
+          label: Bugs Summary
+          description: A clear and short summary of what the bug is.
+      validations:
+          required: true
+
+    - type: dropdown
+      id: area
+      attributes:
+          label: Related Area
+          description: Select the area of the codebase where the bug was found.
+          options:
+              - Android/UI
+              - Android/Network
+              - Android/Database
+              - Android/Other
+              - Backend/API
+              - Backend/Database
+              - Backend/RAG
+              - Backend/Pipeline
+              - Backend/Other
+              - Other
+      validations:
+          required: true
+
+    - type: textarea
+      id: steps
+      attributes:
+          label: Steps to reproduce
+          description: Steps required to reproduce the bug.
+          placeholder: |
+              1. 
+              2. 
+              3.
+      validations:
+          required: true
+
+    - type: textarea
+      id: logs
+      attributes:
+          label: Logs / Error output
+          description: The error message received when the bug occurred.
+          placeholder: |
+              Paste any relevant logs, terminal output, or stack traces here.
+
+              Examples:
+              - journalctl output
+              - terminal errors
+              - crash logs
+
+              Large outputs can be wrapped in a `<details>` block.
+
+    - type: textarea
+      id: environment
+      attributes:
+          label: Environment
+          description: The environment in which the bug was observed, including device / emulator model, OS version, and any other relevant details.
+          placeholder: |
+              Example: 
+              - Device: Pixel 9
+              - OS: Android 14
+      validations:
+          required: true
+
+    - type: input
+      id: commit
+      attributes:
+          label: Commit hash
+          description: The commit hash of the code that was running when the bug occurred.
+          placeholder: |
+              [xxxx](https://github.com/YUcxovo/MNEME/commit/xxxx)
+      validations:
+          required: true
+
+    - type: input
+      id: time-estimate
+      attributes:
+          label: Rough time Estimate
+          description: Rough time estimate to fix the bug.
+          placeholder: |
+              x hours
+      validations:
+          required: true
+
+    - type: textarea
+      id: acceptance-criteria
+      attributes:
+          label: Acceptance Criteria
+          description: The acceptance criteria for the bug fix.
+          placeholder: |
+              - [ ] 
+              - [ ] 
+              - [ ]
+      validations:
+          required: true
+
+    - type: checkboxes
+      id: checklist
+      attributes:
+          label: Checklist
+          description: Please check following before submitting this issue.
+          options:
+              - label: I have checked the contributing guidelines carefully.
+                required: true
+              - label: I have set the assignees, labels, and milestones and going to set relationships and development for this issue.
+                required: true
+
+    - type: textarea
+      id: additional-context
+      attributes:
+          label: Additional Context
+          description: Add any other context about the problem here.

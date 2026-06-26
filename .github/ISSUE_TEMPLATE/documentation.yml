@@ -1,0 +1,61 @@
+name: Documentation
+description: Add, update, or remove documentation
+title: "[DOCS] "
+labels: ["type/docs"]
+body:
+    - type: markdown
+      attributes:
+          value: |
+              ***NOTES: For developers assigned, all content related to the documentation change should be explained in detail here. Then, link this issue to the corresponding pull request.***
+
+    - type: textarea
+      id: summary
+      attributes:
+          label: Summary
+          description: A clear and short summary of what the documentation change is about.
+      validations:
+          required: true
+
+    - type: dropdown
+      id: area
+      attributes:
+          label: Related Area
+          description: Select the area that the documentation change is related to.
+          options:
+              - API
+              - Design & Architecture
+              - Development Guidelines
+              - User Guide
+              - Meeting
+              - Thesis
+              - Project Management
+              - Other
+      validations:
+          required: true
+
+    - type: checkboxes
+      id: checklist
+      attributes:
+          label: Checklist
+          description: Please check following before submitting this issue.
+          options:
+              - label: I have checked the contributing guidelines carefully.
+                required: true
+              - label: I have set the assignees, labels, and milestones and going to set relationships and development for this issue.
+                required: true
+              - label: I have updated all the relevant documentation files according to the change.
+                required: true
+              - label: I have reviewed the documentation for clarity and accuracy by human.
+                required: true
+              - label: I have tested any code examples or snippets in the documentation.
+                required: true
+              - label: I have checked for broken links, outdated references or non-ASCII characters in the documentation.
+                required: true
+              - label: I have ensured the changes are made based on the latest version on the **docs** branch and going to upload to the **docs** branch.
+                required: true
+
+    - type: textarea
+      id: additional-context
+      attributes:
+          label: Additional Context
+          description: Add any other context about the problem here.
