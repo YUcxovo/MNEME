@@ -23,6 +23,7 @@
 !android/gradle.properties
 !android/gradlew
 !android/gradlew.bat
+!android/**/detekt.yml
 !android/gradle/
 !android/gradle/wrapper/
 !android/gradle/wrapper/**
