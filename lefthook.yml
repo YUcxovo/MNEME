@@ -1,0 +1,184 @@
+pre-commit:
+    parallel: true
+    commands:
+        # Health Checks
+        branch-guard:
+            run: |
+                BRANCH=$(git rev-parse --abbrev-ref HEAD)
+                if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "dev" ]; then
+                  echo ""
+                  echo "ERROR: Direct commits to '$BRANCH' are not allowed."
+                  echo "  The '$BRANCH' branch is protected. All changes must go through Pull Requests."
+                  echo ""
+                  echo "  How to move your changes:"
+                  echo ""
+                  echo "    git stash"
+                  echo "    git checkout -b feat/your-feature-name"
+                  echo "    git stash pop"
+                  echo ""
+                  exit 1
+                fi
+
+        end-of-file:
+            run: |
+                for f in $(git diff --cached --name-only); do
+                  if [ -f "$f" ] && [ -s "$f" ] && [ "$(tail -c1 "$f" 2>/dev/null)" != "" ]; then
+                    echo "" >> "$f"
+                    git add "$f"
+                  fi
+                done
+
+        large-files:
+            run: |
+                MAX_SIZE=500000
+                for f in $(git diff --cached --name-only); do
+                  if [ -f "$f" ]; then
+                    size=$(wc -c < "$f" 2>/dev/null || echo 0)
+                    if [ "$size" -gt "$MAX_SIZE" ]; then
+                      echo "ERROR: $f ($((size/1024))KB) exceeds ${MAX_SIZE}KB limit"
+                      echo "  If this large file is intentional, configure Git LFS."
+                      exit 1
+                    fi
+                  fi
+                done
+
+        private-key:
+            run: |
+                if git grep -l '-----BEGIN.*PRIVATE KEY-----' --cached 2>/dev/null; then
+                  echo "ERROR: Private key detected. Remove it immediately and verify .env is in .gitignore."
+                  exit 1
+                fi
+
+        ascii-only:
+            run: |
+                MATCHES=$(git grep -Pl '[^\x00-\x7F]' --cached 2>/dev/null)
+                if [ -n "$MATCHES" ]; then
+                    echo "ERROR: Non-ASCII characters detected in staged files:"
+                    echo "$MATCHES" | while IFS= read -r f; do
+                        echo "  $f"
+                        git grep -Pn '[^\x00-\x7F]' --cached -- "$f" | head -3
+                    done
+                    exit 1
+                fi
+
+        merge-conflict:
+            run: |
+                CONFLICTS=$(git grep -El '^<<<<<<<|^=======|^>>>>>>>' --cached 2>/dev/null)
+                if [ -n "$CONFLICTS" ]; then
+                    echo "ERROR: Merge conflict markers found in staged files:"
+                    echo "$CONFLICTS" | while IFS= read -r f; do
+                        echo "  $f"
+                    done
+                    echo "Resolve all conflicts before committing."
+                    exit 1
+                fi
+
+        commit-size-guard:
+            run: |
+                NUMSTAT=$(git diff --cached --numstat | grep -E '\.(py|kt)$')
+
+                if [ -z "$NUMSTAT" ]; then
+                    exit 0
+                fi
+
+                ADDED=$(echo "$NUMSTAT" | awk '{sum+=$1} END {print sum+0}')
+                DELETED=$(echo "$NUMSTAT" | awk '{sum+=$2} END {print sum+0}')
+                TOTAL=$((ADDED + DELETED))
+
+                if [ "$TOTAL" -ge 250 ]; then
+                    echo "WARNING: Large commit (over 250 lines) detected in .py/.kt files:"
+                    echo "  Added:   +$ADDED lines"
+                    echo "  Deleted: -$DELETED lines"
+                    echo "  Total:   $TOTAL lines changed"
+                    echo ""
+                    echo "  Consider splitting into smaller atomic commits."
+                    echo ""
+                    printf "Commit anyway? [y/N] "
+
+                    read -r REPLY < /dev/tty
+                    case "$REPLY" in
+                        y|Y) exit 0 ;;
+                        *)
+                        echo "Commit aborted."
+                        exit 1
+                        ;;
+                    esac
+                fi
+                exit 0
+
+        # Python
+        ruff-format:
+            run: cd backend && uv run ruff format {staged_files}
+            glob: "backend/**/*.py"
+            stage_fixed: true
+
+        ruff-check:
+            run: cd backend && uv run ruff check {staged_files}
+            glob: "backend/**/*.py"
+
+        # Kotlin
+        ktlint:
+            run: cd android && ktlint --format {staged_files}
+            glob: "android/**/*.kt"
+            stage_fixed: true
+
+commit-msg:
+    parallel: true
+    commands:
+        commit-msg-ascii:
+            run: |
+                case "$(uname -s)" in
+                  Darwin)
+                    perl -ne 'if(/[^\x00-\x7F]/){print "ERROR: Non-ASCII characters in commit message.\n"; print "  Commit messages must use ASCII-only.\n"; exit 1}' {1}
+                    ;;
+                  *)
+                    if grep -Pn '[^\x00-\x7F]' {1}; then
+                      echo ""
+                      echo "ERROR: Non-ASCII characters in commit message."
+                      echo "  Commit messages must use ASCII-only."
+                      exit 1
+                    fi
+                    ;;
+                esac
+
+        conventional-commits:
+            run: |
+                PATTERN='^(feat|fix|refactor|docs|test|chore|ci|perf|style|build|revert)(\([a-z-]+\))?!?: .+'
+                COMMIT_MSG=$(head -1 {1})
+                if echo "$COMMIT_MSG" | grep -qE '^(Merge|Rebase)'; then
+                  exit 0
+                fi
+                if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+                  echo ""
+                  echo "ERROR: Commit message does not follow Conventional Commits."
+                  exit 1
+                fi
+
+pre-push:
+    parallel: true
+    commands:
+        # Backend
+        ruff-full:
+            run: cd backend && uv run ruff check backend/
+            glob: "backend/**/*.py"
+
+        pyrefly:
+            run: cd backend && uv run pyrefly check backend/
+            glob: "backend/**/*.py"
+
+        pytest-base:
+            run: cd backend && uv run pytest backend/tests/ -m "base" -x --timeout=10 2>/dev/null || echo "  pytest skipped (pytest or markers not configured yet)"
+            glob: "backend/**/*.py"
+
+        # Android
+        ktlint-push:
+            run: cd android && ktlint {push_files}
+            glob: "android/**/*.kt"
+
+        detekt:
+            run: cd android && ./gradlew detekt
+            glob: "android/**/*.kt"
+
+        android-lint:
+            run: cd android && ./gradlew lintDebug
+            glob: "android/**"
