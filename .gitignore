@@ -3,7 +3,7 @@
 !.gitignore
 !.gitattributes
 !lefthook.yml
-!.commitlintrc.yml
+!commitlint.config.mjs
 !README.md
 !CHANGELOG.md
 !LICENSE
