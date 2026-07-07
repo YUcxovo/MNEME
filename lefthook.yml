@@ -159,20 +159,20 @@ pre-push:
     commands:
         # Backend
         ruff-full:
-            run: cd backend && uv run ruff check backend/
+            run: uv run ruff check backend/
             glob: "backend/**/*.py"
 
         pyrefly:
-            run: cd backend && uv run pyrefly check backend/
+            run: uv run pyrefly check backend/
             glob: "backend/**/*.py"
 
         pytest-base:
-            run: cd backend && uv run pytest backend/tests/ -m "base" -x --timeout=10 2>/dev/null || echo "  pytest skipped (pytest or markers not configured yet)"
+            run: uv run pytest backend/tests/ -m "base" -x --timeout=10 2>/dev/null || echo "  pytest skipped (pytest or markers not configured yet)"
             glob: "backend/**/*.py"
 
         # Android
         ktlint-push:
-            run: cd android && ktlint {push_files}
+            run: ktlint {push_files}
             glob: "android/**/*.kt"
 
         detekt:
