@@ -23,7 +23,7 @@ MNEME/
 |-- .gitignore                # Whitelist-based ignore rules
 |-- .gitattributes            # LFS tracking + LF line ending normalization
 |-- lefthook.yml              # Git hooks configuration
-|-- .commitlintrc.yml         # Commitlint rules
+|-- commitlint.config.mjs         # Commitlint rules
 |-- CONTRIBUTING.md           # This file
 |-- CHANGELOG.md              # Human-readable change log
 |-- LICENSE                   # MIT License
@@ -98,7 +98,7 @@ Scope is optional, e.g. (backend), (android), (ai)
 Rules:
 - Commit messages must be ASCII-only
 - Keep commits atomic, single logical change per commit
-- Hooks will warn if a commit touches >=5 files or >=200 lines (excluded: refactor, docs)
+- pre-commit hook will prompt if a commit touches >=250 lines in `.py`/`.kt` files (config/docs/config files excluded to avoid false positives)
 
 
 ## Issue Templates
@@ -140,11 +140,11 @@ Hooks run automatically on every commit/push. Install once:
 ./tools/setup.sh     # or manually: lefthook install
 ```
 
-**pre-commit**: branch guard, trailing whitespace, end-of-file, large files, private keys, ASCII-only, LFS guard, merge conflict check, ruff format + check (Python), ktlint (Kotlin)
+**pre-commit**: branch guard, end-of-file, large files, private keys, ASCII-only, merge conflict check, commit size guard (interactive), ruff format + check (Python), ktlint (Kotlin)
 
-**commit-msg**: Conventional Commits format check, ASCII-only check, commit size guard
+**commit-msg**: Conventional Commits format check, ASCII-only check
 
-**pre-push**: ruff full, pyrefly type check, pytest base tests (Python), ktlint + detekt changed files + android-lint (Kotlin)
+**pre-push**: ruff full, pyrefly type check, pytest base tests (Python), ktlint changed files, detekt + android-lint (Kotlin)
 
 ## CI/CD
 
@@ -159,15 +159,11 @@ CI runs on every push and PR. Behavior is controlled by commit tags:
 | `[RAG]` `[api]` `[pipeline]` `[db]` | Backend: base + specified category       |
 | `[ui]` `[db]` `[network]`   | Android: base + specified category               |
 
-Self-check: run `./tools/check.sh` before pushing.
-
 ## Code Style
 
 - **Python:** ruff (lint + format, configured in `pyproject.toml`), pyrefly (type checking)
 - **Kotlin:** ktlint (style), detekt + android-lint
 - **All files:** ASCII-only encoding
-
-Manually check: `./tools/check.sh`
 
 ## Testing
 
@@ -200,8 +196,8 @@ Run locally: `./gradlew test -PincludeTags="base"`
 Before marking a PR ready for review, go through this checklist:
 
 - **Self-review**: skim your diff, remove debug logs and commented-out code
-- **Local checks pass**: `./tools/check.sh`
 - **CHANGELOG**: add an entry under `[Unreleased]` if the change is user-facing
 - **Docs**: update relevant files under `docs/` if APIs or workflows changed
 - **CONTRIBUTING.md**: update this file if team conventions changed in this PR
 - **Trello**: move the card to "In Review" after opening the PR; move to "Done" after merge
+- **Cleanup**: delete the feature branch after merge

@@ -5,4 +5,4 @@
 /.gitignore         @YUcxovo
 /.gitattributes     @YUcxovo
 /lefthook.yml       @YUcxovo      
-/.commitlintrc.yml  @YUcxovo
+/commitlint.config.mjs  @YUcxovo

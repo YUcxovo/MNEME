@@ -40,9 +40,10 @@ CLOSES <corresponding-issue-ids>
 <hints-on-the-code-for-reviewers>
 
 
-## Confirm
+## Checklist
 
-- [ ] Lint and tests pass locally.
-- [ ] Commit messages follow Conventional Commits.
-- [ ] The submitted code passes the code quality check.
-- [ ] The documentation and changelog are updated.
+- [ ] Lint and tests pass locally
+- [ ] Commit messages follow Conventional Commits
+- [ ] Code quality checks pass
+- [ ] Docs and CHANGELOG updated (if applicable)
+- [ ] Trello card status updated
