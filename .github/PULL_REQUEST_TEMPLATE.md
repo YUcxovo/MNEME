@@ -1,9 +1,3 @@
----
-name: PR template
-about: PR template for features, performance improvement, bugs fixed, docs updated or ci changes.
----
-
-
 ***NOTES: Developers not assigned to corresponding issues should look detailed into the source code and explanation in issues. Developers assigned to corresponding issues should attach link or the issues in Linked Issues part and provide additional hints in Hints part if necessarily.***
 
 
