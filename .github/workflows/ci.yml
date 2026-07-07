@@ -74,7 +74,6 @@ jobs:
                     exit 1
                   fi
 
-    # ── Backend CI ─────────────────────────────────
     backend-ci:
         needs: changes
         if: needs.changes.outputs.backend == 'true'
