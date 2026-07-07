@@ -1,0 +1,261 @@
+name: CI
+
+on:
+    pull_request:
+    push:
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    pull-requests: read
+
+jobs:
+    changes:
+        runs-on: ubuntu-latest
+        permissions:
+            pull-requests: read
+        outputs:
+            backend: ${{ steps.filter.outputs.backend }}
+            android: ${{ steps.filter.outputs.android }}
+            backend_files: ${{ steps.filter.outputs.backend_files }}
+            android_files: ${{ steps.filter.outputs.android_files }}
+        steps:
+            - uses: actions/checkout@v6
+            - uses: dorny/paths-filter@v4
+              id: filter
+              with:
+                  list-files: shell
+                  filters: |
+                      backend:
+                        - 'backend/**'
+                        - '.github/workflows/ci.yml'
+                      android:
+                        - 'android/**'
+                        - '.github/workflows/ci.yml'
+
+    repo-health:
+        needs: changes
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Check non-ASCII
+              run: |
+                  if grep -rPn '[^\x00-\x7F]' --include='*.py' --include='*.kt' \
+                      --include='*.kts' --include='*.yaml' --include='*.yml' \
+                      --include='*.toml' --include='*.md' --include='*.sh' \
+                      --include='Makefile' --include='Dockerfile' \
+                      android/ backend/ docs/ .github/ 2>/dev/null; then
+                    echo "ERROR: Non-ASCII characters found. Repo must be ASCII-only."
+                    exit 1
+                  fi
+
+            - name: Check merge conflict markers
+              run: |
+                  if grep -rE '^<<<<<<< \|^=======|^>>>>>>> ' android/ backend/ docs/ .github/ 2>/dev/null; then
+                    echo "ERROR: Unresolved merge conflict markers found."
+                    exit 1
+                  fi
+
+            - name: Check large files
+              run: |
+                  large_files=$(find android/ backend/ -type f -size +500k ! -path '*/.git/*')
+                  if [ -n "$large_files" ]; then
+                    echo "$large_files" | while read -r f; do
+                      echo "ERROR: Large file $f ($(du -h "$f" | cut -f1)). Configure Git LFS."
+                    done
+                    exit 1
+                  fi
+
+            - name: Check private keys
+              run: |
+                  if grep -rIl '-----BEGIN.*PRIVATE KEY-----' android/ backend/ 2>/dev/null; then
+                    echo "ERROR: Private key found in repository."
+                    exit 1
+                  fi
+
+    # ── Backend CI ─────────────────────────────────
+    backend-ci:
+        needs: changes
+        if: needs.changes.outputs.backend == 'true'
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: backend
+        services:
+            postgres:
+                image: postgres:16
+                env:
+                    POSTGRES_PASSWORD: postgres
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready
+                    --health-interval 10s
+                    --health-timeout 5s
+                    --health-retries 5
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Setup uv
+              uses: astral-sh/setup-uv@v8.3.0
+              with:
+                  enable-cache: true
+
+            - name: Install Python
+              run: uv python install
+
+            - name: Install dependencies
+              run: uv sync --locked --dev
+
+            - name: Ruff Lint
+              run: uv run ruff check .
+
+            - name: Ruff Format
+              run: uv run ruff format --check .
+
+            - name: Pyrefly Type Check
+              run: uv run pyrefly check .
+
+            - name: Determine test categories
+              id: test-cats
+              run: |
+                  MSG=$(git log -1 --pretty=%B)
+                  if echo "$MSG" | grep -q '\[no-test\]'; then
+                    echo "skip=true" >> $GITHUB_OUTPUT
+                    echo "Tests skipped ([no-test] tag detected)"
+                    exit 0
+                  fi
+                  echo "skip=false" >> $GITHUB_OUTPUT
+                  CATS="base"
+                  FILES="${{ needs.changes.outputs.backend_files }}"
+                  if echo "$FILES" | grep -q 'src/mneme/api/'; then
+                    CATS="$CATS or api"
+                  fi
+                  if echo "$FILES" | grep -qE 'src/mneme/services/rag/|prompts/'; then
+                    CATS="$CATS or rag"
+                  fi
+                  if echo "$FILES" | grep -qE 'src/mneme/tasks/|src/mneme/services/pdf/'; then
+                    CATS="$CATS or pipeline"
+                  fi
+                  if echo "$FILES" | grep -qE 'src/mneme/models/|alembic/'; then
+                    CATS="$CATS or db"
+                  fi
+                  if echo "$MSG" | grep -q '\[full\]'; then
+                    CATS="base or api or rag or pipeline or db"
+                  elif echo "$MSG" | grep -q '\[api\]'; then
+                    CATS="$CATS or api"
+                  elif echo "$MSG" | grep -q '\[RAG\]'; then
+                    CATS="$CATS or rag"
+                  elif echo "$MSG" | grep -q '\[pipeline\]'; then
+                    CATS="$CATS or pipeline"
+                  elif echo "$MSG" | grep -q '\[db\]'; then
+                    CATS="$CATS or db"
+                  fi
+                  echo "cats=$CATS" >> $GITHUB_OUTPUT
+                  echo "Test categories: $CATS"
+
+            - name: Pytest
+              if: steps.test-cats.outputs.skip != 'true'
+              run: uv run pytest -v -m "${{ steps.test-cats.outputs.cats }}" --cov=. --cov-report=term-missing
+              env:
+                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+
+    android-ci:
+        needs: changes
+        if: needs.changes.outputs.android == 'true'
+        defaults:
+            run:
+                working-directory: android
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+
+            - name: Setup JDK
+              uses: actions/setup-java@v5
+              with:
+                  distribution: "temurin"
+                  java-version: "17"
+                  cache: "gradle"
+                  cache-dependency-path: |
+                      android/**/*.gradle.kts
+                      android/**/gradle-wrapper.properties
+                      android/gradle/libs.versions.toml
+
+            - name: Setup Gradle
+              uses: gradle/actions/setup-gradle@v4
+              with:
+                  cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+            - name: ktlint
+              run: ./gradlew ktlintCheck
+
+            - name: detekt
+              run: ./gradlew detekt
+
+            - name: Android Lint
+              run: ./gradlew lintDebug
+
+            - name: Determine test categories
+              id: android-cats
+              run: |
+                  MSG=$(git log -1 --pretty=%B)
+                  if echo "$MSG" | grep -q '\[no-test\]'; then
+                    echo "skip=true" >> $GITHUB_OUTPUT
+                    echo "Tests skipped ([no-test] tag detected)"
+                    exit 0
+                  fi
+                  echo "skip=false" >> $GITHUB_OUTPUT
+                  CATS="base"
+                  FILES="${{ needs.changes.outputs.android_files }}"
+                  if echo "$FILES" | grep -qE 'app/src/main/java.*/ui/|app/src/main/res/'; then
+                    CATS="$CATS,ui"
+                  fi
+                  if echo "$FILES" | grep -qE 'app/src/main/java.*/data/|app/src/main/java.*/room/'; then
+                    CATS="$CATS,db"
+                  fi
+                  if echo "$FILES" | grep -qE 'app/src/main/java.*/network/|app/src/main/java.*/api/'; then
+                    CATS="$CATS,network"
+                  fi
+                  if echo "$MSG" | grep -q '\[full\]'; then
+                    CATS="base,ui,db,network,instrumented"
+                  elif echo "$MSG" | grep -q '\[ui\]'; then
+                    CATS="$CATS,ui"
+                  elif echo "$MSG" | grep -q '\[db\]'; then
+                    CATS="$CATS,db"
+                  elif echo "$MSG" | grep -q '\[network\]'; then
+                    CATS="$CATS,network"
+                  fi
+                  echo "cats=$CATS" >> $GITHUB_OUTPUT
+                  echo "Test categories: $CATS"
+
+            - name: Unit Test
+              if: steps.android-cats.outputs.skip != 'true'
+              run: ./gradlew test -PincludeTags="${{ steps.android-cats.outputs.cats }}"
+
+            - name: Instrumented Test (emulator)
+              if: contains(steps.android-cats.outputs.cats, 'instrumented')
+              uses: reactivecircus/android-emulator-runner@v2
+              with:
+                  api-level: 34
+                  arch: x86_64
+                  target: google_apis
+                  emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+                  script: ./gradlew connectedAndroidTest -PincludeTags="instrumented"
+
+            - name: Assemble Debug
+              run: ./gradlew assembleDebug
+
+    ci-pass:
+        needs: [repo-health, backend-ci, android-ci]
+        if: always()
+        runs-on: ubuntu-latest
+        steps:
+            - name: Gate
+              run: |
+                  results='${{ needs.repo-health.result }} ${{ needs.backend-ci.result }} ${{ needs.android-ci.result }}'
+                  if echo "$results" | grep -qE "failure|cancelled"; then
+                    echo "FAILED: Required jobs failed: $results"
+                    exit 1
+                  fi
+                  echo "OK: All required jobs passed or were skipped."
