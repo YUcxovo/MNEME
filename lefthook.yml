@@ -108,12 +108,12 @@ pre-commit:
 
         # Python
         ruff-format:
-            run: cd backend && uv run ruff format {staged_files}
+            run: uv run ruff format {staged_files}
             glob: "backend/**/*.py"
             stage_fixed: true
 
         ruff-check:
-            run: cd backend && uv run ruff check {staged_files}
+            run: uv run ruff check {staged_files}
             glob: "backend/**/*.py"
 
         # Kotlin
