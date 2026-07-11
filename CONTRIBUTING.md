@@ -132,6 +132,36 @@ Blank issues are disabled.
 
 Link related issues with "Closes #X" in the PR description.
 
+## Ownership and Decision Process
+
+Repository administration is a technical role, not a project-secretary role.
+
+- Ruiyu maintains CI, hooks, branch protection, release branches, repository settings,
+  shared backend contracts, and schema migration quality.
+- Each author owns their PR's tests, CI failures, review responses, and merge readiness.
+- Routine issue triage, PR reminders, and meeting notes rotate weekly across all four
+  members; they do not default to Ruiyu.
+- Hanyang is DRI for Android architecture and UI/UX.
+- Ruiyu is DRI for the OpenAPI contract, database schema, data pipeline, behavior model,
+  graph framework, and operations.
+- Yifan is DRI for AI services/endpoints, RAG, recommendations, graph algorithms, AI
+  evaluation, and model cost controls.
+
+Breaking OpenAPI changes require approval from Ruiyu, the endpoint owner, and Hanyang.
+Schema changes require Ruiyu's approval; Yifan reviews AI/RAG fields. A DRI makes the final
+decision after documenting unresolved trade-offs. Being repository administrator does not
+make Ruiyu responsible for fixing another owner's implementation or CI failure.
+
+## Contract and Architecture Changes
+
+- API changes update `docs/api/openapi-v0.1.yaml` and relevant Android DTO fixtures.
+- Schema changes update `docs/architecture/data-model.md` and include an Alembic migration.
+- Graph-interface changes update `docs/architecture/graph-contract.md` and require both
+  Ruiyu and Yifan to review.
+- Pipeline behavior changes update `docs/architecture/pipeline-and-reliability.md`.
+- Security/privacy changes update the relevant ADR and `docs/architecture/privacy-and-data.md`.
+- Significant irreversible decisions get a numbered ADR under `docs/adr/`.
+
 ## Git Hooks (Lefthook)
 
 Hooks run automatically on every commit/push. Install once:
@@ -198,6 +228,8 @@ Before marking a PR ready for review, go through this checklist:
 - **Self-review**: skim your diff, remove debug logs and commented-out code
 - **CHANGELOG**: add an entry under `[Unreleased]` if the change is user-facing
 - **Docs**: update relevant files under `docs/` if APIs or workflows changed
+- **Ownership**: obtain the required DRI reviews for API, schema, graph, AI, or Android changes
+- **Privacy**: confirm logs/fixtures contain no secrets, full prompts, paper text, or real user behavior
 - **CONTRIBUTING.md**: update this file if team conventions changed in this PR
 - **Trello**: move the card to "In Review" after opening the PR; move to "Done" after merge
 - **Cleanup**: delete the feature branch after merge
