@@ -31,6 +31,11 @@ HTTP responses include an `X-Request-ID` header for correlation.
 `postgresql+asyncpg://` are accepted. Creating the application does not connect to the
 database; connections are opened lazily and disposed during FastAPI shutdown.
 
+`MNEME_REDIS_URL` configures the shared Redis service used by caching and background-job
+infrastructure. The application creates one lazy async client and connection pool, shares
+it through FastAPI dependencies, and closes it during shutdown. Creating the application
+does not require a running Redis server.
+
 ## Database migrations
 
 Alembic uses the same `MNEME_DATABASE_URL` as the application. Create and review a
@@ -64,6 +69,7 @@ backend/
 |   |-- core/           # Settings and structured logging
 |   |-- db/             # Async engine, sessions, and FastAPI dependencies
 |   |-- models/         # Declarative model base (business models added later)
+|   |-- redis/          # Shared async Redis client and FastAPI dependency
 |   `-- main.py         # Application factory and ASGI app
 |-- tests/              # Pytest suite
 |-- pyproject.toml      # Dependencies and tool configuration
