@@ -1,7 +1,7 @@
 # Mneme Backend
 
-Minimal FastAPI scaffold for Mneme. Business logic, persistence, authentication, and
-external-service integrations are intentionally added in later atomic changes.
+Minimal FastAPI scaffold for Mneme. Business models, authentication, ingestion, and
+feature integrations are intentionally added in later atomic changes.
 
 ## Requirements
 
@@ -45,6 +45,14 @@ uv run arq mneme.tasks.worker.WorkerSettings
 The worker scaffold registers only `worker_probe`; pipeline jobs are added as separate
 atomic changes. ARQ also writes its liveness state to `mneme:worker:health` every 30 seconds.
 
+## Current scope and known limitations
+
+- `GET /v1/health` is a process liveness check; it does not probe PostgreSQL or Redis.
+- No business models or initial database revision exist yet.
+- Authentication, ingestion, caching policy, and pipeline jobs are not implemented.
+- PostgreSQL is required only for migrations and database integration tests; Redis is
+  required only when running the worker or executing Redis commands.
+
 ## Database migrations
 
 Alembic uses the same `MNEME_DATABASE_URL` as the application. Create and review a
@@ -65,6 +73,7 @@ uv run ruff format --check .
 uv run ruff check .
 uv run pyrefly check .
 uv run pytest -m base
+uv run pytest -m "base or pipeline or db"
 ```
 
 ## Layout

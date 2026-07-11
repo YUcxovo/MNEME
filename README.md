@@ -6,22 +6,31 @@ Q&A and citation-graph exploration.
 
 Engineering sources of truth:
 
-- [`docs/api/openapi-v0.1.yaml`](docs/api/openapi-v0.1.yaml) — executable API draft
-- [`docs/architecture/data-model.md`](docs/architecture/data-model.md) — ER model
-- [`docs/architecture/graph-contract.md`](docs/architecture/graph-contract.md) — graph boundary
-- [`docs/architecture/pipeline-and-reliability.md`](docs/architecture/pipeline-and-reliability.md) — jobs, evaluation, demo mode, observability
-- [`docs/architecture/privacy-and-data.md`](docs/architecture/privacy-and-data.md) — licensing, privacy, reproducibility
-- [`docs/adr/0001-mvp-auth.md`](docs/adr/0001-mvp-auth.md) — MVP authentication decision
+- [`docs/api/openapi-v0.1.yaml`](docs/api/openapi-v0.1.yaml) -- executable API draft
+- [`docs/architecture/data-model.md`](docs/architecture/data-model.md) -- ER model
+- [`docs/architecture/graph-contract.md`](docs/architecture/graph-contract.md) -- graph boundary
+- [`docs/architecture/pipeline-and-reliability.md`](docs/architecture/pipeline-and-reliability.md) -- jobs, evaluation, demo mode, observability
+- [`docs/architecture/privacy-and-data.md`](docs/architecture/privacy-and-data.md) -- licensing, privacy, reproducibility
+- [`docs/adr/0001-mvp-auth.md`](docs/adr/0001-mvp-auth.md) -- MVP authentication decision
+
+Current implementation status (2026-07-12): the Android and backend buildable scaffolds
+exist. The backend currently provides configuration, structured logging, request IDs, a
+health route, async PostgreSQL infrastructure, Alembic, Redis, and a minimal ARQ worker.
+Business models, authentication, ingestion, and AI features remain roadmap work.
 
 ---
 
 ## Getting Started
 
-### Android Client (planned baseline)
+### Android Client (scaffold available)
+
+The Gradle manifests under `android/` are authoritative for installed versions. The table
+below describes the target client stack; dependencies not yet present are added with their
+own feature units.
 
 | Dependency | Version | Purpose | Link |
 |-----------|---------|---------|------|
-| Kotlin | 1.9+ | Development language | https://kotlinlang.org |
+| Kotlin | 2.0.21 | Development language | https://kotlinlang.org |
 | Jetpack Compose | Current stable BOM | Declarative UI framework | https://developer.android.com/compose |
 | Navigation Compose | 2.8+ | Type-safe route navigation | https://developer.android.com/guide/navigation |
 | Hilt | Current stable | Dependency injection | https://dagger.dev/hilt |
@@ -34,16 +43,20 @@ Engineering sources of truth:
 | CameraX | Current stable | Camera viewfinder (stretch: OCR) | https://developer.android.com/training/camerax |
 | ML Kit Text Recognition | Current stable | On-device OCR (stretch) | https://developers.google.com/ml-kit/vision/text-recognition/v2 |
 
-Build commands (available after the Android scaffold is created):
+Build commands:
 
 ```bash
-cd MNEME/android
+cd android
 ./gradlew assembleDebug        # Build debug APK
 ./gradlew test                  # Run unit tests
 ./gradlew ktlintCheck           # Lint check
 ```
 
-### Backend (planned baseline)
+### Backend (scaffold available)
+
+The current scaffold includes FastAPI/Uvicorn, Pydantic settings, structlog, async
+SQLAlchemy/asyncpg, Alembic, Redis, ARQ, and the test toolchain. The remaining libraries
+in the target stack are added only when their owning feature is implemented.
 
 | Dependency | Version | Purpose | Link |
 |-----------|---------|---------|------|
@@ -59,12 +72,13 @@ cd MNEME/android
 | OpenAI + Anthropic SDKs | Current compatible releases | Provider adapters for LLMs and embeddings | https://github.com/openai/openai-python |
 | structlog | Current compatible release | Structured JSON logging | https://www.structlog.org |
 
-Development commands (available after `backend/pyproject.toml` is created):
+Development commands:
 
 ```bash
-cd MNEME/backend
-uv sync --dev
+cd backend
+uv sync --locked --dev
 uv run uvicorn mneme.main:app --reload
+uv run arq mneme.tasks.worker.WorkerSettings
 uv run ruff format --check .
 uv run ruff check .
 uv run pyrefly check .
@@ -100,6 +114,8 @@ embeddings. Final choices are made from measured quality, latency, and cost.
 ---
 
 ## Model and Engine
+
+The following sections describe the target MVP architecture, not the current scaffold.
 
 ### Story Map
 
@@ -224,8 +240,9 @@ d3.js force-directed graph with a Kotlin-to-JavaScript bridge for gesture handli
 pre-provisioned opaque demo token in the Bearer header; login/JWT lifecycle is out of MVP.
 Long-running tasks
 (PDF download, summarization, embedding) are submitted to ARQ, an async Redis-backed
-task queue, rather than executed synchronously in the request handler. The API
-specification is auto-generated as OpenAPI 3.0 by FastAPI.
+task queue, rather than executed synchronously in the request handler. The executable v0.1
+draft lives under `docs/api/`; the FastAPI-generated OpenAPI document becomes authoritative
+after the Milestone 1 contract freeze.
 
 **Core Engine Layer** -- Contains three sub-pipelines:
 

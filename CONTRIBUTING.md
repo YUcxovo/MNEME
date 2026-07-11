@@ -207,7 +207,7 @@ CI runs on every push and PR. Behavior is controlled by commit tags:
 | `pipeline` | arXiv fetch, PDF parsing, scheduler | `tasks/**` or `[pipeline]` |
 | `db` | SQLAlchemy models, migrations | `models/**`, `alembic/**` or `[db]` |
 
-Run locally: `uv run pytest backend/tests/ -m "base"`
+Run locally: `cd backend && uv run pytest tests/ -m "base"`
 
 **Android (JUnit 5 @Tag):**
 
