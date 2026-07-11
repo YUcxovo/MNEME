@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     environment: Environment = Environment.DEVELOPMENT
     debug: bool = False
     log_level: str = "INFO"
+    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/mneme"
 
     @property
     def use_json_logs(self) -> bool:
