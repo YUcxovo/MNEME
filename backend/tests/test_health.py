@@ -4,6 +4,7 @@ import asyncio
 
 import pytest
 from httpx import ASGITransport, AsyncClient, Response
+from redis.asyncio import Redis
 
 from mneme.core.config import Environment, Settings
 from mneme.main import create_app
@@ -43,5 +44,7 @@ def test_openapi_metadata() -> None:
     assert application.title == "Mneme API"
     assert application.version == "0.1.0"
     assert application.state.database.engine.dialect.name == "postgresql"
+    assert isinstance(application.state.redis, Redis)
 
+    asyncio.run(application.state.redis.aclose())
     asyncio.run(application.state.database.dispose())
