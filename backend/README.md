@@ -23,6 +23,10 @@ uv run uvicorn mneme.main:app --reload
 
 The initial health endpoint is available at `GET http://127.0.0.1:8000/v1/health`.
 
+Copy `.env.example` to `.env` for local overrides. All settings use the `MNEME_` prefix.
+Development logs are human-readable; testing and production environments emit JSON logs.
+HTTP responses include an `X-Request-ID` header for correlation.
+
 ## Checks
 
 ```bash
@@ -38,6 +42,7 @@ uv run pytest -m base
 backend/
 |-- src/mneme/          # Application package
 |   |-- api/            # FastAPI routers
+|   |-- core/           # Settings and structured logging
 |   `-- main.py         # Application factory and ASGI app
 |-- tests/              # Pytest suite
 |-- pyproject.toml      # Dependencies and tool configuration
