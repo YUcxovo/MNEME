@@ -42,3 +42,6 @@ def test_openapi_metadata() -> None:
 
     assert application.title == "Mneme API"
     assert application.version == "0.1.0"
+    assert application.state.database.engine.dialect.name == "postgresql"
+
+    asyncio.run(application.state.database.dispose())
