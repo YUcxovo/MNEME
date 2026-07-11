@@ -1,81 +1,91 @@
 # MNEME
 
-A mobile-native AI research agent. Reads papers from arXiv, remembers user interests
-via a personal knowledge graph, and plans daily digests.
+A mobile-native AI research agent. Mneme reads papers from arXiv, learns a user's
+research interests, and prepares personalized research briefings with source-grounded
+Q&A and citation-graph exploration.
+
+Engineering sources of truth:
+
+- [`docs/api/openapi-v0.1.yaml`](docs/api/openapi-v0.1.yaml) — executable API draft
+- [`docs/architecture/data-model.md`](docs/architecture/data-model.md) — ER model
+- [`docs/architecture/graph-contract.md`](docs/architecture/graph-contract.md) — graph boundary
+- [`docs/architecture/pipeline-and-reliability.md`](docs/architecture/pipeline-and-reliability.md) — jobs, evaluation, demo mode, observability
+- [`docs/architecture/privacy-and-data.md`](docs/architecture/privacy-and-data.md) — licensing, privacy, reproducibility
+- [`docs/adr/0001-mvp-auth.md`](docs/adr/0001-mvp-auth.md) — MVP authentication decision
 
 ---
 
 ## Getting Started
 
-### Android Client
+### Android Client (planned baseline)
 
 | Dependency | Version | Purpose | Link |
 |-----------|---------|---------|------|
 | Kotlin | 1.9+ | Development language | https://kotlinlang.org |
-| Jetpack Compose | BOM 2024+ | Declarative UI framework | https://developer.android.com/compose |
+| Jetpack Compose | Current stable BOM | Declarative UI framework | https://developer.android.com/compose |
 | Navigation Compose | 2.8+ | Type-safe route navigation | https://developer.android.com/guide/navigation |
-| Hilt | 1.2+ | Dependency injection | https://dagger.dev/hilt |
-| Retrofit 2 | 2.11+ | HTTP client | https://square.github.io/retrofit |
-| OkHttp 4 | 4.12+ | HTTP transport + interceptors | https://square.github.io/okhttp |
-| kotlinx.serialization | 1.7+ | JSON serialization | https://github.com/Kotlin/kotlinx.serialization |
-| Room | 2.6+ | Local relational database | https://developer.android.com/training/data-storage/room |
-| DataStore | 1.1+ | Key-value preferences storage | https://developer.android.com/topic/libraries/architecture/datastore |
-| WorkManager | 2.9+ | Background task scheduling | https://developer.android.com/topic/libraries/architecture/workmanager |
-| Coil 3 | 3.0+ | Image loading (Compose-native) | https://coil-kt.github.io/coil |
+| Hilt | Current stable | Dependency injection | https://dagger.dev/hilt |
+| Retrofit + OkHttp | Current stable | HTTP client and transport | https://square.github.io/retrofit |
+| kotlinx.serialization | Current stable | JSON serialization | https://github.com/Kotlin/kotlinx.serialization |
+| Room + DataStore | Current stable | Local cache and preferences | https://developer.android.com/training/data-storage |
+| WorkManager | Current stable | Background digest checks | https://developer.android.com/topic/libraries/architecture/workmanager |
+| Coil | Current stable | Compose-native image loading | https://coil-kt.github.io/coil |
 | d3.js | v7 (local bundle) | Force-directed graph rendering in WebView | https://d3js.org |
-| CameraX | 1.4+ | Camera viewfinder (Stretch: OCR) | https://developer.android.com/training/camerax |
-| ML Kit Text Recognition | 16.0+ | On-device OCR (Stretch) | https://developers.google.com/ml-kit/vision/text-recognition/v2 |
+| CameraX | Current stable | Camera viewfinder (stretch: OCR) | https://developer.android.com/training/camerax |
+| ML Kit Text Recognition | Current stable | On-device OCR (stretch) | https://developers.google.com/ml-kit/vision/text-recognition/v2 |
 
-Build commands:
+Build commands (available after the Android scaffold is created):
 
 ```bash
-cd mneme-android
+cd MNEME/android
 ./gradlew assembleDebug        # Build debug APK
 ./gradlew test                  # Run unit tests
 ./gradlew ktlintCheck           # Lint check
 ```
 
-### Backend (Python)
+### Backend (planned baseline)
 
 | Dependency | Version | Purpose | Link |
 |-----------|---------|---------|------|
 | Python | 3.11+ | Development language | https://www.python.org |
-| FastAPI | 0.115+ | Async REST API framework | https://fastapi.tiangolo.com |
-| uvicorn | 0.32+ | ASGI dev server | https://www.uvicorn.org |
-| gunicorn | 22+ | ASGI production server | https://gunicorn.org |
-| SQLAlchemy | 2.0+ | Async ORM | https://www.sqlalchemy.org |
-| Alembic | 1.14+ | Database migration | https://alembic.sqlalchemy.org |
-| pgvector | 0.7+ (PG ext) | Vector storage and ANN search | https://github.com/pgvector/pgvector |
-| asyncpg | 0.30+ | PostgreSQL async driver | https://github.com/MagicStack/asyncpg |
-| ARQ | 0.26+ | Async Redis-based task queue | https://github.com/python-arq/arq |
-| Redis | 7.2+ (server) | Cache + task queue broker | https://redis.io |
-| httpx | 0.28+ | Async HTTP client | https://www.python-httpx.org |
-| PyMuPDF | 1.24+ | PDF text extraction (C backend) | https://pymupdf.readthedocs.io |
-| pdfplumber | 0.11+ | PDF structure extraction | https://github.com/jsvine/pdfplumber |
-| tiktoken | 0.8+ | Token counting (OpenAI codec) | https://github.com/openai/tiktoken |
-| openai (official SDK) | 1.58+ | OpenAI API client | https://github.com/openai/openai-python |
-| anthropic (official SDK) | 0.40+ | Anthropic Claude API client | https://github.com/anthropics/anthropic-sdk-python |
-| structlog | 24.4+ | Structured JSON logging | https://www.structlog.org |
+| FastAPI + Uvicorn | Current compatible releases | Async REST API and development server | https://fastapi.tiangolo.com |
+| Gunicorn | Current compatible release | Production process manager | https://gunicorn.org |
+| SQLAlchemy + asyncpg | SQLAlchemy 2.x | Async ORM and PostgreSQL driver | https://www.sqlalchemy.org |
+| Alembic | Current compatible release | Database migrations | https://alembic.sqlalchemy.org |
+| PostgreSQL + pgvector | PostgreSQL 16 baseline | Relational data and vector search | https://github.com/pgvector/pgvector |
+| ARQ + Redis | Current compatible releases | Async jobs, broker, and cache | https://github.com/python-arq/arq |
+| httpx | Current compatible release | Async HTTP client | https://www.python-httpx.org |
+| PyMuPDF + pdfplumber | Current compatible releases | PDF text and structure extraction | https://pymupdf.readthedocs.io |
+| OpenAI + Anthropic SDKs | Current compatible releases | Provider adapters for LLMs and embeddings | https://github.com/openai/openai-python |
+| structlog | Current compatible release | Structured JSON logging | https://www.structlog.org |
 
-Build commands:
+Development commands (available after `backend/pyproject.toml` is created):
 
 ```bash
-cd mneme-backend
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload             # Dev server
-ruff check . && black --check .       # Lint + format check
-pytest                                # Run tests
+cd MNEME/backend
+uv sync --dev
+uv run uvicorn mneme.main:app --reload
+uv run ruff format --check .
+uv run ruff check .
+uv run pyrefly check .
+uv run pytest -m base
 ```
 
 ### External APIs
 
-| Service | Purpose | Rate Limit | Link |
-|---------|---------|-----------|------|
-| arXiv API | Paper metadata ingestion | 1 req/s | https://info.arxiv.org/help/api |
-| Semantic Scholar API | Citation graph data | 100 req / 5 min (free tier) | https://api.semanticscholar.org |
-| OpenAI API | LLM summarization + text embeddings | 500K TPM (tier 1) | https://platform.openai.com/docs |
-| Anthropic Claude API | Q&A generation (quality-critical) | Tier-graded | https://docs.anthropic.com |
+| Service | Purpose | Current usage policy | Link |
+|---------|---------|----------------------|------|
+| arXiv API | Paper metadata ingestion | At most one request every 3 seconds; identify the client, cache results, avoid parallel requests, and retry `429`/`503` with backoff | https://info.arxiv.org/help/api/user-manual.html |
+| Semantic Scholar API | Citation graph data | Request an API key; the introductory authenticated limit is 1 request/second across endpoints. Unauthenticated traffic shares a public pool and may be throttled | https://www.semanticscholar.org/product/api |
+| OpenAI API | Summarization, Q&A, and embeddings | Limits vary by organization, usage tier, model, and endpoint; read response headers and configure retries/budgets at runtime | https://platform.openai.com/docs/guides/rate-limits |
+| Anthropic API | Summarization and quality-critical Q&A | Spend and request/token limits vary by usage tier and model; enforce provider-specific limits and exponential backoff | https://docs.anthropic.com/en/api/rate-limits |
+
+Model identifiers are configuration, not architecture. Do not hard-code a model name in
+application logic: select models through environment-backed provider settings, record the
+exact model snapshot with generated artifacts, and review availability and pricing before
+each release. The initial evaluation candidates are a current low-cost text model for bulk
+summarization, a stronger model for cited Q&A, and OpenAI `text-embedding-3-small` for
+embeddings. Final choices are made from measured quality, latency, and cost.
 
 ### DevOps
 
@@ -85,7 +95,7 @@ pytest                                # Run tests
 | GitHub Actions | CI: lint + test | https://github.com/features/actions |
 | Nginx | Reverse proxy | https://nginx.org |
 | systemd | Process management | https://systemd.io |
-| pg_dump + cron | Daily database backup | -- |
+| pg_dump + cron | Daily database backup | https://www.postgresql.org/docs/16/app-pgdump.html |
 
 ---
 
@@ -108,8 +118,8 @@ value proposition: **Read - Remember - Plan - Engage - Connect**.
 
 | Tier | Stage 1: Receiving New Papers (READ) | Stage 2: Learning Your Interests (REMEMBER) | Stage 3: Planning What to Read (PLAN) | Stage 4: Asking With Sources (ENGAGE) | Stage 5: Exploring Connections (CONNECT) |
 |------|--------------------------------------|---------------------------------------------|---------------------------------------|---------------------------------------|------------------------------------------|
-| **Skeletal** | Fetch new arXiv papers, download PDFs, generate TLDR summaries | Seed paper sets initial interests | Assemble daily digest | Single-paper RAG Q&A | -- |
-| **MVP** | Section-aware chunking, embeddings | Track opens / saves / shares, update user interest model, generate rec reasons | Weekly + threshold push alerts, share papers with deep links | Source-linked summaries, verified citations, follow-up Q&A | Build citation graph, traverse + filter graph, mobile d3-force visualization |
+| **Skeletal** | Fetch new arXiv papers, download PDFs, generate TLDR summaries | Seed paper sets initial interests | Assemble a manual briefing | Single-paper RAG Q&A | -- |
+| **MVP** | Section-aware chunking, embeddings | Track opens / saves / shares, update user interest model, generate rec reasons | Weekly Research Briefing + periodic local notification | Source-linked summaries, source-matched citations, follow-up Q&A | Bounded paper-citation graph, mobile d3-force visualization |
 | **Stretch** | On-device LLM research | -- | Shared team digest lists | Voice / camera input | Zotero / BibTeX export |
 
 ### Engine Architecture
@@ -128,7 +138,7 @@ graph TB
 
     subgraph Backend["FastAPI Backend"]
         API["REST API Layer (FastAPI + Pydantic)"]
-        AUTH["Auth Middleware (API Key / Token)"]
+        AUTH["Auth Middleware (Opaque Demo Bearer Token)"]
         TASK["Task Queue (ARQ + Redis)"]
     end
 
@@ -140,14 +150,14 @@ graph TB
             CHUNK["Section-Aware Chunker"]
         end
         subgraph AI["AI Pipeline"]
-            SUMM["LLM Summarizer (Haiku / GPT-4o-mini)"]
-            EMBED["Embedding Generator (text-embedding-3-small)"]
+            SUMM["Provider-routed LLM Summarizer"]
+            EMBED["Embedding Provider"]
             RAG["RAG Engine (Retrieve -> Augment -> Generate)"]
             REC["Recommendation Engine"]
         end
         subgraph Graph["Knowledge Graph"]
-            KG_BUILD["Graph Builder (Citation + Concept)"]
-            KG_QUERY["Graph Query (BFS / PageRank)"]
+            KG_BUILD["Paper Citation Graph Builder"]
+            KG_QUERY["Bounded Graph Query + Algorithm Fallback"]
         end
     end
 
@@ -210,8 +220,9 @@ Local persistence uses Room (relational cache for papers and digests) and DataSt
 is handled by WorkManager. The knowledge graph visualization uses a WebView embedding
 d3.js force-directed graph with a Kotlin-to-JavaScript bridge for gesture handling.
 
-**FastAPI Backend Layer** -- The HTTP API layer. All client requests pass through
-the Auth Middleware (API Key / Bearer token validation). Long-running tasks
+**FastAPI Backend Layer** -- The HTTP API layer. Protected requests use one
+pre-provisioned opaque demo token in the Bearer header; login/JWT lifecycle is out of MVP.
+Long-running tasks
 (PDF download, summarization, embedding) are submitted to ARQ, an async Redis-backed
 task queue, rather than executed synchronously in the request handler. The API
 specification is auto-generated as OpenAPI 3.0 by FastAPI.
@@ -224,16 +235,17 @@ specification is auto-generated as OpenAPI 3.0 by FastAPI.
   chunks by section boundaries rather than fixed token windows.
 
 - *AI Pipeline*: The LLM Summarizer generates three-tier summaries (TLDR / structured /
-  claims with source links) using budget models (Haiku, GPT-4o-mini), gated by BudgetGuard
-  for cost control. The Embedding Generator vectorizes chunks via text-embedding-3-small
+  claims with source links) using a configurable low-cost model, gated by BudgetGuard
+  for cost control. The Embedding Provider vectorizes chunks using the configured model
   and stores them in pgvector. The RAG Engine implements the Retrieve -> Augment ->
-  Generate -> Verify loop with post-generation citation verification. The Recommendation
-  Engine updates user interest vectors via EMA based on behavioral signals and computes
-  paper-user relevance scores.
+  Generate -> Source Match loop. The MVP verifies that cited chunks came from retrieval and
+  measures citation coverage; it does not claim semantic entailment. Ruiyu freezes the
+  versioned behavior-weight/decay baseline before M3, and the Recommendation Engine scores
+  papers against that preference vector.
 
-- *Knowledge Graph*: The Graph Builder constructs ego-network citation graphs from
-  Semantic Scholar data with concept clustering. Graph Query supports BFS traversal
-  with filtering and PageRank-based node ranking.
+- *Knowledge Graph*: The MVP graph contains paper nodes and citation edges. Categories and
+  keywords remain attributes. Queries default to depth 1 and 50 nodes; Yifan's weighting,
+  clustering, and ranking algorithms fall back to a deterministic baseline graph.
 
 **Data Layer** -- PostgreSQL stores all structured data (users, papers, digests, citations,
 user interactions) with SQLAlchemy 2.x async ORM and Alembic migrations. The pgvector
@@ -242,11 +254,10 @@ consistency between structured and vector data. Redis serves dual roles: LLM res
 cache (7-day TTL per paper-model pair) and ARQ task queue broker. The filesystem stores
 downloaded PDFs organized by year/month.
 
-**External Services** -- arXiv API provides paper metadata (free, 1 req/s).
-Semantic Scholar API provides citation graph data (free tier, 100 req/5min).
-OpenAI API handles bulk summarization (GPT-4o-mini) and text embeddings
-(text-embedding-3-small). Anthropic Claude API (Haiku/Sonnet) handles quality-critical
-Q&A generation.
+**External Services** -- arXiv provides paper metadata and Semantic Scholar provides
+citation-graph data. OpenAI and Anthropic are accessed through provider adapters so model
+selection can change without modifying pipeline logic. API clients enforce the policies
+listed in External APIs, including caching, rate limiting, retries, and a hard daily budget.
 
 #### Paper Data Pipeline (Detailed Flow)
 
@@ -315,14 +326,14 @@ flowchart TD
     QUEUE --> INGEST["F2.2 Event Ingestion (dedup by event_id)"]
     INGEST --> AGG["Daily Aggregation (user x paper -> signals)"]
 
-    AGG --> UPDATE["F2.3 Interest Vector Update (EMA: positive w=1.0, negative w=-0.3, decay 0.95/wk)"]
+    AGG --> UPDATE["F2.3 Versioned Interest Vector Update (weights frozen before M3)"]
 
     UPDATE --> CACHE["Cache user embedding -> Redis (24h TTL)"]
 
     subgraph Digest["Digest Assembly"]
         CANDIDATES["Candidate Papers (arXiv new + category match)"]
         SCORE["Compute Relevance (cosine_sim x freshness x author_boost)"]
-        RANK["Rank & Select Top-K (weekly=15, daily=10)"]
+        RANK["Rank & Select Top-K Weekly Briefing"]
         REASONS["Generate Recommendation Reasons (F2.3)"]
         ASSEMBLE["F3.1 Digest Assembly -> digests table"]
     end
@@ -332,14 +343,11 @@ flowchart TD
     RANK --> REASONS
     REASONS --> ASSEMBLE
 
-    ASSEMBLE --> PUSH{"F3.2 Push Mode?"}
-    PUSH -->|"Weekly Batch"| NOTIF_W["Monday 08:00 -> Weekly Digest"]
-    PUSH -->|"Threshold >= 0.8"| NOTIF_T["Immediate -> Single Paper Alert"]
-    PUSH -->|"Conference Deadline"| NOTIF_C["3-5 days before -> Special Batch"]
+    ASSEMBLE --> POLL["WorkManager periodic check"]
+    POLL --> NOTIF_W["New weekly briefing available"]
+    POLL --> BADGE["Optional high-relevance in-app badge"]
 
-    NOTIF_W --> ANDROID_N["F3.3 NotificationCompat (deep-link to digest)"]
-    NOTIF_T --> ANDROID_N
-    NOTIF_C --> ANDROID_N
+    NOTIF_W --> ANDROID_N["F3.3 NotificationCompat (deep-link to briefing)"]
 
     ANDROID_N --> USER(["User receives intelligent push"])
 ```
@@ -350,12 +358,9 @@ flowchart TD
   notification fatigue. Users receive a single weekly notification rather than
   daily interruptions.
 
-- **Threshold Push** (immediate): When a paper's relevance score exceeds 0.8,
-  an instant alert fires. This ensures breakthrough papers are never missed.
-
-- **Conference Deadline** (contextual): 3-5 days before a followed conference's
-  deadline, a special batch surfaces recent high-citation papers from that venue
-  plus latest papers in the user's field.
+- **High-relevance badge** (experimental): A periodic check may surface a badge in the App,
+  but the MVP does not promise immediate server push. FCM and conference alerts are future
+  work.
 
 - **Frequency Protection**: Same paper pushed at most once per 7 days. Maximum
   3 single-paper pushes per day. Excess pushes are suppressed and rolled into
@@ -365,9 +370,10 @@ flowchart TD
 
 ## APIs and Controller
 
-The Android client communicates with the FastAPI backend exclusively via
-RESTful JSON endpoints. All endpoints require authentication via API Key
-or Bearer token in the `Authorization` header.
+The Android client communicates with the FastAPI backend exclusively via RESTful JSON.
+The authoritative draft contract is [`docs/api/openapi-v0.1.yaml`](docs/api/openapi-v0.1.yaml).
+Protected endpoints use the pre-provisioned opaque demo token in the
+`Authorization: Bearer <token>` header; the MVP has no login or JWT lifecycle.
 
 ### Base URL
 
@@ -380,18 +386,18 @@ Production:  https://<domain>/v1
 
 | Method | Path | Purpose | Tier |
 |--------|------|---------|------|
-| `POST` | `/v1/auth/login` | Authenticate and obtain session token | Skeletal |
-| `GET`  | `/v1/digests` | Get user's digest list (paginated, filterable by date) | Skeletal |
-| `GET`  | `/v1/digests/{id}` | Get a specific digest with full paper details | Skeletal |
-| `GET`  | `/v1/papers/{arxiv_id}` | Get paper detail + summaries + citations | Skeletal |
+| `GET`  | `/v1/health` | Service health (no auth) | Skeletal |
+| `GET`  | `/v1/papers` | Cursor-paginated papers | Skeletal |
+| `GET`  | `/v1/papers/{paper_id}` | Get paper detail; `paper_id` is an internal UUID | Skeletal |
+| `GET`  | `/v1/papers/{paper_id}/summary` | Ready summary or `202` async job | Skeletal |
+| `GET`  | `/v1/digests` | Cursor-paginated Research Briefings | Skeletal |
+| `POST` | `/v1/digests/recommended` | Get or enqueue a recommended briefing | MVP |
 | `POST` | `/v1/qa/ask` | Submit a question for RAG-based answer | Skeletal |
-| `GET`  | `/v1/qa/history` | Get user's Q&A history | MVP |
 | `POST` | `/v1/events` | Batch-upload behavioral tracking events | MVP |
-| `GET`  | `/v1/graph/{paper_id}` | Get ego-network citation graph data | MVP |
+| `GET`  | `/v1/graph/{paper_id}` | Get a bounded paper-citation ego graph | MVP |
 | `GET`  | `/v1/users/me/preferences` | Get current user's interest preferences | Skeletal |
 | `PUT`  | `/v1/users/me/preferences` | Update user's keywords, authors, categories | Skeletal |
-| `GET`  | `/v1/users/me/push-prefs` | Get push notification preferences | MVP |
-| `PUT`  | `/v1/users/me/push-prefs` | Update push frequency, threshold, alerts | MVP |
+| `GET`  | `/v1/jobs/{job_id}` | Poll an asynchronous job | Skeletal |
 
 ### Detailed Endpoint Specifications
 
@@ -403,17 +409,15 @@ Returns a paginated list of digests for the authenticated user.
 
 | Key | Location | Type | Description |
 |-----|----------|------|-------------|
-| `from` | Query | String (YYYY-MM-DD) | Start date (inclusive) |
-| `to` | Query | String (YYYY-MM-DD) | End date (inclusive) |
-| `page` | Query | Integer | Page number (default 1) |
-| `limit` | Query | Integer | Items per page (default 10, max 50) |
+| `cursor` | Query | String | Opaque continuation cursor (optional) |
+| `limit` | Query | Integer | Items per page (default 20, max 50) |
 
 *Response Codes*
 
 | Code | Description |
 |------|-------------|
 | `200 OK` | Success |
-| `400 Bad Request` | Invalid date format or range |
+| `400 Bad Request` | Invalid cursor or limit |
 | `401 Unauthorized` | Missing or invalid token |
 
 *Returns*
@@ -421,23 +425,22 @@ Returns a paginated list of digests for the authenticated user.
 | Key | Type | Description |
 |-----|------|-------------|
 | `items` | Array[Digest] | List of digest summaries |
-| `total` | Integer | Total count of matching digests |
-| `page` | Integer | Current page number |
+| `next_cursor` | String/null | Opaque cursor for the next page |
 
 Digest object structure:
 
 | Key | Type | Description |
 |-----|------|-------------|
 | `id` | String (UUID) | Digest unique identifier |
-| `created_at` | String (ISO 8601) | Digest generation timestamp |
-| `digest_type` | String | `weekly` / `daily` / `conference` |
+| `generated_at` | String (ISO 8601 UTC) | Briefing generation timestamp |
+| `digest_type` | String | `weekly` / `manual` |
 | `entries` | Array[DigestEntry] | Recommended papers in ranked order |
 
 DigestEntry object structure:
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `paper_id` | String | arXiv ID (e.g. `2301.12345`) |
+| `paper_id` | String (UUID) | Internal paper identifier |
 | `title` | String | Paper title |
 | `authors` | Array[String] | Author names |
 | `tldr` | String | One-sentence TLDR summary (<=30 words) |
@@ -448,17 +451,17 @@ DigestEntry object structure:
 
 ```
 curl -H "Authorization: Bearer <token>" \
-     "https://SERVER/v1/digests?from=2026-06-16&to=2026-06-23&limit=3"
+     "https://SERVER/v1/digests?limit=3"
 
 {
     "items": [
         {
             "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
-            "created_at": "2026-06-23T08:00:00Z",
+            "generated_at": "2026-06-23T08:00:00Z",
             "digest_type": "weekly",
             "entries": [
                 {
-                    "paper_id": "2301.12345",
+                    "paper_id": "c83bf7d8-9ed9-4f70-8fb1-9ffdb97798ec",
                     "title": "Sample Paper Title",
                     "authors": ["Author A", "Author B"],
                     "tldr": "This paper proposes a novel method for...",
@@ -468,22 +471,20 @@ curl -H "Authorization: Bearer <token>" \
             ]
         }
     ],
-    "total": 1,
-    "page": 1
+    "next_cursor": null
 }
 ```
 
 #### POST /v1/qa/ask
 
-Submits a question for RAG-based answering over a specified paper scope.
+Submits a single-paper question for grounded RAG answering.
 
 *Request Body*
 
 | Key | Type | Description |
 |-----|------|-------------|
 | `question` | String | The user's question (1-500 chars) |
-| `paper_id` | String (optional) | Scope to a single paper by arXiv ID |
-| `scope` | String | `single_paper` or `user_library` (default: `single_paper`) |
+| `paper_id` | String (UUID) | Required internal paper identifier |
 | `conversation_id` | String (UUID, optional) | For multi-turn follow-up; reuses dialogue context |
 
 *Response Codes*
@@ -491,7 +492,7 @@ Submits a question for RAG-based answering over a specified paper scope.
 | Code | Description |
 |------|-------------|
 | `200 OK` | Answer generated |
-| `400 Bad Request` | Empty question or invalid scope |
+| `400 Bad Request` | Empty question or invalid paper ID |
 | `402 Payment Required` | LLM daily budget exceeded |
 | `503 Service Unavailable` | LLM API unavailable after retries |
 
@@ -500,8 +501,8 @@ Submits a question for RAG-based answering over a specified paper scope.
 | Key | Type | Description |
 |-----|------|-------------|
 | `answer` | String | The generated answer text |
-| `citations` | Array[Citation] | Verified source citations |
-| `citation_verified` | Boolean | Whether all citations passed verification |
+| `citations` | Array[Citation] | Source-matched citations |
+| `source_match_status` | String | `matched`, `partial`, or `insufficient_evidence` |
 | `retrieved_chunks` | Integer | Number of chunks retrieved |
 | `conversation_id` | String (UUID) | For continuing multi-turn dialogue |
 
@@ -513,14 +514,14 @@ Citation object structure:
 | `authors` | String | First author et al. |
 | `arxiv_id` | String | arXiv identifier |
 | `section_title` | String | Section where the cited claim originates |
-| `verified` | Boolean | Whether this citation passed post-generation verification |
+| `source_match` | Boolean | Whether the citation identifies a chunk retrieved for this answer |
 
 *Example*
 
 ```
 curl -X POST -H "Authorization: Bearer <token>" \
      -H "Content-Type: application/json" \
-     -d '{"question": "What is the main contribution of this paper?", "paper_id": "2301.12345", "scope": "single_paper"}' \
+     -d '{"question": "What is the main contribution of this paper?", "paper_id": "d290f1ee-6c54-4b01-90e6-d701748f0851"}' \
      https://SERVER/v1/qa/ask
 
 {
@@ -531,16 +532,16 @@ curl -X POST -H "Authorization: Bearer <token>" \
             "authors": "Author A et al.",
             "arxiv_id": "2301.12345",
             "section_title": "3. Method",
-            "verified": true
+            "source_match": true
         }
     ],
-    "citation_verified": true,
+    "source_match_status": "matched",
     "retrieved_chunks": 5,
     "conversation_id": "b7e14c8a-3f2d-4a1b-9c5e-6f8d7a2b3c1d"
 }
 ```
 
-#### GET /v1/papers/{arxiv_id}
+#### GET /v1/papers/{paper_id}
 
 Returns full paper details with summaries, source links, and citation statistics.
 
@@ -548,7 +549,7 @@ Returns full paper details with summaries, source links, and citation statistics
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `arxiv_id` | String | arXiv paper identifier |
+| `paper_id` | String (UUID) | Internal paper identifier; arXiv ID remains a separate field |
 
 *Returns*
 
@@ -614,14 +615,14 @@ Returns ego-network citation graph data for visualization.
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `paper_id` | String | Center node arXiv ID |
+| `paper_id` | String (UUID) | Internal center-paper identifier |
 
 *Query Parameters*
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `depth` | Integer | Traversal depth (1 or 2, default: 2) |
-| `direction` | String | `forward` / `backward` / `both` (default: `both`) |
+| `depth` | Integer | Traversal depth (1 or 2, default: 1) |
+| `limit` | Integer | Maximum nodes (default 50, hard maximum 200) |
 
 *Returns*
 
@@ -629,29 +630,30 @@ Returns ego-network citation graph data for visualization.
 |-----|------|-------------|
 | `nodes` | Array[GraphNode] | Paper nodes in the ego-network (<=200) |
 | `edges` | Array[GraphEdge] | Citation relationship edges |
-| `concepts` | Array[ConceptCluster] | Concept cluster annotations |
 | `center_id` | String | The queried center paper |
+| `algorithm_status` | String | `ready` or deterministic `fallback` |
+| `graph_version` | String/null | Version of Yifan's graph algorithm |
 
 GraphNode structure:
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `id` | String | arXiv ID |
+| `id` | String (UUID) | Internal paper ID |
 | `title` | String | Paper title |
 | `authors` | String | First author et al. |
 | `year` | Integer | Publication year |
 | `category` | String | arXiv primary category |
 | `citation_count` | Integer | Total citation count |
-| `pagerank_score` | Float | PageRank within the subgraph |
+| `cluster_id` | String/null | Optional algorithm-assigned cluster |
+| `rank_score` | Float/null | Optional algorithm-assigned rank |
 
 GraphEdge structure:
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `source` | String | Citing paper arXiv ID |
-| `target` | String | Cited paper arXiv ID |
-| `weight` | Float | Edge weight (normalized citation count) |
-| `is_influential` | Boolean | Whether S2 marks this as influential citation |
+| `source` | String (UUID) | Citing paper ID |
+| `target` | String (UUID) | Cited paper ID |
+| `weight` | Float/null | Optional versioned algorithm weight |
 
 ### Communication Flow
 
@@ -673,7 +675,7 @@ sequenceDiagram
 
     Note over U,D: 2. User taps a paper
     U->>A: Tap paper
-    A->>B: GET /v1/papers/{arxiv_id}
+    A->>B: GET /v1/papers/{paper_id}
     B->>E: Aggregate paper + summaries + claims
     E-->>B: Paper detail
     B-->>A: JSON response
@@ -683,7 +685,7 @@ sequenceDiagram
     U->>A: Submit question
     A->>B: POST /v1/qa/ask {question, paper_id, scope}
     B->>E: RAG: embed -> retrieve -> augment -> generate -> verify
-    E-->>B: Answer + verified citations
+    E-->>B: Answer + source-matched citations
     B-->>A: JSON response
     A-->>U: Display answer with citations
 
@@ -727,8 +729,13 @@ in a later assignment.*
 |------|------|-----------------|
 | Hanyang Wang | Android Client Lead | App architecture, Compose skeleton, navigation, design system, Hilt DI, CI/CD |
 | Heng Zhao | Android Features Engineer | Push notifications (WorkManager), knowledge graph visualization (WebView + d3-force), digest feed UI |
-| Yifan Zhang | AI/RAG + Backend | RAG pipeline, vector store, prompt engineering, LLM integration, FastAPI service |
-| Ruiyu Jiang | Backend & Data Pipeline | arXiv/Semantic Scholar ingestion, PDF parsing pipeline, PostgreSQL schema, deployment |
+| Yifan Zhang | AI/RAG & Intelligence Features | LLM providers, summarization, chunking, embeddings, retrieval/reranking/generation, all AI endpoints, recommendations, graph algorithms, AI evaluation, and cost control |
+| Ruiyu Jiang | Backend, Data & Behavior Platform | Core FastAPI platform/contracts, PostgreSQL/pgvector, ingestion, PDF parsing, queues, behavioral modeling, graph framework, reliability, deployment, and repository administration |
+
+Backend boundary: Ruiyu owns shared contracts/middleware, non-AI routers, persistence,
+pipeline infrastructure, behavioral modeling, the graph framework, and operations. Yifan
+owns AI services and their `/summary`, `/qa`, and `/digest/recommended` routers. Ruiyu
+provides graph storage/interfaces; Yifan owns graph weighting, clustering, and ranking.
 
 ---
 
