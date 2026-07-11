@@ -31,6 +31,19 @@ HTTP responses include an `X-Request-ID` header for correlation.
 `postgresql+asyncpg://` are accepted. Creating the application does not connect to the
 database; connections are opened lazily and disposed during FastAPI shutdown.
 
+## Database migrations
+
+Alembic uses the same `MNEME_DATABASE_URL` as the application. Create and review a
+migration after changing persisted models, then apply it with:
+
+```bash
+uv run alembic revision --autogenerate -m "describe the schema change"
+uv run alembic upgrade head
+```
+
+Use `uv run alembic downgrade -1` to revert the latest revision during development.
+The scaffold intentionally contains no initial revision or business tables.
+
 ## Checks
 
 ```bash
@@ -44,6 +57,8 @@ uv run pytest -m base
 
 ```text
 backend/
+|-- alembic/            # Async migration environment and revision files
+|-- alembic.ini         # Alembic command configuration
 |-- src/mneme/          # Application package
 |   |-- api/            # FastAPI routers
 |   |-- core/           # Settings and structured logging
