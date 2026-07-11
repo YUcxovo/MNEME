@@ -33,6 +33,7 @@
 !android/app/proguard-rules.pro
 !android/app/src/
 !android/app/src/**
+!android/README.md
 
 *.apk
 *.aab
