@@ -59,7 +59,7 @@ jobs:
 
             - name: Check large files
               run: |
-                  large_files=$(find android/ backend/ -type f -size +500k ! -path '*/.git/*')
+                  large_files=$(find android/ backend/ -type f -size +500k ! -path '*/.git/*' 2>/dev/null || true)
                   if [ -n "$large_files" ]; then
                     echo "$large_files" | while read -r f; do
                       echo "ERROR: Large file $f ($(du -h "$f" | cut -f1)). Configure Git LFS."
