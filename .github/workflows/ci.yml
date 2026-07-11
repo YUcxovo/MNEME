@@ -19,6 +19,7 @@ jobs:
             android: ${{ steps.filter.outputs.android }}
             backend_files: ${{ steps.filter.outputs.backend_files }}
             android_files: ${{ steps.filter.outputs.android_files }}
+            backend_ready: ${{ steps.modules.outputs.backend_ready }}
         steps:
             - uses: actions/checkout@v6
             - uses: dorny/paths-filter@v4
@@ -32,6 +33,14 @@ jobs:
                       android:
                         - 'android/**'
                         - '.github/workflows/ci.yml'
+            - name: Detect initialized modules
+              id: modules
+              run: |
+                  if [ -f backend/pyproject.toml ]; then
+                    echo "backend_ready=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "backend_ready=false" >> "$GITHUB_OUTPUT"
+                  fi
 
     repo-health:
         needs: changes
@@ -76,7 +85,7 @@ jobs:
 
     backend-ci:
         needs: changes
-        if: needs.changes.outputs.backend == 'true'
+        if: needs.changes.outputs.backend == 'true' && needs.changes.outputs.backend_ready == 'true'
         runs-on: ubuntu-latest
         defaults:
             run:
