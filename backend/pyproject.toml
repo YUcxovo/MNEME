@@ -5,8 +5,10 @@ description = "FastAPI backend for the Mneme research assistant"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
 dependencies = [
+    "asyncpg>=0.30,<1",
     "fastapi>=0.115,<1",
     "pydantic-settings>=2.7,<3",
+    "sqlalchemy[asyncio]>=2.0,<3",
     "structlog>=24.4,<27",
     "uvicorn[standard]>=0.32,<1",
 ]

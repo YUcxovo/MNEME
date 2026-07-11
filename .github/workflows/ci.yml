@@ -158,7 +158,7 @@ jobs:
               if: steps.test-cats.outputs.skip != 'true'
               run: uv run pytest -v -m "${{ steps.test-cats.outputs.cats }}" --cov=. --cov-report=term-missing
               env:
-                  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+                  MNEME_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
 
     android-ci:
         needs: changes
