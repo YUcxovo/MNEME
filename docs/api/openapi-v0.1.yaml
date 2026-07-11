@@ -1,0 +1,411 @@
+openapi: 3.0.3
+info:
+  title: Mneme API
+  version: 0.1.0-draft
+  description: Draft Milestone 1 contract. FastAPI-generated OpenAPI replaces this draft after contract freeze.
+servers:
+  - url: http://localhost:8000/v1
+security:
+  - demoToken: []
+paths:
+  /health:
+    get:
+      security: []
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service health
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+  /papers:
+    get:
+      operationId: listPapers
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Cursor-paginated papers
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaperPage"
+        default:
+          $ref: "#/components/responses/Error"
+  /papers/{paper_id}:
+    get:
+      operationId: getPaper
+      parameters:
+        - $ref: "#/components/parameters/PaperId"
+      responses:
+        "200":
+          description: Paper detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Paper"
+        default:
+          $ref: "#/components/responses/Error"
+  /papers/{paper_id}/summary:
+    get:
+      operationId: getPaperSummary
+      parameters:
+        - $ref: "#/components/parameters/PaperId"
+      responses:
+        "200":
+          description: Ready summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Summary"
+        "202":
+          description: Summary generation accepted or in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        default:
+          $ref: "#/components/responses/Error"
+  /users/me/preferences:
+    get:
+      operationId: getPreferences
+      responses:
+        "200":
+          description: Current explicit and learned preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Preferences"
+        default:
+          $ref: "#/components/responses/Error"
+    put:
+      operationId: updatePreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreferenceUpdate"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Preferences"
+        default:
+          $ref: "#/components/responses/Error"
+  /events:
+    post:
+      operationId: ingestEvents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              maxItems: 500
+              items:
+                $ref: "#/components/schemas/UserEvent"
+      responses:
+        "200":
+          description: Idempotent ingestion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EventIngestionResult"
+        default:
+          $ref: "#/components/responses/Error"
+  /digests:
+    get:
+      operationId: listDigests
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Research briefings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DigestPage"
+        default:
+          $ref: "#/components/responses/Error"
+  /digests/recommended:
+    post:
+      operationId: generateRecommendedDigest
+      responses:
+        "200":
+          description: Cached/current recommended digest
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Digest"
+        "202":
+          description: Recommendation job accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        default:
+          $ref: "#/components/responses/Error"
+  /qa/ask:
+    post:
+      operationId: askQuestion
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Question"
+      responses:
+        "200":
+          description: Grounded answer with source-matched citations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Answer"
+        default:
+          $ref: "#/components/responses/Error"
+  /graph/{paper_id}:
+    get:
+      operationId: getPaperGraph
+      parameters:
+        - $ref: "#/components/parameters/PaperId"
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 2
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Bounded citation graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Graph"
+        default:
+          $ref: "#/components/responses/Error"
+  /jobs/{job_id}:
+    get:
+      operationId: getJob
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Async job state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        default:
+          $ref: "#/components/responses/Error"
+components:
+  securitySchemes:
+    demoToken:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-demo-token
+  parameters:
+    PaperId:
+      name: paper_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
+  responses:
+    Error:
+      description: Error response
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+  schemas:
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+    Paper:
+      type: object
+      required: [id, arxiv_id, title, authors, abstract, processing_status]
+      properties:
+        id: {type: string, format: uuid}
+        arxiv_id: {type: string}
+        title: {type: string}
+        authors: {type: array, items: {type: string}}
+        abstract: {type: string}
+        primary_category: {type: string}
+        pdf_url: {type: string, format: uri}
+        source_license: {type: string, nullable: true}
+        processing_status:
+          type: string
+          enum: [metadata_only, queued, processing, ready, partial, failed]
+    PaperPage:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, items: {$ref: "#/components/schemas/Paper"}}
+        next_cursor: {type: string, nullable: true}
+    Summary:
+      type: object
+      required: [paper_id, status, tldr, source_match_status]
+      properties:
+        paper_id: {type: string, format: uuid}
+        status: {type: string, enum: [ready, partial]}
+        tldr: {type: string}
+        key_claims: {type: array, items: {type: string}}
+        methodology: {type: string}
+        limitations: {type: string}
+        source_match_status: {type: string, enum: [matched, partial, not_checked]}
+    Preferences:
+      type: object
+      required: [topics, followed_authors, model_version]
+      properties:
+        topics: {type: array, items: {type: string}}
+        followed_authors: {type: array, items: {type: string}}
+        model_version: {type: integer}
+        updated_at: {type: string, format: date-time}
+    PreferenceUpdate:
+      type: object
+      properties:
+        topics: {type: array, items: {type: string}}
+        followed_authors: {type: array, items: {type: string}}
+    UserEvent:
+      type: object
+      required: [event_id, event_type, occurred_at]
+      properties:
+        event_id: {type: string, format: uuid}
+        event_type:
+          type: string
+          enum: [paper_impression, paper_opened, paper_saved, paper_skipped, paper_shared, question_asked, digest_dismissed]
+        paper_id: {type: string, format: uuid, nullable: true}
+        occurred_at: {type: string, format: date-time}
+        duration_ms: {type: integer, minimum: 0, nullable: true}
+        context: {type: object, additionalProperties: true}
+    EventIngestionResult:
+      type: object
+      required: [accepted, duplicates]
+      properties:
+        accepted: {type: integer}
+        duplicates: {type: integer}
+    DigestEntry:
+      type: object
+      required: [paper, rank, relevance_score, recommendation_reason]
+      properties:
+        paper: {$ref: "#/components/schemas/Paper"}
+        rank: {type: integer}
+        relevance_score: {type: number, minimum: 0, maximum: 1}
+        recommendation_reason: {type: string}
+    Digest:
+      type: object
+      required: [id, digest_type, generated_at, entries]
+      properties:
+        id: {type: string, format: uuid}
+        digest_type: {type: string, enum: [weekly, manual]}
+        generated_at: {type: string, format: date-time}
+        entries: {type: array, items: {$ref: "#/components/schemas/DigestEntry"}}
+    DigestPage:
+      type: object
+      required: [items]
+      properties:
+        items: {type: array, items: {$ref: "#/components/schemas/Digest"}}
+        next_cursor: {type: string, nullable: true}
+    Question:
+      type: object
+      required: [question, paper_id]
+      properties:
+        question: {type: string, minLength: 1, maxLength: 500}
+        paper_id: {type: string, format: uuid}
+        conversation_id: {type: string, format: uuid, nullable: true}
+    Citation:
+      type: object
+      required: [paper_id, section_title, source_match]
+      properties:
+        paper_id: {type: string, format: uuid}
+        arxiv_id: {type: string}
+        section_title: {type: string}
+        chunk_id: {type: string, format: uuid}
+        source_match: {type: boolean}
+    Answer:
+      type: object
+      required: [answer, citations, source_match_status, conversation_id]
+      properties:
+        answer: {type: string}
+        citations: {type: array, items: {$ref: "#/components/schemas/Citation"}}
+        source_match_status: {type: string, enum: [matched, partial, insufficient_evidence]}
+        conversation_id: {type: string, format: uuid}
+    GraphNode:
+      type: object
+      required: [id, title]
+      properties:
+        id: {type: string, format: uuid}
+        title: {type: string}
+        category: {type: string}
+        cluster_id: {type: string, nullable: true}
+        rank_score: {type: number, nullable: true}
+    GraphEdge:
+      type: object
+      required: [source, target]
+      properties:
+        source: {type: string, format: uuid}
+        target: {type: string, format: uuid}
+        weight: {type: number, nullable: true}
+    Graph:
+      type: object
+      required: [center_id, nodes, edges, algorithm_status]
+      properties:
+        center_id: {type: string, format: uuid}
+        nodes: {type: array, maxItems: 200, items: {$ref: "#/components/schemas/GraphNode"}}
+        edges: {type: array, items: {$ref: "#/components/schemas/GraphEdge"}}
+        algorithm_status: {type: string, enum: [ready, fallback]}
+        graph_version: {type: string, nullable: true}
+    Job:
+      type: object
+      required: [id, stage, status]
+      properties:
+        id: {type: string, format: uuid}
+        stage: {type: string}
+        status: {type: string, enum: [queued, running, succeeded, failed]}
+        error_code: {type: string, nullable: true}
+        updated_at: {type: string, format: date-time}
+    ErrorResponse:
+      type: object
+      required: [code, message, request_id]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        request_id: {type: string}
+        details: {type: object, additionalProperties: true}
