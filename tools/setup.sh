@@ -33,7 +33,12 @@ read -r REPLY < /dev/tty
 case "$REPLY" in
     y|Y) ;;
     *) 
-    check_cmd "ktlint" "https://ktlint.github.io/ktlint/latest/install/cli/#download-and-verification"
+    check_cmd "java" "Install JDK 17 or newer and configure JAVA_HOME."
+    JAVA_MAJOR=$(java -version 2>&1 | awk -F'[\".]' '/version/ { print ($2 == "1" ? $3 : $2) }')
+    if [ -z "$JAVA_MAJOR" ] || [ "$JAVA_MAJOR" -lt 17 ]; then
+        echo "JDK 17 or newer is required for Android development. Configure JAVA_HOME first."
+        exit 1
+    fi
     if [ ! -f "android/local.properties" ]; then
         if [ -n "${ANDROID_HOME:-}" ]; then
             echo "sdk.dir=$ANDROID_HOME" > android/local.properties

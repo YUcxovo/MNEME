@@ -118,7 +118,7 @@ pre-commit:
 
         # Kotlin
         ktlint:
-            run: cd android && ktlint --format {staged_files}
+            run: cd android && ./gradlew ktlintFormat
             glob: "android/**/*.kt"
             stage_fixed: true
 
@@ -171,14 +171,6 @@ pre-push:
             glob: "backend/**/*.py"
 
         # Android
-        ktlint-push:
-            run: ktlint {push_files}
-            glob: "android/**/*.kt"
-
-        detekt:
-            run: cd android && ./gradlew detekt
-            glob: "android/**/*.kt"
-
-        android-lint:
-            run: cd android && ./gradlew lintDebug
+        android-quality:
+            run: cd android && ./gradlew ktlintCheck detekt lintDebug
             glob: "android/**"
