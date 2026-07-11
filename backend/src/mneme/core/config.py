@@ -3,6 +3,7 @@
 from enum import StrEnum
 from functools import lru_cache
 
+from pydantic import Field, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -31,6 +32,9 @@ class Settings(BaseSettings):
     debug: bool = False
     log_level: str = "INFO"
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/mneme"
+    redis_url: RedisDsn = RedisDsn("redis://localhost:6379/0")
+    redis_max_connections: int = Field(default=10, ge=1)
+    redis_socket_timeout_seconds: float = Field(default=5.0, gt=0)
 
     @property
     def use_json_logs(self) -> bool:
