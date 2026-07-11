@@ -55,6 +55,7 @@
 !backend/prompts/**
 !backend/Makefile
 !backend/.env.example
+!backend/README.md
 
 # Global Blacklist
 # Python
