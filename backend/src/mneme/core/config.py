@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     redis_url: RedisDsn = RedisDsn("redis://localhost:6379/0")
     redis_max_connections: int = Field(default=10, ge=1)
     redis_socket_timeout_seconds: float = Field(default=5.0, gt=0)
+    arq_queue_name: str = "mneme:jobs"
+    arq_max_jobs: int = Field(default=5, ge=1)
+    arq_job_timeout_seconds: int = Field(default=300, ge=1)
+    arq_max_tries: int = Field(default=3, ge=1)
+    arq_health_check_interval_seconds: int = Field(default=30, ge=1)
 
     @property
     def use_json_logs(self) -> bool:

@@ -36,6 +36,15 @@ infrastructure. The application creates one lazy async client and connection poo
 it through FastAPI dependencies, and closes it during shutdown. Creating the application
 does not require a running Redis server.
 
+Run the standalone ARQ worker with:
+
+```bash
+uv run arq mneme.tasks.worker.WorkerSettings
+```
+
+The worker scaffold registers only `worker_probe`; pipeline jobs are added as separate
+atomic changes. ARQ also writes its liveness state to `mneme:worker:health` every 30 seconds.
+
 ## Database migrations
 
 Alembic uses the same `MNEME_DATABASE_URL` as the application. Create and review a
@@ -70,6 +79,7 @@ backend/
 |   |-- db/             # Async engine, sessions, and FastAPI dependencies
 |   |-- models/         # Declarative model base (business models added later)
 |   |-- redis/          # Shared async Redis client and FastAPI dependency
+|   |-- tasks/          # ARQ worker configuration and background jobs
 |   `-- main.py         # Application factory and ASGI app
 |-- tests/              # Pytest suite
 |-- pyproject.toml      # Dependencies and tool configuration
