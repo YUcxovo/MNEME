@@ -27,6 +27,10 @@ Copy `.env.example` to `.env` for local overrides. All settings use the `MNEME_`
 Development logs are human-readable; testing and production environments emit JSON logs.
 HTTP responses include an `X-Request-ID` header for correlation.
 
+`MNEME_DATABASE_URL` must be a PostgreSQL URL. Both `postgresql://` (used by CI) and
+`postgresql+asyncpg://` are accepted. Creating the application does not connect to the
+database; connections are opened lazily and disposed during FastAPI shutdown.
+
 ## Checks
 
 ```bash
@@ -43,6 +47,8 @@ backend/
 |-- src/mneme/          # Application package
 |   |-- api/            # FastAPI routers
 |   |-- core/           # Settings and structured logging
+|   |-- db/             # Async engine, sessions, and FastAPI dependencies
+|   |-- models/         # Declarative model base (business models added later)
 |   `-- main.py         # Application factory and ASGI app
 |-- tests/              # Pytest suite
 |-- pyproject.toml      # Dependencies and tool configuration
