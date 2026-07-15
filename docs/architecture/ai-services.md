@@ -59,14 +59,14 @@ pool.
   hashed body is canonical JSON of task, provider, model, prompt version,
   system prompt, messages, and the output-token cap. Any input change misses
   cleanly; identical requests hit deterministically.
-- **TTL**: per task — summaries 7 days (`MNEME_AI_SUMMARY_CACHE_TTL_SECONDS`),
+- **TTL**: per task -- summaries 7 days (`MNEME_AI_SUMMARY_CACHE_TTL_SECONDS`),
   QA answers 24 hours (`MNEME_AI_QA_CACHE_TTL_SECONDS`). Summaries are
   version-keyed and effectively immutable; QA answers rotate faster because
   retrieval context will change as ingestion grows.
 - **Invalidation**:
-  1. Implicit — bumping a prompt template's `prompt_version` changes every
+  1. Implicit -- bumping a prompt template's `prompt_version` changes every
      key, so old entries simply age out.
-  2. Explicit — `LLMCache.invalidate(task=..., prompt_version=...)` deletes by
+  2. Explicit -- `LLMCache.invalidate(task=..., prompt_version=...)` deletes by
      key pattern (SCAN-based; fine at demo scale).
   3. Corrupt entries are deleted on read and treated as misses.
 - Cache hits are returned with `cached=true` and logged, so hit rates are

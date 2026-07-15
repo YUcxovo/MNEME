@@ -10,14 +10,14 @@ Reviewed against the needs of summarization (M2), chunking/embedding (M2),
 retrieval + grounded QA (M3), and evaluation (M4). **Approved as frozen**,
 with the notes below.
 
-### `paper_chunks` — approved
+### `paper_chunks` -- approved
 
 - Chunks bind to `paper_version_id`, not just `paper_id`: retrieval results
   and citations stay reproducible when arXiv publishes a revision. Correct.
 - `section_title`, `chunk_index`, `page_start`/`page_end` carry everything the
   section-aware chunker (M2) and citation rendering (M3) need.
 - `embedding vector(1536)` with a paired `embedding_model` column, and a check
-  constraint that either both or neither are set — prevents orphan vectors
+  constraint that either both or neither are set -- prevents orphan vectors
   after a model swap. 1536 dims fits the default embedding tier of both
   candidate providers.
 - `content_hash` enables idempotent re-chunking; the unique
@@ -25,7 +25,7 @@ with the notes below.
 - Note for M2: `token_count` should be populated by the chunker so retrieval
   can budget context windows without re-tokenizing.
 
-### `paper_summaries` — approved
+### `paper_summaries` -- approved
 
 - The generation-identity unique key `(paper_version_id, input_hash, provider,
   model_snapshot, prompt_version)` matches the cache-key design in
@@ -37,7 +37,7 @@ with the notes below.
   methodology, limitations) flexible while the public contract stays frozen
   in the API schema.
 
-### `qa_messages` — approved
+### `qa_messages` -- approved
 
 - Same provenance and telemetry columns as summaries (`provider`,
   `model_snapshot`, `prompt_version`, `input_hash`, cost/tokens/latency),
@@ -79,7 +79,7 @@ Fixture files are JSON with a versioned envelope, validated by
 | `must_cite` | Whether a grounded answer must carry at least one citation |
 
 Rules: `fixture_id` values are unique per file, files are ASCII-only, and any
-format change bumps `fixture_version` (never edit cases in place — add a new
+format change bumps `fixture_version` (never edit cases in place -- add a new
 version so metric history stays comparable).
 
 ## Seed cases (qa-seed-v1)

@@ -28,7 +28,7 @@ class BudgetGuard:
     """Track LLM spend in Redis and refuse calls once the daily cap is hit.
 
     The check-then-spend sequence is not atomic, so concurrent calls may
-    overshoot the cap by at most one in-flight completion each — acceptable
+    overshoot the cap by at most one in-flight completion each -- acceptable
     for a hard *daily* stop, and it never blocks recording actual spend.
     """
 
