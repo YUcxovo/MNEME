@@ -6,17 +6,19 @@ Q&A and citation-graph exploration.
 
 Engineering sources of truth:
 
-- [`docs/api/openapi-v0.1.yaml`](docs/api/openapi-v0.1.yaml) -- executable API draft
+- [`docs/api/openapi-v0.1.yaml`](docs/api/openapi-v0.1.yaml) -- frozen v0.1 API contract
 - [`docs/architecture/data-model.md`](docs/architecture/data-model.md) -- ER model
 - [`docs/architecture/graph-contract.md`](docs/architecture/graph-contract.md) -- graph boundary
 - [`docs/architecture/pipeline-and-reliability.md`](docs/architecture/pipeline-and-reliability.md) -- jobs, evaluation, demo mode, observability
 - [`docs/architecture/privacy-and-data.md`](docs/architecture/privacy-and-data.md) -- licensing, privacy, reproducibility
 - [`docs/adr/0001-mvp-auth.md`](docs/adr/0001-mvp-auth.md) -- MVP authentication decision
 
-Current implementation status (2026-07-12): the Android and backend buildable scaffolds
-exist. The backend currently provides configuration, structured logging, request IDs, a
-health route, async PostgreSQL infrastructure, Alembic, Redis, and a minimal ARQ worker.
-Business models, authentication, ingestion, and AI features remain roadmap work.
+Current implementation status (2026-07-15): the Android scaffold and Milestone 1 backend
+foundation are buildable. The backend now includes the v0.1 relational schema and migration,
+demo-token authentication, shared error responses, rate-limited arXiv metadata ingestion,
+paper catalog endpoints, explicit preferences, Redis infrastructure, and a minimal ARQ worker.
+PDF processing, scheduled jobs, behavioral updates, graph algorithms, and AI features remain
+later-milestone work.
 
 ---
 
@@ -52,11 +54,11 @@ cd android
 ./gradlew ktlintCheck           # Lint check
 ```
 
-### Backend (scaffold available)
+### Backend (Milestone 1 foundation available)
 
-The current scaffold includes FastAPI/Uvicorn, Pydantic settings, structlog, async
-SQLAlchemy/asyncpg, Alembic, Redis, ARQ, and the test toolchain. The remaining libraries
-in the target stack are added only when their owning feature is implemented.
+The current foundation includes FastAPI/Uvicorn, Pydantic settings, structlog, async
+SQLAlchemy/asyncpg, PostgreSQL/pgvector, Alembic, Redis, ARQ, an arXiv Atom client, and the
+test toolchain. Remaining libraries are added only with their owning feature.
 
 | Dependency | Version | Purpose | Link |
 |-----------|---------|---------|------|
@@ -77,6 +79,10 @@ Development commands:
 ```bash
 cd backend
 uv sync --locked --dev
+uv run alembic upgrade head
+# Configure the demo identity as described in backend/README.md first.
+uv run python -m mneme.cli.bootstrap_demo_user
+uv run python -m mneme.cli.fetch_arxiv cs.AI --max-results 20
 uv run uvicorn mneme.main:app --reload
 uv run arq mneme.tasks.worker.WorkerSettings
 uv run ruff format --check .
@@ -154,7 +160,7 @@ graph TB
 
     subgraph Backend["FastAPI Backend"]
         API["REST API Layer (FastAPI + Pydantic)"]
-        AUTH["Auth Middleware (Opaque Demo Bearer Token)"]
+        AUTH["Auth Dependency (Opaque Demo Bearer Token)"]
         TASK["Task Queue (ARQ + Redis)"]
     end
 
@@ -240,9 +246,9 @@ d3.js force-directed graph with a Kotlin-to-JavaScript bridge for gesture handli
 pre-provisioned opaque demo token in the Bearer header; login/JWT lifecycle is out of MVP.
 Long-running tasks
 (PDF download, summarization, embedding) are submitted to ARQ, an async Redis-backed
-task queue, rather than executed synchronously in the request handler. The executable v0.1
-draft lives under `docs/api/`; the FastAPI-generated OpenAPI document becomes authoritative
-after the Milestone 1 contract freeze.
+task queue, rather than executed synchronously in the request handler. The frozen v0.1
+contract lives under `docs/api/`; FastAPI-generated OpenAPI becomes authoritative after all
+frozen routes are implemented and verified.
 
 **Core Engine Layer** -- Contains three sub-pipelines:
 
@@ -388,7 +394,7 @@ flowchart TD
 ## APIs and Controller
 
 The Android client communicates with the FastAPI backend exclusively via RESTful JSON.
-The authoritative draft contract is [`docs/api/openapi-v0.1.yaml`](docs/api/openapi-v0.1.yaml).
+The authoritative frozen contract is [`docs/api/openapi-v0.1.yaml`](docs/api/openapi-v0.1.yaml).
 Protected endpoints use the pre-provisioned opaque demo token in the
 `Authorization: Bearer <token>` header; the MVP has no login or JWT lifecycle.
 
