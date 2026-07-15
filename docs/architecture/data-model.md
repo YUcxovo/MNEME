@@ -127,6 +127,8 @@ erDiagram
       uuid user_id FK
       string digest_type
       timestamptz generated_at
+      int preference_model_version
+      string generator_version
     }
     digest_entries {
       uuid digest_id PK,FK
@@ -208,7 +210,8 @@ erDiagram
 - `papers` identifies a work; `paper_versions` records arXiv revisions.
 - Authors are normalized relational entities, not an unqueryable JSON array. `display_name`
   preserves source capitalization while `normalized_name` supports deterministic M1 deduplication.
-- Digests are immutable generated snapshots so demos and evaluations are reproducible.
+- Digests are immutable generated snapshots. They retain the preference-model and generator
+  versions so demos and evaluations are reproducible.
 - Every event uses a client-generated UUID; duplicate IDs are ignored.
 - Summaries are tied to an observed paper revision and versioned by input hash,
   provider/model snapshot, and prompt version.
