@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from pydantic.json_schema import SkipJsonSchema
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -24,7 +25,7 @@ class ErrorResponse(BaseModel):
     code: str
     message: str
     request_id: str
-    details: dict[str, Any] | None = None
+    details: dict[str, Any] | SkipJsonSchema[None] = None
 
 
 class ApiError(Exception):
