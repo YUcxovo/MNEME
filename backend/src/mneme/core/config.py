@@ -3,7 +3,7 @@
 from enum import StrEnum
 from functools import lru_cache
 
-from pydantic import Field, RedisDsn
+from pydantic import Field, HttpUrl, RedisDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -40,6 +40,12 @@ class Settings(BaseSettings):
     arq_job_timeout_seconds: int = Field(default=300, ge=1)
     arq_max_tries: int = Field(default=3, ge=1)
     arq_health_check_interval_seconds: int = Field(default=30, ge=1)
+    arxiv_api_url: HttpUrl = HttpUrl("https://export.arxiv.org/api/query")
+    arxiv_user_agent: str = "Mneme/0.1 (+https://github.com/YUcxovo/MNEME)"
+    arxiv_request_interval_seconds: float = Field(default=3.0, ge=3.0)
+    arxiv_timeout_seconds: float = Field(default=30.0, gt=0)
+    arxiv_max_attempts: int = Field(default=3, ge=1, le=10)
+    arxiv_max_results: int = Field(default=100, ge=1, le=2000)
 
     @property
     def use_json_logs(self) -> bool:
