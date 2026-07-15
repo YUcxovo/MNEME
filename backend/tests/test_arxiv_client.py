@@ -1,6 +1,8 @@
 """Tests for serialized and rate-limited arXiv HTTP access."""
 
 import asyncio
+from datetime import UTC, datetime, timedelta
+from email.utils import format_datetime
 from pathlib import Path
 
 import httpx
@@ -21,6 +23,9 @@ class FakeTime:
 
     def clock(self) -> float:
         return self.value
+
+    def wall_clock(self) -> datetime:
+        return datetime(2026, 1, 1, tzinfo=UTC) + timedelta(seconds=self.value)
 
     async def sleep(self, delay: float) -> None:
         self.delays.append(delay)
@@ -110,5 +115,98 @@ def test_non_success_status_is_safe_and_client_closes() -> None:
         assert captured.value.status_code == 400
         await client.aclose()
         assert client.is_closed
+
+    asyncio.run(exercise())
+
+
+@pytest.mark.pipeline
+def test_retryable_status_obeys_retry_after_http_date() -> None:
+    timer = FakeTime()
+    attempts = 0
+    retry_at = format_datetime(timer.wall_clock() + timedelta(seconds=7), usegmt=True)
+
+    def handler(_: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            return httpx.Response(429, headers={"Retry-After": retry_at})
+        return httpx.Response(200, content=FEED)
+
+    async def exercise() -> None:
+        async with ArxivClient(
+            Settings(arxiv_max_attempts=2, _env_file=None),
+            transport=httpx.MockTransport(handler),
+            clock=timer.clock,
+            wall_clock=timer.wall_clock,
+            sleep=timer.sleep,
+        ) as client:
+            await client.fetch_by_category("cs.AI")
+
+    asyncio.run(exercise())
+    assert attempts == 2
+    assert timer.delays == [7.0]
+
+
+@pytest.mark.pipeline
+def test_transport_error_retries_then_succeeds() -> None:
+    timer = FakeTime()
+    attempts = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise httpx.ConnectError("offline", request=request)
+        return httpx.Response(200, content=FEED)
+
+    async def exercise() -> None:
+        async with ArxivClient(
+            Settings(arxiv_max_attempts=2, _env_file=None),
+            transport=httpx.MockTransport(handler),
+            clock=timer.clock,
+            sleep=timer.sleep,
+        ) as client:
+            await client.fetch_by_category("cs.AI")
+
+    asyncio.run(exercise())
+    assert attempts == 2
+    assert timer.delays == [3.0]
+
+
+@pytest.mark.pipeline
+def test_retry_exhaustion_and_non_retryable_status() -> None:
+    async def exercise() -> None:
+        attempts = 0
+
+        def unavailable(_: httpx.Request) -> httpx.Response:
+            nonlocal attempts
+            attempts += 1
+            return httpx.Response(503)
+
+        timer = FakeTime()
+        async with ArxivClient(
+            Settings(arxiv_max_attempts=2, _env_file=None),
+            transport=httpx.MockTransport(unavailable),
+            clock=timer.clock,
+            sleep=timer.sleep,
+        ) as client:
+            with pytest.raises(ArxivHTTPError) as captured:
+                await client.fetch_by_category("cs.AI")
+            assert captured.value.status_code == 503
+        assert attempts == 2
+
+        calls = 0
+
+        def bad_request(_: httpx.Request) -> httpx.Response:
+            nonlocal calls
+            calls += 1
+            return httpx.Response(400)
+
+        async with ArxivClient(
+            Settings(_env_file=None), transport=httpx.MockTransport(bad_request)
+        ) as client:
+            with pytest.raises(ArxivHTTPError):
+                await client.fetch_by_category("cs.AI")
+        assert calls == 1
 
     asyncio.run(exercise())
