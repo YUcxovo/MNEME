@@ -233,6 +233,7 @@ components:
     Cursor:
       name: cursor
       in: query
+      description: Opaque cursor for descending published_at and paper ID keyset pagination
       schema:
         type: string
     Limit:
@@ -260,7 +261,7 @@ components:
           enum: [ok, degraded]
     Paper:
       type: object
-      required: [id, arxiv_id, title, authors, abstract, processing_status]
+      required: [id, arxiv_id, title, authors, abstract, primary_category, categories, pdf_url, processing_status, published_at, updated_at]
       properties:
         id: {type: string, format: uuid}
         arxiv_id: {type: string}
@@ -268,8 +269,11 @@ components:
         authors: {type: array, items: {type: string}}
         abstract: {type: string}
         primary_category: {type: string}
+        categories: {type: array, items: {type: string}}
         pdf_url: {type: string, format: uri}
         source_license: {type: string, nullable: true}
+        published_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
         processing_status:
           type: string
           enum: [metadata_only, queued, processing, ready, partial, failed]
@@ -294,15 +298,17 @@ components:
       type: object
       required: [topics, followed_authors, model_version]
       properties:
-        topics: {type: array, items: {type: string}}
-        followed_authors: {type: array, items: {type: string}}
+        topics: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 100}}
+        followed_authors: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 200}}
         model_version: {type: integer}
         updated_at: {type: string, format: date-time}
     PreferenceUpdate:
       type: object
+      required: [topics, followed_authors]
+      additionalProperties: false
       properties:
-        topics: {type: array, items: {type: string}}
-        followed_authors: {type: array, items: {type: string}}
+        topics: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 100}}
+        followed_authors: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 200}}
     UserEvent:
       type: object
       required: [event_id, event_type, occurred_at]
