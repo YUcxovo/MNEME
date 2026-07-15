@@ -108,12 +108,12 @@ pre-commit:
 
         # Python
         ruff-format:
-            run: uv run ruff format {staged_files}
+            run: uv run --project backend ruff format {staged_files}
             glob: "backend/**/*.py"
             stage_fixed: true
 
         ruff-check:
-            run: uv run ruff check {staged_files}
+            run: uv run --project backend ruff check {staged_files}
             glob: "backend/**/*.py"
 
         # Kotlin
@@ -159,15 +159,15 @@ pre-push:
     commands:
         # Backend
         ruff-full:
-            run: uv run ruff check backend/
+            run: cd backend && uv run ruff check .
             glob: "backend/**/*.py"
 
         pyrefly:
-            run: uv run pyrefly check backend/
+            run: cd backend && uv run pyrefly check .
             glob: "backend/**/*.py"
 
         pytest-base:
-            run: uv run pytest backend/tests/ -m "base" -x --timeout=10 2>/dev/null || echo "  pytest skipped (pytest or markers not configured yet)"
+            run: cd backend && uv run pytest tests/ -m "base" -x --timeout=10
             glob: "backend/**/*.py"
 
         # Android
