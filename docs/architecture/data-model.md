@@ -83,6 +83,7 @@ erDiagram
     paper_chunks {
       uuid id PK
       uuid paper_id FK
+      uuid paper_version_id FK
       string section_title
       int chunk_index
       int page_start
@@ -91,17 +92,24 @@ erDiagram
       vector_1536 embedding
       string embedding_model
       string content_hash
+      int token_count
     }
     paper_summaries {
       uuid id PK
       uuid paper_id FK
+      uuid paper_version_id FK
       string status
+      string source_match_status
       jsonb content
       string provider
       string model_snapshot
       string prompt_version
       string input_hash
       numeric estimated_cost
+      jsonb generation_parameters
+      int input_tokens
+      int output_tokens
+      int latency_ms
       timestamptz created_at
     }
     citations {
@@ -182,10 +190,10 @@ erDiagram
   `pipeline_jobs.idempotency_key` are unique.
 - `paper_versions` is unique on `(paper_id, version_number)`.
 - `paper_authors` has a composite primary key and a unique `(paper_id, author_order)` constraint.
-- `paper_chunks` is unique on `(paper_id, chunk_index)` and on
-  `(paper_id, content_hash, embedding_model)`.
+- `paper_chunks` is unique on `(paper_version_id, chunk_index)`. Content hashes are indexed for
+  provenance and lookup but are not unique because repeated text can be legitimate.
 - `paper_summaries` is unique on
-  `(paper_id, input_hash, provider, model_snapshot, prompt_version)`.
+  `(paper_version_id, input_hash, provider, model_snapshot, prompt_version)`.
 - A citation must have either `target_paper_id` or `external_target_id`.
 - `digest_entries` has a composite primary key and a unique `(digest_id, rank)` constraint.
 - Non-negative checks apply to event duration, version number, chunk/page indexes, job attempts,
@@ -200,8 +208,10 @@ erDiagram
   preserves source capitalization while `normalized_name` supports deterministic M1 deduplication.
 - Digests are immutable generated snapshots so demos and evaluations are reproducible.
 - Every event uses a client-generated UUID; duplicate IDs are ignored.
-- Summaries are versioned by input hash, provider/model snapshot, and prompt version.
-- Chunks retain section, page range, content hash, and embedding model metadata.
+- Summaries are tied to an observed paper revision and versioned by input hash,
+  provider/model snapshot, and prompt version.
+- Chunks are tied to an observed paper revision and retain section, page range, content hash,
+  token count, and embedding model metadata.
 - A citation may initially reference an external paper ID; ingestion can resolve it later.
 - Pipeline jobs may have no paper only for collection-level stages such as digest assembly.
 - Deleting a cached PDF does not delete metadata, chunks, or generated artifacts.
