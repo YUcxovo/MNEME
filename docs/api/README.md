@@ -11,9 +11,11 @@ Android and backend sub-teams until FastAPI becomes the generated source of trut
 - Data-model reviewer: Yifan reviews AI/RAG fields; Ruiyu approves persistence impact
 
 Any breaking change requires Ruiyu, the endpoint owner, and Hanyang to approve the PR.
-After the FastAPI scaffold exists, CI exports `openapi.json` and compares it with the
-committed contract. Breaking changes require a new API version or an explicit coordinated
-migration.
+The committed contract remains authoritative while later-milestone routes are still skeletons.
+CI exports FastAPI's `openapi.json` and checks every implemented route and shared schema against
+this contract. The generated document becomes authoritative only after all frozen routes are
+represented in the application. Breaking changes require a new API version or an explicit
+coordinated migration.
 
 ## Fixed v0.1 Decisions
 
@@ -27,6 +29,23 @@ migration.
 - No login, registration, password, refresh token, or JWT lifecycle in the MVP
 - Async AI work returns `202 Accepted` with a job resource when a result is not ready
 - Errors use the shared `ErrorResponse` schema with a stable machine-readable code
+- Paper lists use descending `(published_at, id)` keyset pagination encoded as an opaque cursor
+- `PUT /users/me/preferences` is a complete replacement of both explicit preference lists
+
+## Shared Error Codes
+
+| HTTP status | Code | Meaning |
+|---|---|---|
+| 400 | `invalid_cursor` | A pagination cursor cannot be decoded or validated |
+| 401 | `authentication_required` | The Bearer token is missing or malformed |
+| 401 | `invalid_token` | The Bearer token does not match the configured demo token hash |
+| 404 | `paper_not_found` | The requested internal paper UUID does not exist |
+| 404 | `user_not_found` | The configured demo user has not been bootstrapped |
+| 422 | `validation_error` | Request parameters or JSON do not satisfy the contract |
+| 503 | `service_unavailable` | A required database or upstream dependency is unavailable |
+
+Every error includes the request ID. Error details must not contain secrets, full paper text,
+provider prompts, or raw database messages.
 
 ## Endpoint Ownership
 
