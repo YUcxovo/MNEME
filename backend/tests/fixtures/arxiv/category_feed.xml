@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:arxiv="http://arxiv.org/schemas/atom"
+      xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">
+  <opensearch:totalResults>2</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <opensearch:itemsPerPage>2</opensearch:itemsPerPage>
+  <entry>
+    <id>http://arxiv.org/abs/2501.12345</id>
+    <updated>2026-07-10T12:00:00Z</updated>
+    <published>2026-07-01T08:30:00Z</published>
+    <title>  A Multiline
+      Research Title  </title>
+    <summary>First line.
+      Second line.</summary>
+    <author><name>Jos&#233; Example</name><arxiv:affiliation>Mneme Lab</arxiv:affiliation></author>
+    <author><name>Second Author</name></author>
+    <arxiv:primary_category term="cs.AI"/>
+    <category term="cs.AI"/><category term="cs.CL"/>
+    <link rel="alternate" href="http://arxiv.org/abs/2501.12345v2"/>
+    <link title="pdf" href="http://arxiv.org/pdf/2501.12345v2"/>
+    <arxiv:license href="http://creativecommons.org/licenses/by/4.0/"/>
+    <arxiv:doi>10.1000/example</arxiv:doi>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/hep-ex/0307015</id>
+    <updated>2003-07-10T00:00:00Z</updated>
+    <published>2003-07-10T00:00:00Z</published>
+    <title>Legacy Identifier</title>
+    <summary>Legacy abstract.</summary>
+    <author><name>Legacy Author</name></author>
+    <arxiv:primary_category term="hep-ex"/>
+    <category term="hep-ex"/>
+    <link rel="alternate" href="http://arxiv.org/abs/hep-ex/0307015v1"/>
+    <link title="pdf" href="http://arxiv.org/pdf/hep-ex/0307015v1.pdf"/>
+  </entry>
+</feed>
