@@ -9,7 +9,7 @@ from fastapi import FastAPI, Query, Request, status
 from httpx import ASGITransport, AsyncClient, Response
 from sqlalchemy.exc import SQLAlchemyError
 
-from mneme.api.errors import ApiError
+from mneme.api.errors import ApiError, ErrorResponse
 from mneme.core.config import Environment, Settings
 from mneme.main import create_app
 
@@ -184,3 +184,14 @@ def test_database_error_is_service_unavailable_without_diagnostics() -> None:
         "request_id": "database-1",
     }
     assert "sensitive connection diagnostics" not in response.text
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_optional_error_details_are_non_nullable_in_public_schema() -> None:
+    schema = ErrorResponse.model_json_schema()
+    details_schema = schema["properties"]["details"]
+
+    assert details_schema["type"] == "object"
+    assert "anyOf" not in details_schema
+    assert "details" not in schema["required"]
