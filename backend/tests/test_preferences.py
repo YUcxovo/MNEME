@@ -83,7 +83,7 @@ def test_identical_preference_replacement_does_not_flush_or_touch_timestamp() ->
         updated_at=updated_at,
     )
     session = _session_with_transaction()
-    session.scalar.return_value = stored
+    session.scalar.side_effect = [user_id, stored]
     repository = PreferenceRepository(cast(AsyncSession, session))
 
     snapshot = asyncio.run(
@@ -111,7 +111,7 @@ def test_changed_preference_replacement_flushes_both_lists() -> None:
         updated_at=datetime(2026, 7, 15, tzinfo=UTC),
     )
     session = _session_with_transaction()
-    session.scalar.return_value = stored
+    session.scalar.side_effect = [user_id, stored]
     repository = PreferenceRepository(cast(AsyncSession, session))
 
     snapshot = asyncio.run(
@@ -132,7 +132,7 @@ def test_changed_preference_replacement_flushes_both_lists() -> None:
 @pytest.mark.db
 def test_preference_replacement_reports_unbootstrapped_user() -> None:
     session = _session_with_transaction()
-    session.scalar.side_effect = [None, None]
+    session.scalar.return_value = None
     repository = PreferenceRepository(cast(AsyncSession, session))
 
     snapshot = asyncio.run(
@@ -146,3 +146,27 @@ def test_preference_replacement_reports_unbootstrapped_user() -> None:
     assert snapshot is None
     session.add.assert_not_called()
     session.flush.assert_not_awaited()
+    session.scalar.assert_awaited_once()
+
+
+@pytest.mark.base
+@pytest.mark.db
+def test_missing_preferences_are_created_after_locking_existing_user() -> None:
+    user_id = uuid4()
+    session = _session_with_transaction()
+    session.scalar.side_effect = [user_id, None]
+    repository = PreferenceRepository(cast(AsyncSession, session))
+
+    snapshot = asyncio.run(
+        repository.replace_preferences(
+            user_id,
+            topics=["systems"],
+            followed_authors=["grace hopper"],
+        )
+    )
+
+    assert snapshot is not None
+    assert snapshot.topics == ["systems"]
+    assert snapshot.followed_authors == ["grace hopper"]
+    session.add.assert_called_once()
+    session.flush.assert_awaited_once()

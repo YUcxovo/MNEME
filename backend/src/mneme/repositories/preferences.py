@@ -54,13 +54,15 @@ class PreferenceRepository:
     ) -> PreferenceSnapshot | None:
         """Atomically replace both lists without updating an identical row."""
         async with self._session.begin():
+            user_exists = await self._session.scalar(
+                select(User.id).where(User.id == user_id).with_for_update()
+            )
+            if user_exists is None:
+                return None
             preference = await self._session.scalar(
                 select(UserPreference).where(UserPreference.user_id == user_id).with_for_update()
             )
             if preference is None:
-                user_exists = await self._session.scalar(select(User.id).where(User.id == user_id))
-                if user_exists is None:
-                    return None
                 preference = UserPreference(
                     user_id=user_id,
                     explicit_topics=list(topics),
