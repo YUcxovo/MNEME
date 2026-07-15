@@ -67,6 +67,8 @@ Available Milestone 1 routes are:
 - `GET /v1/papers/{paper_id}` (authenticated detail)
 - `GET /v1/users/me/preferences` (authenticated explicit preferences)
 - `PUT /v1/users/me/preferences` (authenticated full replacement)
+- `GET /v1/papers/{paper_id}/summary` (authenticated; deterministic abstract-derived
+  placeholder in Milestone 1, real generation arrives in Milestone 2)
 
 For example:
 
@@ -85,6 +87,15 @@ uv run arq mneme.tasks.worker.WorkerSettings
 
 The current worker registers only `worker_probe`; staged PDF/AI jobs arrive in later
 milestones.
+
+## AI services
+
+All LLM access goes through `mneme.ai` (see `docs/architecture/ai-services.md`): a
+provider abstraction over the Anthropic and OpenAI SDKs, task-to-model routing, a Redis
+completion cache, and a hard daily budget (`MNEME_AI_DAILY_BUDGET_USD`). Configure at
+least one of `MNEME_ANTHROPIC_API_KEY` / `MNEME_OPENAI_API_KEY` for live generation;
+the Milestone 1 mock summary endpoint works without keys. The evaluation fixture format
+and seed cases are documented in `docs/architecture/ai-evaluation.md`.
 
 ## Database migrations
 
@@ -121,8 +132,9 @@ PostgreSQL 16 pgvector service automatically.
 
 - Authentication is a single-user demo mechanism; there is no login, JWT, or token lifecycle.
 - The arXiv command ingests one page on demand; daily scheduling belongs to Milestone 2.
-- Metadata starts in `metadata_only`; PDF parsing, chunking, summaries, embeddings, and AI
-  endpoints are not part of this milestone.
+- Metadata starts in `metadata_only`; PDF parsing, chunking, embeddings, and real LLM
+  summaries are not part of this milestone. `GET /v1/papers/{paper_id}/summary` serves a
+  deterministic placeholder derived from the stored abstract.
 - `GET /v1/health` does not probe PostgreSQL or Redis.
 - The committed full v0.1 contract remains authoritative for later routes; FastAPI currently
   generates and verifies the implemented Milestone 1 subset.
@@ -133,6 +145,7 @@ PostgreSQL 16 pgvector service automatically.
 backend/
 |-- alembic/            # Async migration environment and versioned revisions
 |-- src/mneme/
+|   |-- ai/             # LLM providers, routing, budget, cache, evaluation harness
 |   |-- api/            # Routers, dependencies, schemas, middleware, shared errors
 |   |-- cli/            # Demo bootstrap/token tools and arXiv ingestion command
 |   |-- core/           # Settings, logging, and security helpers
