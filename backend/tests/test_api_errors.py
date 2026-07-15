@@ -7,6 +7,7 @@ from uuid import UUID
 import pytest
 from fastapi import FastAPI, Query, Request, status
 from httpx import ASGITransport, AsyncClient, Response
+from sqlalchemy.exc import SQLAlchemyError
 
 from mneme.api.errors import ApiError
 from mneme.core.config import Environment, Settings
@@ -37,6 +38,10 @@ def create_error_test_app(*, debug: bool = False) -> FastAPI:
     @application.get("/unexpected-error")
     async def unexpected_error() -> None:
         raise RuntimeError("sensitive internal database detail")
+
+    @application.get("/database-error")
+    async def database_error() -> None:
+        raise SQLAlchemyError("sensitive connection diagnostics")
 
     return application
 
@@ -160,3 +165,22 @@ def test_unexpected_error_is_generic_and_keeps_request_id() -> None:
     }
     assert response.headers["X-Request-ID"] == "unexpected-1"
     assert "sensitive internal database detail" not in response.text
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_database_error_is_service_unavailable_without_diagnostics() -> None:
+    response = asyncio.run(
+        request_test_route(
+            "/database-error",
+            headers={"X-Request-ID": "database-1"},
+        )
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "code": "service_unavailable",
+        "message": "A required service is temporarily unavailable.",
+        "request_id": "database-1",
+    }
+    assert "sensitive connection diagnostics" not in response.text

@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from mneme.api.middleware import REQUEST_ID_HEADER
@@ -51,6 +52,7 @@ def register_error_handlers(application: FastAPI) -> None:
     application.add_exception_handler(ApiError, handle_api_error)
     application.add_exception_handler(RequestValidationError, handle_validation_error)
     application.add_exception_handler(StarletteHTTPException, handle_http_error)
+    application.add_exception_handler(SQLAlchemyError, handle_database_error)
     application.add_exception_handler(Exception, handle_unexpected_error)
 
 
@@ -125,6 +127,22 @@ async def handle_http_error(request: Request, exception: Exception) -> JSONRespo
         code,
         message,
         headers=exception.headers,
+    )
+
+
+async def handle_database_error(request: Request, exception: Exception) -> JSONResponse:
+    """Hide database diagnostics behind the stable dependency-failure response."""
+    logger.error(
+        "database_request_failed",
+        request_id=_request_id(request),
+        exception_type=type(exception).__name__,
+        exc_info=exception,
+    )
+    return _error_response(
+        request,
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        "service_unavailable",
+        "A required service is temporarily unavailable.",
     )
 
 
