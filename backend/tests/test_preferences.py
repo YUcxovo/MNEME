@@ -19,7 +19,7 @@ from mneme.repositories.preferences import PreferenceRepository
 @pytest.mark.api
 def test_preference_update_normalizes_and_stably_deduplicates() -> None:
     update = PreferenceUpdate(
-        topics=["  Machine Learning ", "machine learning", "STRASSE", "Straße"],
+        topics=["  Machine Learning ", "machine learning", "STRASSE", "Stra\u00dfe"],
         followed_authors=[" Alice Smith ", "ALICE SMITH", "Bob Jones"],
     )
 
