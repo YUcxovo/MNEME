@@ -2,8 +2,9 @@
 
 from enum import StrEnum
 from functools import lru_cache
+from uuid import UUID
 
-from pydantic import Field, HttpUrl, RedisDsn
+from pydantic import Field, HttpUrl, RedisDsn, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -46,6 +47,8 @@ class Settings(BaseSettings):
     arxiv_timeout_seconds: float = Field(default=30.0, gt=0)
     arxiv_max_attempts: int = Field(default=3, ge=1, le=10)
     arxiv_max_results: int = Field(default=100, ge=1, le=2000)
+    demo_token_sha256: SecretStr | None = None
+    demo_user_id: UUID | None = None
 
     @property
     def use_json_logs(self) -> bool:
