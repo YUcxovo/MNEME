@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Mneme API
-  version: 0.1.0-draft
-  description: Draft Milestone 1 contract. FastAPI-generated OpenAPI replaces this draft after contract freeze.
+  version: 0.1.0
+  description: Frozen v0.1 contract. Implemented routes are verified against FastAPI-generated OpenAPI.
 servers:
   - url: http://localhost:8000/v1
 security:

@@ -1,7 +1,12 @@
 # API Contract Governance
 
-The executable OpenAPI document is `openapi-v0.1.yaml`. It is the contract between the
-Android and backend sub-teams until FastAPI becomes the generated source of truth.
+The frozen OpenAPI document is `openapi-v0.1.yaml`. It is the contract between the Android
+and backend sub-teams until every v0.1 route exists and FastAPI can become the complete
+generated source of truth.
+
+As of 2026-07-15, FastAPI implements and contract-tests `health`, `papers`, and
+`users/me/preferences`. Later-milestone summary, event, digest, Q&A, graph, and job routes
+remain represented only by the frozen contract.
 
 ## Ownership
 
@@ -11,11 +16,11 @@ Android and backend sub-teams until FastAPI becomes the generated source of trut
 - Data-model reviewer: Yifan reviews AI/RAG fields; Ruiyu approves persistence impact
 
 Any breaking change requires Ruiyu, the endpoint owner, and Hanyang to approve the PR.
-The committed contract remains authoritative while later-milestone routes are still skeletons.
-CI exports FastAPI's `openapi.json` and checks every implemented route and shared schema against
-this contract. The generated document becomes authoritative only after all frozen routes are
-represented in the application. Breaking changes require a new API version or an explicit
-coordinated migration.
+The committed contract remains authoritative while later-milestone routes are absent or only
+skeletons. Backend contract tests inspect FastAPI's generated OpenAPI in CI and check every
+implemented route and shared schema against this contract. The generated document becomes
+authoritative only after all frozen routes are represented in the application. Breaking
+changes require a new API version or an explicit coordinated migration.
 
 ## Fixed v0.1 Decisions
 

@@ -17,3 +17,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added application-scoped Redis infrastructure and a minimal ARQ worker entry point.
 - Added backend formatting, linting, type-checking, and base test coverage compatible with
   the repository hooks and CI workflow.
+- Added the frozen v0.1 PostgreSQL/pgvector schema and reversible initial Alembic migration.
+- Added a serialized, rate-limited arXiv Atom client with safe parsing, retry handling,
+  revision-aware metadata persistence, and a standalone ingestion command.
+- Added pre-provisioned demo Bearer authentication, bootstrap and token-digest commands,
+  validated request IDs, and a shared non-sensitive API error envelope.
+- Added authenticated paper list/detail and explicit preference GET/PUT endpoints with
+  keyset pagination and idempotent normalized replacement.
