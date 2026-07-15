@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
+from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import (
@@ -22,6 +23,9 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mneme.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, utc_now
+
+if TYPE_CHECKING:
+    from mneme.models.artifact import PaperChunk, PaperSummary
 
 
 class ProcessingStatus(StrEnum):
@@ -81,6 +85,7 @@ class PaperVersion(UUIDPrimaryKeyMixin, Base):
 
     __tablename__ = "paper_versions"
     __table_args__ = (
+        UniqueConstraint("id", "paper_id", name="uq_paper_versions_id_paper"),
         UniqueConstraint("paper_id", "version_number", name="uq_paper_versions_paper_version"),
         CheckConstraint("version_number > 0", name="ck_paper_versions_version_number_positive"),
     )
@@ -96,6 +101,12 @@ class PaperVersion(UUIDPrimaryKeyMixin, Base):
     )
 
     paper: Mapped[Paper] = relationship(back_populates="versions")
+    chunks: Mapped[list[PaperChunk]] = relationship(
+        back_populates="paper_version", cascade="all, delete-orphan", passive_deletes=True
+    )
+    summaries: Mapped[list[PaperSummary]] = relationship(
+        back_populates="paper_version", cascade="all, delete-orphan", passive_deletes=True
+    )
 
 
 class Author(UUIDPrimaryKeyMixin, Base):
