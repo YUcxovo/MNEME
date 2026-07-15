@@ -7,6 +7,7 @@ import structlog
 from fastapi import FastAPI
 from redis.asyncio import Redis
 
+from mneme.api.errors import register_error_handlers
 from mneme.api.middleware import request_context_middleware
 from mneme.api.router import api_router
 from mneme.core.config import Settings, get_settings
@@ -55,8 +56,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         debug=resolved_settings.debug,
         lifespan=create_lifespan(resolved_settings, database, redis_client),
     )
+    application.state.settings = resolved_settings
     application.state.database = database
     application.state.redis = redis_client
+    register_error_handlers(application)
     application.middleware("http")(request_context_middleware)
     application.include_router(api_router, prefix="/v1")
     return application
