@@ -1,0 +1,50 @@
+{
+  "fixture_version": "qa-seed-v1",
+  "fixtures": [
+    {
+      "fixture_id": "qa-001-transformer-attention",
+      "arxiv_id": "1706.03762",
+      "section_hint": "Model Architecture",
+      "question": "What mechanism does the Transformer use instead of recurrence and convolutions?",
+      "reference_answer": "The Transformer relies entirely on attention mechanisms, specifically multi-head self-attention, to draw global dependencies between input and output, removing recurrence and convolutions.",
+      "expected_keywords": ["attention", "self-attention", "multi-head"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-002-lora-parameters",
+      "arxiv_id": "2106.09685",
+      "section_hint": "Method",
+      "question": "How does LoRA reduce the number of trainable parameters when adapting large language models?",
+      "reference_answer": "LoRA freezes the pretrained weights and injects trainable low-rank decomposition matrices into each layer, so only the small rank-decomposition matrices are updated during fine-tuning.",
+      "expected_keywords": ["low-rank", "frozen", "trainable parameters"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-003-ddpm-objective",
+      "arxiv_id": "2006.11239",
+      "section_hint": "Diffusion models and denoising autoencoders",
+      "question": "What simplified training objective do denoising diffusion probabilistic models optimize?",
+      "reference_answer": "DDPMs are trained with a simplified variational bound that reduces to predicting the noise added at each diffusion step, a mean-squared error between the true and predicted noise.",
+      "expected_keywords": ["noise", "variational", "denoising"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-004-rag-components",
+      "arxiv_id": "2005.11401",
+      "section_hint": "Methods",
+      "question": "What are the two components combined in retrieval-augmented generation and what role does each play?",
+      "reference_answer": "RAG combines a dense retriever that fetches relevant passages from a document index with a sequence-to-sequence generator that conditions on both the query and retrieved passages to produce the answer.",
+      "expected_keywords": ["retriever", "generator", "passages"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-005-dpo-reward-model",
+      "arxiv_id": "2305.18290",
+      "section_hint": "Direct Preference Optimization",
+      "question": "Why does Direct Preference Optimization not require training a separate reward model?",
+      "reference_answer": "DPO derives a closed-form mapping between reward functions and optimal policies, letting it optimize the language model directly on preference pairs with a simple classification loss instead of fitting an explicit reward model and running reinforcement learning.",
+      "expected_keywords": ["reward model", "preference", "closed-form"],
+      "must_cite": true
+    }
+  ]
+}
