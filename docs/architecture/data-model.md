@@ -119,6 +119,8 @@ erDiagram
       string external_target_id
       float algorithm_weight
       jsonb algorithm_metadata
+      timestamptz created_at
+      timestamptz updated_at
     }
     digests {
       uuid id PK
@@ -213,6 +215,8 @@ erDiagram
 - Chunks are tied to an observed paper revision and retain section, page range, content hash,
   token count, and embedding model metadata.
 - A citation may initially reference an external paper ID; ingestion can resolve it later.
+- Citation edges are deduplicated separately for resolved internal targets and unresolved external
+  targets. Self-edges are rejected.
 - Pipeline jobs may have no paper only for collection-level stages such as digest assembly.
 - Deleting a cached PDF does not delete metadata, chunks, or generated artifacts.
 - The opaque demo-token hash and demo-user UUID are environment configuration, not database
