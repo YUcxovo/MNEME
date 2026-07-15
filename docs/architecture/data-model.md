@@ -147,9 +147,19 @@ erDiagram
     qa_messages {
       uuid id PK
       uuid conversation_id FK
+      int sequence_number
       string role
       text content
       jsonb citations
+      string source_match_status
+      string provider
+      string model_snapshot
+      string prompt_version
+      string input_hash
+      numeric estimated_cost
+      int input_tokens
+      int output_tokens
+      int latency_ms
       timestamptz created_at
     }
     pipeline_jobs {
@@ -215,6 +225,8 @@ erDiagram
 - Every event uses a client-generated UUID; duplicate IDs are ignored.
 - Summaries are tied to an observed paper revision and versioned by input hash,
   provider/model snapshot, and prompt version.
+- Assistant Q&A messages retain source-match labels, provider/model/prompt identity, input hash,
+  latency, token counts, and estimated cost. User messages leave generation fields null.
 - Chunks are tied to an observed paper revision and retain section, page range, content hash,
   token count, and embedding model metadata.
 - A citation may initially reference an external paper ID; ingestion can resolve it later.
