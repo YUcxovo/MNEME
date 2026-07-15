@@ -169,6 +169,7 @@ erDiagram
       string stage
       string status
       int attempt_count
+      string error_code
       text last_error
       string pipeline_version
       timestamptz started_at
@@ -233,6 +234,8 @@ erDiagram
 - Citation edges are deduplicated separately for resolved internal targets and unresolved external
   targets. Self-edges are rejected.
 - Pipeline jobs may have no paper only for collection-level stages such as digest assembly.
+- Pipeline jobs expose a stable `error_code`; raw `last_error` is operational data and is never
+  returned directly by the public API.
 - Deleting a cached PDF does not delete metadata, chunks, or generated artifacts.
 - The opaque demo-token hash and demo-user UUID are environment configuration, not database
   credentials or a separate authentication table. An idempotent bootstrap command creates the

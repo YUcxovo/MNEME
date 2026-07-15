@@ -4,6 +4,7 @@ from mneme.models.artifact import PaperChunk, PaperSummary, SourceMatchStatus, S
 from mneme.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 from mneme.models.digest import Digest, DigestEntry, DigestType
 from mneme.models.graph import Citation
+from mneme.models.job import JobStatus, PipelineJob, PipelineStage
 from mneme.models.paper import Author, Paper, PaperAuthor, PaperVersion, ProcessingStatus
 from mneme.models.qa import QaConversation, QaMessage, QaRole, QaSourceMatchStatus
 from mneme.models.user import EMBEDDING_DIMENSIONS, User, UserEvent, UserEventType, UserPreference
@@ -16,11 +17,14 @@ __all__ = [
     "Digest",
     "DigestEntry",
     "DigestType",
+    "JobStatus",
     "Paper",
     "PaperAuthor",
     "PaperChunk",
     "PaperSummary",
     "PaperVersion",
+    "PipelineJob",
+    "PipelineStage",
     "ProcessingStatus",
     "QaConversation",
     "QaMessage",
