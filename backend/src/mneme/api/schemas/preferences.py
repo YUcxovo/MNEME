@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import Annotated, Any
 
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
+from pydantic.json_schema import SkipJsonSchema
 
 Topic = Annotated[str, StringConstraints(min_length=1, max_length=100)]
 FollowedAuthor = Annotated[str, StringConstraints(min_length=1, max_length=200)]
@@ -40,7 +41,7 @@ class Preferences(BaseModel):
         max_length=100, json_schema_extra={"uniqueItems": True}
     )
     model_version: int
-    updated_at: datetime | None = None
+    updated_at: datetime | SkipJsonSchema[None] = None
 
 
 class PreferenceUpdate(BaseModel):

@@ -10,7 +10,7 @@ import pytest
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mneme.api.schemas.preferences import PreferenceUpdate
+from mneme.api.schemas.preferences import Preferences, PreferenceUpdate
 from mneme.models.user import UserPreference
 from mneme.repositories.preferences import PreferenceRepository
 
@@ -49,6 +49,16 @@ def test_preference_update_requires_both_lists_and_rejects_extra_fields() -> Non
 def test_preference_raw_item_limit_is_checked_before_deduplication() -> None:
     with pytest.raises(ValidationError):
         PreferenceUpdate(topics=["duplicate"] * 101, followed_authors=[])
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_optional_updated_at_is_non_nullable_in_public_schema() -> None:
+    property_schema = Preferences.model_json_schema()["properties"]["updated_at"]
+
+    assert property_schema["type"] == "string"
+    assert property_schema["format"] == "date-time"
+    assert "anyOf" not in property_schema
 
 
 def _session_with_transaction() -> Mock:
