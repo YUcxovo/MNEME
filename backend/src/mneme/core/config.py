@@ -1,5 +1,6 @@
 """Environment-backed application settings."""
 
+from decimal import Decimal
 from enum import StrEnum
 from functools import lru_cache
 from uuid import UUID
@@ -49,6 +50,15 @@ class Settings(BaseSettings):
     arxiv_max_results: int = Field(default=100, ge=1, le=2000)
     demo_token_sha256: SecretStr | None = None
     demo_user_id: UUID | None = None
+    anthropic_api_key: SecretStr | None = None
+    openai_api_key: SecretStr | None = None
+    llm_timeout_seconds: float = Field(default=60.0, gt=0)
+    llm_summary_model: str = "claude-opus-4-8"
+    llm_qa_model: str = "claude-opus-4-8"
+    ai_daily_budget_usd: Decimal = Field(default=Decimal("5"), gt=Decimal(0))
+    ai_cache_enabled: bool = True
+    ai_summary_cache_ttl_seconds: int = Field(default=7 * 24 * 3600, ge=1)
+    ai_qa_cache_ttl_seconds: int = Field(default=24 * 3600, ge=1)
 
     @property
     def use_json_logs(self) -> bool:
