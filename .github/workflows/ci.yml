@@ -134,10 +134,10 @@ jobs:
                   if echo "$FILES" | grep -qE 'src/mneme/services/rag/|prompts/'; then
                     CATS="$CATS or rag"
                   fi
-                  if echo "$FILES" | grep -qE 'src/mneme/tasks/|src/mneme/services/pdf/'; then
+                  if echo "$FILES" | grep -qE 'src/mneme/tasks/|src/mneme/services/(arxiv|pdf)/|src/mneme/repositories/arxiv_ingestion.py|src/mneme/cli/fetch_arxiv.py|tests/test_arxiv'; then
                     CATS="$CATS or pipeline"
                   fi
-                  if echo "$FILES" | grep -qE 'src/mneme/models/|alembic/'; then
+                  if echo "$FILES" | grep -qE 'src/mneme/models/|src/mneme/repositories/|alembic/|tests/test_(.*models|migrations|repositories)'; then
                     CATS="$CATS or db"
                   fi
                   if echo "$MSG" | grep -q '\[full\]'; then
