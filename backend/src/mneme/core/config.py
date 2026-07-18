@@ -59,6 +59,18 @@ class Settings(BaseSettings):
     ai_cache_enabled: bool = True
     ai_summary_cache_ttl_seconds: int = Field(default=7 * 24 * 3600, ge=1)
     ai_qa_cache_ttl_seconds: int = Field(default=24 * 3600, ge=1)
+    ai_summary_max_input_chars: int = Field(default=60_000, ge=1000)
+    ai_summary_max_output_tokens: int = Field(default=1024, ge=64)
+    ai_embedding_model: str = "text-embedding-3-small"
+    ai_embedding_batch_size: int = Field(default=64, ge=1, le=2048)
+    ai_chunk_max_tokens: int = Field(default=450, ge=50)
+    ai_chunk_overlap_tokens: int = Field(default=60, ge=0)
+    ai_retrieval_top_k: int = Field(default=8, ge=1, le=50)
+    ai_qa_rerank_top_n: int = Field(default=4, ge=1, le=20)
+    ai_qa_min_evidence_score: float = Field(default=0.25, ge=0, le=1)
+    ai_qa_max_output_tokens: int = Field(default=512, ge=64)
+    ai_recommendation_candidate_days: int = Field(default=14, ge=1)
+    ai_recommendation_max_entries: int = Field(default=10, ge=1, le=50)
 
     @property
     def use_json_logs(self) -> bool:

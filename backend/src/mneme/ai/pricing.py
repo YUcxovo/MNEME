@@ -47,6 +47,12 @@ MODEL_PRICING: dict[str, ModelPricing] = {
     "gpt-4.1-mini": ModelPricing(
         input_usd_per_mtok=Decimal("0.40"), output_usd_per_mtok=Decimal("1.60")
     ),
+    "text-embedding-3-small": ModelPricing(
+        input_usd_per_mtok=Decimal("0.02"), output_usd_per_mtok=Decimal("0")
+    ),
+    "text-embedding-3-large": ModelPricing(
+        input_usd_per_mtok=Decimal("0.13"), output_usd_per_mtok=Decimal("0")
+    ),
 }
 
 # Budget accounting must never undercount an unknown model, so the fallback is
