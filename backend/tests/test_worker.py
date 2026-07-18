@@ -32,8 +32,10 @@ def test_arq_settings_reuse_application_redis_config() -> None:
 
 @pytest.mark.base
 @pytest.mark.pipeline
-def test_worker_registers_only_scaffold_probe() -> None:
-    assert WorkerSettings.functions == [worker_probe]
+def test_worker_registers_probe_and_ai_stages() -> None:
+    from mneme.tasks.ai_jobs import chunk_paper, embed_chunks, summarize_paper
+
+    assert WorkerSettings.functions == [worker_probe, summarize_paper, chunk_paper, embed_chunks]
     assert WorkerSettings.queue_name == "mneme:jobs"
     assert WorkerSettings.health_check_key == "mneme:worker:health"
     assert asyncio.run(worker_probe({})) == "ok"
