@@ -31,9 +31,7 @@ def test_seed_abstracts_contain_their_expected_keywords() -> None:
     for fixture in fixture_file.fixtures:
         haystack = f"{fixture.title} {fixture.abstract}".casefold()
         missing = [
-            keyword
-            for keyword in fixture.expected_keywords
-            if keyword.casefold() not in haystack
+            keyword for keyword in fixture.expected_keywords if keyword.casefold() not in haystack
         ]
         assert not missing, f"{fixture.fixture_id} missing {missing}"
 
@@ -73,4 +71,3 @@ def test_duplicate_fixture_ids_are_rejected(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="Duplicate fixture_id"):
         load_summary_fixtures(path)
-
