@@ -1,5 +1,7 @@
 """Section-aware chunking behavior."""
 
+from itertools import pairwise
+
 import pytest
 
 from mneme.ai.chunking import ChunkDraft, ParsedSection, chunk_sections, estimate_tokens
@@ -37,7 +39,7 @@ def test_oversized_section_splits_with_overlap() -> None:
     assert len(drafts) > 1
     assert [draft.chunk_index for draft in drafts] == list(range(len(drafts)))
     assert all(draft.section_title == "Introduction" for draft in drafts)
-    for previous, current in zip(drafts, drafts[1:], strict=False):
+    for previous, current in pairwise(drafts):
         overlap_head = current.content[:30]
         assert overlap_head in previous.content, "consecutive chunks should overlap"
 
