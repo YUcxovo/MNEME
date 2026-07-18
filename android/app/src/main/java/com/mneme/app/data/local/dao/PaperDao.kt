@@ -17,6 +17,22 @@ interface PaperDao {
     @Upsert
     suspend fun upsertAll(papers: List<PaperEntity>)
 
+    @Query("UPDATE papers SET last_opened_at = :openedAtEpochMillis WHERE id = :id")
+    suspend fun markOpened(
+        id: String,
+        openedAtEpochMillis: Long,
+    )
+
+    @Query(
+        "DELETE FROM papers " +
+            "WHERE updated_at < :recentPaperCutoffEpochMillis " +
+            "AND (last_opened_at = 0 OR last_opened_at < :openedPaperCutoffEpochMillis)",
+    )
+    suspend fun deleteExpired(
+        recentPaperCutoffEpochMillis: Long,
+        openedPaperCutoffEpochMillis: Long,
+    ): Int
+
     @Query("DELETE FROM papers")
     suspend fun clear()
 }

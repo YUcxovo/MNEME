@@ -17,6 +17,9 @@ interface DigestDao {
     @Upsert
     suspend fun upsertAll(digests: List<DigestEntity>)
 
+    @Query("DELETE FROM digests WHERE generated_at < :cutoffEpochMillis")
+    suspend fun deleteOlderThan(cutoffEpochMillis: Long): Int
+
     @Query("DELETE FROM digests")
     suspend fun clear()
 }

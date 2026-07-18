@@ -20,4 +20,5 @@ data class PaperEntity(
     @ColumnInfo(name = "processing_status") val processingStatus: String,
     @ColumnInfo(name = "updated_at") val updatedAtEpochMillis: Long,
     @ColumnInfo(name = "last_synced_at") val lastSyncedAtEpochMillis: Long = 0,
+    @ColumnInfo(name = "last_opened_at") val lastOpenedAtEpochMillis: Long = 0,
 )
