@@ -6,9 +6,9 @@ from decimal import Decimal
 from typing import cast
 
 import pytest
+from conftest import FakeRedis
 from redis.asyncio import Redis
 
-from conftest import FakeRedis
 from mneme.ai.budget import BudgetGuard
 from mneme.ai.cache import LLMCache
 from mneme.ai.prompts import SUMMARY_PROMPT_VERSION, build_summary_request
@@ -36,9 +36,7 @@ VALID_PAYLOAD = {
 def _service(provider: FakeLLMProvider) -> SummarizationService:
     redis = cast(Redis, FakeRedis())
     llm = LLMService(
-        router=ModelRouter(
-            {AITask.SUMMARIZE: "claude-haiku-4-5", AITask.QA: "claude-haiku-4-5"}
-        ),
+        router=ModelRouter({AITask.SUMMARIZE: "claude-haiku-4-5", AITask.QA: "claude-haiku-4-5"}),
         providers={ProviderName.ANTHROPIC: cast(LLMProvider, provider)},
         cache=LLMCache(
             redis, enabled=True, ttl_seconds={AITask.SUMMARIZE: 604800, AITask.QA: 86400}
