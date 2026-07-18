@@ -6,14 +6,17 @@ from arq import create_pool
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mneme.ai.budget import BudgetGuard
+from mneme.ai.budget import BudgetExceededError, BudgetGuard
 from mneme.ai.embeddings import EmbeddingService, OpenAIEmbeddingProvider
 from mneme.ai.service import LLMService, build_llm_service
+from mneme.ai.types import AIError, LLMProviderError, ProviderNotConfiguredError
 from mneme.api.errors import ApiError
 from mneme.core.config import Settings
 from mneme.db.dependencies import get_session
 from mneme.repositories.artifacts import ArtifactRepository
+from mneme.repositories.digests import DigestRepository
 from mneme.repositories.jobs import PipelineJobRepository
+from mneme.repositories.qa import QaConversationRepository
 from mneme.tasks.worker import create_arq_redis_settings
 
 
@@ -50,9 +53,7 @@ def get_embedding_service(request: Request) -> EmbeddingService:
                 api_key=settings.openai_api_key.get_secret_value(),
                 timeout_seconds=settings.llm_timeout_seconds,
             ),
-            budget=BudgetGuard(
-                request.app.state.redis, daily_cap_usd=settings.ai_daily_budget_usd
-            ),
+            budget=BudgetGuard(request.app.state.redis, daily_cap_usd=settings.ai_daily_budget_usd),
             model=settings.ai_embedding_model,
             batch_size=settings.ai_embedding_batch_size,
         )
@@ -85,3 +86,40 @@ async def get_pipeline_job_repository(
 ) -> PipelineJobRepository:
     """Bind a pipeline job repository to the request session."""
     return PipelineJobRepository(session)
+
+
+async def get_qa_repository(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> QaConversationRepository:
+    """Bind a Q&A conversation repository to the request session."""
+    return QaConversationRepository(session)
+
+
+async def get_digest_repository(
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> DigestRepository:
+    """Bind a digest repository to the request session."""
+    return DigestRepository(session)
+
+
+def map_ai_error(error: AIError) -> ApiError:
+    """Translate an expected AI-layer failure into the stable error envelope."""
+    if isinstance(error, BudgetExceededError):
+        return ApiError(
+            429,
+            "ai_budget_exhausted",
+            "The daily AI budget is exhausted; try again tomorrow.",
+        )
+    if isinstance(error, ProviderNotConfiguredError):
+        return ApiError(
+            503,
+            "ai_provider_unconfigured",
+            "No AI provider is configured for this deployment.",
+        )
+    if isinstance(error, LLMProviderError):
+        return ApiError(
+            503,
+            "ai_provider_error",
+            "The AI provider is temporarily unavailable.",
+        )
+    return ApiError(503, "ai_unavailable", "The AI service is temporarily unavailable.")
