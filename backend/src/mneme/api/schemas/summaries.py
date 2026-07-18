@@ -7,7 +7,8 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from mneme.ai.summaries import mock_tldr
-from mneme.models.artifact import SourceMatchStatus, SummaryStatus
+from mneme.ai.summarization import StructuredSummary
+from mneme.models.artifact import PaperSummary, SourceMatchStatus, SummaryStatus
 from mneme.models.paper import Paper as PaperModel
 
 
@@ -31,4 +32,18 @@ class Summary(BaseModel):
             tldr=mock_tldr(paper.abstract),
             key_claims=[],
             source_match_status=SourceMatchStatus.NOT_CHECKED,
+        )
+
+    @classmethod
+    def from_stored(cls, stored: PaperSummary) -> Summary:
+        """Map a persisted generated summary to the public contract."""
+        content = StructuredSummary.model_validate(stored.content)
+        return cls(
+            paper_id=stored.paper_id,
+            status=stored.status,
+            tldr=content.tldr,
+            key_claims=list(content.key_claims),
+            methodology=content.methodology,
+            limitations=content.limitations,
+            source_match_status=stored.source_match_status,
         )
