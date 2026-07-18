@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from mneme.models.base import Base, UUIDPrimaryKeyMixin, utc_now
+from mneme.models.paper import Paper
 
 
 class DigestType(StrEnum):
@@ -93,3 +94,4 @@ class DigestEntry(Base):
     recommendation_reason: Mapped[str] = mapped_column(Text, nullable=False)
 
     digest: Mapped[Digest] = relationship(back_populates="entries")
+    paper: Mapped[Paper] = relationship()
