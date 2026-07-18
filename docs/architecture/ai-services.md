@@ -1,8 +1,10 @@
-# AI Service Foundation (Milestone 1)
+# AI Services (Milestones 1-3)
 
 Owner: Yifan Zhang. This document describes the `mneme.ai` package: the LLM
 provider abstraction, model routing, the budget guard, the completion cache
-policy, and the evaluation harness skeleton. Endpoint contracts stay frozen in
+policy, the evaluation harness, and the Milestone 2/3 pipelines built on top
+(summarization, chunking, embeddings, retrieval, grounded Q&A,
+recommendations, and graph algorithms). Endpoint contracts stay frozen in
 `docs/api/openapi-v0.1.yaml`; this file covers implementation policy only.
 
 ## Provider abstraction
@@ -84,10 +86,99 @@ pool.
 - `FakeLLMProvider` supplies deterministic, network-free responses so the
   harness and its tests run in CI.
 
-## AI endpoints (Milestone 1 state)
+## Summarization (Milestone 2)
 
-`GET /v1/papers/{paper_id}/summary` is implemented against the frozen
-contract with a deterministic placeholder (first two abstract sentences,
-`status=partial`, `source_match_status=not_checked`). Milestone 2 replaces
-the internals with cached/async LLM generation (202 + Job) behind the same
-schema. Shared AI dependencies live in `mneme.api.dependencies.ai`.
+- `mneme.ai.prompts` holds versioned templates. Bumping a prompt version
+  invalidates cached generations implicitly and changes the stored
+  `prompt_version` on new summaries.
+- `SummarizationService` requests strict JSON (`tldr`, `key_claims`,
+  `methodology`, `limitations`), parses it tolerantly (markdown fences are
+  stripped), and degrades to a `status=partial` summary derived from the raw
+  completion when parsing fails -- the pipeline never crashes on a
+  malformed generation, and cost telemetry is still recorded.
+- Summaries generated from parsed full text are `ready`; abstract-only
+  fallbacks are `partial`. Idempotency key: SHA-256 of (title, truncated
+  input, prompt version), enforced against `paper_summaries` before any
+  provider call.
+- The manually checked summarization seed lives at
+  `backend/tests/fixtures/eval/summary_seed_v1.json` next to the M1 QA seed.
+
+## Chunking and embeddings (Milestone 2)
+
+- `mneme.ai.chunking` consumes the parse stage's section list and produces
+  deterministic drafts: section titles and page ranges preserved, oversized
+  sections split at sentence boundaries with token overlap, content hashed
+  for idempotent embedding.
+- `mneme.ai.embeddings` wraps the OpenAI Embeddings API behind an
+  `EmbeddingProvider` protocol (deterministic fake included). Batches are
+  bounded (`MNEME_AI_EMBEDDING_BATCH_SIZE`) and every batch passes through
+  the shared BudgetGuard, so embedding spend counts against the same daily
+  cap as completions. Default model `text-embedding-3-small` (1536 dims,
+  matching the pgvector schema).
+- Pipeline stages (`mneme.ai.pipeline`) are consumed as ARQ jobs
+  (`mneme.tasks.ai_jobs`): `summarize_paper`, `chunk_paper` (which enqueues
+  `embed_chunks`), and `embed_chunks`. Stages are idempotent and resumable;
+  retryable provider errors propagate to ARQ's retry policy, terminal
+  failures are recorded on the durable `pipeline_jobs` row with a stable
+  error code.
+
+## Summary endpoint (Milestone 2)
+
+`GET /v1/papers/{paper_id}/summary` serves the stored structured summary
+(200) or creates one durable job per paper, enqueues the summarize stage,
+and returns 202 + Job. Repeated requests reuse the pending job; failed jobs
+are requeued on the next client retry. AI failures map to stable codes:
+`ai_budget_exhausted` (429), `ai_provider_unconfigured` / `ai_provider_error`
+(503).
+
+## Retrieval and grounded Q&A (Milestone 3)
+
+- `RetrievalService`: embed the question, pgvector cosine ANN search scoped
+  to one paper, top-k (`MNEME_AI_RETRIEVAL_TOP_K`) chunks with section and
+  page metadata.
+- `mneme.ai.qa.rerank` blends vector similarity (0.7) with question/chunk
+  content-word overlap (0.3). This is an honest lexical rerank, not a
+  cross-encoder; the seam allows swapping one in later.
+- `GroundedAnswerService` refuses without an LLM call when there is no
+  evidence or the best reranked score is below
+  `MNEME_AI_QA_MIN_EVIDENCE_SCORE`, prompts with numbered excerpts, and
+  requires bracketed citation markers. `verify_citations` drops markers that
+  point outside the evidence and checks answer/chunk content-word overlap:
+  all citations matched -> `matched`, some -> `partial`, none ->
+  `insufficient_evidence`. A model-declared `INSUFFICIENT_EVIDENCE` becomes
+  a stable refusal answer.
+- `POST /v1/qa/ask` persists both turns of the exchange (with citations and
+  generation telemetry) in `qa_conversations` / `qa_messages` and returns
+  the frozen `Answer` schema. Papers without embedded chunks get the stable
+  refusal with `insufficient_evidence`, not an error.
+
+## Recommendations (Milestone 3)
+
+- `mneme.ai.recommendation` scores candidates against the frozen
+  `user_preferences` interface: explicit topic match (0.45), cosine between
+  Ruiyu's behavior embedding and the paper's mean chunk embedding (0.35),
+  and recency with a one-week half-life (0.2). Missing signals redistribute
+  their weight, so cold-start users still get ranked results. Reasons are
+  derived from the dominant components and persisted per entry.
+- `POST /v1/digests/recommended` reuses a digest generated in the last 24
+  hours or scores synchronously (no LLM call) and stores an immutable
+  `manual` digest snapshot. The contract's 202 branch stays reserved for a
+  future slow path.
+
+## Knowledge-graph algorithms (Milestone 3)
+
+`mneme.graph.algorithms` is pure and database-free, called by Ruiyu's graph
+framework: citation-edge weighting damped by target in-degree, keyword
+co-occurrence edges by Jaccard over title/category keywords, deterministic
+weighted label propagation for clusters, weighted-degree rank scores
+normalized to [0, 1], and bounded best-first subgraph selection (one seed
+for paper-centered graphs, the user's engaged papers as seeds for user
+subgraphs). `build_graph_view` composes these into the frozen `Graph`
+response shape.
+
+## Shared AI endpoint plumbing
+
+Shared dependencies live in `mneme.api.dependencies.ai`: the app-scoped
+LLM service, embedding service, ARQ enqueue pool, per-request repositories,
+and `map_ai_error`, which translates AI-layer failures into the stable
+error envelope.
