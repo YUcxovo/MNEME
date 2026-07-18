@@ -1,0 +1,40 @@
+{
+  "fixture_version": "summary-seed-v1",
+  "fixtures": [
+    {
+      "fixture_id": "sum-001-transformer",
+      "arxiv_id": "1706.03762",
+      "title": "Attention Is All You Need",
+      "abstract": "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks that include an encoder and a decoder. The best performing models also connect the encoder and decoder through an attention mechanism. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. Experiments on two machine translation tasks show these models to be superior in quality while being more parallelizable and requiring significantly less time to train. Our model achieves 28.4 BLEU on the WMT 2014 English-to-German translation task, improving over the existing best results, including ensembles, by over 2 BLEU.",
+      "expected_keywords": ["attention", "transformer", "recurrence"]
+    },
+    {
+      "fixture_id": "sum-002-lora",
+      "arxiv_id": "2106.09685",
+      "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+      "abstract": "An important paradigm of natural language processing consists of large-scale pre-training on general domain data and adaptation to particular tasks or domains. As we pre-train larger models, full fine-tuning, which retrains all model parameters, becomes less feasible. We propose Low-Rank Adaptation, or LoRA, which freezes the pre-trained model weights and injects trainable rank decomposition matrices into each layer of the Transformer architecture, greatly reducing the number of trainable parameters for downstream tasks. Compared to GPT-3 175B fine-tuned with Adam, LoRA can reduce the number of trainable parameters by 10,000 times and the GPU memory requirement by 3 times.",
+      "expected_keywords": ["low-rank", "trainable parameters", "fine-tuning"]
+    },
+    {
+      "fixture_id": "sum-003-ddpm",
+      "arxiv_id": "2006.11239",
+      "title": "Denoising Diffusion Probabilistic Models",
+      "abstract": "We present high quality image synthesis results using diffusion probabilistic models, a class of latent variable models inspired by considerations from nonequilibrium thermodynamics. Our best results are obtained by training on a weighted variational bound designed according to a novel connection between diffusion probabilistic models and denoising score matching with Langevin dynamics, and our models naturally admit a progressive lossy decompression scheme that can be interpreted as a generalization of autoregressive decoding. On the unconditional CIFAR10 dataset, we obtain an Inception score of 9.46 and a state-of-the-art FID score of 3.17.",
+      "expected_keywords": ["diffusion", "denoising", "variational"]
+    },
+    {
+      "fixture_id": "sum-004-rag",
+      "arxiv_id": "2005.11401",
+      "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+      "abstract": "Large pre-trained language models have been shown to store factual knowledge in their parameters, and achieve state-of-the-art results when fine-tuned on downstream NLP tasks. However, their ability to access and precisely manipulate knowledge is still limited, and hence on knowledge-intensive tasks, their performance lags behind task-specific architectures. We explore a general-purpose fine-tuning recipe for retrieval-augmented generation (RAG) -- models which combine pre-trained parametric and non-parametric memory for language generation. We introduce RAG models where the parametric memory is a pre-trained seq2seq model and the non-parametric memory is a dense vector index of Wikipedia, accessed with a pre-trained neural retriever.",
+      "expected_keywords": ["retrieval", "generation", "parametric"]
+    },
+    {
+      "fixture_id": "sum-005-dpo",
+      "arxiv_id": "2305.18290",
+      "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+      "abstract": "While large-scale unsupervised language models learn broad world knowledge and some reasoning skills, achieving precise control of their behavior is difficult due to the completely unsupervised nature of their training. Existing methods for gaining such steerability collect human labels of the relative quality of model generations and fine-tune the unsupervised LM to align with these preferences, often with reinforcement learning from human feedback. In this paper we introduce a new parameterization of the reward model in RLHF that enables extraction of the corresponding optimal policy in closed form, allowing us to solve the standard RLHF problem with only a simple classification loss. The resulting algorithm, which we call Direct Preference Optimization (DPO), is stable, performant, and computationally lightweight.",
+      "expected_keywords": ["preference", "reward model", "classification loss"]
+    }
+  ]
+}
