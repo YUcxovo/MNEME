@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.mneme.app.data.local.entity.BehavioralEventEntity
+import com.mneme.app.data.local.entity.BehavioralEventSyncState
 import com.mneme.app.data.local.entity.CacheMetadataEntity
 import com.mneme.app.data.local.entity.DigestEntity
 import com.mneme.app.data.local.entity.PaperEntity
@@ -152,6 +154,43 @@ class MnemeDatabaseTest {
             assertEquals(listOf("retrieval", "mobile systems"), cached.interests)
             assertEquals(500L, cached.refreshedAtEpochMillis)
             assertEquals(listOf("A. Researcher"), cached.papers.first().authors)
+        }
+
+    @Test
+    fun behavioralEventDao_queuesOldestPendingEventsAndTracksRetryState() =
+        runBlocking {
+            database.behavioralEventDao().insert(
+                BehavioralEventEntity(
+                    id = "later",
+                    eventType = "save",
+                    paperId = "paper-2",
+                    occurredAtEpochMillis = 20,
+                ),
+            )
+            database.behavioralEventDao().insert(
+                BehavioralEventEntity(
+                    id = "first",
+                    eventType = "open",
+                    paperId = "paper-1",
+                    occurredAtEpochMillis = 10,
+                ),
+            )
+
+            val batch = database.behavioralEventDao().pendingBatch(limit = 1)
+            assertEquals(listOf("first"), batch.map(BehavioralEventEntity::id))
+
+            database.behavioralEventDao().markInFlight(batch.map(BehavioralEventEntity::id), 30)
+            database.behavioralEventDao().markPending(batch.map(BehavioralEventEntity::id), "network")
+
+            val first =
+                database
+                    .behavioralEventDao()
+                    .observeAll()
+                    .first()
+                    .first()
+            assertEquals(BehavioralEventSyncState.PENDING.value, first.syncState)
+            assertEquals(1, first.syncAttemptCount)
+            assertEquals("network", first.lastSyncError)
         }
 
     private fun paper(
