@@ -1,3 +1,34 @@
 <resources>
     <string name="app_name">Mneme</string>
+    <string name="action_ask_seeded_question">Ask the seeded question</string>
+    <string name="action_back">Back</string>
+    <string name="action_open_source">Open source paper</string>
+    <string name="briefing_recommended_paper">Recommended paper</string>
+    <string name="briefing_seeded_interests">Seeded interests</string>
+    <string name="controlled_demo_title">Controlled skeletal demo</string>
+    <string name="home_empty_body">Choose topics in Interests to personalize future briefings.</string>
+    <string name="home_empty_title">Your research feed is ready for its first paper.</string>
+    <string name="interests_description">These are the fixed interests used by this controlled demo.</string>
+    <string name="nav_briefing">Briefing</string>
+    <string name="nav_interests">Interests</string>
+    <string name="nav_saved">Saved</string>
+    <string name="paper_abstract">Paper overview</string>
+    <string name="paper_basic_summary">Basic summary</string>
+    <string name="paper_key_claims">Key claims</string>
+    <string name="paper_limitation">Current limitation</string>
+    <string name="paper_methodology">Methodology</string>
+    <string name="paper_not_found">The selected paper is not available in the controlled demo data.</string>
+    <string name="paper_source">Inspectable source</string>
+    <string name="qa_answer">Answer</string>
+    <string name="qa_question">Paper-specific question</string>
+    <string name="qa_not_found">The selected question is not available in the controlled demo data.</string>
+    <string name="qa_source">Source used for this answer</string>
+    <string name="saved_empty_body">This controlled demo does not include saved papers.</string>
+    <string name="saved_empty_title">No saved papers yet</string>
+    <string name="screen_title_briefing">Research briefing</string>
+    <string name="screen_title_interests">Research interests</string>
+    <string name="screen_title_paper">Paper detail</string>
+    <string name="screen_title_qa">Paper Q&amp;A</string>
+    <string name="screen_title_saved">Saved papers</string>
+    <string name="source_location_format">Source location: %1$s</string>
 </resources>
