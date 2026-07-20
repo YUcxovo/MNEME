@@ -102,7 +102,7 @@ class MnemeDatabaseTest {
                     .map(DigestEntity::id),
             )
             assertEquals(
-                100,
+                100L,
                 database
                     .cacheMetadataDao()
                     .observe()
