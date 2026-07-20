@@ -26,3 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   validated request IDs, and a shared non-sensitive API error envelope.
 - Added authenticated paper list/detail and explicit preference GET/PUT endpoints with
   keyset pagination and idempotent normalized replacement.
+
+### Changed
+
+- Aligned the Android skeletal-demo screens with the team UI/UX prototype's navy and gold
+  visual system while retaining controlled repository fixtures and inspectable sources.

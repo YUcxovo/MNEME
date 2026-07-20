@@ -2,17 +2,25 @@
 
 package com.mneme.app.ui.paper
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -25,6 +33,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
+import com.mneme.app.ui.component.ControlledDemoNotice
+import com.mneme.app.ui.component.MnemeSectionLabel
 import com.mneme.app.ui.model.PaperDetailUiModel
 import com.mneme.app.ui.theme.MnemeTheme
 
@@ -37,75 +47,54 @@ fun PaperDetailScreen(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().testTag("paper-detail-screen"),
-        contentPadding = PaddingValues(20.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        paperDetailItems(
-            paper = paper,
-            onAskQuestion = onAskQuestion,
-            onOpenSource = onOpenSource,
-        )
-    }
-}
-
-private fun LazyListScope.paperDetailItems(
-    paper: PaperDetailUiModel,
-    onAskQuestion: () -> Unit,
-    onOpenSource: (String) -> Unit,
-) {
-    item {
-        ControlledContentLabel(disclosure = paper.disclosure)
-    }
-    item {
-        PaperHeader(paper = paper)
-    }
-    item {
-        PaperSection(
-            title = stringResource(R.string.paper_abstract),
-            body = paper.abstractText,
-        )
-    }
-    item {
-        PaperSection(
-            title = stringResource(R.string.paper_basic_summary),
-            body = paper.paper.summary,
-            testTag = "basic-summary",
-        )
-    }
-    item {
-        Text(
-            text = stringResource(R.string.paper_key_claims),
-            style = MaterialTheme.typography.titleMedium,
-        )
-    }
-    items(paper.keyClaims, key = { it }) { claim ->
-        Text(text = "- $claim", style = MaterialTheme.typography.bodyMedium)
-    }
-    item {
-        PaperSection(
-            title = stringResource(R.string.paper_methodology),
-            body = paper.methodology,
-        )
-    }
-    item {
-        PaperSection(
-            title = stringResource(R.string.paper_limitation),
-            body = paper.limitation,
-        )
-    }
-    item {
-        SourceCard(
-            label = paper.source.label,
-            location = paper.source.location,
-            onOpenSource = { onOpenSource(paper.source.url) },
-        )
-    }
-    item {
-        Button(
-            onClick = onAskQuestion,
-            modifier = Modifier.fillMaxWidth().testTag("ask-question-action"),
-        ) {
-            Text(text = stringResource(R.string.action_ask_seeded_question))
+        item {
+            PaperHeader(paper = paper)
+        }
+        item {
+            ControlledDemoNotice(disclosure = paper.disclosure)
+        }
+        item {
+            PaperSummaryCard(paper = paper)
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                MnemeSectionLabel(text = stringResource(R.string.paper_source_trace))
+                VerifiedPill()
+            }
+        }
+        item {
+            SourceCard(
+                label = paper.source.label,
+                location = paper.source.location,
+                onOpenSource = { onOpenSource(paper.source.url) },
+            )
+        }
+        item {
+            Button(
+                onClick = onAskQuestion,
+                modifier = Modifier.fillMaxWidth().testTag("ask-question-action"),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                    contentDescription = null,
+                )
+                Text(
+                    text = stringResource(R.string.action_ask_seeded_question),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
         }
     }
 }
@@ -113,42 +102,87 @@ private fun LazyListScope.paperDetailItems(
 @Composable
 private fun PaperHeader(paper: PaperDetailUiModel) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(text = paper.paper.title, style = MaterialTheme.typography.headlineSmall)
+        Text(text = paper.paper.title, style = MaterialTheme.typography.headlineMedium)
         Text(
             text = paper.paper.authors,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Text(
-            text = paper.paper.category,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.secondary,
+            shape = MaterialTheme.shapes.extraLarge,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        ) {
+            Text(
+                text = paper.paper.category,
+                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
     }
 }
 
 @Composable
-private fun ControlledContentLabel(
-    disclosure: String,
+private fun PaperSummaryCard(
+    paper: PaperDetailUiModel,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
+    Card(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.tertiaryContainer,
-        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-        shape = MaterialTheme.shapes.medium,
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = stringResource(R.string.controlled_demo_title),
-                style = MaterialTheme.typography.titleSmall,
+            PaperSection(
+                title = stringResource(R.string.paper_abstract),
+                body = paper.abstractText,
             )
-            Text(text = disclosure, style = MaterialTheme.typography.bodySmall)
+            SummaryDivider()
+            PaperSection(
+                title = stringResource(R.string.paper_basic_summary),
+                body = paper.paper.summary,
+                testTag = "basic-summary",
+            )
+            SummaryDivider()
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(R.string.paper_key_claims),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                paper.keyClaims.forEach { claim ->
+                    Text(
+                        text = "\u2022  $claim",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+            SummaryDivider()
+            PaperSection(
+                title = stringResource(R.string.paper_methodology),
+                body = paper.methodology,
+            )
+            SummaryDivider()
+            PaperSection(
+                title = stringResource(R.string.paper_limitation),
+                body = paper.limitation,
+                muted = true,
+            )
         }
     }
+}
+
+@Composable
+private fun SummaryDivider() {
+    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f))
 }
 
 @Composable
@@ -157,14 +191,53 @@ private fun PaperSection(
     body: String,
     modifier: Modifier = Modifier,
     testTag: String? = null,
+    muted: Boolean = false,
 ) {
     val sectionModifier = if (testTag == null) modifier else modifier.testTag(testTag)
     Column(
         modifier = sectionModifier,
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Text(text = title, style = MaterialTheme.typography.titleMedium)
-        Text(text = body, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodyMedium,
+            color =
+                if (muted) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onSurface
+                },
+        )
+    }
+}
+
+@Composable
+private fun VerifiedPill(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.tertiary,
+        contentColor = MaterialTheme.colorScheme.onTertiary,
+        shape = MaterialTheme.shapes.extraLarge,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(5.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Default.Check,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = stringResource(R.string.paper_source_verified),
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
     }
 }
 
@@ -175,23 +248,35 @@ private fun SourceCard(
     onOpenSource: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(modifier = modifier.fillMaxWidth().testTag("paper-source-card")) {
+    Card(
+        modifier = modifier.fillMaxWidth().testTag("paper-source-card"),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.42f)),
+    ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = stringResource(R.string.paper_source),
-                style = MaterialTheme.typography.titleMedium,
-            )
-            Text(text = label, style = MaterialTheme.typography.bodyMedium)
-            Text(
                 text = stringResource(R.string.source_location_format, location),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(text = label, style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = stringResource(R.string.paper_source_inspectable),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-            OutlinedButton(onClick = onOpenSource) {
-                Text(text = stringResource(R.string.action_open_source))
+            OutlinedButton(
+                onClick = onOpenSource,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Text(
+                    text = stringResource(R.string.action_open_source),
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
         }
     }
