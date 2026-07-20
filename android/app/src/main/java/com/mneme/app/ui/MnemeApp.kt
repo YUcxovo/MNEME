@@ -5,18 +5,16 @@ package com.mneme.app.ui
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Interests
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -25,6 +23,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -69,7 +68,6 @@ private enum class TopLevelDestination(
         }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MnemeApp(
     modifier: Modifier = Modifier,
@@ -85,9 +83,13 @@ fun MnemeApp(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
         topBar = {
             MnemeTopAppBar(
-                titleRes = currentDestination.titleRes(),
+                titleRes = currentDestination.appBarTitleRes(topLevelDestination),
+                kickerRes = topLevelDestination.kickerRes(),
+                showBrandMark = topLevelDestination != null,
                 canNavigateBack = currentDestination != null && topLevelDestination == null,
                 onNavigateBack = navController::popBackStack,
             )
@@ -110,37 +112,16 @@ fun MnemeApp(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun MnemeTopAppBar(
-    @StringRes titleRes: Int,
-    canNavigateBack: Boolean,
-    onNavigateBack: () -> Unit,
-) {
-    TopAppBar(
-        title = { Text(text = stringResource(titleRes)) },
-        navigationIcon = {
-            if (canNavigateBack) {
-                IconButton(
-                    onClick = onNavigateBack,
-                    modifier = Modifier.testTag("navigate-back"),
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.action_back),
-                    )
-                }
-            }
-        },
-    )
-}
-
 @Composable
 private fun MnemeNavigationBar(
     selectedDestination: TopLevelDestination,
     onDestinationSelected: (TopLevelDestination) -> Unit,
 ) {
-    NavigationBar {
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
+        tonalElevation = 0.dp,
+    ) {
         TopLevelDestination.entries.forEach { destination ->
             val label = stringResource(destination.labelRes)
             NavigationBarItem(
@@ -152,8 +133,16 @@ private fun MnemeNavigationBar(
                         contentDescription = label,
                     )
                 },
-                label = { Text(text = label) },
+                label = { Text(text = label, style = MaterialTheme.typography.labelMedium) },
                 modifier = Modifier.testTag("nav-${destination.name.lowercase()}"),
+                colors =
+                    NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        indicatorColor = MaterialTheme.colorScheme.surface,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    ),
             )
         }
     }
@@ -239,6 +228,22 @@ private fun NavDestination?.topLevelDestination(): TopLevelDestination? =
             TopLevelDestination.INTERESTS
         }
         else -> null
+    }
+
+@StringRes
+private fun NavDestination?.appBarTitleRes(topLevelDestination: TopLevelDestination?): Int =
+    when (topLevelDestination) {
+        TopLevelDestination.BRIEFING -> R.string.app_name
+        TopLevelDestination.INTERESTS -> R.string.nav_interests
+        else -> titleRes()
+    }
+
+@StringRes
+private fun TopLevelDestination?.kickerRes(): Int? =
+    when (this) {
+        TopLevelDestination.BRIEFING -> R.string.kicker_research_briefing
+        TopLevelDestination.SAVED, TopLevelDestination.INTERESTS -> R.string.kicker_research_memory
+        null -> null
     }
 
 @StringRes
