@@ -21,14 +21,17 @@ import com.mneme.app.ui.theme.MnemeTheme
 @Composable
 fun DigestCard(
     digest: DigestUiModel,
-    onClick: () -> Unit,
+    onClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
+    val cardModifier =
+        if (onClick == null) {
+            modifier.fillMaxWidth()
+        } else {
+            modifier.fillMaxWidth().clickable(onClick = onClick)
+        }
     Card(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clickable(onClick = onClick),
+        modifier = cardModifier,
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -58,7 +61,6 @@ private fun DigestCardPreview() {
                     summary = "Highlights from the papers selected for your interests.",
                     dateLabel = "Today",
                 ),
-            onClick = {},
             modifier = Modifier.padding(16.dp),
         )
     }

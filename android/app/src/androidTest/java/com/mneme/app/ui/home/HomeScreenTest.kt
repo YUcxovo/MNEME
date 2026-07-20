@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.ui.theme.MnemeTheme
 import org.junit.Rule
 import org.junit.Test
@@ -15,22 +16,19 @@ class HomeScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun emptyState_showsGuidanceAndBottomNavigation() {
+    fun content_showsControlledBriefingAndPaper() {
         composeRule.setContent {
             MnemeTheme {
                 HomeScreen(
-                    state = HomeUiState.Empty,
+                    state = HomeUiState.Content(SeededSkeletalContentRepository.briefing()),
                     onRetry = {},
                     onPaperClick = {},
-                    onDestinationSelected = {},
                 )
             }
         }
 
-        composeRule.onNodeWithTag("home-empty-state").assertIsDisplayed()
-        composeRule
-            .onNodeWithText("Choose topics in Settings to personalize future digests.")
-            .assertIsDisplayed()
-        composeRule.onNodeWithText("Digest").assertIsDisplayed()
+        composeRule.onNodeWithTag("controlled-demo-notice").assertIsDisplayed()
+        composeRule.onNodeWithText("Attention Is All You Need").assertIsDisplayed()
+        composeRule.onNodeWithText("Natural language processing").assertIsDisplayed()
     }
 }
