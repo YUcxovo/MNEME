@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added an Android skeletal-demo flow with type-safe navigation, controlled research
+  content, inspectable paper details, and a source-visible single-paper Q&A path.
 - Added a buildable Android application scaffold with Jetpack Compose, Material 3, lint,
   static-analysis, and unit-test tooling.
 - Added a FastAPI backend scaffold with environment-backed configuration, structured
