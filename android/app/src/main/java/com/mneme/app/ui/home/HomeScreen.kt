@@ -3,96 +3,55 @@
 package com.mneme.app.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.mneme.app.R
+import com.mneme.app.data.demo.SeededSkeletalContentRepository
+import com.mneme.app.ui.component.DigestCard
 import com.mneme.app.ui.component.ErrorState
+import com.mneme.app.ui.component.FilterChip
 import com.mneme.app.ui.component.LoadingState
 import com.mneme.app.ui.component.PaperCard
+import com.mneme.app.ui.model.BriefingUiModel
 import com.mneme.app.ui.model.PaperUiModel
 import com.mneme.app.ui.theme.MnemeTheme
 
-enum class HomeDestination(
-    val label: String,
-    val symbol: String,
-) {
-    HOME("Home", "H"),
-    DIGEST("Digest", "D"),
-    SAVED("Saved", "S"),
-    SETTINGS("Settings", "P"),
-}
-
-sealed interface HomeUiState {
-    data object Loading : HomeUiState
-
-    data object Empty : HomeUiState
-
-    data class Error(
-        val message: String,
-    ) : HomeUiState
-
-    data class Content(
-        val papers: List<PaperUiModel>,
-    ) : HomeUiState
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     state: HomeUiState,
     onRetry: () -> Unit,
     onPaperClick: (String) -> Unit,
-    onDestinationSelected: (HomeDestination) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Scaffold(
-        modifier = modifier.fillMaxSize().testTag("home-screen"),
-        topBar = { TopAppBar(title = { Text("Mneme") }) },
-        bottomBar = {
-            NavigationBar {
-                HomeDestination.entries.forEach { destination ->
-                    NavigationBarItem(
-                        selected = destination == HomeDestination.HOME,
-                        onClick = { onDestinationSelected(destination) },
-                        icon = { Text(destination.symbol) },
-                        label = { Text(destination.label) },
-                    )
-                }
-            }
-        },
-    ) { innerPadding ->
+    Box(
+        modifier = modifier.fillMaxSize().testTag("briefing-screen"),
+    ) {
         when (state) {
-            HomeUiState.Loading -> LoadingState(modifier = Modifier.padding(innerPadding))
-            HomeUiState.Empty -> EmptyHomeState(modifier = Modifier.padding(innerPadding))
-            is HomeUiState.Error -> {
-                ErrorState(
-                    message = state.message,
-                    onRetry = onRetry,
-                    modifier = Modifier.padding(innerPadding),
-                )
-            }
+            HomeUiState.Loading -> LoadingState()
+            HomeUiState.Empty -> EmptyHomeState()
+            is HomeUiState.Error -> ErrorState(message = state.message, onRetry = onRetry)
             is HomeUiState.Content -> {
-                PaperFeed(
-                    papers = state.papers,
+                BriefingFeed(
+                    briefing = state.briefing,
                     onPaperClick = onPaperClick,
-                    contentPadding = innerPadding,
                 )
             }
         }
@@ -107,12 +66,12 @@ private fun EmptyHomeState(modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
     ) {
         Text(
-            text = "Your research feed is ready for its first paper.",
+            text = stringResource(R.string.home_empty_title),
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
         )
         Text(
-            text = "Choose topics in Settings to personalize future digests.",
+            text = stringResource(R.string.home_empty_body),
             modifier = Modifier.padding(top = 12.dp),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
@@ -122,22 +81,74 @@ private fun EmptyHomeState(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun PaperFeed(
-    papers: List<PaperUiModel>,
+private fun BriefingFeed(
+    briefing: BriefingUiModel,
     onPaperClick: (String) -> Unit,
-    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = contentPadding,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        items(items = papers, key = PaperUiModel::id) { paper ->
+        item {
+            ControlledDemoNotice(disclosure = briefing.disclosure)
+        }
+        item {
+            DigestCard(digest = briefing.digest)
+        }
+        item {
+            Text(
+                text = stringResource(R.string.briefing_seeded_interests),
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+        item {
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(briefing.interests, key = { it }) { interest ->
+                    FilterChip(
+                        label = interest,
+                        selected = true,
+                        onSelectedChange = {},
+                    )
+                }
+            }
+        }
+        item {
+            Text(
+                text = stringResource(R.string.briefing_recommended_paper),
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+        items(items = briefing.papers, key = PaperUiModel::id) { paper ->
             PaperCard(
                 paper = paper,
                 onClick = { onPaperClick(paper.id) },
-                modifier = Modifier.padding(horizontal = 16.dp),
             )
+        }
+    }
+}
+
+@Composable
+private fun ControlledDemoNotice(
+    disclosure: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth().testTag("controlled-demo-notice"),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        shape = MaterialTheme.shapes.medium,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.controlled_demo_title),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(text = disclosure, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -147,10 +158,9 @@ private fun PaperFeed(
 private fun HomeScreenPreview() {
     MnemeTheme {
         HomeScreen(
-            state = HomeUiState.Empty,
+            state = HomeUiState.Content(SeededSkeletalContentRepository.briefing()),
             onRetry = {},
             onPaperClick = {},
-            onDestinationSelected = {},
         )
     }
 }
