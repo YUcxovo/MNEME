@@ -10,11 +10,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -33,8 +31,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
-import com.mneme.app.ui.component.ControlledDemoNotice
+import com.mneme.app.ui.component.ContentSourceNotice
 import com.mneme.app.ui.component.MnemeSectionLabel
+import com.mneme.app.ui.component.SourceMatchStatusPill
 import com.mneme.app.ui.model.PaperDetailUiModel
 import com.mneme.app.ui.theme.MnemeTheme
 
@@ -54,7 +53,7 @@ fun PaperDetailScreen(
             PaperHeader(paper = paper)
         }
         item {
-            ControlledDemoNotice(disclosure = paper.disclosure)
+            ContentSourceNotice(disclosure = paper.disclosure)
         }
         item {
             PaperSummaryCard(paper = paper)
@@ -65,7 +64,7 @@ fun PaperDetailScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 MnemeSectionLabel(text = stringResource(R.string.paper_source_trace))
-                VerifiedPill()
+                SourceMatchStatusPill(status = paper.sourceMatchStatus)
             }
         }
         item {
@@ -91,7 +90,7 @@ fun PaperDetailScreen(
                     contentDescription = null,
                 )
                 Text(
-                    text = stringResource(R.string.action_ask_seeded_question),
+                    text = stringResource(R.string.action_ask_question),
                     modifier = Modifier.padding(start = 8.dp),
                 )
             }
@@ -150,32 +149,38 @@ private fun PaperSummaryCard(
                 body = paper.paper.summary,
                 testTag = "basic-summary",
             )
-            SummaryDivider()
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(R.string.paper_key_claims),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                paper.keyClaims.forEach { claim ->
+            if (paper.keyClaims.isNotEmpty()) {
+                SummaryDivider()
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "\u2022  $claim",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        text = stringResource(R.string.paper_key_claims),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
                     )
+                    paper.keyClaims.forEach { claim ->
+                        Text(
+                            text = "\u2022  $claim",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
                 }
             }
-            SummaryDivider()
-            PaperSection(
-                title = stringResource(R.string.paper_methodology),
-                body = paper.methodology,
-            )
-            SummaryDivider()
-            PaperSection(
-                title = stringResource(R.string.paper_limitation),
-                body = paper.limitation,
-                muted = true,
-            )
+            paper.methodology?.takeIf(String::isNotBlank)?.let { methodology ->
+                SummaryDivider()
+                PaperSection(
+                    title = stringResource(R.string.paper_methodology),
+                    body = methodology,
+                )
+            }
+            paper.limitation?.takeIf(String::isNotBlank)?.let { limitation ->
+                SummaryDivider()
+                PaperSection(
+                    title = stringResource(R.string.paper_limitation),
+                    body = limitation,
+                    muted = true,
+                )
+            }
         }
     }
 }
@@ -213,31 +218,6 @@ private fun PaperSection(
                     MaterialTheme.colorScheme.onSurface
                 },
         )
-    }
-}
-
-@Composable
-private fun VerifiedPill(modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.tertiary,
-        contentColor = MaterialTheme.colorScheme.onTertiary,
-        shape = MaterialTheme.shapes.extraLarge,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
-            Text(
-                text = stringResource(R.string.paper_source_verified),
-                style = MaterialTheme.typography.labelMedium,
-            )
-        }
     }
 }
 
