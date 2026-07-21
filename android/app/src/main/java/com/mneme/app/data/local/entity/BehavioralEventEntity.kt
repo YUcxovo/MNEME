@@ -14,7 +14,7 @@ data class BehavioralEventEntity(
     @ColumnInfo(name = "event_type") val eventType: String,
     @ColumnInfo(name = "paper_id") val paperId: String?,
     @ColumnInfo(name = "occurred_at") val occurredAtEpochMillis: Long,
-    @ColumnInfo(name = "duration_millis") val durationMillis: Long?,
+    @ColumnInfo(name = "duration_millis") val durationMillis: Long? = null,
     @ColumnInfo(name = "sync_state") val syncState: String = BehavioralEventSyncState.PENDING.value,
     @ColumnInfo(name = "sync_attempt_count") val syncAttemptCount: Int = 0,
     @ColumnInfo(name = "last_sync_attempt_at") val lastSyncAttemptAtEpochMillis: Long? = null,
