@@ -113,6 +113,17 @@ class FakeArtifactRepository:
         self.queries.append((paper_id, paper_version_id, limit))
         return self.rows[:limit]
 
+    async def get_context_anchor_chunks(
+        self,
+        *,
+        paper_id: UUID,
+        paper_version_id: UUID,
+        query_embedding: tuple[float, ...],
+        limit: int,
+    ) -> list[tuple[FakeChunkRow, float]]:
+        del paper_id, paper_version_id, query_embedding
+        return self.rows[:limit]
+
 
 class FakeQaRepository:
     def __init__(self, *, mismatch: bool = False) -> None:
