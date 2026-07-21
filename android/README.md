@@ -18,6 +18,7 @@ your Android SDK path, for example `sdk.dir=/home/user/Android/Sdk`.
 ./gradlew assembleDebug
 ./gradlew test
 ./gradlew ktlintCheck detekt lintDebug
+./gradlew connectedDebugAndroidTest
 ```
 
 ## Live skeletal product demo
