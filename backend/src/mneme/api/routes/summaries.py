@@ -57,10 +57,10 @@ async def get_paper_summary(
 ) -> Summary | Job:
     """Return the stored summary, or accept async generation (202 + Job).
 
-    The first request for an unsummarized paper creates one durable pipeline
-    job and enqueues the summarize stage; concurrent and repeated requests
-    reuse that job until it succeeds. A failed job is requeued so a client
-    retry can recover.
+    The first request for an unsummarized paper resumes the exact revision at
+    its earliest missing download, parse, or summarize stage. Concurrent and
+    repeated requests reuse the durable job, and a failed job is requeued so a
+    client retry can recover.
     """
     paper = await catalog.get_paper(paper_id)
     if paper is None:
