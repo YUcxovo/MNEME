@@ -11,23 +11,14 @@ import re
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from mneme.services.documents import ParsedSection
+
 _WHITESPACE = re.compile(r"\s+")
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+")
 
 # Rough words-per-token ratio for scientific English; used only for sizing,
 # never for billing, so a conservative estimate is fine.
 _WORDS_PER_TOKEN = 0.75
-
-
-class ParsedSection(BaseModel):
-    """One logical section handed over by the PDF parse stage."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    title: str | None = None
-    text: str = Field(min_length=1)
-    page_start: int | None = Field(default=None, ge=1)
-    page_end: int | None = Field(default=None, ge=1)
 
 
 class ChunkDraft(BaseModel):

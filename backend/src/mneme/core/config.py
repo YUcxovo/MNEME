@@ -3,6 +3,7 @@
 from decimal import Decimal
 from enum import StrEnum
 from functools import lru_cache
+from pathlib import Path
 from uuid import UUID
 
 from pydantic import Field, HttpUrl, RedisDsn, SecretStr
@@ -48,6 +49,11 @@ class Settings(BaseSettings):
     arxiv_timeout_seconds: float = Field(default=30.0, gt=0)
     arxiv_max_attempts: int = Field(default=3, ge=1, le=10)
     arxiv_max_results: int = Field(default=100, ge=1, le=2000)
+    paper_storage_dir: Path = Path(".data/papers")
+    pdf_max_bytes: int = Field(default=50 * 1024 * 1024, ge=1024)
+    pdf_download_timeout_seconds: float = Field(default=60.0, gt=0)
+    pdf_download_max_attempts: int = Field(default=3, ge=1, le=10)
+    pdf_min_text_chars: int = Field(default=500, ge=1)
     demo_token_sha256: SecretStr | None = None
     demo_user_id: UUID | None = None
     anthropic_api_key: SecretStr | None = None
