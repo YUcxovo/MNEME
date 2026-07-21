@@ -50,12 +50,15 @@ def _application(repository: FakeJobRepository) -> FastAPI:
     async def principal_override() -> Principal:
         return Principal(user_id=USER_ID)
 
+    async def repository_override() -> FakeJobRepository:
+        return repository
+
     application = FastAPI()
     application.middleware("http")(request_context_middleware)
     register_error_handlers(application)
     application.include_router(jobs_router, prefix="/v1")
     application.dependency_overrides[require_principal] = principal_override
-    application.dependency_overrides[get_pipeline_job_repository] = lambda: repository
+    application.dependency_overrides[get_pipeline_job_repository] = repository_override
     return application
 
 
