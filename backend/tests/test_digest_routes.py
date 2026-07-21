@@ -1,4 +1,4 @@
-"""Contract tests for POST /digests/recommended."""
+"""Contract tests for persisted and recommended digest endpoints."""
 
 import asyncio
 from datetime import UTC, datetime, timedelta
@@ -19,6 +19,7 @@ from mneme.db.dependencies import get_session
 from mneme.models.digest import Digest, DigestEntry, DigestType
 from mneme.models.paper import Paper, ProcessingStatus
 from mneme.models.user import UserPreference
+from mneme.repositories.digests import DigestCursor, DigestPageResult, encode_digest_cursor
 
 USER_ID = UUID("00000000-0000-0000-0000-000000000111")
 NOW = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
@@ -49,11 +50,26 @@ class FakeDigestRepository:
         papers: list[Paper],
         preferences: UserPreference | None,
         fresh: Digest | None = None,
+        digests: list[Digest] | None = None,
+        next_cursor: str | None = None,
     ) -> None:
         self.papers = papers
         self.preferences = preferences
         self.fresh = fresh
+        self.digests = digests if digests is not None else []
+        self.next_cursor = next_cursor
         self.created: list[Digest] = []
+        self.list_calls: list[tuple[UUID, int, DigestCursor | None]] = []
+
+    async def list_digests(
+        self,
+        *,
+        user_id: UUID,
+        limit: int,
+        cursor: DigestCursor | None = None,
+    ) -> DigestPageResult:
+        self.list_calls.append((user_id, limit, cursor))
+        return DigestPageResult(items=self.digests, next_cursor=self.next_cursor)
 
     async def get_fresh_recommended_digest(self, *, user_id: UUID, max_age) -> Digest | None:
         return self.fresh
@@ -102,14 +118,23 @@ def _application(repository: FakeDigestRepository) -> FastAPI:
     async def principal_override() -> Principal:
         return Principal(user_id=USER_ID)
 
+    async def repository_override() -> FakeDigestRepository:
+        return repository
+
+    async def settings_override() -> Settings:
+        return Settings(environment="testing")
+
+    async def session_override() -> FakeSession:
+        return FakeSession()
+
     application = FastAPI()
     application.middleware("http")(request_context_middleware)
     register_error_handlers(application)
     application.include_router(digests_router, prefix="/v1")
     application.dependency_overrides[require_principal] = principal_override
-    application.dependency_overrides[get_digest_repository] = lambda: repository
-    application.dependency_overrides[get_request_settings] = lambda: Settings(environment="testing")
-    application.dependency_overrides[get_session] = lambda: FakeSession()
+    application.dependency_overrides[get_digest_repository] = repository_override
+    application.dependency_overrides[get_request_settings] = settings_override
+    application.dependency_overrides[get_session] = session_override
     return application
 
 
@@ -117,6 +142,143 @@ async def _post(application: FastAPI) -> Response:
     transport = ASGITransport(app=application)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         return await client.post("/v1/digests/recommended")
+
+
+async def _get(
+    application: FastAPI,
+    path: str,
+    *,
+    headers: dict[str, str] | None = None,
+) -> Response:
+    transport = ASGITransport(app=application)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        return await client.get(path, headers=headers)
+
+
+def _stored_digest() -> Digest:
+    paper = _paper("A persisted paper", age_days=1)
+    digest = Digest(
+        id=uuid4(),
+        user_id=USER_ID,
+        digest_type=DigestType.WEEKLY,
+        generated_at=NOW,
+        preference_model_version=2,
+        generator_version="test-v1",
+    )
+    entry = DigestEntry(
+        digest_id=digest.id,
+        paper_id=paper.id,
+        rank=1,
+        relevance_score=0.75,
+        recommendation_reason="Matches your attention topic.",
+    )
+    entry.paper = paper
+    digest.entries = [entry]
+    return digest
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_list_digests_returns_authenticated_user_page() -> None:
+    digest = _stored_digest()
+    next_cursor = encode_digest_cursor(NOW, digest.id)
+    repository = FakeDigestRepository(
+        papers=[],
+        preferences=None,
+        digests=[digest],
+        next_cursor=next_cursor,
+    )
+    application = _application(repository)
+
+    response = asyncio.run(_get(application, "/v1/digests?limit=10"))
+
+    assert response.status_code == 200
+    assert repository.list_calls == [(USER_ID, 10, None)]
+    payload = response.json()
+    assert payload["next_cursor"] == next_cursor
+    assert payload["items"] == [
+        {
+            "id": str(digest.id),
+            "digest_type": "weekly",
+            "generated_at": "2026-07-17T12:00:00Z",
+            "entries": [
+                {
+                    "paper": {
+                        "id": str(digest.entries[0].paper.id),
+                        "arxiv_id": digest.entries[0].paper.arxiv_id,
+                        "title": "A persisted paper",
+                        "authors": [],
+                        "abstract": "An abstract.",
+                        "primary_category": "cs.AI",
+                        "categories": ["cs.AI"],
+                        "pdf_url": "https://arxiv.org/pdf/2607.00001",
+                        "source_license": None,
+                        "processing_status": "ready",
+                        "published_at": "2026-07-16T12:00:00Z",
+                        "updated_at": "2026-07-17T12:00:00Z",
+                    },
+                    "rank": 1,
+                    "relevance_score": 0.75,
+                    "recommendation_reason": "Matches your attention topic.",
+                }
+            ],
+        }
+    ]
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_list_digests_decodes_cursor_before_repository_query() -> None:
+    digest_id = uuid4()
+    cursor = encode_digest_cursor(NOW, digest_id)
+    repository = FakeDigestRepository(papers=[], preferences=None)
+
+    response = asyncio.run(_get(_application(repository), f"/v1/digests?cursor={cursor}"))
+
+    assert response.status_code == 200
+    _, limit, decoded_cursor = repository.list_calls[0]
+    assert limit == 20
+    assert decoded_cursor is not None
+    assert decoded_cursor.generated_at == NOW
+    assert decoded_cursor.digest_id == digest_id
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_invalid_digest_cursor_returns_stable_error() -> None:
+    repository = FakeDigestRepository(papers=[], preferences=None)
+
+    response = asyncio.run(
+        _get(
+            _application(repository),
+            "/v1/digests?cursor=not-a-cursor",
+            headers={"X-Request-ID": "digest-test"},
+        )
+    )
+
+    assert response.status_code == 400
+    assert response.json() == {
+        "code": "invalid_cursor",
+        "message": "The pagination cursor is invalid.",
+        "request_id": "digest-test",
+    }
+    assert repository.list_calls == []
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_digest_list_openapi_matches_frozen_contract() -> None:
+    application = _application(FakeDigestRepository(papers=[], preferences=None))
+
+    schema = application.openapi()
+    operation = schema["paths"]["/v1/digests"]["get"]
+
+    assert operation["operationId"] == "listDigests"
+    assert [parameter["name"] for parameter in operation["parameters"]] == ["cursor", "limit"]
+    assert operation["security"] == [{"demoToken": []}]
+    assert schema["paths"]["/v1/digests/recommended"]["post"]["operationId"] == (
+        "generateRecommendedDigest"
+    )
 
 
 @pytest.mark.base
