@@ -10,14 +10,14 @@ from datetime import UTC, datetime, timedelta
 from typing import Final
 from uuid import UUID
 
-from sqlalchemy import Select, and_, func, or_, select
+from sqlalchemy import Select, and_, exists, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from mneme.models.artifact import PaperChunk
+from mneme.models.artifact import PaperChunk, PaperSummary
 from mneme.models.base import utc_now
 from mneme.models.digest import Digest, DigestEntry, DigestType
-from mneme.models.paper import Paper, PaperAuthor
+from mneme.models.paper import Paper, PaperAuthor, PaperVersion, ProcessingStatus
 from mneme.models.user import UserPreference
 
 _CURSOR_VERSION: Final = 1
@@ -137,23 +137,64 @@ class DigestRepository:
         """Return the stored preference row for scoring."""
         return await self._session.get(UserPreference, user_id)
 
-    async def list_recent_candidates(self, *, since: datetime, limit: int) -> list[Paper]:
-        """Return recent papers with authors eagerly loaded for responses."""
+    async def list_recent_candidates(
+        self, *, since: datetime, limit: int, before: datetime | None = None
+    ) -> list[Paper]:
+        """Return recent latest-revision papers with a usable summary."""
+        latest_version_id = (
+            select(PaperVersion.id)
+            .where(PaperVersion.paper_id == Paper.id)
+            .order_by(PaperVersion.version_number.desc())
+            .limit(1)
+            .correlate(Paper)
+            .scalar_subquery()
+        )
         statement = (
             select(Paper)
-            .where(Paper.published_at >= since)
+            .where(
+                Paper.published_at >= since,
+                Paper.processing_status.in_((ProcessingStatus.READY, ProcessingStatus.PARTIAL)),
+                exists(
+                    select(PaperSummary.id).where(
+                        PaperSummary.paper_id == Paper.id,
+                        PaperSummary.paper_version_id == latest_version_id,
+                    )
+                ),
+            )
             .order_by(Paper.published_at.desc(), Paper.id.desc())
             .limit(limit)
             .options(selectinload(Paper.author_links).selectinload(PaperAuthor.author))
         )
+        if before is not None:
+            statement = statement.where(Paper.published_at < before)
         return list((await self._session.scalars(statement)).all())
 
     async def mean_chunk_embeddings(self, paper_ids: list[UUID]) -> dict[UUID, tuple[float, ...]]:
         """Return each paper's mean chunk embedding, where one exists."""
         if not paper_ids:
             return {}
+        latest_versions = (
+            select(
+                PaperVersion.paper_id,
+                func.max(PaperVersion.version_number).label("version_number"),
+            )
+            .where(PaperVersion.paper_id.in_(paper_ids))
+            .group_by(PaperVersion.paper_id)
+            .subquery()
+        )
         statement = (
             select(PaperChunk.paper_id, func.avg(PaperChunk.embedding).label("embedding"))
+            .join(
+                PaperVersion,
+                PaperVersion.id == PaperChunk.paper_version_id,
+            )
+            .join(
+                latest_versions,
+                and_(
+                    latest_versions.c.paper_id == PaperVersion.paper_id,
+                    latest_versions.c.version_number == PaperVersion.version_number,
+                ),
+            )
             .where(PaperChunk.paper_id.in_(paper_ids), PaperChunk.embedding.is_not(None))
             .group_by(PaperChunk.paper_id)
         )

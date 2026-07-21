@@ -3,7 +3,7 @@
 import asyncio
 import base64
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import cast
 from unittest.mock import AsyncMock, Mock
 from uuid import UUID, uuid4
@@ -144,3 +144,56 @@ def test_digest_query_applies_timestamp_and_id_cursor() -> None:
     assert "digests.user_id =" in sql
     assert "digests.generated_at <" in sql
     assert "digests.id <" in sql
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_candidate_query_requires_current_summary_and_usable_status() -> None:
+    now = datetime(2026, 7, 21, tzinfo=UTC)
+    scalar_result = Mock()
+    scalar_result.all.return_value = []
+    session = Mock(spec=AsyncSession)
+    session.scalars = AsyncMock(return_value=scalar_result)
+    repository = DigestRepository(cast(AsyncSession, session))
+
+    papers = asyncio.run(
+        repository.list_recent_candidates(
+            since=now - timedelta(days=14),
+            before=now,
+            limit=200,
+        )
+    )
+
+    assert papers == []
+    statement = session.scalars.await_args.args[0]
+    sql = str(
+        statement.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+    assert "papers.processing_status IN ('ready', 'partial')" in sql
+    assert "EXISTS (SELECT paper_summaries.id" in sql
+    assert "paper_summaries.paper_version_id = (SELECT paper_versions.id" in sql
+    assert "ORDER BY paper_versions.version_number DESC" in sql
+    assert f"papers.published_at < '{now}'" in sql
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_embedding_mean_is_limited_to_each_papers_latest_revision() -> None:
+    paper_id = uuid4()
+    rows = Mock()
+    rows.all.return_value = []
+    session = Mock(spec=AsyncSession)
+    session.execute = AsyncMock(return_value=rows)
+    repository = DigestRepository(cast(AsyncSession, session))
+
+    embeddings = asyncio.run(repository.mean_chunk_embeddings([paper_id]))
+
+    assert embeddings == {}
+    statement = session.execute.await_args.args[0]
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+    assert "JOIN paper_versions ON paper_versions.id = paper_chunks.paper_version_id" in sql
+    assert "max(paper_versions.version_number)" in sql
+    assert "anon_1.version_number = paper_versions.version_number" in sql
