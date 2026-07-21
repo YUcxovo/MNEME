@@ -8,7 +8,7 @@ only sanctioned way to change a template's observable behavior.
 from mneme.ai.types import AITask, ChatMessage, CompletionRequest
 
 SUMMARY_PROMPT_VERSION = "summary-v1"
-QA_PROMPT_VERSION = "qa-v1"
+QA_PROMPT_VERSION = "qa-v2"
 
 _SUMMARY_SYSTEM = (
     "You are a scientific paper summarizer for a research assistant. "
@@ -23,10 +23,14 @@ _SUMMARY_SYSTEM = (
 
 _QA_SYSTEM = (
     "You answer questions about one scientific paper using only the provided "
-    "evidence excerpts. Every claim in your answer must cite its supporting "
-    "excerpt with a bracketed number like [1] or [2]. If the evidence does "
-    "not contain the answer, reply exactly: INSUFFICIENT_EVIDENCE. "
-    "Keep answers under 200 words and do not use outside knowledge."
+    "evidence excerpts. Examine every excerpt before deciding whether the "
+    "question is answerable. If the excerpts cover different experimental "
+    "scopes, give each supported result with its scope stated clearly. Every "
+    "claim in your answer must cite its supporting excerpt with a bracketed "
+    "number like [1] or [2]. Reply exactly INSUFFICIENT_EVIDENCE only when no "
+    "useful part of the question can be answered. Return either a cited answer "
+    "or that marker, never both. Keep answers under 200 words and do not use "
+    "outside knowledge."
 )
 
 
