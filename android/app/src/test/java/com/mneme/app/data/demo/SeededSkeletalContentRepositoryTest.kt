@@ -12,15 +12,17 @@ class SeededSkeletalContentRepositoryTest {
         val repository = SeededSkeletalContentRepository
         val briefing = repository.briefing()
         val paper = repository.paper(SeededSkeletalContentRepository.PAPER_ID)
-        val qa = repository.qa(SeededSkeletalContentRepository.PAPER_ID)
+        val question = "How does attention replace recurrent sequence processing?"
+        val qa = repository.qa(SeededSkeletalContentRepository.PAPER_ID, question)
 
         assertEquals(1, briefing.papers.size)
         assertEquals(SeededSkeletalContentRepository.PAPER_ID, briefing.papers.single().id)
         assertNotNull(paper)
         assertNotNull(qa)
-        assertTrue(qa?.answer?.contains("multi-head self-attention") == true)
-        assertEquals("Model Architecture", qa?.source?.location)
-        assertTrue(briefing.disclosure.contains("No live model call"))
+        assertEquals(question, qa?.question)
+        assertTrue(qa?.answer?.contains("cannot generate a new answer") == true)
+        assertEquals("Model Architecture", qa?.sources?.single()?.location)
+        assertTrue(briefing.disclosure.message.contains("No live backend or model call"))
     }
 
     @Test
@@ -28,6 +30,6 @@ class SeededSkeletalContentRepositoryTest {
         val repository = SeededSkeletalContentRepository
 
         assertNull(repository.paper("unknown"))
-        assertNull(repository.qa("unknown"))
+        assertNull(repository.qa("unknown", "What does this paper claim?"))
     }
 }
