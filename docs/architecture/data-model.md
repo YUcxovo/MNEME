@@ -2,8 +2,7 @@
 
 Ruiyu is the DRI for the ER model, SQLAlchemy models, and Alembic migrations. Yifan reviews
 fields used by summarization, embeddings, retrieval, recommendation, and evaluation. Hanyang
-reviews fields exposed through Android DTOs. This document is the Milestone 1 persistence
-contract; changes require the review process in `CONTRIBUTING.md`.
+reviews fields exposed through Android DTOs. This document is the v0.1 persistence contract, including the Milestone 1 baseline and additive Milestone 2 provenance/dispatch migrations; changes require the review process in `CONTRIBUTING.md`.
 
 ```mermaid
 erDiagram
@@ -34,6 +33,7 @@ erDiagram
       jsonb explicit_topics
       jsonb followed_authors
       vector_1536 behavior_embedding
+      string behavior_embedding_model
       int model_version
       timestamptz updated_at
     }
@@ -67,11 +67,14 @@ erDiagram
       uuid paper_id FK
       int version_number
       string source_checksum
+      bigint source_size_bytes
+      timestamptz downloaded_at
       string parsed_checksum
       string parser_version
       string parse_quality
       timestamptz parsed_at
       timestamptz submitted_at
+      timestamptz created_at
     }
     authors {
       uuid id PK
@@ -177,6 +180,7 @@ erDiagram
       string error_code
       text last_error
       string pipeline_version
+      timestamptz dispatched_at
       timestamptz started_at
       timestamptz finished_at
       timestamptz created_at
@@ -192,9 +196,7 @@ erDiagram
   stable descending keyset for the paper-list cursor.
 - arXiv work IDs are stored without a trailing version suffix. `(paper_id, version_number)` is
   unique in `paper_versions`.
-- `user_events.paper_id`, `user_events.duration_ms`, artifact vectors, source licenses, source
-  checksums, parsed-document provenance, citation targets, job error/timing fields, and model telemetry may be null when the
-  corresponding information is unavailable.
+- `user_events.paper_id`, `user_events.duration_ms`, artifact vectors, source licenses, source checksums, document provenance, citation targets, job error/timing fields, and model telemetry may be null when the corresponding information is unavailable.
 - JSON objects and arrays use PostgreSQL JSONB unless an ordered scalar array is explicitly part
   of the schema. Paper categories use a PostgreSQL text array and preserve the primary category
   separately.
@@ -218,8 +220,7 @@ erDiagram
 - `digest_entries` has a composite primary key and a unique `(digest_id, rank)` constraint.
 - Non-negative checks apply to event duration, version number, chunk/page indexes, job attempts,
   digest rank, estimated cost, and relevance scores where applicable.
-- Query indexes cover papers by `(published_at, id)` and `(primary_category, published_at)`, jobs
-  by `(status, stage)`, events by `(user_id, occurred_at)`, and foreign-key lookup columns.
+- Query indexes cover papers by `(published_at, id)` and `(primary_category, published_at)`, jobs by `(status, stage)` and `(status, dispatched_at)`, events by `(user_id, occurred_at)`, and foreign-key lookup columns.
 
 ## Fixed Decisions
 
@@ -228,6 +229,7 @@ erDiagram
   preserves source capitalization while `normalized_name` supports deterministic M1 deduplication.
 - Digests are immutable generated snapshots. They retain the preference-model and generator
   versions so demos and evaluations are reproducible.
+- The weekly period is part of the durable digest-job identity; v0.1 does not duplicate `week_start` in the immutable `digests` row.
 - Every event uses a client-generated UUID; duplicate IDs are ignored.
 - Summaries are tied to an observed paper revision and versioned by input hash,
   provider/model snapshot, and prompt version.
@@ -241,8 +243,8 @@ erDiagram
 - Pipeline jobs may have no paper only for collection-level stages such as digest assembly.
 - Paper-scoped pipeline jobs bind to an exact paper revision; collection-level stages leave both
   paper identifiers null.
-- `paper_versions.source_checksum` is the downloaded PDF SHA-256. Parse provenance is complete as
-  one unit: checksum, parser version, quality tier, and timestamp are either all present or all null.
+- Download provenance is complete as one unit: source PDF SHA-256, byte size, and download timestamp are either all present or all null. Parse provenance is also complete as one unit: parsed-document checksum, parser version, `structured` / `text_only` / `abstract_only` quality tier, and timestamp are either all present or all null.
+- A job dispatch lease is represented by `dispatched_at`. Revision-scoped recovery may reclaim queued jobs whose lease is missing or stale; the durable state remains authoritative over Redis delivery.
 - Pipeline jobs expose a stable `error_code`; raw `last_error` is operational data and is never
   returned directly by the public API.
 - Deleting a cached PDF does not delete metadata, chunks, or generated artifacts.
