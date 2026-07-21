@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -117,6 +118,9 @@ class MnemeAppFlowTest {
         }
         composeRule.onNodeWithText("Attention Is All You Need").performClick()
         composeRule.onNodeWithTag("paper-detail-screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasText("Not checked"),
+        )
         composeRule.onNodeWithText("Not checked").assertIsDisplayed()
     }
 }
