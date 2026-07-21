@@ -290,6 +290,7 @@ def test_digest_list_openapi_matches_frozen_contract() -> None:
     assert schema["paths"]["/v1/digests/recommended"]["post"]["operationId"] == (
         "generateRecommendedDigest"
     )
+    assert "202" in schema["paths"]["/v1/digests/recommended"]["post"]["responses"]
 
 
 @pytest.mark.base

@@ -10,6 +10,7 @@ from mneme.api.dependencies.ai import get_digest_repository
 from mneme.api.dependencies.auth import Principal, require_principal
 from mneme.api.errors import ApiError, ErrorResponse
 from mneme.api.schemas.digests import Digest, DigestPage
+from mneme.api.schemas.jobs import Job
 from mneme.core.config import Settings, get_settings
 from mneme.db.dependencies import get_session
 from mneme.repositories.digests import (
@@ -69,7 +70,10 @@ async def list_digests(
     "/recommended",
     response_model=Digest,
     operation_id="generateRecommendedDigest",
-    responses={"default": {"model": ErrorResponse}},
+    responses={
+        status.HTTP_202_ACCEPTED: {"model": Job},
+        "default": {"model": ErrorResponse},
+    },
 )
 async def generate_recommended_digest(
     principal: Annotated[Principal, Depends(require_principal)],
