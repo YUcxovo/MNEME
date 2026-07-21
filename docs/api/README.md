@@ -4,9 +4,7 @@ The frozen OpenAPI document is `openapi-v0.1.yaml`. It is the contract between t
 and backend sub-teams until every v0.1 route exists and FastAPI can become the complete
 generated source of truth.
 
-As of 2026-07-15, FastAPI implements and contract-tests `health`, `papers`, and
-`users/me/preferences`. Later-milestone summary, event, digest, Q&A, graph, and job routes
-remain represented only by the frozen contract.
+As of 2026-07-21, FastAPI implements and contract-tests `health`, `papers`, `users/me/preferences`, revision-safe paper summaries, single-paper Q&A, digest listing/recommendation, and durable job status. `events` and `graph` remain represented only by the frozen contract until their Milestone 3 persistence services are implemented.
 
 ## Ownership
 
@@ -16,11 +14,7 @@ remain represented only by the frozen contract.
 - Data-model reviewer: Yifan reviews AI/RAG fields; Ruiyu approves persistence impact
 
 Any breaking change requires Ruiyu, the endpoint owner, and Hanyang to approve the PR.
-The committed contract remains authoritative while later-milestone routes are absent or only
-skeletons. Backend contract tests inspect FastAPI's generated OpenAPI in CI and check every
-implemented route and shared schema against this contract. The generated document becomes
-authoritative only after all frozen routes are represented in the application. Breaking
-changes require a new API version or an explicit coordinated migration.
+The committed contract remains authoritative while later-milestone routes are absent or only skeletons. Backend contract tests load the frozen YAML and compare every implemented operation's ID and declared response schemas with FastAPI's generated OpenAPI; route tests separately validate runtime payloads, authentication, parameters, and errors. The generated document becomes authoritative only after all frozen routes are represented in the application. Breaking changes require a new API version or an explicit coordinated migration.
 
 ## Fixed v0.1 Decisions
 
@@ -45,8 +39,12 @@ changes require a new API version or an explicit coordinated migration.
 | 401 | `authentication_required` | The Bearer token is missing or malformed |
 | 401 | `invalid_token` | The Bearer token does not match the configured demo token hash |
 | 404 | `paper_not_found` | The requested internal paper UUID does not exist |
+| 404 | `job_not_found` | The requested durable pipeline job does not exist |
+| 404 | `conversation_not_found` | The requested Q&A conversation does not belong to the user and paper |
 | 404 | `user_not_found` | The configured demo user has not been bootstrapped |
+| 409 | `paper_not_ready` | The paper has no observed revision available for AI work |
 | 422 | `validation_error` | Request parameters or JSON do not satisfy the contract |
+| 503 | `queue_unavailable` | A required pipeline stage could not be dispatched to ARQ |
 | 503 | `service_unavailable` | A required database or upstream dependency is unavailable |
 
 Every error includes the request ID. Error details must not contain secrets, full paper text,
