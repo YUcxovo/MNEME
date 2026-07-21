@@ -12,6 +12,7 @@ import re
 from pydantic import BaseModel, ConfigDict, Field
 
 from mneme.services.documents import ParsedSection
+from mneme.services.documents.parser_layout import normalize_line
 
 _WHITESPACE = re.compile(r"\s+")
 _SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?])\s+")
@@ -42,7 +43,9 @@ def estimate_tokens(text: str) -> int:
 
 
 def _sentences(text: str) -> list[str]:
-    normalized = _WHITESPACE.sub(" ", text).strip()
+    # Parsed sidecars can outlive the parser version that produced them, so
+    # normalize again at the database boundary before persisting chunks.
+    normalized = normalize_line(text)
     return [sentence for sentence in _SENTENCE_BOUNDARY.split(normalized) if sentence]
 
 
@@ -98,7 +101,7 @@ def chunk_sections(
             drafts.append(
                 ChunkDraft(
                     chunk_index=len(drafts),
-                    section_title=section.title,
+                    section_title=normalize_line(section.title) if section.title else None,
                     content=piece,
                     content_hash=hashlib.sha256(piece.encode("utf-8")).hexdigest(),
                     token_count=estimate_tokens(piece),

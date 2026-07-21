@@ -55,6 +55,7 @@ async def download_pdf(
     """Download one immutable arXiv revision and queue its parse stage."""
     storage: DocumentStorage = ctx["document_storage"]
     downloader: PdfDownloader = ctx["pdf_downloader"]
+    parser: PdfParser = ctx["pdf_parser"]
 
     async def runner(
         session: AsyncSession, resolved_paper_id: UUID, resolved_version_id: UUID
@@ -80,6 +81,7 @@ async def download_pdf(
                 paper_id=resolved_paper_id,
                 paper_version_id=resolved_version_id,
                 source_checksum=result.checksum,
+                parser_version=parser.parser_version,
             ),
         )
         return [child] if child is not None else []

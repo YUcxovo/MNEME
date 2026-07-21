@@ -215,3 +215,28 @@ class ArtifactRepository:
         )
         rows = (await self._session.execute(statement)).all()
         return [(row[0], max(0.0, 1.0 - float(row[1]))) for row in rows]
+
+    async def get_context_anchor_chunks(
+        self,
+        *,
+        paper_id: UUID,
+        paper_version_id: UUID,
+        query_embedding: tuple[float, ...],
+        limit: int,
+    ) -> list[tuple[PaperChunk, float]]:
+        """Return the first embedded chunks as stable document-overview anchors."""
+        if limit < 1:
+            return []
+        distance = PaperChunk.embedding.cosine_distance(list(query_embedding))
+        statement = (
+            select(PaperChunk, distance.label("distance"))
+            .where(
+                PaperChunk.paper_id == paper_id,
+                PaperChunk.paper_version_id == paper_version_id,
+                PaperChunk.embedding.is_not(None),
+            )
+            .order_by(PaperChunk.chunk_index)
+            .limit(limit)
+        )
+        rows = (await self._session.execute(statement)).all()
+        return [(row[0], max(0.0, 1.0 - float(row[1]))) for row in rows]

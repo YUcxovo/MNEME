@@ -228,7 +228,11 @@ def _install_fakes(
     monkeypatch.setattr(document_runtime, "PipelineJobRepository", lambda session: repository)
     monkeypatch.setattr(document_jobs, "_load_revision", load_revision)
     monkeypatch.setattr(document_jobs.asyncio, "to_thread", run_inline)
-    context: dict[str, Any] = {"database": FakeDatabase(), "redis": queue}
+    context: dict[str, Any] = {
+        "database": FakeDatabase(),
+        "redis": queue,
+        "pdf_parser": FakeParser(),
+    }
     return context, repository, queue
 
 
