@@ -137,6 +137,29 @@ def chunk_idempotency_key(
     )
 
 
+def embed_idempotency_key(
+    *,
+    paper_id: UUID,
+    paper_version_id: UUID,
+    parsed_checksum: str,
+    parser_version: str,
+    embedding_model: str,
+) -> str:
+    """Return the parsed-artifact and model identity for embedding chunks."""
+    _validate_checksum(parsed_checksum)
+    if not parser_version or not embedding_model:
+        raise ValueError("Parser and embedding model versions must not be empty.")
+    return build_job_idempotency_key(
+        stage=PipelineStage.EMBED_CHUNKS,
+        scope={"paper_id": paper_id, "paper_version_id": paper_version_id},
+        inputs={
+            "parsed_checksum": parsed_checksum,
+            "parser_version": parser_version,
+            "embedding_model": embedding_model,
+        },
+    )
+
+
 def _parsed_artifact_key(
     *,
     stage: PipelineStage,
