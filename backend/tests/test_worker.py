@@ -35,6 +35,7 @@ def test_arq_settings_reuse_application_redis_config() -> None:
 @pytest.mark.pipeline
 def test_worker_registers_probe_and_ai_stages() -> None:
     from mneme.tasks.ai_jobs import chunk_paper, embed_chunks, summarize_paper
+    from mneme.tasks.digest_jobs import assemble_digest
     from mneme.tasks.dispatch_recovery import recover_revision_dispatches
     from mneme.tasks.document_jobs import download_pdf, parse_pdf
     from mneme.tasks.metadata_jobs import fetch_metadata
@@ -47,6 +48,7 @@ def test_worker_registers_probe_and_ai_stages() -> None:
         summarize_paper,
         chunk_paper,
         embed_chunks,
+        assemble_digest,
     ]
     assert WorkerSettings.queue_name == "mneme:jobs"
     assert WorkerSettings.health_check_key == "mneme:worker:health"
