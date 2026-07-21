@@ -5,7 +5,8 @@ import asyncio
 import pytest
 
 from mneme.core.config import Settings
-from mneme.tasks.worker import WorkerSettings, create_arq_redis_settings, worker_probe
+from mneme.redis.arq import create_arq_redis_settings
+from mneme.tasks.worker import WorkerSettings, worker_probe
 
 
 @pytest.mark.base
@@ -34,8 +35,18 @@ def test_arq_settings_reuse_application_redis_config() -> None:
 @pytest.mark.pipeline
 def test_worker_registers_probe_and_ai_stages() -> None:
     from mneme.tasks.ai_jobs import chunk_paper, embed_chunks, summarize_paper
+    from mneme.tasks.document_jobs import download_pdf, parse_pdf
+    from mneme.tasks.metadata_jobs import fetch_metadata
 
-    assert WorkerSettings.functions == [worker_probe, summarize_paper, chunk_paper, embed_chunks]
+    assert WorkerSettings.functions == [
+        worker_probe,
+        fetch_metadata,
+        download_pdf,
+        parse_pdf,
+        summarize_paper,
+        chunk_paper,
+        embed_chunks,
+    ]
     assert WorkerSettings.queue_name == "mneme:jobs"
     assert WorkerSettings.health_check_key == "mneme:worker:health"
     assert asyncio.run(worker_probe({})) == "ok"
