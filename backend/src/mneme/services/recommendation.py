@@ -1,7 +1,7 @@
 """Assemble recommended digests from stored preferences and recent papers."""
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import UUID
 
 import structlog
@@ -68,7 +68,22 @@ class RecommendedDigestService:
                 papers_by_id={entry.paper_id: entry.paper for entry in fresh_entries},
             )
 
-        now = utc_now()
+        return await self.generate(
+            user_id,
+            digest_type=DigestType.MANUAL,
+            as_of=utc_now(),
+        )
+
+    async def generate(
+        self,
+        user_id: UUID,
+        *,
+        digest_type: DigestType,
+        as_of: datetime,
+    ) -> DigestBundle:
+        """Persist a deterministic digest snapshot for one cutoff instant."""
+        if as_of.tzinfo is None:
+            raise ValueError("Digest generation cutoff must be timezone-aware.")
         preference_row = await self._repository.get_preferences(user_id)
         preferences = PreferenceView(
             explicit_topics=tuple(preference_row.explicit_topics)
@@ -81,8 +96,9 @@ class RecommendedDigestService:
         )
 
         papers = await self._repository.list_recent_candidates(
-            since=now - timedelta(days=self._candidate_days),
+            since=as_of - timedelta(days=self._candidate_days),
             limit=_CANDIDATE_POOL_LIMIT,
+            before=as_of,
         )
         embeddings = await self._repository.mean_chunk_embeddings([paper.id for paper in papers])
         candidates = [
@@ -96,7 +112,7 @@ class RecommendedDigestService:
             for paper in papers
         ]
 
-        ranked = rank_candidates(candidates, preferences, now=now, limit=self._max_entries)
+        ranked = rank_candidates(candidates, preferences, now=as_of, limit=self._max_entries)
         entries = [
             DigestEntry(
                 paper_id=scored.paper_id,
@@ -108,7 +124,7 @@ class RecommendedDigestService:
         ]
         digest = await self._repository.create_digest(
             user_id=user_id,
-            digest_type=DigestType.MANUAL,
+            digest_type=digest_type,
             preference_model_version=preferences.model_version,
             generator_version=GENERATOR_VERSION,
             entries=entries,
@@ -116,6 +132,7 @@ class RecommendedDigestService:
         logger.info(
             "recommended_digest_generated",
             user_id=str(user_id),
+            digest_type=digest_type.value,
             entries=len(entries),
             candidates=len(candidates),
         )
