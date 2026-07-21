@@ -285,3 +285,53 @@ def test_abstract_fallback_is_stored_and_fans_out_by_ids(
     assert all(call[1] == (str(PAPER_ID), str(VERSION_ID)) for call in queue.calls)
     assert all("sections" not in call[2] and "body" not in call[2] for call in queue.calls)
     assert queue.calls[0][2]["_job_id"] != queue.calls[1][2]["_job_id"]
+
+
+def test_unexpected_failure_is_recorded_before_it_propagates(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parent = _parent_job(PipelineStage.PARSE_PDF)
+    context, _, _ = _install_fakes(monkeypatch, parent, _revision(downloaded=True))
+
+    async def crash(*args: object) -> list[document_runtime.PendingEnqueue]:
+        raise RuntimeError("unsafe implementation detail")
+
+    with pytest.raises(RuntimeError, match="unsafe implementation detail"):
+        asyncio.run(
+            document_runtime.run_document_stage(
+                context,
+                stage=PipelineStage.PARSE_PDF,
+                job_id=str(JOB_ID),
+                paper_id=str(PAPER_ID),
+                paper_version_id=str(VERSION_ID),
+                runner=crash,
+            )
+        )
+
+    assert parent.status is JobStatus.FAILED
+    assert parent.error_code == "document_stage_error"
+    assert parent.last_error == "The document pipeline stage failed unexpectedly."
+
+
+def test_mismatched_job_identity_is_rejected_without_running(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parent = _parent_job(PipelineStage.DOWNLOAD_PDF)
+    context, _, _ = _install_fakes(monkeypatch, parent, _revision())
+
+    async def unused(*args: object) -> list[document_runtime.PendingEnqueue]:
+        raise AssertionError("runner must not be called")
+
+    outcome = asyncio.run(
+        document_runtime.run_document_stage(
+            context,
+            stage=PipelineStage.PARSE_PDF,
+            job_id=str(JOB_ID),
+            paper_id=str(PAPER_ID),
+            paper_version_id=str(VERSION_ID),
+            runner=unused,
+        )
+    )
+
+    assert outcome == "pipeline_job_identity_mismatch"
+    assert parent.status is JobStatus.QUEUED
