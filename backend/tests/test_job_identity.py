@@ -1,6 +1,7 @@
 """Pure tests for canonical durable pipeline-job identities."""
 
 import re
+from datetime import date
 from uuid import UUID
 
 import pytest
@@ -13,6 +14,7 @@ from mneme.repositories.job_identity import (
     embed_idempotency_key,
     parse_idempotency_key,
     summarize_idempotency_key,
+    weekly_digest_idempotency_key,
 )
 
 PAPER_ID = UUID("00000000-0000-0000-0000-000000000111")
@@ -130,6 +132,33 @@ def test_named_revision_stage_keys_include_their_artifact_inputs() -> None:
     assert chunk.startswith("v1:chunk_paper:")
     assert embed.startswith("v1:embed_chunks:")
     assert len({download, parse, summary, chunk, embed}) == 5
+
+
+def test_weekly_digest_key_is_scoped_by_user_period_and_generator() -> None:
+    monday = date(2026, 7, 20)
+    original = weekly_digest_idempotency_key(
+        user_id=PAPER_ID,
+        week_start=monday,
+        generator_version="recommender-v1",
+    )
+
+    assert original.startswith("v1:assemble_digest:")
+    assert original == weekly_digest_idempotency_key(
+        user_id=PAPER_ID,
+        week_start=monday,
+        generator_version="recommender-v1",
+    )
+    assert original != weekly_digest_idempotency_key(
+        user_id=VERSION_ID,
+        week_start=monday,
+        generator_version="recommender-v1",
+    )
+    with pytest.raises(ValueError, match="Monday"):
+        weekly_digest_idempotency_key(
+            user_id=PAPER_ID,
+            week_start=date(2026, 7, 21),
+            generator_version="recommender-v1",
+        )
 
 
 @pytest.mark.parametrize("checksum", ["", "A" * 64, "a" * 63, "not-a-checksum"])

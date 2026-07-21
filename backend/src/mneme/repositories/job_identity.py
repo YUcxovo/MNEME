@@ -6,6 +6,7 @@ import hashlib
 import json
 import re
 from collections.abc import Mapping
+from datetime import date
 from typing import Final
 from uuid import UUID
 
@@ -157,6 +158,21 @@ def embed_idempotency_key(
             "parser_version": parser_version,
             "embedding_model": embedding_model,
         },
+    )
+
+
+def weekly_digest_idempotency_key(
+    *, user_id: UUID, week_start: date, generator_version: str
+) -> str:
+    """Return one user/week identity for a weekly Research Briefing."""
+    if week_start.weekday() != 0:
+        raise ValueError("Weekly digest periods must start on Monday.")
+    if not generator_version:
+        raise ValueError("Digest generator version must not be empty.")
+    return build_job_idempotency_key(
+        stage=PipelineStage.ASSEMBLE_DIGEST,
+        scope={"user_id": user_id, "week_start": week_start.isoformat()},
+        inputs={"generator_version": generator_version},
     )
 
 
