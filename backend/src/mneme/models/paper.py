@@ -39,6 +39,14 @@ class ProcessingStatus(StrEnum):
     FAILED = "failed"
 
 
+class ParseQuality(StrEnum):
+    """Quality tier of one revision's persisted parsed document."""
+
+    STRUCTURED = "structured"
+    TEXT_ONLY = "text_only"
+    ABSTRACT_ONLY = "abstract_only"
+
+
 class Paper(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """The latest observed metadata snapshot for one arXiv work."""
 
@@ -88,6 +96,21 @@ class PaperVersion(UUIDPrimaryKeyMixin, Base):
         UniqueConstraint("id", "paper_id", name="uq_paper_versions_id_paper"),
         UniqueConstraint("paper_id", "version_number", name="uq_paper_versions_paper_version"),
         CheckConstraint("version_number > 0", name="ck_paper_versions_version_number_positive"),
+        CheckConstraint(
+            "source_checksum IS NULL OR length(source_checksum) = 64",
+            name="ck_paper_versions_source_checksum_sha256",
+        ),
+        CheckConstraint(
+            "parsed_checksum IS NULL OR length(parsed_checksum) = 64",
+            name="ck_paper_versions_parsed_checksum_sha256",
+        ),
+        CheckConstraint(
+            "(parsed_checksum IS NULL AND parser_version IS NULL "
+            "AND parse_quality IS NULL AND parsed_at IS NULL) OR "
+            "(parsed_checksum IS NOT NULL AND parser_version IS NOT NULL "
+            "AND parse_quality IS NOT NULL AND parsed_at IS NOT NULL)",
+            name="ck_paper_versions_parse_metadata_complete",
+        ),
     )
 
     paper_id: Mapped[UUID] = mapped_column(
@@ -95,6 +118,20 @@ class PaperVersion(UUIDPrimaryKeyMixin, Base):
     )
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     source_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    parsed_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    parser_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    parse_quality: Mapped[ParseQuality | None] = mapped_column(
+        Enum(
+            ParseQuality,
+            name="parse_quality",
+            native_enum=False,
+            create_constraint=True,
+            length=32,
+            values_callable=lambda values: [item.value for item in values],
+        ),
+        nullable=True,
+    )
+    parsed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False

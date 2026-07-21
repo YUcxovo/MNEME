@@ -4,7 +4,7 @@ import pytest
 from sqlalchemy import ARRAY, Enum
 from sqlalchemy.orm import configure_mappers
 
-from mneme.models import Base, ProcessingStatus
+from mneme.models import Base, ParseQuality, ProcessingStatus
 
 
 @pytest.mark.base
@@ -37,10 +37,20 @@ def test_paper_snapshot_supports_keyset_and_categories() -> None:
 def test_revision_and_authorship_constraints() -> None:
     versions = Base.metadata.tables["paper_versions"]
     authorship = Base.metadata.tables["paper_authors"]
+    parse_quality_type = versions.c.parse_quality.type
 
     assert versions.c.source_checksum.nullable
+    assert versions.c.parsed_checksum.nullable
+    assert versions.c.parser_version.nullable
+    assert versions.c.parse_quality.nullable
+    assert versions.c.parsed_at.nullable
+    assert isinstance(parse_quality_type, Enum)
+    assert set(parse_quality_type.enums) == {quality.value for quality in ParseQuality}
     assert versions.c.submitted_at.nullable
     assert "uq_paper_versions_paper_version" in {
+        constraint.name for constraint in versions.constraints
+    }
+    assert "ck_paper_versions_parse_metadata_complete" in {
         constraint.name for constraint in versions.constraints
     }
     assert {column.name for column in authorship.primary_key.columns} == {

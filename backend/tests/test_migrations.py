@@ -72,6 +72,9 @@ def test_migration_chain_renders_offline() -> None:
     first_vector_table_position = sql.index("CREATE TABLE user_preferences")
     assert extension_position < first_vector_table_position
     assert sql.count("VECTOR(1536)") == 2
+    assert "ADD COLUMN parsed_checksum VARCHAR(64)" in sql
+    assert "ADD COLUMN paper_version_id UUID" in sql
+    assert "fk_pipeline_jobs_version_paper" in sql
 
 
 @pytest.mark.base
