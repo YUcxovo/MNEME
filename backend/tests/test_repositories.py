@@ -126,6 +126,17 @@ async def _exercise_arxiv_repository() -> None:
             stale_result.version_created,
             replay_result.version_created,
         ] == [True, True, True, False]
+        assert (
+            len(
+                {
+                    original_result.paper_version_id,
+                    newest_result.paper_version_id,
+                    stale_result.paper_version_id,
+                }
+            )
+            == 3
+        )
+        assert replay_result.paper_version_id == newest_result.paper_version_id
         assert stale_result.authors_replaced is False
 
         async with database.session_factory() as session:
