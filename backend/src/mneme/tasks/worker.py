@@ -3,6 +3,7 @@
 from typing import Any, ClassVar
 
 import structlog
+from arq import cron
 
 from mneme.ai.budget import BudgetGuard
 from mneme.ai.embeddings import EmbeddingService, OpenAIEmbeddingProvider
@@ -15,6 +16,7 @@ from mneme.redis.arq import create_arq_redis_settings
 from mneme.redis.client import create_redis_client
 from mneme.services.documents import DocumentStorage, PdfDownloader, PdfParser
 from mneme.tasks.ai_jobs import chunk_paper, embed_chunks, summarize_paper
+from mneme.tasks.dispatch_recovery import recover_revision_dispatches
 from mneme.tasks.document_jobs import download_pdf, parse_pdf
 from mneme.tasks.metadata_jobs import fetch_metadata
 
@@ -93,6 +95,9 @@ class WorkerSettings:
         summarize_paper,
         chunk_paper,
         embed_chunks,
+    ]
+    cron_jobs: ClassVar = [
+        cron(recover_revision_dispatches, second=15, run_at_startup=True),
     ]
     on_startup = on_startup
     on_shutdown = on_shutdown
