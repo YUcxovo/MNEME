@@ -1,8 +1,6 @@
 # Mneme Backend
 
-FastAPI backend for the Mneme research assistant. Milestone 1 provides a real arXiv
-metadata-to-API path, the frozen v0.1 persistence model, and the shared platform boundary
-for later PDF, behavior, graph, and AI work.
+FastAPI backend for the Mneme research assistant. The merged Milestone 1 baseline provides a real arXiv metadata-to-API path, the frozen v0.1 persistence model, shared platform boundaries, and Yifan's provider/routing/cache/budget/evaluation service foundation. Real PDF processing and the M2/M3 AI pipeline are not yet merged.
 
 ## Requirements
 
