@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added a Retrofit/OkHttp Android integration for the authenticated skeletal path across
+  preferences, manual recommended briefings, paper metadata, async summaries/jobs, and
+  user-entered single-paper Q&A.
+- Added MVVM loading/error/job-polling state, explicit live/cached/controlled-fixture UI
+  disclosure, and Room-backed briefing and paper metadata fallback without a schema bump.
+- Added Android network contract, repository fallback, and Room cache round-trip tests.
+- Added opt-in DeepSeek generation and local BGE Small/FastEmbed embedding providers with
+  explicit model provenance, zero-cost local vectors, and no API or schema change.
 - Added an Android skeletal-demo flow with type-safe navigation, controlled research
   content, inspectable paper details, and a source-visible single-paper Q&A path.
 - Added Android Room/DataStore local foundations, explicit Room migrations through schema version 3, offline cache metadata and retention policies, a WorkManager scheduling stub, and local research-briefing notification primitives.
@@ -38,6 +46,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Replaced unconditional Android source-verification wording with the exact summary/Q&A
+  source-match status returned by the backend.
 - Aligned the Android skeletal-demo screens with the team UI/UX prototype's navy and gold
   visual system while retaining controlled repository fixtures and inspectable sources.
 - Updated Android CI so instrumented-test Gradle commands run from the Android project root.
@@ -45,6 +55,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Preserved logical reading order for multi-column PDFs, added bounded overview evidence to
+  single-paper retrieval, and prevented mixed provider refusal markers from discarding cited
+  answers. Citation source matching now evaluates each cited local claim instead of penalizing
+  multi-source answers as a whole. PDF and legacy sidecar text now drop database-unsafe control
+  characters before chunk persistence.
 - Prevented current-revision summary and Q&A responses from reusing stale artifacts from an older arXiv revision.
 - Decoded PostgreSQL aggregate pgvector values through the vector type before recommendation scoring.
 - Aligned generated async-response OpenAPI documentation and optional summary fields with the frozen v0.1 contract.
