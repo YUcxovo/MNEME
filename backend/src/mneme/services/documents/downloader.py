@@ -191,14 +191,23 @@ class PdfDownloader:
             temporary.unlink(missing_ok=True)
             raise
 
-    @staticmethod
-    def _existing(destination: Path, expected_checksum: str | None) -> PdfDownloadResult | None:
+    def _existing(
+        self, destination: Path, expected_checksum: str | None
+    ) -> PdfDownloadResult | None:
         if not destination.is_file():
             return None
-        content = destination.read_bytes()
-        if _PDF_MAGIC not in content[:_MAGIC_SCAN_BYTES]:
+        byte_size = destination.stat().st_size
+        if byte_size > self._max_bytes:
             return None
-        checksum = hashlib.sha256(content).hexdigest()
+        digest = hashlib.sha256()
+        with destination.open("rb") as stream:
+            prefix = stream.read(_MAGIC_SCAN_BYTES)
+            digest.update(prefix)
+            for chunk in iter(lambda: stream.read(64 * 1024), b""):
+                digest.update(chunk)
+        if _PDF_MAGIC not in prefix:
+            return None
+        checksum = digest.hexdigest()
         if expected_checksum is not None and checksum != expected_checksum:
             return None
-        return PdfDownloadResult(destination, checksum, len(content), reused=True)
+        return PdfDownloadResult(destination, checksum, byte_size, reused=True)
