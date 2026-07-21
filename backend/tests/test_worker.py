@@ -35,6 +35,7 @@ def test_arq_settings_reuse_application_redis_config() -> None:
 @pytest.mark.pipeline
 def test_worker_registers_probe_and_ai_stages() -> None:
     from mneme.tasks.ai_jobs import chunk_paper, embed_chunks, summarize_paper
+    from mneme.tasks.dispatch_recovery import recover_revision_dispatches
     from mneme.tasks.document_jobs import download_pdf, parse_pdf
     from mneme.tasks.metadata_jobs import fetch_metadata
 
@@ -49,4 +50,7 @@ def test_worker_registers_probe_and_ai_stages() -> None:
     ]
     assert WorkerSettings.queue_name == "mneme:jobs"
     assert WorkerSettings.health_check_key == "mneme:worker:health"
+    assert len(WorkerSettings.cron_jobs) == 1
+    assert WorkerSettings.cron_jobs[0].coroutine is recover_revision_dispatches
+    assert WorkerSettings.cron_jobs[0].run_at_startup is True
     assert asyncio.run(worker_probe({})) == "ok"

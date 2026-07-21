@@ -159,23 +159,27 @@ class PipelineJobRepository:
             .values(dispatched_at=None, updated_at=utc_now())
         )
 
-    async def list_dispatchable(self, *, lease_seconds: int = 300, limit: int = 100) -> list[UUID]:
+    async def list_dispatchable(
+        self,
+        *,
+        lease_seconds: int = 300,
+        limit: int = 100,
+        revision_only: bool = False,
+    ) -> list[UUID]:
         """List queued jobs whose dispatch lease is absent or stale."""
         if lease_seconds < 1 or limit < 1:
             raise ValueError("Dispatch lease and limit must be positive.")
         stale_before = utc_now() - timedelta(seconds=lease_seconds)
-        statement = (
-            select(PipelineJob.id)
-            .where(
-                PipelineJob.status == JobStatus.QUEUED,
-                or_(
-                    PipelineJob.dispatched_at.is_(None),
-                    PipelineJob.dispatched_at < stale_before,
-                ),
-            )
-            .order_by(PipelineJob.created_at, PipelineJob.id)
-            .limit(limit)
+        statement = select(PipelineJob.id).where(
+            PipelineJob.status == JobStatus.QUEUED,
+            or_(
+                PipelineJob.dispatched_at.is_(None),
+                PipelineJob.dispatched_at < stale_before,
+            ),
         )
+        if revision_only:
+            statement = statement.where(PipelineJob.paper_version_id.is_not(None))
+        statement = statement.order_by(PipelineJob.created_at, PipelineJob.id).limit(limit)
         return list((await self._session.scalars(statement)).all())
 
     async def mark_running(self, job_id: UUID) -> None:
