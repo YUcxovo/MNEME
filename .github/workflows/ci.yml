@@ -236,6 +236,7 @@ jobs:
               if: contains(steps.android-cats.outputs.cats, 'instrumented')
               uses: reactivecircus/android-emulator-runner@v2
               with:
+                  working-directory: android
                   api-level: 34
                   arch: x86_64
                   target: google_apis
