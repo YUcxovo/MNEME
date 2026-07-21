@@ -7,8 +7,16 @@ class BehavioralEventTypeTest {
     @Test
     fun eventTypes_matchTheMilestoneThreeBehaviorSignals() {
         assertEquals(
-            setOf("open", "save", "skip", "share", "question", "time_spent"),
-            BehavioralEventType.entries.map { it.name.lowercase() }.toSet(),
+            setOf(
+                "paper_impression",
+                "paper_opened",
+                "paper_saved",
+                "paper_skipped",
+                "paper_shared",
+                "question_asked",
+                "digest_dismissed",
+            ),
+            BehavioralEventType.entries.map(BehavioralEventType::wireValue).toSet(),
         )
     }
 }
