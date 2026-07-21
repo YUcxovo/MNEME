@@ -1,6 +1,7 @@
 """Shared parsed-document contracts and local artifact storage."""
 
 from mneme.services.documents.downloader import PdfDownloader
+from mneme.services.documents.parser import PARSER_VERSION, PdfParseError, PdfParser
 from mneme.services.documents.pdf_transport import (
     PdfDownloadError,
     PdfDownloadResult,
@@ -10,6 +11,7 @@ from mneme.services.documents.storage import DocumentPaths, DocumentStorage, Sto
 from mneme.services.documents.types import ParsedDocument, ParsedSection
 
 __all__ = [
+    "PARSER_VERSION",
     "DocumentPaths",
     "DocumentStorage",
     "ParsedDocument",
@@ -17,6 +19,8 @@ __all__ = [
     "PdfDownloadError",
     "PdfDownloadResult",
     "PdfDownloader",
+    "PdfParseError",
+    "PdfParser",
     "StoredArtifact",
     "versioned_pdf_url",
 ]
