@@ -8,6 +8,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from mneme.api.schemas.papers import Paper
+from mneme.models.digest import Digest as DigestModel
 from mneme.models.digest import DigestType
 from mneme.services.recommendation import DigestBundle
 
@@ -30,6 +31,24 @@ class Digest(BaseModel):
     entries: list[DigestEntry]
 
     @classmethod
+    def from_model(cls, digest: DigestModel) -> Digest:
+        """Map an eagerly loaded digest and its ranked entries to the contract."""
+        return cls(
+            id=digest.id,
+            digest_type=digest.digest_type,
+            generated_at=digest.generated_at,
+            entries=[
+                DigestEntry(
+                    paper=Paper.from_model(entry.paper),
+                    rank=entry.rank,
+                    relevance_score=entry.relevance_score,
+                    recommendation_reason=entry.recommendation_reason,
+                )
+                for entry in digest.entries
+            ],
+        )
+
+    @classmethod
     def from_bundle(cls, bundle: DigestBundle) -> Digest:
         """Map a generated or reloaded digest bundle to the public contract."""
         return cls(
@@ -46,3 +65,10 @@ class Digest(BaseModel):
                 for entry in sorted(bundle.entries, key=lambda item: item.rank)
             ],
         )
+
+
+class DigestPage(BaseModel):
+    """Cursor-paginated research briefing response."""
+
+    items: list[Digest]
+    next_cursor: str | None = None

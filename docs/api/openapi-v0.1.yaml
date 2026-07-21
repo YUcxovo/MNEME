@@ -233,7 +233,7 @@ components:
     Cursor:
       name: cursor
       in: query
-      description: Opaque cursor for descending published_at and paper ID keyset pagination
+      description: Opaque cursor for stable resource-specific keyset pagination
       schema:
         type: string
     Limit:
