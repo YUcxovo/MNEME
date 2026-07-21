@@ -1,26 +1,29 @@
-"""Durable pipeline-job state used by AI endpoints for 202 responses.
-
-The queue infrastructure itself is owned by Ruiyu; this repository only
-covers the narrow surface AI endpoints need: get-or-create one queued job
-per idempotency key and record stage transitions from the worker.
-"""
+"""Canonical identities and persistence for durable pipeline jobs."""
 
 from __future__ import annotations
 
-from uuid import UUID
+from datetime import timedelta
+from uuid import UUID, uuid4
 
-from sqlalchemy import select
+from sqlalchemy import or_, select, update
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.models.base import utc_now
 from mneme.models.job import JobStatus, PipelineJob, PipelineStage
+from mneme.repositories.job_identity import (
+    PIPELINE_VERSION,
+    PipelineJobIdentityConflictError,
+    validate_requested_identity,
+    validate_stored_identity,
+)
 
-PIPELINE_VERSION = "v1"
 
-
-def summarize_idempotency_key(paper_id: UUID) -> str:
-    """Stable key: at most one endpoint-triggered summarize job per paper."""
-    return f"summarize_paper:{paper_id}"
+def arq_attempt_id(job_id: UUID, attempt_number: int) -> str:
+    """Return one Redis identity that remains stable until a worker starts."""
+    if attempt_number < 1:
+        raise ValueError("ARQ attempt number must be positive.")
+    return f"pipeline:{job_id}:attempt:{attempt_number}"
 
 
 class PipelineJobRepository:
@@ -34,38 +37,146 @@ class PipelineJobRepository:
         return await self._session.scalar(select(PipelineJob).where(PipelineJob.id == job_id))
 
     async def get_or_create(
-        self, *, idempotency_key: str, stage: PipelineStage, paper_id: UUID | None
+        self,
+        *,
+        idempotency_key: str,
+        stage: PipelineStage,
+        paper_id: UUID | None,
+        paper_version_id: UUID | None,
+        pipeline_version: str = PIPELINE_VERSION,
     ) -> tuple[PipelineJob, bool]:
-        """Return the existing job for a key, or a new queued one.
+        """Atomically return the job for one exact durable identity.
 
-        The boolean is True when this call created the job (the caller is
-        then responsible for enqueuing the corresponding ARQ task).
+        PostgreSQL arbitrates concurrent creators through the unique key. The
+        boolean is true only for the transaction that inserted the row; that
+        caller alone is responsible for enqueuing the corresponding ARQ task.
         """
+        validate_requested_identity(
+            idempotency_key=idempotency_key,
+            stage=stage,
+            paper_id=paper_id,
+            paper_version_id=paper_version_id,
+            pipeline_version=pipeline_version,
+        )
+
+        now = utc_now()
+        job_id = uuid4()
+        statement = (
+            postgresql_insert(PipelineJob)
+            .values(
+                id=job_id,
+                paper_id=paper_id,
+                paper_version_id=paper_version_id,
+                idempotency_key=idempotency_key,
+                stage=stage,
+                status=JobStatus.QUEUED,
+                attempt_count=0,
+                pipeline_version=pipeline_version,
+                created_at=now,
+                updated_at=now,
+            )
+            .on_conflict_do_nothing(constraint="uq_pipeline_jobs_idempotency_key")
+            .returning(PipelineJob.id)
+        )
+        inserted_id = (await self._session.execute(statement)).scalar_one_or_none()
+        if inserted_id is not None:
+            inserted = await self._session.get(PipelineJob, inserted_id)
+            if inserted is None:  # pragma: no cover - guarded by the current transaction
+                raise PipelineJobIdentityConflictError
+            return inserted, True
+
         existing = await self._session.scalar(
             select(PipelineJob).where(PipelineJob.idempotency_key == idempotency_key)
         )
-        if existing is not None:
-            return existing, False
-        job = PipelineJob(
-            paper_id=paper_id,
-            idempotency_key=idempotency_key,
+        if existing is None:  # pragma: no cover - only possible after an external concurrent delete
+            raise PipelineJobIdentityConflictError
+        validate_stored_identity(
+            existing,
             stage=stage,
-            status=JobStatus.QUEUED,
-            pipeline_version=PIPELINE_VERSION,
+            paper_id=paper_id,
+            paper_version_id=paper_version_id,
+            pipeline_version=pipeline_version,
         )
-        self._session.add(job)
-        await self._session.flush()
-        return job, True
+        return existing, False
+
+    async def claim_failed_for_retry(self, job_id: UUID) -> bool:
+        """Atomically let one caller move a failed job back to the queue."""
+        now = utc_now()
+        statement = (
+            update(PipelineJob)
+            .where(PipelineJob.id == job_id, PipelineJob.status == JobStatus.FAILED)
+            .values(
+                status=JobStatus.QUEUED,
+                error_code=None,
+                last_error=None,
+                dispatched_at=None,
+                started_at=None,
+                finished_at=None,
+                updated_at=now,
+            )
+            .returning(PipelineJob.id)
+        )
+        return (await self._session.execute(statement)).scalar_one_or_none() is not None
 
     async def requeue(self, job: PipelineJob) -> PipelineJob:
-        """Reset a failed job so its stage can be enqueued again."""
-        job.status = JobStatus.QUEUED
-        job.error_code = None
-        job.last_error = None
-        job.started_at = None
-        job.finished_at = None
-        await self._session.flush()
-        return job
+        """Compatibility wrapper around the atomic failed-job retry claim."""
+        await self.claim_failed_for_retry(job.id)
+        refreshed = await self._session.get(PipelineJob, job.id, populate_existing=True)
+        return refreshed or job
+
+    async def claim_for_dispatch(self, job_id: UUID, *, lease_seconds: int = 300) -> int | None:
+        """Claim one queued job for ARQ and return its stable attempt number.
+
+        A stale lease can be reclaimed after a process dies between the
+        database commit and Redis enqueue. The returned attempt stays stable
+        until a worker actually starts and increments ``attempt_count``.
+        """
+        if lease_seconds < 1:
+            raise ValueError("Dispatch lease must be positive.")
+        now = utc_now()
+        stale_before = now - timedelta(seconds=lease_seconds)
+        statement = (
+            update(PipelineJob)
+            .where(
+                PipelineJob.id == job_id,
+                PipelineJob.status == JobStatus.QUEUED,
+                or_(
+                    PipelineJob.dispatched_at.is_(None),
+                    PipelineJob.dispatched_at < stale_before,
+                ),
+            )
+            .values(dispatched_at=now, updated_at=now)
+            .returning(PipelineJob.attempt_count)
+        )
+        attempt_count = (await self._session.execute(statement)).scalar_one_or_none()
+        return attempt_count + 1 if attempt_count is not None else None
+
+    async def release_dispatch(self, job_id: UUID) -> None:
+        """Release a queue lease after Redis rejects an enqueue attempt."""
+        await self._session.execute(
+            update(PipelineJob)
+            .where(PipelineJob.id == job_id, PipelineJob.status == JobStatus.QUEUED)
+            .values(dispatched_at=None, updated_at=utc_now())
+        )
+
+    async def list_dispatchable(self, *, lease_seconds: int = 300, limit: int = 100) -> list[UUID]:
+        """List queued jobs whose dispatch lease is absent or stale."""
+        if lease_seconds < 1 or limit < 1:
+            raise ValueError("Dispatch lease and limit must be positive.")
+        stale_before = utc_now() - timedelta(seconds=lease_seconds)
+        statement = (
+            select(PipelineJob.id)
+            .where(
+                PipelineJob.status == JobStatus.QUEUED,
+                or_(
+                    PipelineJob.dispatched_at.is_(None),
+                    PipelineJob.dispatched_at < stale_before,
+                ),
+            )
+            .order_by(PipelineJob.created_at, PipelineJob.id)
+            .limit(limit)
+        )
+        return list((await self._session.scalars(statement)).all())
 
     async def mark_running(self, job_id: UUID) -> None:
         """Record that a worker picked the job up."""
@@ -74,7 +185,10 @@ class PipelineJobRepository:
             return
         job.status = JobStatus.RUNNING
         job.attempt_count += 1
+        job.error_code = None
+        job.last_error = None
         job.started_at = utc_now()
+        job.finished_at = None
         await self._session.flush()
 
     async def mark_succeeded(self, job_id: UUID) -> None:
