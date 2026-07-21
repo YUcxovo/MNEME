@@ -6,7 +6,13 @@ from uuid import UUID
 import pytest
 
 from mneme.models.job import PipelineStage
-from mneme.repositories.job_identity import build_job_idempotency_key, summarize_idempotency_key
+from mneme.repositories.job_identity import (
+    build_job_idempotency_key,
+    chunk_idempotency_key,
+    download_idempotency_key,
+    parse_idempotency_key,
+    summarize_idempotency_key,
+)
 
 PAPER_ID = UUID("00000000-0000-0000-0000-000000000111")
 VERSION_ID = UUID("00000000-0000-0000-0000-000000000222")
@@ -71,10 +77,60 @@ def test_pipeline_version_is_part_of_the_job_identity() -> None:
 
 
 def test_summary_key_is_scoped_to_one_exact_revision() -> None:
-    first = summarize_idempotency_key(paper_id=PAPER_ID, paper_version_id=VERSION_ID)
-    next_revision = summarize_idempotency_key(paper_id=PAPER_ID, paper_version_id=UUID(int=3))
+    first = summarize_idempotency_key(
+        paper_id=PAPER_ID,
+        paper_version_id=VERSION_ID,
+        parsed_checksum="a" * 64,
+        parser_version="parser-v1",
+    )
+    next_revision = summarize_idempotency_key(
+        paper_id=PAPER_ID,
+        paper_version_id=UUID(int=3),
+        parsed_checksum="a" * 64,
+        parser_version="parser-v1",
+    )
 
     assert first != next_revision
+
+
+def test_named_revision_stage_keys_include_their_artifact_inputs() -> None:
+    download = download_idempotency_key(
+        paper_id=PAPER_ID,
+        paper_version_id=VERSION_ID,
+        arxiv_id="2607.00001",
+        version_number=2,
+    )
+    parse = parse_idempotency_key(
+        paper_id=PAPER_ID, paper_version_id=VERSION_ID, source_checksum="a" * 64
+    )
+    summary = summarize_idempotency_key(
+        paper_id=PAPER_ID,
+        paper_version_id=VERSION_ID,
+        parsed_checksum="b" * 64,
+        parser_version="parser-v1",
+    )
+    chunk = chunk_idempotency_key(
+        paper_id=PAPER_ID,
+        paper_version_id=VERSION_ID,
+        parsed_checksum="b" * 64,
+        parser_version="parser-v1",
+    )
+
+    assert download.startswith("v1:download_pdf:")
+    assert parse.startswith("v1:parse_pdf:")
+    assert summary.startswith("v1:summarize_paper:")
+    assert chunk.startswith("v1:chunk_paper:")
+    assert len({download, parse, summary, chunk}) == 4
+
+
+@pytest.mark.parametrize("checksum", ["", "A" * 64, "a" * 63, "not-a-checksum"])
+def test_named_artifact_keys_reject_invalid_checksums(checksum: str) -> None:
+    with pytest.raises(ValueError):
+        parse_idempotency_key(
+            paper_id=PAPER_ID,
+            paper_version_id=VERSION_ID,
+            source_checksum=checksum,
+        )
 
 
 @pytest.mark.parametrize(

@@ -80,13 +80,84 @@ def build_job_idempotency_key(
     return f"{pipeline_version}:{stage.value}:{hashlib.sha256(encoded).hexdigest()}"
 
 
-def summarize_idempotency_key(*, paper_id: UUID, paper_version_id: UUID) -> str:
-    """Return the revision-scoped identity for endpoint summarization."""
+def download_idempotency_key(
+    *, paper_id: UUID, paper_version_id: UUID, arxiv_id: str, version_number: int
+) -> str:
+    """Return the source-revision identity for a PDF download."""
+    if not arxiv_id or version_number < 1:
+        raise ValueError("A valid arXiv ID and positive version are required.")
     return build_job_idempotency_key(
-        stage=PipelineStage.SUMMARIZE_PAPER,
+        stage=PipelineStage.DOWNLOAD_PDF,
         scope={"paper_id": paper_id, "paper_version_id": paper_version_id},
-        inputs={},
+        inputs={"arxiv_id": arxiv_id, "version_number": version_number},
     )
+
+
+def parse_idempotency_key(*, paper_id: UUID, paper_version_id: UUID, source_checksum: str) -> str:
+    """Return the source-artifact identity for parsing one revision."""
+    _validate_checksum(source_checksum)
+    return build_job_idempotency_key(
+        stage=PipelineStage.PARSE_PDF,
+        scope={"paper_id": paper_id, "paper_version_id": paper_version_id},
+        inputs={"source_checksum": source_checksum},
+    )
+
+
+def summarize_idempotency_key(
+    *,
+    paper_id: UUID,
+    paper_version_id: UUID,
+    parsed_checksum: str,
+    parser_version: str,
+) -> str:
+    """Return the parsed-artifact identity for summarizing one revision."""
+    return _parsed_artifact_key(
+        stage=PipelineStage.SUMMARIZE_PAPER,
+        paper_id=paper_id,
+        paper_version_id=paper_version_id,
+        parsed_checksum=parsed_checksum,
+        parser_version=parser_version,
+    )
+
+
+def chunk_idempotency_key(
+    *,
+    paper_id: UUID,
+    paper_version_id: UUID,
+    parsed_checksum: str,
+    parser_version: str,
+) -> str:
+    """Return the parsed-artifact identity for chunking one revision."""
+    return _parsed_artifact_key(
+        stage=PipelineStage.CHUNK_PAPER,
+        paper_id=paper_id,
+        paper_version_id=paper_version_id,
+        parsed_checksum=parsed_checksum,
+        parser_version=parser_version,
+    )
+
+
+def _parsed_artifact_key(
+    *,
+    stage: PipelineStage,
+    paper_id: UUID,
+    paper_version_id: UUID,
+    parsed_checksum: str,
+    parser_version: str,
+) -> str:
+    _validate_checksum(parsed_checksum)
+    if not parser_version:
+        raise ValueError("Parser version must not be empty.")
+    return build_job_idempotency_key(
+        stage=stage,
+        scope={"paper_id": paper_id, "paper_version_id": paper_version_id},
+        inputs={"parsed_checksum": parsed_checksum, "parser_version": parser_version},
+    )
+
+
+def _validate_checksum(checksum: str) -> None:
+    if _HEX_DIGEST_PATTERN.fullmatch(checksum) is None:
+        raise ValueError("Artifact checksum must be a lowercase SHA-256 digest.")
 
 
 def validate_requested_identity(
