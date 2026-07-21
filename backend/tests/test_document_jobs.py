@@ -1,5 +1,6 @@
 """Focused tests for durable document-stage ARQ jobs."""
 
+import asyncio
 import hashlib
 from datetime import UTC, datetime
 from pathlib import Path
@@ -12,6 +13,7 @@ import pytest
 from mneme.models.job import JobStatus, PipelineJob, PipelineStage
 from mneme.models.paper import Paper, PaperVersion, ParseQuality
 from mneme.services.documents import (
+    DocumentStorage,
     ParsedDocument,
     ParsedSection,
     PdfDownloadResult,
@@ -228,3 +230,58 @@ def _install_fakes(
     monkeypatch.setattr(document_jobs.asyncio, "to_thread", run_inline)
     context: dict[str, Any] = {"database": FakeDatabase(), "redis": queue}
     return context, repository, queue
+
+
+def test_download_persists_provenance_before_dispatching_parse(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    paper, version = _revision()
+    parent = _parent_job(PipelineStage.DOWNLOAD_PDF)
+    context, repository, queue = _install_fakes(monkeypatch, parent, (paper, version))
+    context.update(document_storage=DocumentStorage(tmp_path), pdf_downloader=FakeDownloader())
+
+    outcome = asyncio.run(
+        document_jobs.download_pdf(context, str(PAPER_ID), str(VERSION_ID), job_id=str(JOB_ID))
+    )
+
+    assert outcome == "ok"
+    assert parent.status is JobStatus.SUCCEEDED
+    assert version.source_checksum == SOURCE_CHECKSUM
+    assert version.source_size_bytes == len(SOURCE)
+    assert version.downloaded_at is not None
+    assert [job.stage for job in repository.created] == [PipelineStage.PARSE_PDF]
+    function, args, kwargs = queue.calls[0]
+    assert function == "parse_pdf"
+    assert args == (str(PAPER_ID), str(VERSION_ID))
+    assert kwargs["job_id"] == str(repository.created[0].id)
+    assert kwargs["_job_id"] == f"pipeline:{repository.created[0].id}:attempt:1"
+
+
+def test_abstract_fallback_is_stored_and_fans_out_by_ids(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    paper, version = _revision(downloaded=True)
+    storage = DocumentStorage(tmp_path)
+    storage.write_source_pdf(PAPER_ID, VERSION_ID, SOURCE)
+    parent = _parent_job(PipelineStage.PARSE_PDF)
+    context, repository, queue = _install_fakes(monkeypatch, parent, (paper, version))
+    context.update(document_storage=storage, pdf_parser=FakeParser())
+
+    outcome = asyncio.run(
+        document_jobs.parse_pdf(context, str(PAPER_ID), str(VERSION_ID), job_id=str(JOB_ID))
+    )
+
+    assert outcome == "ok"
+    parsed = storage.read_parsed_document(PAPER_ID, VERSION_ID)
+    assert parsed.parse_quality is ParseQuality.ABSTRACT_ONLY
+    assert version.parsed_checksum is not None
+    assert version.parser_version == "fake-parser-v1"
+    assert version.parse_quality is ParseQuality.ABSTRACT_ONLY
+    assert [job.stage for job in repository.created] == [
+        PipelineStage.SUMMARIZE_PAPER,
+        PipelineStage.CHUNK_PAPER,
+    ]
+    assert [call[0] for call in queue.calls] == ["summarize_paper", "chunk_paper"]
+    assert all(call[1] == (str(PAPER_ID), str(VERSION_ID)) for call in queue.calls)
+    assert all("sections" not in call[2] and "body" not in call[2] for call in queue.calls)
+    assert queue.calls[0][2]["_job_id"] != queue.calls[1][2]["_job_id"]
