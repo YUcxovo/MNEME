@@ -3,16 +3,20 @@
 from typing import Annotated
 
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.api.dependencies.ai import get_digest_repository
 from mneme.api.dependencies.auth import Principal, require_principal
-from mneme.api.errors import ErrorResponse
-from mneme.api.schemas.digests import Digest
+from mneme.api.errors import ApiError, ErrorResponse
+from mneme.api.schemas.digests import Digest, DigestPage
 from mneme.core.config import Settings, get_settings
 from mneme.db.dependencies import get_session
-from mneme.repositories.digests import DigestRepository
+from mneme.repositories.digests import (
+    DigestRepository,
+    InvalidDigestCursorError,
+    decode_digest_cursor,
+)
 from mneme.services.recommendation import RecommendedDigestService
 
 logger = structlog.get_logger(__name__)
@@ -23,6 +27,42 @@ router = APIRouter(prefix="/digests", tags=["ai"])
 def get_request_settings() -> Settings:
     """Return process settings; overridable in tests."""
     return get_settings()
+
+
+@router.get(
+    "",
+    response_model=DigestPage,
+    operation_id="listDigests",
+    responses={"default": {"model": ErrorResponse}},
+)
+async def list_digests(
+    principal: Annotated[Principal, Depends(require_principal)],
+    repository: Annotated[DigestRepository, Depends(get_digest_repository)],
+    cursor: Annotated[
+        str | None,
+        Query(description="Opaque cursor for descending generated_at and digest ID pagination"),
+    ] = None,
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> DigestPage:
+    """Return the authenticated user's persisted research briefings."""
+    try:
+        decoded_cursor = decode_digest_cursor(cursor) if cursor is not None else None
+    except InvalidDigestCursorError:
+        raise ApiError(
+            status.HTTP_400_BAD_REQUEST,
+            "invalid_cursor",
+            "The pagination cursor is invalid.",
+        ) from None
+
+    page = await repository.list_digests(
+        user_id=principal.user_id,
+        limit=limit,
+        cursor=decoded_cursor,
+    )
+    return DigestPage(
+        items=[Digest.from_model(item) for item in page.items],
+        next_cursor=page.next_cursor,
+    )
 
 
 @router.post(
