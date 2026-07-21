@@ -18,9 +18,11 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class MnemeDatabaseTest {
@@ -157,41 +159,133 @@ class MnemeDatabaseTest {
         }
 
     @Test
-    fun behavioralEventDao_queuesOldestPendingEventsAndTracksRetryState() =
+    fun behavioralEventRepository_recordsAndTracksRetryState() =
         runBlocking {
-            database.behavioralEventDao().insert(
-                BehavioralEventEntity(
-                    id = "later",
-                    eventType = "save",
-                    paperId = "paper-2",
-                    occurredAtEpochMillis = 20,
-                ),
-            )
-            database.behavioralEventDao().insert(
-                BehavioralEventEntity(
-                    id = "first",
-                    eventType = "open",
-                    paperId = "paper-1",
-                    occurredAtEpochMillis = 10,
-                ),
+            val eventId = UUID.fromString("8f0a1d3b-cc41-43f0-97c2-c175341ef07c")
+            val paperId = UUID.fromString("2d3f275d-2f4f-4144-a9fd-a2cbe8f12c88")
+            val repository =
+                BehavioralEventRepository(
+                    behavioralEventDao = database.behavioralEventDao(),
+                    idGenerator = { eventId },
+                )
+
+            repository.record(
+                type = BehavioralEventType.PAPER_OPENED,
+                paperId = paperId,
+                occurredAtEpochMillis = 20,
+                durationMillis = 500,
             )
 
-            val batch = database.behavioralEventDao().pendingBatch(limit = 1)
-            assertEquals(listOf("first"), batch.map(BehavioralEventEntity::id))
+            val queued = repository.observeAll().first().single()
+            assertEquals(eventId.toString(), queued.id)
+            assertEquals("paper_opened", queued.eventType)
+            assertEquals(paperId.toString(), queued.paperId)
+            assertEquals(500L, queued.durationMillis)
 
-            database.behavioralEventDao().markInFlight(batch.map(BehavioralEventEntity::id), 30)
-            database.behavioralEventDao().markPending(batch.map(BehavioralEventEntity::id), "network")
+            val batch =
+                repository.reservePendingBatch(
+                    limit = 1,
+                    attemptedAtEpochMillis = 30,
+                    staleBeforeEpochMillis = 0,
+                )
+            assertEquals(listOf(eventId.toString()), batch.map(BehavioralEventEntity::id))
+            assertEquals(BehavioralEventSyncState.IN_FLIGHT.value, batch.single().syncState)
+            assertEquals(1, batch.single().syncAttemptCount)
 
-            val first =
-                database
-                    .behavioralEventDao()
-                    .observeAll()
-                    .first()
-                    .first()
-            assertEquals(BehavioralEventSyncState.PENDING.value, first.syncState)
-            assertEquals(1, first.syncAttemptCount)
-            assertEquals("network", first.lastSyncError)
+            repository.returnBatchToPending(listOf(eventId), "network")
+
+            val pending = repository.observeAll().first().single()
+            assertEquals(BehavioralEventSyncState.PENDING.value, pending.syncState)
+            assertEquals(1, pending.syncAttemptCount)
+            assertEquals("network", pending.lastSyncError)
         }
+
+    @Test
+    fun behavioralEventRepository_requeuesOnlyStaleInFlightEvents() =
+        runBlocking {
+            val staleId = UUID.fromString("1332d484-3d95-4596-a99f-5eb01bb30388")
+            val freshId = UUID.fromString("38372d72-14ff-4ec0-8d4c-c8ebdb57dfc9")
+            val paperId = UUID.fromString("130617f3-4632-4d03-abd6-693495965a31")
+            database.behavioralEventDao().insert(
+                BehavioralEventEntity(
+                    id = staleId.toString(),
+                    eventType = BehavioralEventType.PAPER_SAVED.wireValue,
+                    paperId = paperId.toString(),
+                    occurredAtEpochMillis = 10,
+                    syncState = BehavioralEventSyncState.IN_FLIGHT.value,
+                    syncAttemptCount = 1,
+                    lastSyncAttemptAtEpochMillis = 20,
+                ),
+            )
+            database.behavioralEventDao().insert(
+                BehavioralEventEntity(
+                    id = freshId.toString(),
+                    eventType = BehavioralEventType.QUESTION_ASKED.wireValue,
+                    paperId = paperId.toString(),
+                    occurredAtEpochMillis = 30,
+                    syncState = BehavioralEventSyncState.IN_FLIGHT.value,
+                    syncAttemptCount = 1,
+                    lastSyncAttemptAtEpochMillis = 90,
+                ),
+            )
+            val repository = BehavioralEventRepository(database.behavioralEventDao())
+
+            val batch =
+                repository.reservePendingBatch(
+                    limit = 10,
+                    attemptedAtEpochMillis = 100,
+                    staleBeforeEpochMillis = 50,
+                )
+
+            assertEquals(listOf(staleId.toString()), batch.map(BehavioralEventEntity::id))
+            assertEquals(2, batch.single().syncAttemptCount)
+            val storedById = repository.observeAll().first().associateBy(BehavioralEventEntity::id)
+            assertEquals(
+                BehavioralEventSyncState.IN_FLIGHT.value,
+                storedById.getValue(freshId.toString()).syncState,
+            )
+            assertEquals(90L, storedById.getValue(freshId.toString()).lastSyncAttemptAtEpochMillis)
+        }
+
+    @Test
+    fun behavioralEventRepository_rejectsPayloadsOutsideTheFrozenContract() =
+        runBlocking {
+            val repository = BehavioralEventRepository(database.behavioralEventDao())
+            val paperId = UUID.fromString("130617f3-4632-4d03-abd6-693495965a31")
+
+            assertIllegalArgument {
+                repository.record(
+                    type = BehavioralEventType.PAPER_SAVED,
+                    paperId = null,
+                    occurredAtEpochMillis = 10,
+                )
+            }
+            assertIllegalArgument {
+                repository.record(
+                    type = BehavioralEventType.DIGEST_DISMISSED,
+                    paperId = paperId,
+                    occurredAtEpochMillis = 10,
+                )
+            }
+            assertIllegalArgument {
+                repository.record(
+                    type = BehavioralEventType.PAPER_SAVED,
+                    paperId = paperId,
+                    occurredAtEpochMillis = 10,
+                    durationMillis = 50,
+                )
+            }
+        }
+
+    private suspend fun assertIllegalArgument(block: suspend () -> Unit) {
+        var rejected = false
+        try {
+            block()
+        } catch (_: IllegalArgumentException) {
+            rejected = true
+        }
+        assertTrue("Expected the event payload to be rejected.", rejected)
+    }
 
     private fun paper(
         id: String,

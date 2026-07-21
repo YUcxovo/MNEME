@@ -52,6 +52,10 @@ android {
         buildConfigField("String", "MNEME_DEMO_TOKEN", mnemeDemoToken.get().asBuildConfigString())
     }
 
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/src/main/schemas")
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
