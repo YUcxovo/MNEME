@@ -15,6 +15,7 @@ def test_pipeline_job_contract() -> None:
 
     assert table.c.paper_id.nullable
     assert table.c.paper_version_id.nullable
+    assert table.c.dispatched_at.nullable
     assert table.c.idempotency_key.unique
     assert table.c.error_code.nullable
     assert isinstance(stage_type, Enum)
@@ -35,6 +36,7 @@ def test_pipeline_job_indexes_and_checks() -> None:
     assert "ck_pipeline_jobs_time_range_valid" in names
     assert {
         "ix_pipeline_jobs_status_stage",
+        "ix_pipeline_jobs_dispatchable",
         "ix_pipeline_jobs_paper_status",
         "ix_pipeline_jobs_version_status",
     } <= {index.name for index in table.indexes}

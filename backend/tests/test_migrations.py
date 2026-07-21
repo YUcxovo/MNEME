@@ -74,6 +74,7 @@ def test_migration_chain_renders_offline() -> None:
     assert sql.count("VECTOR(1536)") == 2
     assert "ADD COLUMN parsed_checksum VARCHAR(64)" in sql
     assert "ADD COLUMN paper_version_id UUID" in sql
+    assert "ADD COLUMN dispatched_at TIMESTAMP WITH TIME ZONE" in sql
     assert "fk_pipeline_jobs_version_paper" in sql
 
 
