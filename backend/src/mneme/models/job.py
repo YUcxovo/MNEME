@@ -57,6 +57,7 @@ class PipelineJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             name="ck_pipeline_jobs_time_range_valid",
         ),
         Index("ix_pipeline_jobs_status_stage", "status", "stage", "created_at"),
+        Index("ix_pipeline_jobs_dispatchable", "status", "dispatched_at", "created_at"),
         Index("ix_pipeline_jobs_paper_status", "paper_id", "status"),
         Index("ix_pipeline_jobs_version_status", "paper_version_id", "status"),
         ForeignKeyConstraint(
@@ -97,5 +98,6 @@ class PipelineJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     last_error: Mapped[str | None] = mapped_column(Text, nullable=True)
     pipeline_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    dispatched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
