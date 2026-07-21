@@ -23,6 +23,9 @@ dependencies = [
     "uvicorn[standard]>=0.32,<1",
 ]
 
+[project.optional-dependencies]
+local-embeddings = ["fastembed>=0.7,<1"]
+
 [dependency-groups]
 dev = [
     "pyrefly>=0.30,<1",
