@@ -47,6 +47,15 @@ MODEL_PRICING: dict[str, ModelPricing] = {
     "gpt-4.1-mini": ModelPricing(
         input_usd_per_mtok=Decimal("0.40"), output_usd_per_mtok=Decimal("1.60")
     ),
+    "deepseek-v4-flash": ModelPricing(
+        input_usd_per_mtok=Decimal("0.14"), output_usd_per_mtok=Decimal("0.28")
+    ),
+    "deepseek-v4-pro": ModelPricing(
+        input_usd_per_mtok=Decimal("0.435"), output_usd_per_mtok=Decimal("0.87")
+    ),
+    "BAAI/bge-small-en-v1.5+fastembed-pad1536-v1": ModelPricing(
+        input_usd_per_mtok=Decimal("0"), output_usd_per_mtok=Decimal("0")
+    ),
     "text-embedding-3-small": ModelPricing(
         input_usd_per_mtok=Decimal("0.02"), output_usd_per_mtok=Decimal("0")
     ),

@@ -9,6 +9,7 @@ from mneme.ai.types import AITask, ProviderName
 @pytest.mark.base
 def test_provider_inferred_from_model_prefix() -> None:
     assert infer_provider("claude-opus-4-8") is ProviderName.ANTHROPIC
+    assert infer_provider("deepseek-v4-flash") is ProviderName.DEEPSEEK
     assert infer_provider("gpt-4o-mini") is ProviderName.OPENAI
 
 

@@ -22,6 +22,8 @@ def infer_provider(model: str) -> ProviderName:
     """Infer the owning provider from a model identifier."""
     if model.startswith("claude-"):
         return ProviderName.ANTHROPIC
+    if model.startswith("deepseek-"):
+        return ProviderName.DEEPSEEK
     if model.startswith(("gpt-", "o1-", "o3-", "o4-")):
         return ProviderName.OPENAI
     raise UnroutableModelError(f"No provider known for model {model!r}.")

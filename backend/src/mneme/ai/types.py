@@ -18,6 +18,7 @@ class ProviderName(StrEnum):
     """Supported LLM providers."""
 
     ANTHROPIC = "anthropic"
+    DEEPSEEK = "deepseek"
     OPENAI = "openai"
 
 

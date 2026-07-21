@@ -29,3 +29,17 @@ def test_unknown_model_falls_back_to_conservative_pricing() -> None:
     cost = estimate_cost("mystery-model", usage)
 
     assert cost == Decimal("30.00")
+
+
+@pytest.mark.base
+def test_deepseek_flash_uses_cache_miss_price_conservatively() -> None:
+    usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
+
+    assert estimate_cost("deepseek-v4-flash", usage) == Decimal("0.42")
+
+
+@pytest.mark.base
+def test_local_fastembed_model_has_no_external_cost() -> None:
+    usage = TokenUsage(input_tokens=1_000_000, output_tokens=0)
+
+    assert estimate_cost("BAAI/bge-small-en-v1.5+fastembed-pad1536-v1", usage) == 0

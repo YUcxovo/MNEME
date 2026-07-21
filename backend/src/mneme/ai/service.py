@@ -9,7 +9,7 @@ from redis.asyncio import Redis
 from mneme.ai.budget import BudgetGuard
 from mneme.ai.cache import LLMCache, build_cache_key
 from mneme.ai.pricing import estimate_cost
-from mneme.ai.providers import AnthropicProvider, LLMProvider, OpenAIProvider
+from mneme.ai.providers import AnthropicProvider, DeepSeekProvider, LLMProvider, OpenAIProvider
 from mneme.ai.routing import ModelRouter
 from mneme.ai.types import (
     AITask,
@@ -103,6 +103,12 @@ def build_llm_service(settings: Settings, redis: Redis) -> LLMService:
         providers[ProviderName.ANTHROPIC] = AnthropicProvider(
             api_key=settings.anthropic_api_key.get_secret_value(),
             timeout_seconds=settings.llm_timeout_seconds,
+        )
+    if settings.deepseek_api_key is not None:
+        providers[ProviderName.DEEPSEEK] = DeepSeekProvider(
+            api_key=settings.deepseek_api_key.get_secret_value(),
+            timeout_seconds=settings.llm_timeout_seconds,
+            thinking_enabled=settings.deepseek_thinking_enabled,
         )
     if settings.openai_api_key is not None:
         providers[ProviderName.OPENAI] = OpenAIProvider(
