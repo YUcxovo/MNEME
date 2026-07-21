@@ -9,6 +9,7 @@ input reuses stored artifacts instead of spending tokens again.
 from uuid import UUID
 
 import structlog
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.ai.chunking import ParsedSection, chunk_sections
@@ -16,7 +17,7 @@ from mneme.ai.embeddings import EmbeddingService
 from mneme.ai.prompts import SUMMARY_PROMPT_VERSION
 from mneme.ai.summarization import SummarizationService, summary_input_hash
 from mneme.models.artifact import PaperSummary
-from mneme.models.paper import Paper, ProcessingStatus
+from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
 from mneme.repositories.artifacts import ArtifactRepository, ChunkEmbeddingUpdate
 
 logger = structlog.get_logger(__name__)
@@ -26,11 +27,28 @@ class PaperNotReadyError(RuntimeError):
     """The paper or revision required by a stage does not exist yet."""
 
 
-async def _require_paper(session: AsyncSession, paper_id: UUID) -> Paper:
-    paper = await session.get(Paper, paper_id)
+async def _require_paper_version(
+    session: AsyncSession, *, paper_id: UUID, paper_version_id: UUID | None
+) -> tuple[Paper, PaperVersion]:
+    """Return the requested revision, with a temporary latest-version fallback."""
+    paper = await session.get(Paper, paper_id, with_for_update=True)
     if paper is None:
         raise PaperNotReadyError(f"Paper {paper_id} does not exist.")
-    return paper
+    version = (
+        await session.get(PaperVersion, paper_version_id)
+        if paper_version_id is not None
+        else await session.scalar(
+            select(PaperVersion)
+            .where(PaperVersion.paper_id == paper_id)
+            .order_by(PaperVersion.version_number.desc())
+            .limit(1)
+        )
+    )
+    if version is None or version.paper_id != paper_id:
+        raise PaperNotReadyError(
+            f"Paper version {paper_version_id} does not belong to paper {paper_id}."
+        )
+    return paper, version
 
 
 async def summarize_paper_stage(
@@ -38,19 +56,19 @@ async def summarize_paper_stage(
     *,
     paper_id: UUID,
     summarizer: SummarizationService,
+    paper_version_id: UUID | None = None,
     body: str | None = None,
 ) -> PaperSummary:
-    """Generate and store one structured summary for the latest revision.
+    """Generate and store one structured summary for an exact revision.
 
     ``body`` is the parse stage's extracted text; when absent the abstract is
     summarized instead (the parse fallback path). Idempotent on the exact
     (revision, input, provider, model, prompt version) identity.
     """
-    paper = await _require_paper(session, paper_id)
+    paper, version = await _require_paper_version(
+        session, paper_id=paper_id, paper_version_id=paper_version_id
+    )
     artifacts = ArtifactRepository(session)
-    version = await artifacts.get_latest_version(paper_id)
-    if version is None:
-        raise PaperNotReadyError(f"Paper {paper_id} has no observed revision.")
 
     text = body if body is not None and body.strip() else paper.abstract
     input_hash = summary_input_hash(title=paper.title, body=text[: summarizer.max_input_chars])
@@ -99,17 +117,17 @@ async def chunk_paper_stage(
     sections: list[ParsedSection],
     max_tokens: int,
     overlap_tokens: int,
+    paper_version_id: UUID | None = None,
 ) -> int:
-    """Chunk parsed sections for the latest revision; returns the chunk count.
+    """Chunk parsed sections for an exact revision; returns the chunk count.
 
     Re-running replaces the revision's chunks with identical content (same
     hashes), so downstream embedding stays consistent.
     """
-    await _require_paper(session, paper_id)
+    _, version = await _require_paper_version(
+        session, paper_id=paper_id, paper_version_id=paper_version_id
+    )
     artifacts = ArtifactRepository(session)
-    version = await artifacts.get_latest_version(paper_id)
-    if version is None:
-        raise PaperNotReadyError(f"Paper {paper_id} has no observed revision.")
 
     drafts = chunk_sections(sections, max_tokens=max_tokens, overlap_tokens=overlap_tokens)
     stored = await artifacts.replace_chunks(
@@ -124,18 +142,18 @@ async def embed_chunks_stage(
     *,
     paper_id: UUID,
     embedder: EmbeddingService,
+    paper_version_id: UUID | None = None,
     batch_limit: int = 512,
 ) -> int:
-    """Embed all unembedded chunks of the latest revision; returns the count.
+    """Embed all unembedded chunks of an exact revision; returns the count.
 
     Only chunks without vectors are fetched, so retries after a partial
     failure resume where the previous attempt stopped.
     """
-    paper = await _require_paper(session, paper_id)
+    _, version = await _require_paper_version(
+        session, paper_id=paper_id, paper_version_id=paper_version_id
+    )
     artifacts = ArtifactRepository(session)
-    version = await artifacts.get_latest_version(paper_id)
-    if version is None:
-        raise PaperNotReadyError(f"Paper {paper_id} has no observed revision.")
 
     embedded = 0
     while True:
@@ -155,7 +173,5 @@ async def embed_chunks_stage(
         )
         embedded += len(chunks)
 
-    if embedded and paper.processing_status is not ProcessingStatus.READY:
-        paper.processing_status = ProcessingStatus.READY
     logger.info("chunks_embedded", paper_id=str(paper_id), chunks=embedded)
     return embedded
