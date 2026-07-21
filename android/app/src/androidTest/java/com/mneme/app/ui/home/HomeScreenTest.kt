@@ -27,7 +27,7 @@ class HomeScreenTest {
             }
         }
 
-        composeRule.onNodeWithTag("controlled-demo-notice").assertIsDisplayed()
+        composeRule.onNodeWithTag("content-source-notice").assertIsDisplayed()
         composeRule.onNodeWithText("Attention Is All You Need").assertIsDisplayed()
         composeRule.onNodeWithText("Natural language processing").assertIsDisplayed()
     }

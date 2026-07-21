@@ -1,20 +1,19 @@
 <resources>
     <string name="app_name">Mneme</string>
     <string name="brand_mark">M</string>
-    <string name="action_ask_seeded_question">Ask the seeded question</string>
+    <string name="action_ask_question">Ask about this paper</string>
     <string name="action_back">Back</string>
     <string name="action_open">Open</string>
     <string name="action_open_source">Open source paper</string>
-    <string name="briefing_paper_count">%1$d PAPER</string>
     <string name="briefing_recommended_paper">RECOMMENDED</string>
-    <string name="briefing_seeded_interests">YOUR TOPICS</string>
+    <string name="briefing_interests">YOUR TOPICS</string>
     <string name="briefing_today">Today</string>
     <string name="controlled_demo_title">CONTROLLED DEMO</string>
+    <string name="content_source_cached">CACHED BACKEND DATA</string>
+    <string name="content_source_live">LIVE BACKEND DATA</string>
     <string name="home_empty_body">Choose topics in Interests to personalize future briefings.</string>
     <string name="home_empty_title">Your research feed is ready for its first paper.</string>
-    <string name="interests_demo_profile">DEMO PROFILE</string>
-    <string name="interests_demo_profile_note">These interests come from the versioned repository fixture and remain fixed during this skeletal demonstration.</string>
-    <string name="interests_description">These are the fixed interests used by this controlled demo.</string>
+    <string name="interests_description">These topics seed the recommendations in your research briefing.</string>
     <string name="interests_topics_label">YOUR TOPICS</string>
     <string name="kicker_research_briefing">WEEKLY RESEARCH BRIEFING</string>
     <string name="kicker_research_memory">RESEARCH MEMORY</string>
@@ -28,15 +27,30 @@
     <string name="paper_key_claims">Key claims</string>
     <string name="paper_limitation">Current limitation</string>
     <string name="paper_methodology">Methodology</string>
-    <string name="paper_not_found">The selected paper is not available in the controlled demo data.</string>
-    <string name="paper_source_inspectable">The source and section are visible so this summary can be checked during the demo.</string>
+    <string name="paper_not_found">The selected paper is not available.</string>
+    <string name="paper_source_inspectable">Open the source paper to inspect the material behind this summary.</string>
     <string name="paper_source_trace">SOURCE TRACE</string>
-    <string name="paper_source_verified">Verified</string>
+    <string name="source_status_insufficient">Insufficient evidence</string>
+    <string name="source_status_matched">Source matched</string>
+    <string name="source_status_not_checked">Not checked</string>
+    <string name="source_status_partial">Partially matched</string>
+    <string name="source_status_unmatched">Not matched</string>
     <string name="qa_answer">Answer</string>
+    <string name="qa_ask_description">Ask one question about this paper. Each submission is answered independently from the indexed paper.</string>
+    <string name="qa_ask_label">ASK THIS PAPER</string>
+    <string name="qa_character_count">%1$d / %2$d</string>
+    <string name="qa_empty_prompt">Enter a question to retrieve evidence from this paper.</string>
+    <string name="qa_error_title">The question could not be answered</string>
+    <string name="qa_input_label">Your question</string>
+    <string name="qa_input_placeholder">For example: What evidence supports the main conclusion?</string>
+    <string name="qa_loading">Searching the paper and preparing a cited answer...</string>
     <string name="qa_question">Paper-specific question</string>
-    <string name="qa_not_found">The selected question is not available in the controlled demo data.</string>
+    <string name="qa_retry_question">Retry this question</string>
+    <string name="qa_submit_question">Submit question</string>
+    <string name="qa_no_citations">The backend did not return a source citation for this answer.</string>
+    <string name="qa_not_found">A paper-specific answer is not available.</string>
     <string name="qa_source">SOURCE USED FOR THIS ANSWER</string>
-    <string name="qa_source_note">Open the paper to inspect the section used by this controlled answer.</string>
+    <string name="qa_source_note">Open the paper to inspect the cited section.</string>
     <string name="saved_context_label">SAVED CONTEXT</string>
     <string name="saved_empty_body">This controlled demo does not include saved papers.</string>
     <string name="saved_empty_title">No saved papers yet</string>
@@ -47,7 +61,11 @@
     <string name="screen_title_saved">Saved papers</string>
     <string name="source_location_format">Source location: %1$s</string>
     <plurals name="briefing_match_summary">
-        <item quantity="one">%1$d paper matched to your seeded interests.</item>
-        <item quantity="other">%1$d papers matched to your seeded interests.</item>
+        <item quantity="one">%1$d paper matched to your topics.</item>
+        <item quantity="other">%1$d papers matched to your topics.</item>
+    </plurals>
+    <plurals name="briefing_paper_count">
+        <item quantity="one">%1$d PAPER</item>
+        <item quantity="other">%1$d PAPERS</item>
     </plurals>
 </resources>

@@ -16,6 +16,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mneme.app.R
+import com.mneme.app.ui.model.ContentDisclosureUiModel
+import com.mneme.app.ui.model.ContentOrigin
+import com.mneme.app.ui.model.SourceMatchUiStatus
 
 @Composable
 fun MnemeSectionLabel(
@@ -31,8 +34,8 @@ fun MnemeSectionLabel(
 }
 
 @Composable
-fun ControlledDemoNotice(
-    disclosure: String,
+fun ContentSourceNotice(
+    disclosure: ContentDisclosureUiModel,
     modifier: Modifier = Modifier,
     testTag: String? = null,
 ) {
@@ -55,15 +58,63 @@ fun ControlledDemoNotice(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = stringResource(R.string.controlled_demo_title),
+                text =
+                    stringResource(
+                        when (disclosure.origin) {
+                            ContentOrigin.LIVE_BACKEND -> R.string.content_source_live
+                            ContentOrigin.CACHED_BACKEND -> R.string.content_source_cached
+                            ContentOrigin.CONTROLLED_FIXTURE -> R.string.controlled_demo_title
+                        },
+                    ),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = disclosure,
+                text = disclosure.message,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Composable
+fun SourceMatchStatusPill(
+    status: SourceMatchUiStatus,
+    modifier: Modifier = Modifier,
+) {
+    val label =
+        stringResource(
+            when (status) {
+                SourceMatchUiStatus.MATCHED -> R.string.source_status_matched
+                SourceMatchUiStatus.PARTIAL -> R.string.source_status_partial
+                SourceMatchUiStatus.NOT_CHECKED -> R.string.source_status_not_checked
+                SourceMatchUiStatus.INSUFFICIENT_EVIDENCE -> R.string.source_status_insufficient
+                SourceMatchUiStatus.UNMATCHED -> R.string.source_status_unmatched
+            },
+        )
+    val matched = status == SourceMatchUiStatus.MATCHED
+    Surface(
+        modifier = modifier,
+        color =
+            if (matched) {
+                MaterialTheme.colorScheme.tertiary
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
+        contentColor =
+            if (matched) {
+                MaterialTheme.colorScheme.onTertiary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        shape = MaterialTheme.shapes.extraLarge,
+        border = if (matched) null else BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            style = MaterialTheme.typography.labelMedium,
+        )
     }
 }
