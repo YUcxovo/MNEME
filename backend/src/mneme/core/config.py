@@ -18,6 +18,13 @@ class Environment(StrEnum):
     PRODUCTION = "production"
 
 
+class EmbeddingBackend(StrEnum):
+    """Supported embedding backends."""
+
+    OPENAI = "openai"
+    FASTEMBED = "fastembed"
+
+
 class Settings(BaseSettings):
     """Validated settings loaded from environment variables or a local .env file."""
 
@@ -59,6 +66,8 @@ class Settings(BaseSettings):
     demo_token_sha256: SecretStr | None = None
     demo_user_id: UUID | None = None
     anthropic_api_key: SecretStr | None = None
+    deepseek_api_key: SecretStr | None = None
+    deepseek_thinking_enabled: bool = False
     openai_api_key: SecretStr | None = None
     llm_timeout_seconds: float = Field(default=60.0, gt=0)
     llm_summary_model: str = "claude-opus-4-8"
@@ -69,7 +78,9 @@ class Settings(BaseSettings):
     ai_qa_cache_ttl_seconds: int = Field(default=24 * 3600, ge=1)
     ai_summary_max_input_chars: int = Field(default=60_000, ge=1000)
     ai_summary_max_output_tokens: int = Field(default=1024, ge=64)
+    ai_embedding_backend: EmbeddingBackend = EmbeddingBackend.OPENAI
     ai_embedding_model: str = "text-embedding-3-small"
+    ai_local_embedding_model: str = "BAAI/bge-small-en-v1.5"
     ai_embedding_batch_size: int = Field(default=64, ge=1, le=2048)
     ai_chunk_max_tokens: int = Field(default=450, ge=50)
     ai_chunk_overlap_tokens: int = Field(default=60, ge=0)

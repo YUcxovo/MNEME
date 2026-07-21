@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from mneme.core.config import Environment, Settings
+from mneme.core.config import EmbeddingBackend, Environment, Settings
 
 
 @pytest.mark.base
@@ -28,6 +28,9 @@ def test_settings_defaults() -> None:
     assert settings.pdf_min_text_chars == 500
     assert settings.demo_token_sha256 is None
     assert settings.demo_user_id is None
+    assert settings.deepseek_api_key is None
+    assert settings.deepseek_thinking_enabled is False
+    assert settings.ai_embedding_backend is EmbeddingBackend.OPENAI
     assert settings.use_json_logs is False
 
 
@@ -48,6 +51,9 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("MNEME_PDF_MIN_TEXT_CHARS", "250")
     monkeypatch.setenv("MNEME_DEMO_TOKEN_SHA256", "a" * 64)
     monkeypatch.setenv("MNEME_DEMO_USER_ID", "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
+    monkeypatch.setenv("MNEME_DEEPSEEK_API_KEY", "deepseek-test-key")
+    monkeypatch.setenv("MNEME_DEEPSEEK_THINKING_ENABLED", "true")
+    monkeypatch.setenv("MNEME_AI_EMBEDDING_BACKEND", "fastembed")
 
     settings = Settings(_env_file=None)
 
@@ -67,4 +73,8 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     assert settings.demo_token_sha256 is not None
     assert settings.demo_token_sha256.get_secret_value() == "a" * 64
     assert str(settings.demo_user_id) == "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    assert settings.deepseek_api_key is not None
+    assert settings.deepseek_api_key.get_secret_value() == "deepseek-test-key"
+    assert settings.deepseek_thinking_enabled is True
+    assert settings.ai_embedding_backend is EmbeddingBackend.FASTEMBED
     assert settings.use_json_logs is True
