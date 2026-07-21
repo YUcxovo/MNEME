@@ -20,8 +20,14 @@ from mneme.api.schemas.jobs import Job
 from mneme.api.schemas.summaries import Summary
 from mneme.db.dependencies import get_session
 from mneme.models.job import JobStatus, PipelineStage
+from mneme.models.paper import ProcessingStatus
 from mneme.repositories.artifacts import ArtifactRepository
-from mneme.repositories.jobs import PipelineJobRepository, summarize_idempotency_key
+from mneme.repositories.job_identity import (
+    download_idempotency_key,
+    parse_idempotency_key,
+    summarize_idempotency_key,
+)
+from mneme.repositories.jobs import PipelineJobRepository, arq_attempt_id
 from mneme.repositories.paper_catalog import PaperCatalogRepository
 
 logger = structlog.get_logger(__name__)
@@ -64,28 +70,87 @@ async def get_paper_summary(
             "The requested paper does not exist.",
         )
 
-    stored = await artifacts.get_latest_summary(paper_id)
+    version = await artifacts.get_latest_version(paper_id)
+    if version is None:
+        raise ApiError(
+            status.HTTP_409_CONFLICT,
+            "paper_not_ready",
+            "The requested paper has no observed revision.",
+        )
+
+    stored = await artifacts.get_summary_for_version(version.id)
     if stored is not None:
         return Summary.from_stored(stored)
 
+    if version.parsed_checksum is not None and version.parser_version is not None:
+        stage = PipelineStage.SUMMARIZE_PAPER
+        idempotency_key = summarize_idempotency_key(
+            paper_id=paper_id,
+            paper_version_id=version.id,
+            parsed_checksum=version.parsed_checksum,
+            parser_version=version.parser_version,
+        )
+    elif version.source_checksum is not None:
+        stage = PipelineStage.PARSE_PDF
+        idempotency_key = parse_idempotency_key(
+            paper_id=paper_id,
+            paper_version_id=version.id,
+            source_checksum=version.source_checksum,
+        )
+    else:
+        stage = PipelineStage.DOWNLOAD_PDF
+        idempotency_key = download_idempotency_key(
+            paper_id=paper_id,
+            paper_version_id=version.id,
+            arxiv_id=paper.arxiv_id,
+            version_number=version.version_number,
+        )
+
     job, created = await jobs.get_or_create(
-        idempotency_key=summarize_idempotency_key(paper_id),
-        stage=PipelineStage.SUMMARIZE_PAPER,
+        idempotency_key=idempotency_key,
+        stage=stage,
         paper_id=paper_id,
+        paper_version_id=version.id,
     )
     if not created and job.status is JobStatus.FAILED:
-        job = await jobs.requeue(job)
-        created = True
+        await jobs.claim_failed_for_retry(job.id)
+        job = await jobs.get(job.id) or job
+    if paper.processing_status is ProcessingStatus.METADATA_ONLY:
+        paper.processing_status = ProcessingStatus.QUEUED
     await session.commit()
 
-    if created:
-        await queue.enqueue_job(
-            "summarize_paper",
-            str(paper_id),
+    attempt = await jobs.claim_for_dispatch(job.id)
+    await session.commit()
+    if attempt is not None:
+        try:
+            await queue.enqueue_job(
+                stage.value,
+                str(paper_id),
+                str(version.id),
+                job_id=str(job.id),
+                _job_id=arq_attempt_id(job.id, attempt),
+            )
+        except Exception as error:
+            await jobs.release_dispatch(job.id)
+            await session.commit()
+            logger.warning(
+                "summary_pipeline_enqueue_failed",
+                paper_id=str(paper_id),
+                paper_version_id=str(version.id),
+                stage=stage.value,
+            )
+            raise ApiError(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                "queue_unavailable",
+                "The paper pipeline is temporarily unavailable.",
+            ) from error
+        logger.info(
+            "summary_pipeline_enqueued",
+            paper_id=str(paper_id),
+            paper_version_id=str(version.id),
+            stage=stage.value,
             job_id=str(job.id),
-            _job_id=job.idempotency_key,
         )
-        logger.info("summary_generation_enqueued", paper_id=str(paper_id), job_id=str(job.id))
 
     response.status_code = status.HTTP_202_ACCEPTED
     return Job.from_model(job)

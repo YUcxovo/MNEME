@@ -21,16 +21,20 @@ from mneme.api.routes.summaries import router as summaries_router
 from mneme.db.dependencies import get_session
 from mneme.models.artifact import PaperSummary, SourceMatchStatus, SummaryStatus
 from mneme.models.job import JobStatus, PipelineJob, PipelineStage
-from mneme.models.paper import Paper, ProcessingStatus
+from mneme.models.paper import Paper, PaperVersion, ParseQuality, ProcessingStatus
+from mneme.repositories.job_identity import summarize_idempotency_key
 
 USER_ID = UUID("00000000-0000-0000-0000-000000000111")
 PAPER_ID = UUID("00000000-0000-0000-0000-000000000222")
 JOB_ID = UUID("00000000-0000-0000-0000-000000000333")
+VERSION_ID = UUID("00000000-0000-0000-0000-000000000444")
 TIMESTAMP = datetime(2026, 7, 15, 8, 30, tzinfo=UTC)
 ABSTRACT = (
     "We introduce a grounded assistant. It cites sources for every claim. "
     "Extensive experiments show strong results."
 )
+PARSED_CHECKSUM = "b" * 64
+PARSER_VERSION = "test-parser-v1"
 
 
 def _paper() -> Paper:
@@ -53,7 +57,7 @@ def _stored_summary() -> PaperSummary:
     return PaperSummary(
         id=uuid4(),
         paper_id=PAPER_ID,
-        paper_version_id=uuid4(),
+        paper_version_id=VERSION_ID,
         status=SummaryStatus.READY,
         source_match_status=SourceMatchStatus.NOT_CHECKED,
         content={
@@ -70,13 +74,35 @@ def _stored_summary() -> PaperSummary:
     )
 
 
+def _version(*, downloaded: bool = True, parsed: bool = True) -> PaperVersion:
+    return PaperVersion(
+        id=VERSION_ID,
+        paper_id=PAPER_ID,
+        version_number=1,
+        source_checksum="a" * 64 if downloaded else None,
+        source_size_bytes=100 if downloaded else None,
+        downloaded_at=TIMESTAMP if downloaded else None,
+        parsed_checksum=PARSED_CHECKSUM if parsed else None,
+        parser_version=PARSER_VERSION if parsed else None,
+        parse_quality=ParseQuality.TEXT_ONLY if parsed else None,
+        parsed_at=TIMESTAMP if parsed else None,
+    )
+
+
 def _job(status: JobStatus = JobStatus.QUEUED) -> PipelineJob:
     return PipelineJob(
         id=JOB_ID,
         paper_id=PAPER_ID,
-        idempotency_key=f"summarize_paper:{PAPER_ID}",
+        paper_version_id=VERSION_ID,
+        idempotency_key=summarize_idempotency_key(
+            paper_id=PAPER_ID,
+            paper_version_id=VERSION_ID,
+            parsed_checksum=PARSED_CHECKSUM,
+            parser_version=PARSER_VERSION,
+        ),
         stage=PipelineStage.SUMMARIZE_PAPER,
         status=status,
+        attempt_count=0,
         pipeline_version="v1",
         updated_at=TIMESTAMP,
     )
@@ -97,11 +123,26 @@ class FakePaperCatalogRepository:
 class FakeArtifactRepository:
     """Stored-summary lookup fake."""
 
-    def __init__(self, summary: PaperSummary | None) -> None:
+    def __init__(
+        self,
+        summary: PaperSummary | None,
+        *,
+        version: PaperVersion | None = None,
+        has_version: bool = True,
+    ) -> None:
         self.summary = summary
+        self.version = version or _version()
+        self.has_version = has_version
 
-    async def get_latest_summary(self, paper_id: UUID) -> PaperSummary | None:
-        return self.summary
+    async def get_summary_for_version(self, paper_version_id: UUID) -> PaperSummary | None:
+        if self.summary is not None and self.summary.paper_version_id == paper_version_id:
+            return self.summary
+        return None
+
+    async def get_latest_version(self, paper_id: UUID) -> PaperVersion | None:
+        if self.has_version and self.version.paper_id == paper_id:
+            return self.version
+        return None
 
 
 class FakeJobRepository:
@@ -109,29 +150,59 @@ class FakeJobRepository:
 
     def __init__(self, existing: PipelineJob | None = None) -> None:
         self.existing = existing
-        self.requeued: list[PipelineJob] = []
+        self.retry_claims: list[UUID] = []
+        self.dispatch_claims: list[UUID] = []
+        self.released: list[UUID] = []
+        self.create_calls: list[tuple[str, PipelineStage, UUID | None, UUID | None]] = []
 
     async def get_or_create(
-        self, *, idempotency_key: str, stage: PipelineStage, paper_id: UUID | None
+        self,
+        *,
+        idempotency_key: str,
+        stage: PipelineStage,
+        paper_id: UUID | None,
+        paper_version_id: UUID | None,
     ) -> tuple[PipelineJob, bool]:
+        self.create_calls.append((idempotency_key, stage, paper_id, paper_version_id))
         if self.existing is not None:
             return self.existing, False
         return _job(), True
 
-    async def requeue(self, job: PipelineJob) -> PipelineJob:
-        job.status = JobStatus.QUEUED
-        job.error_code = None
-        self.requeued.append(job)
-        return job
+    async def get(self, job_id: UUID) -> PipelineJob | None:
+        if self.existing is not None and self.existing.id == job_id:
+            return self.existing
+        return _job() if job_id == JOB_ID else None
+
+    async def claim_failed_for_retry(self, job_id: UUID) -> bool:
+        if self.existing is None or self.existing.status is not JobStatus.FAILED:
+            return False
+        self.retry_claims.append(job_id)
+        self.existing.status = JobStatus.QUEUED
+        return True
+
+    async def claim_for_dispatch(self, job_id: UUID, *, lease_seconds: int = 300) -> int | None:
+        del lease_seconds
+        job = await self.get(job_id)
+        if job is None or job.status is not JobStatus.QUEUED or job.dispatched_at is not None:
+            return None
+        self.dispatch_claims.append(job_id)
+        job.dispatched_at = TIMESTAMP
+        return job.attempt_count + 1
+
+    async def release_dispatch(self, job_id: UUID) -> None:
+        self.released.append(job_id)
 
 
 class FakeQueue:
     """Recording ARQ enqueue fake."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, fail: bool = False) -> None:
         self.enqueued: list[tuple[str, tuple[object, ...], dict[str, object]]] = []
+        self.fail = fail
 
     async def enqueue_job(self, function: str, *args: object, **kwargs: object) -> None:
+        if self.fail:
+            raise RuntimeError("queue unavailable")
         self.enqueued.append((function, args, kwargs))
 
 
@@ -154,16 +225,31 @@ def _application(
     async def principal_override() -> Principal:
         return Principal(user_id=USER_ID)
 
+    async def catalog_override() -> FakePaperCatalogRepository:
+        return catalog
+
+    async def artifacts_override() -> FakeArtifactRepository:
+        return artifacts
+
+    async def jobs_override() -> FakeJobRepository:
+        return jobs
+
+    async def queue_override() -> FakeQueue:
+        return queue
+
+    async def session_override() -> FakeSession:
+        return FakeSession()
+
     application = FastAPI()
     application.middleware("http")(request_context_middleware)
     register_error_handlers(application)
     application.include_router(summaries_router, prefix="/v1")
     application.dependency_overrides[require_principal] = principal_override
-    application.dependency_overrides[get_paper_catalog_repository] = lambda: catalog
-    application.dependency_overrides[get_artifact_repository] = lambda: artifacts
-    application.dependency_overrides[get_pipeline_job_repository] = lambda: jobs
-    application.dependency_overrides[get_task_queue] = lambda: queue
-    application.dependency_overrides[get_session] = lambda: FakeSession()
+    application.dependency_overrides[get_paper_catalog_repository] = catalog_override
+    application.dependency_overrides[get_artifact_repository] = artifacts_override
+    application.dependency_overrides[get_pipeline_job_repository] = jobs_override
+    application.dependency_overrides[get_task_queue] = queue_override
+    application.dependency_overrides[get_session] = session_override
     return application
 
 
@@ -218,8 +304,9 @@ def test_missing_summary_enqueues_generation_and_returns_job() -> None:
     assert len(queue.enqueued) == 1
     function, args, kwargs = queue.enqueued[0]
     assert function == "summarize_paper"
-    assert args == (str(PAPER_ID),)
+    assert args == (str(PAPER_ID), str(VERSION_ID))
     assert kwargs["job_id"] == str(JOB_ID)
+    assert kwargs["_job_id"] == f"pipeline:{JOB_ID}:attempt:1"
 
 
 @pytest.mark.base
@@ -256,7 +343,7 @@ def test_failed_job_is_requeued_on_retry() -> None:
 
     assert response.status_code == 202
     assert response.json()["status"] == "queued"
-    assert len(jobs.requeued) == 1
+    assert jobs.retry_claims == [JOB_ID]
     assert len(queue.enqueued) == 1
 
 
