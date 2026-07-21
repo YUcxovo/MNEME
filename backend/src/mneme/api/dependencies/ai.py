@@ -6,8 +6,8 @@ from arq import create_pool
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mneme.ai.budget import BudgetExceededError, BudgetGuard
-from mneme.ai.embeddings import EmbeddingService, OpenAIEmbeddingProvider
+from mneme.ai.budget import BudgetExceededError
+from mneme.ai.embeddings import EmbeddingService, build_embedding_service
 from mneme.ai.service import LLMService, build_llm_service
 from mneme.ai.types import AIError, LLMProviderError, ProviderNotConfiguredError
 from mneme.api.errors import ApiError
@@ -42,21 +42,13 @@ def get_embedding_service(request: Request) -> EmbeddingService:
     service: EmbeddingService | None = getattr(request.app.state, "embedding_service", None)
     if service is None:
         settings: Settings = request.app.state.settings
-        if settings.openai_api_key is None:
+        service = build_embedding_service(settings, request.app.state.redis)
+        if service is None:
             raise ApiError(
                 503,
                 "ai_provider_unconfigured",
                 "No embedding provider is configured.",
             )
-        service = EmbeddingService(
-            provider=OpenAIEmbeddingProvider(
-                api_key=settings.openai_api_key.get_secret_value(),
-                timeout_seconds=settings.llm_timeout_seconds,
-            ),
-            budget=BudgetGuard(request.app.state.redis, daily_cap_usd=settings.ai_daily_budget_usd),
-            model=settings.ai_embedding_model,
-            batch_size=settings.ai_embedding_batch_size,
-        )
         request.app.state.embedding_service = service
     return service
 
