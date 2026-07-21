@@ -2,6 +2,7 @@
 
 import asyncio
 from datetime import UTC, datetime, timedelta
+from typing import cast
 from uuid import UUID, uuid4
 
 import pytest
@@ -19,7 +20,13 @@ from mneme.db.dependencies import get_session
 from mneme.models.digest import Digest, DigestEntry, DigestType
 from mneme.models.paper import Paper, ProcessingStatus
 from mneme.models.user import UserPreference
-from mneme.repositories.digests import DigestCursor, DigestPageResult, encode_digest_cursor
+from mneme.repositories.digests import (
+    DigestCursor,
+    DigestPageResult,
+    DigestRepository,
+    encode_digest_cursor,
+)
+from mneme.services.recommendation import RecommendedDigestService
 
 USER_ID = UUID("00000000-0000-0000-0000-000000000111")
 NOW = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
@@ -60,6 +67,7 @@ class FakeDigestRepository:
         self.next_cursor = next_cursor
         self.created: list[Digest] = []
         self.list_calls: list[tuple[UUID, int, DigestCursor | None]] = []
+        self.candidate_calls: list[tuple[datetime, datetime | None, int]] = []
 
     async def list_digests(
         self,
@@ -77,7 +85,10 @@ class FakeDigestRepository:
     async def get_preferences(self, user_id: UUID) -> UserPreference | None:
         return self.preferences
 
-    async def list_recent_candidates(self, *, since, limit: int) -> list[Paper]:
+    async def list_recent_candidates(
+        self, *, since: datetime, limit: int, before: datetime | None = None
+    ) -> list[Paper]:
+        self.candidate_calls.append((since, before, limit))
         return self.papers[:limit]
 
     async def mean_chunk_embeddings(self, paper_ids):
@@ -354,3 +365,45 @@ def test_empty_candidate_pool_returns_empty_digest() -> None:
 
     assert response.status_code == 200
     assert response.json()["entries"] == []
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_weekly_generation_uses_an_exclusive_period_cutoff() -> None:
+    repository = FakeDigestRepository(
+        papers=[_paper("Weekly paper", age_days=1)],
+        preferences=None,
+    )
+    service = RecommendedDigestService(
+        cast(DigestRepository, repository), candidate_days=14, max_entries=10
+    )
+
+    bundle = asyncio.run(
+        service.generate(
+            USER_ID,
+            digest_type=DigestType.WEEKLY,
+            as_of=NOW,
+        )
+    )
+
+    assert bundle.digest.digest_type is DigestType.WEEKLY
+    assert len(bundle.entries) == 1
+    assert repository.candidate_calls == [(NOW - timedelta(days=14), NOW, 200)]
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_digest_cutoff_must_be_timezone_aware() -> None:
+    repository = FakeDigestRepository(papers=[], preferences=None)
+    service = RecommendedDigestService(
+        cast(DigestRepository, repository), candidate_days=14, max_entries=10
+    )
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        asyncio.run(
+            service.generate(
+                USER_ID,
+                digest_type=DigestType.WEEKLY,
+                as_of=datetime(2026, 7, 20),
+            )
+        )
