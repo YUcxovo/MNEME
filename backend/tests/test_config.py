@@ -19,6 +19,8 @@ def test_settings_defaults() -> None:
     assert str(settings.arxiv_api_url) == "https://export.arxiv.org/api/query"
     assert settings.arxiv_request_interval_seconds == 3
     assert settings.arxiv_max_results == 100
+    assert settings.daily_arxiv_categories == ("cs.AI", "cs.LG")
+    assert settings.arxiv_daily_max_results == 20
     assert settings.paper_storage_dir == Path(".data/papers")
     assert settings.pdf_max_bytes == 50 * 1024 * 1024
     assert settings.pdf_download_timeout_seconds == 60
@@ -37,6 +39,8 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("MNEME_REDIS_URL", "redis://cache:6380/2")
     monkeypatch.setenv("MNEME_REDIS_MAX_CONNECTIONS", "20")
     monkeypatch.setenv("MNEME_ARXIV_MAX_RESULTS", "50")
+    monkeypatch.setenv("MNEME_ARXIV_DAILY_CATEGORIES", "cs.CL, cs.AI,cs.CL")
+    monkeypatch.setenv("MNEME_ARXIV_DAILY_MAX_RESULTS", "12")
     monkeypatch.setenv("MNEME_PAPER_STORAGE_DIR", "/var/lib/mneme/papers")
     monkeypatch.setenv("MNEME_PDF_MAX_BYTES", "1048576")
     monkeypatch.setenv("MNEME_PDF_DOWNLOAD_TIMEOUT_SECONDS", "12.5")
@@ -53,6 +57,8 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     assert str(settings.redis_url) == "redis://cache:6380/2"
     assert settings.redis_max_connections == 20
     assert settings.arxiv_max_results == 50
+    assert settings.daily_arxiv_categories == ("cs.CL", "cs.AI")
+    assert settings.arxiv_daily_max_results == 12
     assert settings.paper_storage_dir == Path("/var/lib/mneme/papers")
     assert settings.pdf_max_bytes == 1048576
     assert settings.pdf_download_timeout_seconds == 12.5
