@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     arxiv_timeout_seconds: float = Field(default=30.0, gt=0)
     arxiv_max_attempts: int = Field(default=3, ge=1, le=10)
     arxiv_max_results: int = Field(default=100, ge=1, le=2000)
+    arxiv_daily_categories: str = "cs.AI,cs.LG"
+    arxiv_daily_max_results: int = Field(default=20, ge=1, le=2000)
     paper_storage_dir: Path = Path(".data/papers")
     pdf_max_bytes: int = Field(default=50 * 1024 * 1024, ge=1024)
     pdf_download_timeout_seconds: float = Field(default=60.0, gt=0)
@@ -82,6 +84,14 @@ class Settings(BaseSettings):
     def use_json_logs(self) -> bool:
         """Use machine-readable logs outside local development."""
         return self.environment is not Environment.DEVELOPMENT
+
+    @property
+    def daily_arxiv_categories(self) -> tuple[str, ...]:
+        """Return configured daily categories in stable deduplicated order."""
+        categories = (
+            item.strip() for item in self.arxiv_daily_categories.split(",") if item.strip()
+        )
+        return tuple(dict.fromkeys(categories))
 
 
 @lru_cache
