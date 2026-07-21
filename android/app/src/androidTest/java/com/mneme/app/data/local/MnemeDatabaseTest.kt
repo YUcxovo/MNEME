@@ -7,8 +7,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.mneme.app.data.local.entity.CacheMetadataEntity
 import com.mneme.app.data.local.entity.DigestEntity
 import com.mneme.app.data.local.entity.PaperEntity
+import com.mneme.app.data.network.DigestDto
+import com.mneme.app.data.network.DigestEntryDto
+import com.mneme.app.data.network.PaperDto
+import com.mneme.app.data.network.PreferencesDto
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -111,6 +116,44 @@ class MnemeDatabaseTest {
             )
         }
 
+    @Test
+    fun skeletalCache_roundTripsExactDigestOrderReasonsAndPreferences() =
+        runBlocking {
+            val cache = RoomSkeletalCache(database, Json { ignoreUnknownKeys = true })
+            val firstPaper = paperDto(id = "paper-1", title = "First paper")
+            val secondPaper = paperDto(id = "paper-2", title = "Second paper")
+
+            cache.storeBriefing(
+                preferences =
+                    PreferencesDto(
+                        topics = listOf("retrieval", "mobile systems"),
+                        followedAuthors = listOf("A. Researcher"),
+                        modelVersion = 3,
+                        updatedAt = "2026-07-22T08:00:00Z",
+                    ),
+                digest =
+                    DigestDto(
+                        id = "digest-live",
+                        digestType = "manual",
+                        generatedAt = "2026-07-22T08:00:00Z",
+                        entries =
+                            listOf(
+                                digestEntry(secondPaper, rank = 2, reason = "Second reason"),
+                                digestEntry(firstPaper, rank = 1, reason = "First reason"),
+                            ),
+                    ),
+                refreshedAtEpochMillis = 500,
+            )
+
+            val cached = checkNotNull(cache.getBriefing())
+
+            assertEquals(listOf("paper-1", "paper-2"), cached.papers.map { it.id })
+            assertEquals("First reason", cached.recommendationReasons["paper-1"])
+            assertEquals(listOf("retrieval", "mobile systems"), cached.interests)
+            assertEquals(500L, cached.refreshedAtEpochMillis)
+            assertEquals(listOf("A. Researcher"), cached.papers.first().authors)
+        }
+
     private fun paper(
         id: String,
         arxivId: String,
@@ -125,5 +168,33 @@ class MnemeDatabaseTest {
         pdfUrl = null,
         processingStatus = "ready",
         updatedAtEpochMillis = updatedAt,
+    )
+
+    private fun paperDto(
+        id: String,
+        title: String,
+    ) = PaperDto(
+        id = id,
+        arxivId = "2607.$id",
+        title = title,
+        authors = listOf("A. Researcher"),
+        abstract = "Abstract for $title",
+        primaryCategory = "cs.IR",
+        categories = listOf("cs.IR"),
+        pdfUrl = "https://arxiv.org/pdf/2607.00001",
+        processingStatus = "ready",
+        publishedAt = "2026-07-21T08:00:00Z",
+        updatedAt = "2026-07-22T08:00:00Z",
+    )
+
+    private fun digestEntry(
+        paper: PaperDto,
+        rank: Int,
+        reason: String,
+    ) = DigestEntryDto(
+        paper = paper,
+        rank = rank,
+        relevanceScore = 0.8,
+        recommendationReason = reason,
     )
 }
