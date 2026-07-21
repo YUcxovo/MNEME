@@ -10,6 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Added an Android skeletal-demo flow with type-safe navigation, controlled research
   content, inspectable paper details, and a source-visible single-paper Q&A path.
+- Added Android Room/DataStore local foundations, explicit Room migrations through schema version 3, offline cache metadata and retention policies, a WorkManager scheduling stub, and local research-briefing notification primitives.
 - Added a buildable Android application scaffold with Jetpack Compose, Material 3, lint,
   static-analysis, and unit-test tooling.
 - Added a FastAPI backend scaffold with environment-backed configuration, structured
@@ -26,8 +27,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   validated request IDs, and a shared non-sensitive API error envelope.
 - Added authenticated paper list/detail and explicit preference GET/PUT endpoints with
   keyset pagination and idempotent normalized replacement.
+- Added provider-agnostic Anthropic/OpenAI completion services with environment-backed model routing, Redis caching, daily budget enforcement, deterministic provider fakes, and QA evaluation seed fixtures.
+- Added the authenticated summary contract with an abstract-derived deterministic placeholder that can be replaced by stored or asynchronous generation without changing the frozen route.
 
 ### Changed
 
 - Aligned the Android skeletal-demo screens with the team UI/UX prototype's navy and gold
   visual system while retaining controlled repository fixtures and inspectable sources.
+- Updated Android CI so instrumented-test Gradle commands run from the Android project root.

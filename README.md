@@ -13,22 +13,17 @@ Engineering sources of truth:
 - [`docs/architecture/privacy-and-data.md`](docs/architecture/privacy-and-data.md) -- licensing, privacy, reproducibility
 - [`docs/adr/0001-mvp-auth.md`](docs/adr/0001-mvp-auth.md) -- MVP authentication decision
 
-Current implementation status (2026-07-15): the Android scaffold and Milestone 1 backend
-foundation are buildable. The backend now includes the v0.1 relational schema and migration,
-demo-token authentication, shared error responses, rate-limited arXiv metadata ingestion,
-paper catalog endpoints, explicit preferences, Redis infrastructure, and a minimal ARQ worker.
-PDF processing, scheduled jobs, behavioral updates, graph algorithms, and AI features remain
-later-milestone work.
+Current implementation status (2026-07-21): `dev` contains the complete Milestone 1 backend/data foundation, the merged AI service foundation, and an Android skeletal demo. The backend includes the v0.1 relational schema and migration, demo-token authentication, shared errors, rate-limited arXiv metadata ingestion, paper/preferences APIs, Redis/ARQ infrastructure, Anthropic/OpenAI provider adapters, model routing, completion caching, a daily BudgetGuard, evaluation seeds, and a deterministic summary placeholder.
+
+The Android app contains Room/DataStore persistence, cache-retention metadata, a WorkManager stub, local notification primitives, type-safe Compose navigation, and a controlled briefing -> paper detail -> seeded Q&A -> arXiv source path. The seed-data disclosure is visible in the UI; the client is not yet connected to the backend and makes no live model call. PDF processing, daily scheduling, real Android networking/sync, behavior ingestion, graph persistence/API, and the live AI pipeline are not merged into `dev`.
 
 ---
 
 ## Getting Started
 
-### Android Client (scaffold available)
+### Android Client (skeletal demo available)
 
-The Gradle manifests under `android/` are authoritative for installed versions. The table
-below describes the target client stack; dependencies not yet present are added with their
-own feature units.
+The Gradle manifests under `android/` are authoritative for installed versions. The merged client currently uses Compose/Material 3, type-safe Navigation Compose, Room, DataStore, WorkManager, and kotlinx.serialization. Hilt, Retrofit/OkHttp, the real network repositories/ViewModels, notification permission UX, and live background synchronization remain future integration work. The table below describes the target client stack; dependencies not yet present are added with their own feature units.
 
 | Dependency | Version | Purpose | Link |
 |-----------|---------|---------|------|
@@ -54,11 +49,9 @@ cd android
 ./gradlew ktlintCheck           # Lint check
 ```
 
-### Backend (Milestone 1 foundation available)
+### Backend (Milestone 1 and AI service foundations available)
 
-The current foundation includes FastAPI/Uvicorn, Pydantic settings, structlog, async
-SQLAlchemy/asyncpg, PostgreSQL/pgvector, Alembic, Redis, ARQ, an arXiv Atom client, and the
-test toolchain. Remaining libraries are added only with their owning feature.
+The merged foundation includes FastAPI/Uvicorn, Pydantic settings, structlog, async SQLAlchemy/asyncpg, PostgreSQL/pgvector, Alembic, Redis, ARQ, an arXiv Atom client, provider-routed Anthropic/OpenAI completion services, completion caching, budget enforcement, evaluation fixtures, and the test toolchain. The merged summary route is still deterministic and abstract-derived; real summarization/chunking/embedding, Q&A, recommendations, and graph algorithms remain under review in PR #17.
 
 | Dependency | Version | Purpose | Link |
 |-----------|---------|---------|------|
