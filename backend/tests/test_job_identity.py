@@ -10,6 +10,7 @@ from mneme.repositories.job_identity import (
     build_job_idempotency_key,
     chunk_idempotency_key,
     download_idempotency_key,
+    embed_idempotency_key,
     parse_idempotency_key,
     summarize_idempotency_key,
 )
@@ -115,12 +116,20 @@ def test_named_revision_stage_keys_include_their_artifact_inputs() -> None:
         parsed_checksum="b" * 64,
         parser_version="parser-v1",
     )
+    embed = embed_idempotency_key(
+        paper_id=PAPER_ID,
+        paper_version_id=VERSION_ID,
+        parsed_checksum="b" * 64,
+        parser_version="parser-v1",
+        embedding_model="embedding-v1",
+    )
 
     assert download.startswith("v1:download_pdf:")
     assert parse.startswith("v1:parse_pdf:")
     assert summary.startswith("v1:summarize_paper:")
     assert chunk.startswith("v1:chunk_paper:")
-    assert len({download, parse, summary, chunk}) == 4
+    assert embed.startswith("v1:embed_chunks:")
+    assert len({download, parse, summary, chunk, embed}) == 5
 
 
 @pytest.mark.parametrize("checksum", ["", "A" * 64, "a" * 63, "not-a-checksum"])
