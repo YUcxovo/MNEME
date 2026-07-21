@@ -16,14 +16,18 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -37,19 +41,14 @@ import androidx.navigation.toRoute
 import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.demo.SkeletalContentRepository
-import com.mneme.app.ui.component.ErrorState
 import com.mneme.app.ui.home.HomeScreen
 import com.mneme.app.ui.home.HomeUiState
-import com.mneme.app.ui.interests.InterestsScreen
 import com.mneme.app.ui.navigation.BriefingRoute
 import com.mneme.app.ui.navigation.InterestsRoute
 import com.mneme.app.ui.navigation.PaperDetailRoute
 import com.mneme.app.ui.navigation.QaRoute
 import com.mneme.app.ui.navigation.SavedRoute
-import com.mneme.app.ui.paper.PaperDetailScreen
-import com.mneme.app.ui.qa.QaScreen
 import com.mneme.app.ui.saved.SavedScreen
-import com.mneme.app.ui.theme.MnemeTheme
 
 private enum class TopLevelDestination(
     val route: Any,
@@ -68,11 +67,85 @@ private enum class TopLevelDestination(
         }
 }
 
+private data class MnemeUiSnapshot(
+    val home: HomeUiState,
+    val paper: PaperDetailUiState,
+    val qa: QaUiState,
+)
+
+private data class MnemeUiActions(
+    val refreshBriefing: () -> Unit,
+    val requestPaper: (String) -> Unit,
+    val retryPaper: (String) -> Unit,
+    val requestQa: (String, String) -> Unit,
+)
+
+@Composable
+fun MnemeApp(
+    viewModel: MnemeViewModel,
+    modifier: Modifier = Modifier,
+    onOpenSource: ((String) -> Unit)? = null,
+) {
+    val homeState by viewModel.homeState.collectAsStateWithLifecycle()
+    val paperState by viewModel.paperState.collectAsStateWithLifecycle()
+    val qaState by viewModel.qaState.collectAsStateWithLifecycle()
+    MnemeAppScaffold(
+        snapshot = MnemeUiSnapshot(homeState, paperState, qaState),
+        actions =
+            MnemeUiActions(
+                refreshBriefing = viewModel::refreshBriefing,
+                requestPaper = { paperId -> viewModel.loadPaper(paperId) },
+                retryPaper = { paperId -> viewModel.loadPaper(paperId, force = true) },
+                requestQa = viewModel::askQuestion,
+            ),
+        onOpenSource = onOpenSource,
+        modifier = modifier,
+    )
+}
+
 @Composable
 fun MnemeApp(
     modifier: Modifier = Modifier,
     repository: SkeletalContentRepository = SeededSkeletalContentRepository,
     onOpenSource: ((String) -> Unit)? = null,
+) {
+    var paperState by remember(repository) { mutableStateOf<PaperDetailUiState>(PaperDetailUiState.Idle) }
+    var qaState by remember(repository) { mutableStateOf<QaUiState>(QaUiState.Idle) }
+    val briefing = remember(repository) { repository.briefing() }
+    val loadPaper = { paperId: String ->
+        paperState =
+            repository.paper(paperId)?.let(PaperDetailUiState::Content)
+                ?: PaperDetailUiState.Error(paperId, "The selected paper is not available.")
+    }
+    val loadQa = { paperId: String, question: String ->
+        qaState =
+            repository.qa(paperId, question)?.let(QaUiState::Content)
+                ?: QaUiState.Error(
+                    paperId,
+                    question,
+                    "A paper-specific answer is not available.",
+                )
+    }
+    MnemeAppScaffold(
+        snapshot = MnemeUiSnapshot(HomeUiState.Content(briefing), paperState, qaState),
+        actions =
+            MnemeUiActions(
+                refreshBriefing = {},
+                requestPaper = loadPaper,
+                retryPaper = loadPaper,
+                requestQa = loadQa,
+            ),
+        onOpenSource = onOpenSource,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun MnemeAppScaffold(
+    snapshot: MnemeUiSnapshot,
+    actions: MnemeUiActions,
+    onOpenSource: ((String) -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -105,7 +178,8 @@ fun MnemeApp(
     ) { innerPadding ->
         MnemeNavHost(
             navController = navController,
-            repository = repository,
+            snapshot = snapshot,
+            actions = actions,
             onOpenSource = sourceOpener,
             modifier = Modifier.padding(innerPadding),
         )
@@ -151,7 +225,8 @@ private fun MnemeNavigationBar(
 @Composable
 private fun MnemeNavHost(
     navController: NavHostController,
-    repository: SkeletalContentRepository,
+    snapshot: MnemeUiSnapshot,
+    actions: MnemeUiActions,
     onOpenSource: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -162,8 +237,8 @@ private fun MnemeNavHost(
     ) {
         composable<BriefingRoute> {
             HomeScreen(
-                state = HomeUiState.Content(repository.briefing()),
-                onRetry = {},
+                state = snapshot.home,
+                onRetry = actions.refreshBriefing,
                 onPaperClick = { paperId ->
                     navController.navigate(PaperDetailRoute(paperId))
                 },
@@ -173,35 +248,30 @@ private fun MnemeNavHost(
             SavedScreen()
         }
         composable<InterestsRoute> {
-            InterestsScreen(interests = repository.briefing().interests)
+            InterestsDestination(
+                homeState = snapshot.home,
+                onRetry = actions.refreshBriefing,
+            )
         }
         composable<PaperDetailRoute> { entry ->
             val paperId = entry.toRoute<PaperDetailRoute>().paperId
-            val paper = repository.paper(paperId)
-            if (paper == null) {
-                ErrorState(
-                    message = stringResource(R.string.paper_not_found),
-                    onRetry = navController::popBackStack,
-                )
-            } else {
-                PaperDetailScreen(
-                    paper = paper,
-                    onAskQuestion = { navController.navigate(QaRoute(paperId)) },
-                    onOpenSource = onOpenSource,
-                )
-            }
+            LaunchedEffect(paperId) { actions.requestPaper(paperId) }
+            PaperDestination(
+                paperId = paperId,
+                state = snapshot.paper,
+                onRetry = { actions.retryPaper(paperId) },
+                onAskQuestion = { navController.navigate(QaRoute(paperId)) },
+                onOpenSource = onOpenSource,
+            )
         }
         composable<QaRoute> { entry ->
             val paperId = entry.toRoute<QaRoute>().paperId
-            val qa = repository.qa(paperId)
-            if (qa == null) {
-                ErrorState(
-                    message = stringResource(R.string.qa_not_found),
-                    onRetry = navController::popBackStack,
-                )
-            } else {
-                QaScreen(qa = qa, onOpenSource = onOpenSource)
-            }
+            QaDestination(
+                paperId = paperId,
+                state = snapshot.qa,
+                onSubmit = { question -> actions.requestQa(paperId, question) },
+                onOpenSource = onOpenSource,
+            )
         }
     }
 }
@@ -259,11 +329,3 @@ private fun NavDestination?.titleRes(): Int =
         this?.hierarchy?.any { it.hasRoute<QaRoute>() } == true -> R.string.screen_title_qa
         else -> R.string.screen_title_briefing
     }
-
-@Preview(showBackground = true)
-@Composable
-private fun MnemeAppPreview() {
-    MnemeTheme {
-        MnemeApp(onOpenSource = {})
-    }
-}
