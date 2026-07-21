@@ -2,76 +2,94 @@ package com.mneme.app.data.local
 
 import com.mneme.app.data.local.dao.BehavioralEventDao
 import com.mneme.app.data.local.entity.BehavioralEventEntity
-import com.mneme.app.data.local.entity.BehavioralEventSyncState
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
 enum class BehavioralEventType {
-    OPEN,
-    SAVE,
-    SKIP,
-    SHARE,
-    QUESTION,
-    TIME_SPENT,
+    PAPER_IMPRESSION,
+    PAPER_OPENED,
+    PAPER_SAVED,
+    PAPER_SKIPPED,
+    PAPER_SHARED,
+    QUESTION_ASKED,
+    DIGEST_DISMISSED,
+    ;
+
+    val wireValue: String
+        get() = name.lowercase()
+
+    val requiresPaperId: Boolean
+        get() = this != DIGEST_DISMISSED
 }
 
 class BehavioralEventRepository(
     private val behavioralEventDao: BehavioralEventDao,
-    private val idGenerator: () -> String = { UUID.randomUUID().toString() },
+    private val idGenerator: () -> UUID = UUID::randomUUID,
 ) {
     fun observeAll(): Flow<List<BehavioralEventEntity>> = behavioralEventDao.observeAll()
 
     suspend fun record(
         type: BehavioralEventType,
-        paperId: String?,
+        paperId: UUID?,
         occurredAtEpochMillis: Long,
         durationMillis: Long? = null,
-    ): String {
-        require(type != BehavioralEventType.TIME_SPENT || durationMillis != null) {
-            "TIME_SPENT events require a duration."
+    ): UUID {
+        require(type.requiresPaperId == (paperId != null)) {
+            if (type.requiresPaperId) {
+                "${type.wireValue} events require an internal paper UUID."
+            } else {
+                "${type.wireValue} events cannot reference a paper."
+            }
+        }
+        require(durationMillis == null || type == BehavioralEventType.PAPER_OPENED) {
+            "Only paper_opened events can include a duration."
         }
         require(durationMillis == null || durationMillis >= 0) {
             "Event duration cannot be negative."
         }
 
+        val eventId = idGenerator()
         val event =
             BehavioralEventEntity(
-                id = idGenerator(),
-                eventType = type.name.lowercase(),
-                paperId = paperId,
+                id = eventId.toString(),
+                eventType = type.wireValue,
+                paperId = paperId?.toString(),
                 occurredAtEpochMillis = occurredAtEpochMillis,
                 durationMillis = durationMillis,
             )
         behavioralEventDao.insert(event)
-        return event.id
+        return eventId
     }
 
     suspend fun reservePendingBatch(
         limit: Int,
         attemptedAtEpochMillis: Long,
+        staleBeforeEpochMillis: Long,
     ): List<BehavioralEventEntity> {
         require(limit > 0) { "Batch limit must be positive." }
-        val batch = behavioralEventDao.pendingBatch(limit)
-        if (batch.isNotEmpty()) {
-            behavioralEventDao.markInFlight(batch.map(BehavioralEventEntity::id), attemptedAtEpochMillis)
+        require(attemptedAtEpochMillis >= 0) { "Attempt time cannot be negative." }
+        require(staleBeforeEpochMillis in 0..attemptedAtEpochMillis) {
+            "Stale cutoff must be between the Unix epoch and the attempt time."
         }
-        return batch
+        return behavioralEventDao.reservePendingBatch(
+            limit = limit,
+            attemptedAtEpochMillis = attemptedAtEpochMillis,
+            staleBeforeEpochMillis = staleBeforeEpochMillis,
+        )
     }
 
-    suspend fun markBatchSynced(eventIds: List<String>) {
+    suspend fun markBatchSynced(eventIds: List<UUID>) {
         if (eventIds.isNotEmpty()) {
-            behavioralEventDao.markSynced(eventIds)
+            behavioralEventDao.markSynced(eventIds.map(UUID::toString))
         }
     }
 
     suspend fun returnBatchToPending(
-        eventIds: List<String>,
+        eventIds: List<UUID>,
         error: String?,
     ) {
         if (eventIds.isNotEmpty()) {
-            behavioralEventDao.markPending(eventIds, error)
+            behavioralEventDao.markPending(eventIds.map(UUID::toString), error)
         }
     }
-
-    fun pendingState(): String = BehavioralEventSyncState.PENDING.value
 }
