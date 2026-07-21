@@ -38,12 +38,63 @@ class ArtifactRepository:
         )
         return await self._session.scalar(statement)
 
+    async def get_version(self, *, paper_id: UUID, paper_version_id: UUID) -> PaperVersion | None:
+        """Return an exact revision only when it belongs to the requested paper."""
+        statement = select(PaperVersion).where(
+            PaperVersion.id == paper_version_id,
+            PaperVersion.paper_id == paper_id,
+        )
+        return await self._session.scalar(statement)
+
     async def replace_chunks(
         self, *, paper_id: UUID, paper_version_id: UUID, drafts: list[ChunkDraft]
     ) -> list[PaperChunk]:
-        """Idempotently replace all chunks for one revision."""
+        """Replace a changed chunk manifest while preserving unchanged embeddings."""
+        existing = list(
+            (
+                await self._session.scalars(
+                    select(PaperChunk)
+                    .where(
+                        PaperChunk.paper_id == paper_id,
+                        PaperChunk.paper_version_id == paper_version_id,
+                    )
+                    .order_by(PaperChunk.chunk_index)
+                )
+            ).all()
+        )
+        ordered_drafts = sorted(drafts, key=lambda draft: draft.chunk_index)
+        existing_manifest = [
+            (
+                chunk.section_title,
+                chunk.chunk_index,
+                chunk.page_start,
+                chunk.page_end,
+                chunk.content,
+                chunk.content_hash,
+                chunk.token_count,
+            )
+            for chunk in existing
+        ]
+        requested_manifest = [
+            (
+                draft.section_title,
+                draft.chunk_index,
+                draft.page_start,
+                draft.page_end,
+                draft.content,
+                draft.content_hash,
+                draft.token_count,
+            )
+            for draft in ordered_drafts
+        ]
+        if existing_manifest == requested_manifest:
+            return existing
+
         await self._session.execute(
-            delete(PaperChunk).where(PaperChunk.paper_version_id == paper_version_id)
+            delete(PaperChunk).where(
+                PaperChunk.paper_id == paper_id,
+                PaperChunk.paper_version_id == paper_version_id,
+            )
         )
         chunks = [
             PaperChunk(
@@ -57,7 +108,7 @@ class ArtifactRepository:
                 content_hash=draft.content_hash,
                 token_count=draft.token_count,
             )
-            for draft in drafts
+            for draft in ordered_drafts
         ]
         self._session.add_all(chunks)
         await self._session.flush()
@@ -108,8 +159,22 @@ class ArtifactRepository:
         )
         return await self._session.scalar(statement)
 
+    async def get_summary_for_version(self, paper_version_id: UUID) -> PaperSummary | None:
+        """Return the latest generated summary for one exact paper revision."""
+        statement = (
+            select(PaperSummary)
+            .where(PaperSummary.paper_version_id == paper_version_id)
+            .order_by(PaperSummary.created_at.desc())
+            .limit(1)
+        )
+        return await self._session.scalar(statement)
+
     async def get_latest_summary(self, paper_id: UUID) -> PaperSummary | None:
-        """Return the most recently generated summary for one paper."""
+        """Return the newest summary across revisions for legacy internal callers.
+
+        Revision-sensitive endpoints must resolve the current ``PaperVersion``
+        first and call :meth:`get_summary_for_version` instead.
+        """
         statement = (
             select(PaperSummary)
             .where(PaperSummary.paper_id == paper_id)
@@ -125,9 +190,14 @@ class ArtifactRepository:
         return summary
 
     async def search_chunks(
-        self, *, paper_id: UUID, query_embedding: tuple[float, ...], limit: int
+        self,
+        *,
+        paper_id: UUID,
+        paper_version_id: UUID,
+        query_embedding: tuple[float, ...],
+        limit: int,
     ) -> list[tuple[PaperChunk, float]]:
-        """Return the nearest embedded chunks of one paper with similarity.
+        """Return nearest embedded chunks of one exact revision with similarity.
 
         Uses pgvector cosine distance; the returned score is cosine
         similarity in [0, 1] (1 = identical direction).
@@ -135,7 +205,11 @@ class ArtifactRepository:
         distance = PaperChunk.embedding.cosine_distance(list(query_embedding))
         statement = (
             select(PaperChunk, distance.label("distance"))
-            .where(PaperChunk.paper_id == paper_id, PaperChunk.embedding.is_not(None))
+            .where(
+                PaperChunk.paper_id == paper_id,
+                PaperChunk.paper_version_id == paper_version_id,
+                PaperChunk.embedding.is_not(None),
+            )
             .order_by(distance)
             .limit(limit)
         )
