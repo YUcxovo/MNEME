@@ -3,13 +3,15 @@
 import asyncio
 from decimal import Decimal
 from typing import Any, Self
+from uuid import uuid4
 
 import pytest
 
 from mneme.ai.budget import BudgetExceededError
 from mneme.ai.pipeline import PaperNotReadyError
 from mneme.ai.types import LLMProviderError, ProviderNotConfiguredError
-from mneme.tasks.ai_jobs import _run_stage
+from mneme.models.job import PipelineStage
+from mneme.tasks.ai_runtime import run_ai_stage as _run_stage
 
 
 class FakeSession:
@@ -48,8 +50,17 @@ def _ctx() -> dict[str, Any]:
 
 def _run(runner) -> tuple[str, FakeDatabase]:
     ctx = _ctx()
+    paper_id = str(uuid4())
+    version_id = str(uuid4())
     outcome = asyncio.run(
-        _run_stage(ctx, stage_name="test_stage", job_id=None, paper_id="p1", runner=runner)
+        _run_stage(
+            ctx,
+            stage=PipelineStage.SUMMARIZE_PAPER,
+            job_id=None,
+            paper_id=paper_id,
+            paper_version_id=version_id,
+            runner=runner,
+        )
     )
     return outcome, ctx["database"]
 
