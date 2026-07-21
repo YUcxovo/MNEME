@@ -4,7 +4,8 @@ from typing import Annotated
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.api.dependencies.ai import (
@@ -37,7 +38,8 @@ router = APIRouter(prefix="/papers", tags=["ai"])
 
 @router.get(
     "/{paper_id}/summary",
-    response_model=Summary | Job,
+    response_model=Summary,
+    response_model_exclude_none=True,
     operation_id="getPaperSummary",
     responses={
         status.HTTP_200_OK: {"model": Summary},
@@ -47,14 +49,13 @@ router = APIRouter(prefix="/papers", tags=["ai"])
 )
 async def get_paper_summary(
     paper_id: UUID,
-    response: Response,
     _principal: Annotated[Principal, Depends(require_principal)],
     catalog: Annotated[PaperCatalogRepository, Depends(get_paper_catalog_repository)],
     artifacts: Annotated[ArtifactRepository, Depends(get_artifact_repository)],
     jobs: Annotated[PipelineJobRepository, Depends(get_pipeline_job_repository)],
     queue: Annotated[TaskQueue, Depends(get_task_queue)],
     session: Annotated[AsyncSession, Depends(get_session)],
-) -> Summary | Job:
+) -> Summary | JSONResponse:
     """Return the stored summary, or accept async generation (202 + Job).
 
     The first request for an unsummarized paper resumes the exact revision at
@@ -152,5 +153,7 @@ async def get_paper_summary(
             job_id=str(job.id),
         )
 
-    response.status_code = status.HTTP_202_ACCEPTED
-    return Job.from_model(job)
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content=Job.from_model(job).model_dump(mode="json"),
+    )

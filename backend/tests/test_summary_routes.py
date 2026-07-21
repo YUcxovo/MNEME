@@ -293,6 +293,50 @@ def test_stored_summary_is_served_with_frozen_contract_fields() -> None:
 
 @pytest.mark.base
 @pytest.mark.api
+def test_optional_summary_fields_are_omitted_instead_of_null() -> None:
+    stored = _stored_summary()
+    stored.content = {
+        "tldr": "A grounded assistant that cites sources.",
+        "key_claims": [],
+        "methodology": None,
+        "limitations": None,
+    }
+    application = _application(
+        FakePaperCatalogRepository(_paper()),
+        FakeArtifactRepository(stored),
+        FakeJobRepository(),
+        FakeQueue(),
+    )
+
+    response = asyncio.run(_get(application, f"/v1/papers/{PAPER_ID}/summary"))
+
+    assert response.status_code == 200
+    assert "methodology" not in response.json()
+    assert "limitations" not in response.json()
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_summary_openapi_documents_status_specific_models() -> None:
+    application = _application(
+        FakePaperCatalogRepository(_paper()),
+        FakeArtifactRepository(None),
+        FakeJobRepository(),
+        FakeQueue(),
+    )
+
+    operation = application.openapi()["paths"]["/v1/papers/{paper_id}/summary"]["get"]
+
+    assert operation["responses"]["200"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/Summary"
+    }
+    assert operation["responses"]["202"]["content"]["application/json"]["schema"] == {
+        "$ref": "#/components/schemas/Job"
+    }
+
+
+@pytest.mark.base
+@pytest.mark.api
 def test_missing_summary_enqueues_generation_and_returns_job() -> None:
     queue = FakeQueue()
     application = _application(
