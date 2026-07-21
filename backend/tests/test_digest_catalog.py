@@ -166,7 +166,9 @@ def test_candidate_query_requires_current_summary_and_usable_status() -> None:
     )
 
     assert papers == []
-    statement = session.scalars.await_args.args[0]
+    await_args = session.scalars.await_args
+    assert await_args is not None
+    statement = await_args.args[0]
     sql = str(
         statement.compile(
             dialect=postgresql.dialect(),
@@ -193,7 +195,9 @@ def test_embedding_mean_is_limited_to_each_papers_latest_revision() -> None:
     embeddings = asyncio.run(repository.mean_chunk_embeddings([paper_id]))
 
     assert embeddings == {}
-    statement = session.execute.await_args.args[0]
+    await_args = session.execute.await_args
+    assert await_args is not None
+    statement = await_args.args[0]
     assert isinstance(statement.selected_columns.embedding.type, Vector)
     sql = str(statement.compile(dialect=postgresql.dialect()))
     assert "JOIN paper_versions ON paper_versions.id = paper_chunks.paper_version_id" in sql
