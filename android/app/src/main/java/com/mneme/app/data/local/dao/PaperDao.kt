@@ -14,6 +14,9 @@ interface PaperDao {
     @Query("SELECT * FROM papers WHERE id = :id")
     suspend fun getById(id: String): PaperEntity?
 
+    @Query("SELECT * FROM papers ORDER BY updated_at DESC")
+    suspend fun getAll(): List<PaperEntity>
+
     @Upsert
     suspend fun upsertAll(papers: List<PaperEntity>)
 
