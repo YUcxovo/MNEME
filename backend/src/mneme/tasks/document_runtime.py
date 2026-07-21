@@ -77,7 +77,7 @@ async def _record_failure(
 
 async def dispatch_pending(
     ctx: dict[str, Any], session: AsyncSession, pending: list[PendingEnqueue]
-) -> None:
+) -> int:
     """Claim and enqueue children with recoverable database leases."""
     queue = ctx.get("redis")
     if queue is None:
@@ -85,6 +85,7 @@ async def dispatch_pending(
             "queue_unavailable", "The pipeline queue is unavailable.", retryable=True
         )
     jobs = PipelineJobRepository(session)
+    dispatched = 0
     for child in pending:
         attempt = await jobs.claim_for_dispatch(child.job_id)
         await session.commit()
@@ -98,6 +99,7 @@ async def dispatch_pending(
                 job_id=str(child.job_id),
                 _job_id=arq_attempt_id(child.job_id, attempt),
             )
+            dispatched += 1
         except Exception as error:
             await jobs.release_dispatch(child.job_id)
             await session.commit()
@@ -106,6 +108,7 @@ async def dispatch_pending(
                 "A durable child job could not be dispatched.",
                 retryable=True,
             ) from error
+    return dispatched
 
 
 async def run_document_stage(
