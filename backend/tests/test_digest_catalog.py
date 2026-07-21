@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, Mock
 from uuid import UUID, uuid4
 
 import pytest
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -193,6 +194,7 @@ def test_embedding_mean_is_limited_to_each_papers_latest_revision() -> None:
 
     assert embeddings == {}
     statement = session.execute.await_args.args[0]
+    assert isinstance(statement.selected_columns.embedding.type, Vector)
     sql = str(statement.compile(dialect=postgresql.dialect()))
     assert "JOIN paper_versions ON paper_versions.id = paper_chunks.paper_version_id" in sql
     assert "max(paper_versions.version_number)" in sql

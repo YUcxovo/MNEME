@@ -10,7 +10,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Final
 from uuid import UUID
 
-from sqlalchemy import Select, and_, exists, func, or_, select
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import Select, and_, exists, func, or_, select, type_coerce
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -18,7 +19,7 @@ from mneme.models.artifact import PaperChunk, PaperSummary
 from mneme.models.base import utc_now
 from mneme.models.digest import Digest, DigestEntry, DigestType
 from mneme.models.paper import Paper, PaperAuthor, PaperVersion, ProcessingStatus
-from mneme.models.user import UserPreference
+from mneme.models.user import EMBEDDING_DIMENSIONS, UserPreference
 
 _CURSOR_VERSION: Final = 1
 _CURSOR_FIELDS: Final = frozenset({"v", "generated_at", "id"})
@@ -182,8 +183,11 @@ class DigestRepository:
             .group_by(PaperVersion.paper_id)
             .subquery()
         )
+        mean_embedding = type_coerce(
+            func.avg(PaperChunk.embedding), Vector(EMBEDDING_DIMENSIONS)
+        ).label("embedding")
         statement = (
-            select(PaperChunk.paper_id, func.avg(PaperChunk.embedding).label("embedding"))
+            select(PaperChunk.paper_id, mean_embedding)
             .join(
                 PaperVersion,
                 PaperVersion.id == PaperChunk.paper_version_id,
