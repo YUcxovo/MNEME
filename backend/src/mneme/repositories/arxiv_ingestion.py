@@ -19,6 +19,7 @@ class ArxivPersistenceResult:
     """Outcome of persisting one observed arXiv record."""
 
     paper_id: UUID
+    paper_version_id: UUID
     version_created: bool
     authors_replaced: bool
 
@@ -70,12 +71,14 @@ def _paper_upsert(record: ArxivPaperRecord, *, paper_id: UUID, now: datetime):
     ).returning(Paper.id)
 
 
-def _version_insert(record: ArxivPaperRecord, *, paper_id: UUID, now: datetime):
+def _version_insert(
+    record: ArxivPaperRecord, *, paper_id: UUID, paper_version_id: UUID, now: datetime
+):
     """Build an idempotent insert for one observed arXiv revision."""
     return (
         postgresql_insert(PaperVersion)
         .values(
-            id=uuid4(),
+            id=paper_version_id,
             paper_id=paper_id,
             version_number=record.version_number,
             submitted_at=record.updated_at,
@@ -121,14 +124,26 @@ class ArxivIngestionRepository:
             paper_id, stored_updated_at = existing_result.one()
             snapshot_is_current = record.updated_at >= stored_updated_at
 
-        version_result = await session.execute(_version_insert(record, paper_id=paper_id, now=now))
-        version_created = version_result.scalar_one_or_none() is not None
+        version_result = await session.execute(
+            _version_insert(record, paper_id=paper_id, paper_version_id=uuid4(), now=now)
+        )
+        paper_version_id = version_result.scalar_one_or_none()
+        version_created = paper_version_id is not None
+        if paper_version_id is None:
+            existing_version_result = await session.execute(
+                select(PaperVersion.id).where(
+                    PaperVersion.paper_id == paper_id,
+                    PaperVersion.version_number == record.version_number,
+                )
+            )
+            paper_version_id = existing_version_result.scalar_one()
 
         if snapshot_is_current:
             await self._replace_authors(session, paper_id, record, now=now)
 
         return ArxivPersistenceResult(
             paper_id=paper_id,
+            paper_version_id=paper_version_id,
             version_created=version_created,
             authors_replaced=snapshot_is_current,
         )

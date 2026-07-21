@@ -75,6 +75,7 @@ def test_upsert_uses_database_conflict_constraints_and_ordered_authors() -> None
         outcome = await ArxivIngestionRepository().upsert_record(session, paper_record())
 
         assert outcome.paper_id == paper_id
+        assert outcome.paper_version_id == version_id
         assert outcome.version_created
         assert outcome.authors_replaced
         return session, paper_id, alice_id, bob_id
@@ -135,10 +136,12 @@ def test_equal_snapshot_can_repair_authors_and_deduplicates_identities() -> None
         rejected_upsert = scalar_result(None)
         existing = MagicMock()
         existing.one.return_value = (paper_id, incoming.updated_at)
+        existing_version_id = uuid4()
         session.execute.side_effect = [
             rejected_upsert,
             existing,
             scalar_result(None),
+            scalar_result(existing_version_id),
             scalar_result(author_id),
             MagicMock(),
             MagicMock(),
@@ -148,6 +151,7 @@ def test_equal_snapshot_can_repair_authors_and_deduplicates_identities() -> None
 
         assert outcome.authors_replaced
         assert not outcome.version_created
+        assert outcome.paper_version_id == existing_version_id
         return session, paper_id, author_id
 
     session, paper_id, author_id = asyncio.run(exercise())

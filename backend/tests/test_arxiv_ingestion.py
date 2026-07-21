@@ -97,6 +97,7 @@ class FakeRepository:
             raise RuntimeError("database failure")
         return ArxivPersistenceResult(
             paper_id=uuid4(),
+            paper_version_id=uuid4(),
             version_created=True,
             authors_replaced=paper.arxiv_id.endswith("1"),
         )
@@ -139,6 +140,26 @@ def test_fetch_finishes_before_one_feed_transaction_begins() -> None:
     assert summary.records_received == 2
     assert summary.versions_created == 2
     assert summary.author_snapshots_replaced == 1
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
+def test_detailed_ingestion_returns_exact_revision_identities() -> None:
+    events: list[str] = []
+    feed = ArxivFeed(
+        records=(record("2607.00001"),),
+        total_results=1,
+        start_index=0,
+        items_per_page=1,
+    )
+
+    result = asyncio.run(service(events, feed).ingest_category_detailed("cs.AI", max_results=1))
+
+    assert result.summary.records_received == 1
+    assert len(result.revisions) == 1
+    assert result.revisions[0].arxiv_id == "2607.00001"
+    assert result.revisions[0].version_number == 1
+    assert result.revisions[0].paper_id != result.revisions[0].paper_version_id
 
 
 @pytest.mark.base
