@@ -67,6 +67,10 @@ erDiagram
       uuid paper_id FK
       int version_number
       string source_checksum
+      string parsed_checksum
+      string parser_version
+      string parse_quality
+      timestamptz parsed_at
       timestamptz submitted_at
     }
     authors {
@@ -165,6 +169,7 @@ erDiagram
     pipeline_jobs {
       uuid id PK
       uuid paper_id FK
+      uuid paper_version_id FK
       string idempotency_key UK
       string stage
       string status
@@ -188,7 +193,7 @@ erDiagram
 - arXiv work IDs are stored without a trailing version suffix. `(paper_id, version_number)` is
   unique in `paper_versions`.
 - `user_events.paper_id`, `user_events.duration_ms`, artifact vectors, source licenses, source
-  checksums, citation targets, job error/timing fields, and model telemetry may be null when the
+  checksums, parsed-document provenance, citation targets, job error/timing fields, and model telemetry may be null when the
   corresponding information is unavailable.
 - JSON objects and arrays use PostgreSQL JSONB unless an ordered scalar array is explicitly part
   of the schema. Paper categories use a PostgreSQL text array and preserve the primary category
@@ -234,6 +239,10 @@ erDiagram
 - Citation edges are deduplicated separately for resolved internal targets and unresolved external
   targets. Self-edges are rejected.
 - Pipeline jobs may have no paper only for collection-level stages such as digest assembly.
+- Paper-scoped pipeline jobs bind to an exact paper revision; collection-level stages leave both
+  paper identifiers null.
+- `paper_versions.source_checksum` is the downloaded PDF SHA-256. Parse provenance is complete as
+  one unit: checksum, parser version, quality tier, and timestamp are either all present or all null.
 - Pipeline jobs expose a stable `error_code`; raw `last_error` is operational data and is never
   returned directly by the public API.
 - Deleting a cached PDF does not delete metadata, chunks, or generated artifacts.

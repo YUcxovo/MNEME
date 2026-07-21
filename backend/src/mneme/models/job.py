@@ -4,7 +4,17 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Enum,
+    ForeignKey,
+    ForeignKeyConstraint,
+    Index,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -39,16 +49,28 @@ class PipelineJob(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __table_args__ = (
         CheckConstraint("attempt_count >= 0", name="ck_pipeline_jobs_attempts_non_negative"),
         CheckConstraint(
+            "paper_version_id IS NULL OR paper_id IS NOT NULL",
+            name="ck_pipeline_jobs_version_requires_paper",
+        ),
+        CheckConstraint(
             "finished_at IS NULL OR started_at IS NULL OR finished_at >= started_at",
             name="ck_pipeline_jobs_time_range_valid",
         ),
         Index("ix_pipeline_jobs_status_stage", "status", "stage", "created_at"),
         Index("ix_pipeline_jobs_paper_status", "paper_id", "status"),
+        Index("ix_pipeline_jobs_version_status", "paper_version_id", "status"),
+        ForeignKeyConstraint(
+            ["paper_version_id", "paper_id"],
+            ["paper_versions.id", "paper_versions.paper_id"],
+            name="fk_pipeline_jobs_version_paper",
+            ondelete="CASCADE",
+        ),
     )
 
     paper_id: Mapped[UUID | None] = mapped_column(
         PG_UUID(as_uuid=True), ForeignKey("papers.id", ondelete="CASCADE"), nullable=True
     )
+    paper_version_id: Mapped[UUID | None] = mapped_column(PG_UUID(as_uuid=True), nullable=True)
     idempotency_key: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
     stage: Mapped[PipelineStage] = mapped_column(
         Enum(
