@@ -130,3 +130,17 @@ def test_summary_and_search_queries_are_revision_scoped() -> None:
     assert paper_id in search_query.params.values()
     assert version_id in search_query.params.values()
     assert "paper_chunks.paper_version_id" in str(search_query)
+
+    asyncio.run(
+        repository.get_context_anchor_chunks(
+            paper_id=paper_id,
+            paper_version_id=version_id,
+            query_embedding=(0.1,) * 1536,
+            limit=2,
+        )
+    )
+    anchor_statement = session.execute.await_args.args[0]
+    anchor_query = anchor_statement.compile(dialect=postgresql.dialect())
+    assert paper_id in anchor_query.params.values()
+    assert version_id in anchor_query.params.values()
+    assert "paper_chunks.paper_version_id" in str(anchor_query)

@@ -10,6 +10,7 @@ import pytest
 
 from mneme.models.paper import ParseQuality
 from mneme.services.documents import PdfParseError, PdfParser
+from mneme.services.documents.parser_layout import normalize_line
 
 PAPER_ID = UUID("11111111-1111-4111-8111-111111111111")
 VERSION_ID = UUID("22222222-2222-4222-8222-222222222222")
@@ -35,6 +36,28 @@ def _write_pdf(path: Path, pages: list[list[tuple[str, float]]], *, password: st
         )
     else:
         document.save(path)
+    document.close()
+
+
+def _write_two_column_pdf(path: Path) -> None:
+    document = pymupdf.open()
+    page = document.new_page()
+    right_body = (
+        "The right column reports evaluation results after the complete left column. "
+        "Its insertion order deliberately comes first in the PDF content stream."
+    )
+    left_body = (
+        "The left column introduces the problem and method before any reported results. "
+        "The parser must keep this logical reading order."
+    )
+
+    # Insert the right column first to ensure extraction does not trust content-stream order.
+    page.insert_text((340, 90), "II. Results", fontsize=14)
+    page.insert_textbox(pymupdf.Rect(340, 110, 550, 220), right_body, fontsize=11)
+    page.insert_text((60, 90), "I. Introduction", fontsize=14)
+    page.insert_textbox(pymupdf.Rect(60, 110, 270, 220), left_body, fontsize=11)
+    page.insert_text((190, 50), "A Layout-Aware Study", fontsize=18)
+    document.save(path)
     document.close()
 
 
@@ -106,6 +129,23 @@ def test_uses_text_only_tier_when_headings_are_not_detected(tmp_path: Path) -> N
 
 @pytest.mark.base
 @pytest.mark.pipeline
+def test_recovers_two_column_reading_order_from_layout(tmp_path: Path) -> None:
+    path = tmp_path / "two-column.pdf"
+    _write_two_column_pdf(path)
+
+    parsed = _parse(path)
+
+    titles = [section.title for section in parsed.sections]
+    introduction = titles.index("I. Introduction")
+    results = titles.index("II. Results")
+    assert introduction < results
+    assert "introduces the problem" in parsed.sections[introduction].text
+    assert "reports evaluation results" in parsed.sections[results].text
+    assert "insertion order deliberately comes first" not in parsed.sections[introduction].text
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
 def test_blank_pdf_falls_back_to_normalized_abstract(tmp_path: Path) -> None:
     path = tmp_path / "blank.pdf"
     _write_pdf(path, [[]])
@@ -149,3 +189,9 @@ def test_unreadable_pdf_without_abstract_reports_safe_error(tmp_path: Path) -> N
 @pytest.mark.pipeline
 def test_parser_contract_is_synchronous() -> None:
     assert not inspect.iscoroutinefunction(PdfParser.parse)
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
+def test_normalization_removes_database_unsafe_control_characters() -> None:
+    assert normalize_line("alpha\x00beta\x1f gamma\t delta") == "alpha beta gamma delta"

@@ -225,7 +225,7 @@ def extract_headings(source_path: Path) -> dict[int, dict[str, str]]:
                     use_text_flow=False,
                 ),
             )
-            lines.extend(_group_words(page_number, words))
+            lines.extend(_group_words(page_number, words, page_width=float(page.width)))
 
     positive_sizes = [size for size in character_sizes if size > 0]
     if not positive_sizes:
@@ -238,18 +238,46 @@ def extract_headings(source_path: Path) -> dict[int, dict[str, str]]:
     return headings
 
 
-def _group_words(page_number: int, words: list[dict[str, object]]) -> list[LayoutLine]:
-    grouped: list[list[dict[str, object]]] = []
+def _group_words(
+    page_number: int,
+    words: list[dict[str, object]],
+    *,
+    page_width: float | None = None,
+) -> list[LayoutLine]:
+    rows: list[list[dict[str, object]]] = []
     for word in sorted(
         words, key=lambda item: (_as_float(item.get("top")), _as_float(item.get("x0")))
     ):
-        if (
-            not grouped
-            or abs(_as_float(word.get("top")) - _as_float(grouped[-1][0].get("top"))) > 2.0
-        ):
-            grouped.append([word])
+        if not rows or abs(_as_float(word.get("top")) - _as_float(rows[-1][0].get("top"))) > 2.0:
+            rows.append([word])
         else:
-            grouped[-1].append(word)
+            rows[-1].append(word)
+
+    grouped: list[list[dict[str, object]]] = []
+    for row in rows:
+        current: list[dict[str, object]] = []
+        previous_x1: float | None = None
+        center = page_width / 2 if page_width is not None else None
+        for word in sorted(row, key=lambda item: _as_float(item.get("x0"))):
+            x0 = _as_float(word.get("x0"))
+            font_size = _as_float(word.get("size"))
+            crosses_column_gutter = (
+                center is not None
+                and previous_x1 is not None
+                and previous_x1 < center - 4.0
+                and x0 > center + 4.0
+            )
+            if (
+                current
+                and previous_x1 is not None
+                and (crosses_column_gutter or x0 - previous_x1 > max(24.0, font_size * 2.5))
+            ):
+                grouped.append(current)
+                current = []
+            current.append(word)
+            previous_x1 = _as_float(word.get("x1"))
+        if current:
+            grouped.append(current)
 
     lines: list[LayoutLine] = []
     for words_on_line in grouped:
@@ -316,7 +344,7 @@ def split_at_headings(pages: list[str], headings: dict[int, dict[str, str]]) -> 
 
     def flush() -> None:
         nonlocal content, page_start, page_end
-        text = normalize_line(" ".join(content))
+        text = _join_paragraphs(content)
         if text and page_start is not None and page_end is not None:
             sections.append(
                 ParsedSection(
@@ -335,11 +363,13 @@ def split_at_headings(pages: list[str], headings: dict[int, dict[str, str]]) -> 
         for line in page_text.splitlines():
             normalized = normalize_line(line)
             if not normalized:
+                if content and content[-1]:
+                    content.append("")
                 continue
             heading = page_headings.get(_heading_key(normalized))
             if heading is not None:
                 flush()
-                title = heading
+                title = normalized
                 page_start = page_number
                 page_end = page_number
                 found_heading = True
@@ -352,18 +382,33 @@ def split_at_headings(pages: list[str], headings: dict[int, dict[str, str]]) -> 
     return sections if found_heading else []
 
 
+def _join_paragraphs(lines: list[str]) -> str:
+    """Normalize section lines while retaining parser block boundaries."""
+    paragraphs: list[str] = []
+    current: list[str] = []
+    for line in lines:
+        if line:
+            current.append(line)
+        elif current:
+            paragraphs.append(normalize_line(" ".join(current)))
+            current = []
+    if current:
+        paragraphs.append(normalize_line(" ".join(current)))
+    return "\n\n".join(paragraph for paragraph in paragraphs if paragraph)
+
+
 def normalize_page(text: str) -> str:
-    """Normalize extracted page text while preserving line boundaries."""
-    return "\n".join(
-        normalized
-        for line in text.replace("\x00", "").splitlines()
-        if (normalized := normalize_line(line))
+    """Normalize extracted page text while preserving paragraph boundaries."""
+    paragraphs = re.split(r"\n\s*\n", text)
+    return "\n\n".join(
+        normalized for paragraph in paragraphs if (normalized := normalize_line(paragraph))
     )
 
 
 def normalize_line(text: str) -> str:
     """Collapse unsafe or repeated whitespace in extracted text."""
-    return _WHITESPACE.sub(" ", text).strip()
+    sanitized = _UNSAFE_CONTROL_CHARACTERS.sub(" ", text)
+    return _WHITESPACE.sub(" ", sanitized).strip()
 
 
 def _heading_key(text: str) -> str:

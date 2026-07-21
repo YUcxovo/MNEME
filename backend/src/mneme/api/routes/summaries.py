@@ -30,6 +30,7 @@ from mneme.repositories.job_identity import (
 )
 from mneme.repositories.jobs import PipelineJobRepository, arq_attempt_id
 from mneme.repositories.paper_catalog import PaperCatalogRepository
+from mneme.services.documents import PARSER_VERSION
 
 logger = structlog.get_logger(__name__)
 
@@ -97,6 +98,7 @@ async def get_paper_summary(
             paper_id=paper_id,
             paper_version_id=version.id,
             source_checksum=version.source_checksum,
+            parser_version=PARSER_VERSION,
         )
     else:
         stage = PipelineStage.DOWNLOAD_PDF

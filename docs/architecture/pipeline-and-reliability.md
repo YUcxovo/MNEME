@@ -33,7 +33,7 @@ Document artifacts use deterministic UUID-only paths:
 
 Writes use a temporary file, `fsync`, and atomic replacement. `paper_versions` records download SHA-256/size/time and parse SHA-256/parser-version/quality/time. The parsed JSON carries a schema version, exact paper/revision IDs, source checksum, page count, ordered sections, page ranges, quality tier, fallback reason, and UTC timestamp.
 
-The downloader accepts only bounded PDF responses with a valid signature and retries transient transport, `429`, and `5xx` failures. The parser combines PyMuPDF text extraction with pdfplumber layout hints. Its quality tiers are:
+The downloader accepts only bounded PDF responses with a valid signature and retries transient transport, `429`, and `5xx` failures. The parser combines PyMuPDF text blocks with pdfplumber layout hints. It reconstructs block text from positioned words, orders two-column pages by logical column flow, retains block boundaries, removes database-unsafe control characters, and detects numbered, Roman-numeral, and lettered section headings. Chunking repeats the control-character check so sidecars produced by an older parser remain safe to persist. Its quality tiers are:
 
 - `structured`: useful extracted text with credible section structure.
 - `text_only`: useful text with degraded or incomplete structure.
@@ -47,7 +47,7 @@ Every `pipeline_jobs.idempotency_key` is a SHA-256 of canonical JSON containing 
 
 - metadata: arXiv category and UTC run date;
 - download: paper/revision IDs plus arXiv ID and revision number;
-- parse: paper/revision IDs plus source PDF checksum;
+- parse: paper/revision IDs plus source PDF checksum and parser version;
 - summarize and chunk: paper/revision IDs plus parsed checksum and parser version;
 - embed: the parsed-artifact identity plus embedding model;
 - weekly digest: user ID, UTC Monday, and generator version.
