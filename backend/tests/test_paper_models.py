@@ -40,6 +40,8 @@ def test_revision_and_authorship_constraints() -> None:
     parse_quality_type = versions.c.parse_quality.type
 
     assert versions.c.source_checksum.nullable
+    assert versions.c.source_size_bytes.nullable
+    assert versions.c.downloaded_at.nullable
     assert versions.c.parsed_checksum.nullable
     assert versions.c.parser_version.nullable
     assert versions.c.parse_quality.nullable
@@ -51,6 +53,12 @@ def test_revision_and_authorship_constraints() -> None:
         constraint.name for constraint in versions.constraints
     }
     assert "ck_paper_versions_parse_metadata_complete" in {
+        constraint.name for constraint in versions.constraints
+    }
+    assert "ck_paper_versions_source_size_non_negative" in {
+        constraint.name for constraint in versions.constraints
+    }
+    assert "ck_paper_versions_source_metadata_complete" in {
         constraint.name for constraint in versions.constraints
     }
     assert {column.name for column in authorship.primary_key.columns} == {

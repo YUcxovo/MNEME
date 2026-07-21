@@ -9,6 +9,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     ARRAY,
+    BigInteger,
     CheckConstraint,
     DateTime,
     Enum,
@@ -101,6 +102,16 @@ class PaperVersion(UUIDPrimaryKeyMixin, Base):
             name="ck_paper_versions_source_checksum_sha256",
         ),
         CheckConstraint(
+            "source_size_bytes IS NULL OR source_size_bytes >= 0",
+            name="ck_paper_versions_source_size_non_negative",
+        ),
+        CheckConstraint(
+            "(source_checksum IS NULL AND source_size_bytes IS NULL AND downloaded_at IS NULL) OR "
+            "(source_checksum IS NOT NULL AND source_size_bytes IS NOT NULL "
+            "AND downloaded_at IS NOT NULL)",
+            name="ck_paper_versions_source_metadata_complete",
+        ),
+        CheckConstraint(
             "parsed_checksum IS NULL OR length(parsed_checksum) = 64",
             name="ck_paper_versions_parsed_checksum_sha256",
         ),
@@ -118,6 +129,8 @@ class PaperVersion(UUIDPrimaryKeyMixin, Base):
     )
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     source_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    source_size_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    downloaded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     parsed_checksum: Mapped[str | None] = mapped_column(String(64), nullable=True)
     parser_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
     parse_quality: Mapped[ParseQuality | None] = mapped_column(
