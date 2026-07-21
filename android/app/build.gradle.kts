@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -7,6 +9,28 @@ plugins {
     alias(libs.plugins.ktlint)
     alias(libs.plugins.ksp)
 }
+
+fun String.asBuildConfigString(): String = "\"" + replace("\\", "\\\\").replace("\"", "\\\"") + "\""
+
+val localProperties =
+    Properties().apply {
+        rootProject
+            .file("local.properties")
+            .takeIf { it.isFile }
+            ?.inputStream()
+            ?.use(::load)
+    }
+
+val mnemeApiBaseUrl =
+    providers
+        .gradleProperty("MNEME_API_BASE_URL")
+        .orElse(providers.environmentVariable("MNEME_API_BASE_URL"))
+        .orElse(localProperties.getProperty("MNEME_API_BASE_URL") ?: "http://10.0.2.2:8000/v1/")
+val mnemeDemoToken =
+    providers
+        .gradleProperty("MNEME_DEMO_TOKEN")
+        .orElse(providers.environmentVariable("MNEME_DEMO_TOKEN"))
+        .orElse(localProperties.getProperty("MNEME_DEMO_TOKEN") ?: "")
 
 ksp {
     arg("room.schemaLocation", "$projectDir/src/main/schemas")
@@ -24,6 +48,8 @@ android {
         versionName = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "MNEME_API_BASE_URL", mnemeApiBaseUrl.get().asBuildConfigString())
+        buildConfigField("String", "MNEME_DEMO_TOKEN", mnemeDemoToken.get().asBuildConfigString())
     }
 
     buildTypes {
@@ -65,6 +91,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.activity.compose)
 
     implementation(platform(libs.androidx.compose.bom))
@@ -79,9 +106,14 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.work.runtime)
     implementation(libs.kotlinx.serialization.core)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit.core)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.okhttp)
     ksp(libs.androidx.room.compiler)
 
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
