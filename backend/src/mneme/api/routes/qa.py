@@ -69,6 +69,13 @@ async def ask_question(
             "paper_not_found",
             "The requested paper does not exist.",
         )
+    version = await artifacts.get_latest_version(payload.paper_id)
+    if version is None:
+        raise ApiError(
+            status.HTTP_409_CONFLICT,
+            "paper_not_ready",
+            "The requested paper has no observed revision.",
+        )
     try:
         conversation = await conversations.resolve_conversation(
             conversation_id=payload.conversation_id,
@@ -92,7 +99,11 @@ async def ask_question(
         max_output_tokens=settings.ai_qa_max_output_tokens,
     )
     try:
-        chunks = await retrieval.retrieve(paper_id=payload.paper_id, question=payload.question)
+        chunks = await retrieval.retrieve(
+            paper_id=payload.paper_id,
+            paper_version_id=version.id,
+            question=payload.question,
+        )
         grounded = await generator.answer(question=payload.question, chunks=chunks)
     except AIError as error:
         raise map_ai_error(error) from error
@@ -127,6 +138,7 @@ async def ask_question(
     logger.info(
         "qa_question_answered",
         paper_id=str(payload.paper_id),
+        paper_version_id=str(version.id),
         conversation_id=str(conversation.id),
         source_match_status=grounded.source_match_status.value,
     )

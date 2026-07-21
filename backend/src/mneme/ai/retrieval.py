@@ -15,7 +15,12 @@ class SupportsChunkSearch(Protocol):
     """The ANN-search surface retrieval needs from the artifact repository."""
 
     async def search_chunks(
-        self, *, paper_id: UUID, query_embedding: tuple[float, ...], limit: int
+        self,
+        *,
+        paper_id: UUID,
+        paper_version_id: UUID,
+        query_embedding: tuple[float, ...],
+        limit: int,
     ) -> list[tuple[Any, float]]:
         """Return (chunk row, cosine similarity) pairs, best first."""
         ...
@@ -50,11 +55,16 @@ class RetrievalService:
         self._artifacts = artifacts
         self._top_k = top_k
 
-    async def retrieve(self, *, paper_id: UUID, question: str) -> list[RetrievedChunk]:
-        """Return the paper's most similar embedded chunks for a question."""
+    async def retrieve(
+        self, *, paper_id: UUID, paper_version_id: UUID, question: str
+    ) -> list[RetrievedChunk]:
+        """Return one revision's most similar embedded chunks for a question."""
         query_embedding = await self._embedder.embed_query(question)
         rows = await self._artifacts.search_chunks(
-            paper_id=paper_id, query_embedding=query_embedding, limit=self._top_k
+            paper_id=paper_id,
+            paper_version_id=paper_version_id,
+            query_embedding=query_embedding,
+            limit=self._top_k,
         )
         results = [
             RetrievedChunk(
@@ -72,6 +82,7 @@ class RetrievalService:
         logger.info(
             "retrieval_completed",
             paper_id=str(paper_id),
+            paper_version_id=str(paper_version_id),
             chunks=len(results),
             top_score=results[0].score if results else None,
         )
