@@ -150,6 +150,7 @@ class FakeJobRepository:
 
     def __init__(self, existing: PipelineJob | None = None) -> None:
         self.existing = existing
+        self.generated: PipelineJob | None = None
         self.retry_claims: list[UUID] = []
         self.dispatch_claims: list[UUID] = []
         self.released: list[UUID] = []
@@ -166,12 +167,19 @@ class FakeJobRepository:
         self.create_calls.append((idempotency_key, stage, paper_id, paper_version_id))
         if self.existing is not None:
             return self.existing, False
-        return _job(), True
+        self.generated = _job()
+        self.generated.idempotency_key = idempotency_key
+        self.generated.stage = stage
+        self.generated.paper_id = paper_id
+        self.generated.paper_version_id = paper_version_id
+        return self.generated, True
 
     async def get(self, job_id: UUID) -> PipelineJob | None:
         if self.existing is not None and self.existing.id == job_id:
             return self.existing
-        return _job() if job_id == JOB_ID else None
+        if self.generated is not None and self.generated.id == job_id:
+            return self.generated
+        return None
 
     async def claim_failed_for_retry(self, job_id: UUID) -> bool:
         if self.existing is None or self.existing.status is not JobStatus.FAILED:
@@ -363,3 +371,99 @@ def test_unknown_paper_returns_stable_not_found_error() -> None:
     payload = response.json()
     assert payload["code"] == "paper_not_found"
     assert "request_id" in payload
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_paper_without_an_observed_revision_is_not_scheduled() -> None:
+    queue = FakeQueue()
+    application = _application(
+        FakePaperCatalogRepository(_paper()),
+        FakeArtifactRepository(None, has_version=False),
+        FakeJobRepository(),
+        queue,
+    )
+
+    response = asyncio.run(_get(application, f"/v1/papers/{PAPER_ID}/summary"))
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "paper_not_ready"
+    assert queue.enqueued == []
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_summary_from_an_old_revision_is_not_returned() -> None:
+    old_summary = _stored_summary()
+    old_summary.paper_version_id = uuid4()
+    queue = FakeQueue()
+    application = _application(
+        FakePaperCatalogRepository(_paper()),
+        FakeArtifactRepository(old_summary),
+        FakeJobRepository(),
+        queue,
+    )
+
+    response = asyncio.run(_get(application, f"/v1/papers/{PAPER_ID}/summary"))
+
+    assert response.status_code == 202
+    assert response.json()["stage"] == "summarize_paper"
+    assert queue.enqueued[0][0] == "summarize_paper"
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_downloaded_revision_resumes_at_parse_stage() -> None:
+    queue = FakeQueue()
+    jobs = FakeJobRepository()
+    application = _application(
+        FakePaperCatalogRepository(_paper()),
+        FakeArtifactRepository(None, version=_version(parsed=False)),
+        jobs,
+        queue,
+    )
+
+    response = asyncio.run(_get(application, f"/v1/papers/{PAPER_ID}/summary"))
+
+    assert response.status_code == 202
+    assert response.json()["stage"] == "parse_pdf"
+    assert jobs.create_calls[0][1] is PipelineStage.PARSE_PDF
+    assert queue.enqueued[0][0] == "parse_pdf"
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_metadata_only_revision_resumes_at_download_stage() -> None:
+    queue = FakeQueue()
+    jobs = FakeJobRepository()
+    application = _application(
+        FakePaperCatalogRepository(_paper()),
+        FakeArtifactRepository(None, version=_version(downloaded=False, parsed=False)),
+        jobs,
+        queue,
+    )
+
+    response = asyncio.run(_get(application, f"/v1/papers/{PAPER_ID}/summary"))
+
+    assert response.status_code == 202
+    assert response.json()["stage"] == "download_pdf"
+    assert jobs.create_calls[0][1] is PipelineStage.DOWNLOAD_PDF
+    assert queue.enqueued[0][0] == "download_pdf"
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_queue_failure_releases_dispatch_lease() -> None:
+    jobs = FakeJobRepository()
+    application = _application(
+        FakePaperCatalogRepository(_paper()),
+        FakeArtifactRepository(None),
+        jobs,
+        FakeQueue(fail=True),
+    )
+
+    response = asyncio.run(_get(application, f"/v1/papers/{PAPER_ID}/summary"))
+
+    assert response.status_code == 503
+    assert response.json()["code"] == "queue_unavailable"
+    assert jobs.released == [JOB_ID]
