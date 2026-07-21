@@ -9,7 +9,6 @@ input reuses stored artifacts instead of spending tokens again.
 from uuid import UUID
 
 import structlog
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.ai.chunking import ParsedSection, chunk_sections
@@ -28,22 +27,13 @@ class PaperNotReadyError(RuntimeError):
 
 
 async def _require_paper_version(
-    session: AsyncSession, *, paper_id: UUID, paper_version_id: UUID | None
+    session: AsyncSession, *, paper_id: UUID, paper_version_id: UUID
 ) -> tuple[Paper, PaperVersion]:
-    """Return the requested revision, with a temporary latest-version fallback."""
+    """Return one exact paper revision or reject a mismatched stage identity."""
     paper = await session.get(Paper, paper_id, with_for_update=True)
     if paper is None:
         raise PaperNotReadyError(f"Paper {paper_id} does not exist.")
-    version = (
-        await session.get(PaperVersion, paper_version_id)
-        if paper_version_id is not None
-        else await session.scalar(
-            select(PaperVersion)
-            .where(PaperVersion.paper_id == paper_id)
-            .order_by(PaperVersion.version_number.desc())
-            .limit(1)
-        )
-    )
+    version = await session.get(PaperVersion, paper_version_id)
     if version is None or version.paper_id != paper_id:
         raise PaperNotReadyError(
             f"Paper version {paper_version_id} does not belong to paper {paper_id}."
@@ -55,8 +45,8 @@ async def summarize_paper_stage(
     session: AsyncSession,
     *,
     paper_id: UUID,
+    paper_version_id: UUID,
     summarizer: SummarizationService,
-    paper_version_id: UUID | None = None,
     body: str | None = None,
 ) -> PaperSummary:
     """Generate and store one structured summary for an exact revision.
@@ -114,10 +104,10 @@ async def chunk_paper_stage(
     session: AsyncSession,
     *,
     paper_id: UUID,
+    paper_version_id: UUID,
     sections: list[ParsedSection],
     max_tokens: int,
     overlap_tokens: int,
-    paper_version_id: UUID | None = None,
 ) -> int:
     """Chunk parsed sections for an exact revision; returns the chunk count.
 
@@ -141,8 +131,8 @@ async def embed_chunks_stage(
     session: AsyncSession,
     *,
     paper_id: UUID,
+    paper_version_id: UUID,
     embedder: EmbeddingService,
-    paper_version_id: UUID | None = None,
     batch_limit: int = 512,
 ) -> int:
     """Embed all unembedded chunks of an exact revision; returns the count.
