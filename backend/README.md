@@ -101,13 +101,41 @@ MNEME_PAPER_STORAGE_DIR/
         `-- parsed.json
 ```
 
-The downloader validates HTTP status, PDF media/signature, and the configured byte limit, then records the SHA-256 and download timestamp. The parser combines PyMuPDF text extraction with pdfplumber layout hints and writes the shared `ParsedDocument` JSON contract. Parse quality is `structured`, `text_only`, or `abstract_only`; unusable PDFs fall back to the stored arXiv abstract so downstream AI stages remain recoverable. PDF parsing is synchronous inside its bounded ARQ job because the parser libraries' supported runtime is more reliable in the worker thread than through an additional executor hop.
+The downloader validates HTTP status, PDF media/signature, and the configured byte limit, then records the SHA-256 and download timestamp. The parser combines PyMuPDF text blocks with pdfplumber layout hints, restores logical single- or multi-column reading order, normalizes wrapped words, and writes the shared `ParsedDocument` JSON contract. Parse quality is `structured`, `text_only`, or `abstract_only`; unusable PDFs fall back to the stored arXiv abstract so downstream AI stages remain recoverable. The parser version participates in the durable parse identity, so a parser upgrade does not reuse an older parse job. PDF parsing is synchronous inside its bounded ARQ job because the parser libraries' supported runtime is more reliable in the worker thread than through an additional executor hop.
 
 Durable jobs use input-derived idempotency keys, PostgreSQL uniqueness, dispatch leases, stable ARQ attempt IDs, and explicit `queued`, `running`, `succeeded`, or `failed` states. Completed stage output is reused, failed stages can be claimed for retry, and the latest paper revision becomes `ready` only after its required summary and embedded chunks exist; degraded artifacts produce `partial`.
 
 ## AI services
 
-All live LLM access goes through `mneme.ai` (see `docs/architecture/ai-services.md`): provider adapters for Anthropic and OpenAI, environment-backed task routing, Redis completion caching, and a hard daily budget (`MNEME_AI_DAILY_BUDGET_USD`). Configure the provider key selected by `MNEME_LLM_SUMMARY_MODEL` and configure `MNEME_OPENAI_API_KEY` for the current embedding provider. Tests use deterministic fakes and make no external model call.
+All live LLM access goes through `mneme.ai` (see `docs/architecture/ai-services.md`):
+provider adapters for Anthropic, DeepSeek, and OpenAI; environment-backed task routing;
+Redis completion caching; and a hard daily budget (`MNEME_AI_DAILY_BUDGET_USD`). Configure
+the key selected by `MNEME_LLM_SUMMARY_MODEL` and `MNEME_LLM_QA_MODEL`. Tests use
+deterministic fakes and make no external model call.
+
+OpenAI remains the default embedding backend. A local CPU demo can instead use the optional
+FastEmbed extra and BGE Small:
+
+```bash
+uv sync --extra local-embeddings
+```
+
+```dotenv
+MNEME_DEEPSEEK_API_KEY=<deepseek-api-key>
+MNEME_DEEPSEEK_THINKING_ENABLED=false
+MNEME_LLM_SUMMARY_MODEL=deepseek-v4-flash
+MNEME_LLM_QA_MODEL=deepseek-v4-flash
+MNEME_AI_EMBEDDING_BACKEND=fastembed
+MNEME_AI_LOCAL_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5
+MNEME_AI_EMBEDDING_MODEL=BAAI/bge-small-en-v1.5+fastembed-pad1536-v1
+```
+
+The local model emits learned 384-dimensional dense vectors. The adapter L2-normalizes and
+zero-pads them to the frozen `vector(1536)` store width; zero-padding preserves cosine
+similarity and ordering. The qualified persisted model identity includes the adapter version,
+so these values cannot be confused with native 1536-dimensional embeddings. This local path
+is an explicit development/demo option; it is not enabled silently when an external provider
+fails.
 
 The evaluation fixture format and seed cases are documented in `docs/architecture/ai-evaluation.md`. Provider and model IDs are recorded with generated artifacts; they are configuration, not hard-coded architecture contracts.
 
@@ -147,7 +175,8 @@ Database integration and end-to-end pipeline tests run when `MNEME_DATABASE_URL`
 - `GET /v1/health` reports process liveness and does not probe PostgreSQL or Redis.
 - Local document storage must be mounted at the same path for every API/worker process; distributed object storage and garbage collection are deferred.
 - The worker's automatic recovery scan can reconstruct revision-scoped jobs. Collection-level daily and weekly jobs are recovered by repeatable CLI invocations because their hashed durable identities do not contain reconstructable arguments.
-- The backend pipeline is usable independently, but the Android skeletal demo is not yet connected through Retrofit/OkHttp or a real WorkManager sync.
+- The Android skeletal path can call the backend through Retrofit/OkHttp when its demo
+  token is configured; real WorkManager background sync remains unfinished.
 - Semantic Scholar ingestion, behavioral event updates, and graph persistence/API remain Milestone 3 work.
 
 ## Layout

@@ -22,9 +22,11 @@ CompletionRequest --> ModelRouter --> LLMCache --> BudgetGuard --> LLMProvider
 - `mneme.ai.types.CompletionRequest` is provider-agnostic: task, messages,
   optional system prompt, output-token cap, and a `prompt_version` string.
 - `mneme.ai.providers` implements the `LLMProvider` protocol for Anthropic
-  (Messages API) and OpenAI (Chat Completions), plus `FakeLLMProvider` for
-  tests and evaluation. Vendor exceptions are mapped to `LLMProviderError`
-  with a `retryable` flag (429/5xx/connection errors are retryable).
+  (Messages API), DeepSeek (its OpenAI-compatible Chat Completions API), and
+  OpenAI (Chat Completions), plus `FakeLLMProvider` for tests and evaluation.
+  Vendor exceptions are mapped to `LLMProviderError` with a `retryable` flag
+  (429/5xx/connection errors are retryable). DeepSeek thinking is disabled by
+  default for predictable demo latency and cost, with an environment override.
 - Providers are only registered when their API key is configured; routing to
   an unregistered provider raises `ProviderNotConfiguredError`, which AI
   endpoints will map to `service_unavailable`.
@@ -33,8 +35,9 @@ CompletionRequest --> ModelRouter --> LLMCache --> BudgetGuard --> LLMProvider
 
 `ModelRouter` maps each `AITask` (`summarize`, `qa`) to one model configured
 via settings (`MNEME_LLM_SUMMARY_MODEL`, `MNEME_LLM_QA_MODEL`). The provider
-is inferred from the model name (`claude-*` -> Anthropic, `gpt-*`/`o*-` ->
-OpenAI) and validated at startup so typos fail before the first request.
+is inferred from the model name (`claude-*` -> Anthropic, `deepseek-*` ->
+DeepSeek, `gpt-*`/`o*-` -> OpenAI) and validated at startup so typos fail
+before the first request.
 Defaults target `claude-opus-4-8`; swap to a cheaper model per-environment
 without code changes.
 
@@ -109,12 +112,20 @@ pool.
   deterministic drafts: section titles and page ranges preserved, oversized
   sections split at sentence boundaries with token overlap, content hashed
   for idempotent embedding.
-- `mneme.ai.embeddings` wraps the OpenAI Embeddings API behind an
-  `EmbeddingProvider` protocol (deterministic fake included). Batches are
-  bounded (`MNEME_AI_EMBEDDING_BATCH_SIZE`) and every batch passes through
-  the shared BudgetGuard, so embedding spend counts against the same daily
-  cap as completions. Default model `text-embedding-3-small` (1536 dims,
-  matching the pgvector schema).
+- `mneme.ai.embeddings` wraps both the OpenAI Embeddings API and an opt-in local
+  FastEmbed/ONNX backend behind an `EmbeddingProvider` protocol (deterministic
+  fake included). OpenAI `text-embedding-3-small` remains the default and emits
+  1536 dimensions matching the pgvector schema.
+- The local demo route uses `BAAI/bge-small-en-v1.5`. Its learned 384-dimensional
+  vectors are L2-normalized and zero-padded to 1536 dimensions. Appending zeros
+  preserves cosine similarity and ranking, avoids a schema migration, and is
+  recorded under the qualified identity
+  `BAAI/bge-small-en-v1.5+fastembed-pad1536-v1`. The model package is optional
+  and must be installed/configured explicitly; provider failures never trigger
+  a silent fallback.
+- Batches are bounded (`MNEME_AI_EMBEDDING_BATCH_SIZE`) and every batch passes
+  through the shared BudgetGuard, so external embedding spend counts against
+  the same daily cap as completions. The local model has zero external cost.
 - Pipeline stages (`mneme.ai.pipeline`) are consumed as ARQ jobs
   (`mneme.tasks.ai_jobs`): `summarize_paper`, `chunk_paper` (which enqueues
   `embed_chunks`), and `embed_chunks`. Stages are idempotent and resumable;
@@ -133,17 +144,25 @@ are requeued on the next client retry. AI failures map to stable codes:
 
 ## Retrieval and grounded Q&A (Milestone 3)
 
-- `RetrievalService`: embed the question, pgvector cosine ANN search scoped
-  to one paper, top-k (`MNEME_AI_RETRIEVAL_TOP_K`) chunks with section and
-  page metadata.
+- `RetrievalService`: embed the question, run a pgvector cosine ANN search
+  scoped to one paper, and append the first two document chunks as bounded
+  overview anchors when they are not already dense hits. The anchors improve
+  paper-level recall without displacing question-specific top-k
+  (`MNEME_AI_RETRIEVAL_TOP_K`) evidence.
 - `mneme.ai.qa.rerank` blends vector similarity (0.7) with question/chunk
   content-word overlap (0.3). This is an honest lexical rerank, not a
-  cross-encoder; the seam allows swapping one in later.
+  cross-encoder; the seam allows swapping one in later. Reranking keeps
+  overview anchors after the configured question-specific evidence rather
+  than forcing them into its slots.
 - `GroundedAnswerService` refuses without an LLM call when there is no
   evidence or the best reranked score is below
-  `MNEME_AI_QA_MIN_EVIDENCE_SCORE`, prompts with numbered excerpts, and
-  requires bracketed citation markers. `verify_citations` drops markers that
-  point outside the evidence and checks answer/chunk content-word overlap:
+  `MNEME_AI_QA_MIN_EVIDENCE_SCORE`, prompts with numbered excerpts plus their
+  section/page context, and requires bracketed citation markers. The provider
+  must return either a cited answer or the exact refusal sentinel; an answer
+  is not discarded merely because a provider incorrectly appends that
+  sentinel on a separate line. `verify_citations` drops markers that
+  point outside the evidence and checks each citation-bearing local claim
+  against its corresponding chunk using content-word overlap:
   all citations matched -> `matched`, some -> `partial`, none ->
   `insufficient_evidence`. A model-declared `INSUFFICIENT_EVIDENCE` becomes
   a stable refusal answer.
