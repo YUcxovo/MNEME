@@ -34,12 +34,13 @@ from mneme.api.routes.qa import get_request_settings
 from mneme.api.routes.qa import router as qa_router
 from mneme.core.config import Settings
 from mneme.db.dependencies import get_session
-from mneme.models.paper import Paper, ProcessingStatus
+from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
 from mneme.models.qa import QaConversation, QaMessage
 from mneme.repositories.qa import ConversationMismatchError
 
 USER_ID = UUID("00000000-0000-0000-0000-000000000111")
 PAPER_ID = UUID("00000000-0000-0000-0000-000000000222")
+PAPER_VERSION_ID = UUID("00000000-0000-0000-0000-000000000333")
 CONVERSATION_ID = UUID("00000000-0000-0000-0000-000000000444")
 TIMESTAMP = datetime(2026, 7, 15, 8, 30, tzinfo=UTC)
 
@@ -82,12 +83,34 @@ class FakePaperCatalogRepository:
 
 
 class FakeArtifactRepository:
-    def __init__(self, rows: list[tuple[FakeChunkRow, float]]) -> None:
+    def __init__(
+        self,
+        rows: list[tuple[FakeChunkRow, float]],
+        *,
+        paper_version_id: UUID | None = PAPER_VERSION_ID,
+    ) -> None:
         self.rows = rows
+        self.version = (
+            PaperVersion(id=paper_version_id, paper_id=PAPER_ID, version_number=1)
+            if paper_version_id is not None
+            else None
+        )
+        self.queries: list[tuple[UUID, UUID, int]] = []
+
+    async def get_latest_version(self, paper_id: UUID) -> PaperVersion | None:
+        if self.version is not None and self.version.paper_id == paper_id:
+            return self.version
+        return None
 
     async def search_chunks(
-        self, *, paper_id: UUID, query_embedding: tuple[float, ...], limit: int
+        self,
+        *,
+        paper_id: UUID,
+        paper_version_id: UUID,
+        query_embedding: tuple[float, ...],
+        limit: int,
     ) -> list[tuple[FakeChunkRow, float]]:
+        self.queries.append((paper_id, paper_version_id, limit))
         return self.rows[:limit]
 
 
@@ -149,6 +172,27 @@ def _application(
     async def principal_override() -> Principal:
         return Principal(user_id=USER_ID)
 
+    async def catalog_override() -> FakePaperCatalogRepository:
+        return catalog
+
+    async def artifacts_override() -> FakeArtifactRepository:
+        return artifacts
+
+    async def qa_override() -> FakeQaRepository:
+        return qa_repository
+
+    async def llm_override() -> LLMService:
+        return llm
+
+    async def embedder_override() -> EmbeddingService:
+        return embedder
+
+    async def settings_override() -> Settings:
+        return settings
+
+    async def session_override() -> FakeSession:
+        return FakeSession()
+
     llm = _llm_service(provider)
     embedder = _embedding_service()
     settings = Settings(environment="testing")
@@ -158,13 +202,13 @@ def _application(
     register_error_handlers(application)
     application.include_router(qa_router, prefix="/v1")
     application.dependency_overrides[require_principal] = principal_override
-    application.dependency_overrides[get_paper_catalog_repository] = lambda: catalog
-    application.dependency_overrides[get_artifact_repository] = lambda: artifacts
-    application.dependency_overrides[get_qa_repository] = lambda: qa_repository
-    application.dependency_overrides[get_llm_service] = lambda: llm
-    application.dependency_overrides[get_embedding_service] = lambda: embedder
-    application.dependency_overrides[get_request_settings] = lambda: settings
-    application.dependency_overrides[get_session] = lambda: FakeSession()
+    application.dependency_overrides[get_paper_catalog_repository] = catalog_override
+    application.dependency_overrides[get_artifact_repository] = artifacts_override
+    application.dependency_overrides[get_qa_repository] = qa_override
+    application.dependency_overrides[get_llm_service] = llm_override
+    application.dependency_overrides[get_embedding_service] = embedder_override
+    application.dependency_overrides[get_request_settings] = settings_override
+    application.dependency_overrides[get_session] = session_override
     return application
 
 
@@ -179,9 +223,10 @@ async def _post(application: FastAPI, payload: dict) -> Response:
 @pytest.mark.rag
 def test_grounded_answer_matches_frozen_contract() -> None:
     qa_repository = FakeQaRepository()
+    artifacts = FakeArtifactRepository([(FakeChunkRow(), 0.9)])
     application = _application(
         catalog=FakePaperCatalogRepository(_paper()),
-        artifacts=FakeArtifactRepository([(FakeChunkRow(), 0.9)]),
+        artifacts=artifacts,
         qa_repository=qa_repository,
         provider=FakeLLMProvider(
             default_response="The model replaces recurrence with multi-head attention [1]."
@@ -202,6 +247,7 @@ def test_grounded_answer_matches_frozen_contract() -> None:
     assert citation["section_title"] == "Model Architecture"
     assert citation["source_match"] is True
     assert len(qa_repository.exchanges) == 1
+    assert artifacts.queries == [(PAPER_ID, PAPER_VERSION_ID, 8)]
 
 
 @pytest.mark.base
@@ -237,6 +283,22 @@ def test_unknown_paper_returns_not_found() -> None:
 
     assert response.status_code == 404
     assert response.json()["code"] == "paper_not_found"
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_paper_without_observed_revision_returns_conflict() -> None:
+    application = _application(
+        catalog=FakePaperCatalogRepository(_paper()),
+        artifacts=FakeArtifactRepository([], paper_version_id=None),
+        qa_repository=FakeQaRepository(),
+        provider=FakeLLMProvider(),
+    )
+
+    response = asyncio.run(_post(application, {"question": "Anything?", "paper_id": str(PAPER_ID)}))
+
+    assert response.status_code == 409
+    assert response.json()["code"] == "paper_not_ready"
 
 
 @pytest.mark.base
