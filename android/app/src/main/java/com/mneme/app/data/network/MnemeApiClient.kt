@@ -88,6 +88,7 @@ sealed interface RemoteResource<out T> {
     ) : RemoteResource<Nothing>
 }
 
+@Suppress("TooManyFunctions")
 interface MnemeRemoteDataSource {
     suspend fun getHealth(): HealthDto
 
@@ -100,6 +101,8 @@ interface MnemeRemoteDataSource {
     suspend fun getPreferences(): PreferencesDto
 
     suspend fun updatePreferences(update: PreferenceUpdateDto): PreferencesDto
+
+    suspend fun initializeFromSeed(request: SeedInitializationRequestDto): SeedInitializationDto
 
     suspend fun listDigests(limit: Int = 20): DigestPageDto
 
@@ -117,6 +120,7 @@ class MnemeApiException(
     val requestId: String?,
 ) : IOException(message)
 
+@Suppress("TooManyFunctions")
 internal class RetrofitMnemeRemoteDataSource(
     private val api: MnemeApi,
     private val json: Json,
@@ -136,6 +140,9 @@ internal class RetrofitMnemeRemoteDataSource(
         val response = api.updatePreferences(update)
         return response.requireBody(json)
     }
+
+    override suspend fun initializeFromSeed(request: SeedInitializationRequestDto): SeedInitializationDto =
+        api.initializeFromSeed(request).requireBody(json)
 
     override suspend fun listDigests(limit: Int): DigestPageDto = api.listDigests(limit = limit).requireBody(json)
 
@@ -190,6 +197,6 @@ private fun Response<*>.apiException(json: Json): MnemeApiException {
 private const val HTTP_OK = 200
 private const val HTTP_ACCEPTED = 202
 private const val CONNECT_TIMEOUT_SECONDS = 10L
-private const val READ_TIMEOUT_SECONDS = 75L
+private const val READ_TIMEOUT_SECONDS = 15 * 60L
 private const val WRITE_TIMEOUT_SECONDS = 15L
-private const val CALL_TIMEOUT_SECONDS = 90L
+private const val CALL_TIMEOUT_SECONDS = 15 * 60L

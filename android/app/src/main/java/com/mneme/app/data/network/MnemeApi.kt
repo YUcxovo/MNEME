@@ -9,6 +9,7 @@ import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+@Suppress("TooManyFunctions")
 interface MnemeApi {
     @GET("health")
     suspend fun getHealth(): Response<HealthDto>
@@ -36,6 +37,11 @@ interface MnemeApi {
     suspend fun updatePreferences(
         @Body update: PreferenceUpdateDto,
     ): Response<PreferencesDto>
+
+    @POST("onboarding/seed")
+    suspend fun initializeFromSeed(
+        @Body request: SeedInitializationRequestDto,
+    ): Response<SeedInitializationDto>
 
     @GET("digests")
     suspend fun listDigests(

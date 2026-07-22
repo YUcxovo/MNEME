@@ -89,6 +89,45 @@ class MnemeApiClientTest {
         }
 
     @Test
+    fun seedInitialization_serializesReferenceAndDecodesCompletedBriefing() =
+        runBlocking {
+            server.enqueue(
+                jsonResponse(
+                    """
+                    {
+                      "seed_arxiv_id": "2607.00001",
+                      "category": "cs.IR",
+                      "paper_count": 0,
+                      "preferences": {
+                        "topics": ["cs.IR"],
+                        "followed_authors": [],
+                        "model_version": 2
+                      },
+                      "digest": {
+                        "id": "77777777-7777-4777-8777-777777777777",
+                        "digest_type": "manual",
+                        "generated_at": "2026-07-22T08:00:00Z",
+                        "entries": []
+                      }
+                    }
+                    """.trimIndent(),
+                ),
+            )
+
+            val result =
+                createRemote().initializeFromSeed(
+                    SeedInitializationRequestDto("https://arxiv.org/abs/2607.00001"),
+                )
+
+            assertEquals("2607.00001", result.seedArxivId)
+            assertEquals(listOf("cs.IR"), result.preferences.topics)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/v1/onboarding/seed", request.path)
+            assertTrue(request.body.readUtf8().contains("https://arxiv.org/abs/2607.00001"))
+        }
+
+    @Test
     fun apiError_preservesStablePublicErrorFields() =
         runBlocking {
             server.enqueue(
