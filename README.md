@@ -21,12 +21,13 @@ section-aware chunking, embeddings, pgvector retrieval, single-paper Q&A,
 recommendation/digest services, scheduling, recovery, caching, budget controls, and
 deterministic evaluation and end-to-end coverage.
 
-This checkout connects the Android briefing -> paper summary -> single-paper Q&A -> arXiv
-source flow to those implemented REST APIs. It adds Retrofit/OkHttp, frozen-contract DTOs,
-a production ViewModel, summary-job polling, and Room-backed fallback with explicit data
-source labels. A blank Android demo token deliberately selects the existing controlled
-fixture instead. Behavior-event upload, graph persistence/API/UI, real WorkManager sync,
-and production authentication remain outside the skeletal integration.
+This checkout connects seed-paper onboarding -> Android briefing -> paper summary ->
+single-paper Q&A -> arXiv source flow to those implemented REST APIs. It adds
+Retrofit/OkHttp, frozen-contract DTOs, a production ViewModel, summary-job polling, and
+Room-backed fallback with explicit data source labels. A blank Android demo token
+deliberately selects the existing controlled fixture instead. Behavior-event upload,
+graph persistence/API/UI, real WorkManager sync, and production authentication remain
+outside the skeletal integration.
 
 ---
 
@@ -407,6 +408,7 @@ Production:  https://<domain>/v1
 | `GET`  | `/v1/graph/{paper_id}` | Get a bounded paper-citation ego graph | Frozen contract only (M3) |
 | `GET`  | `/v1/users/me/preferences` | Get current user's interest preferences | Implemented on `dev` |
 | `PUT`  | `/v1/users/me/preferences` | Replace explicit topics and followed authors | Implemented on `dev` |
+| `POST` | `/v1/onboarding/seed` | Prepare a complete five-paper briefing from one arXiv seed | Implemented on this branch |
 | `GET`  | `/v1/jobs/{job_id}` | Poll durable asynchronous job state | Implemented on this branch |
 
 ### Detailed Endpoint Specifications
@@ -427,20 +429,16 @@ sequenceDiagram
     participant E as Core Engine
     participant D as Data Layer
 
-    Note over U,D: 1. User opens app
-    U->>A: Open app
-    par Read demo profile
-        A->>B: GET /v1/users/me/preferences
-        B->>D: Read explicit topics
-        D-->>B: Preferences
-        B-->>A: Preferences JSON
-    and Assemble manual briefing
-        A->>B: POST /v1/digests/recommended
-        B->>E: Rank current candidates
-        E->>D: Reuse or store manual digest
-        D-->>B: Ranked digest
-        B-->>A: Digest JSON
+    Note over U,D: 1. User initializes from one seed paper
+    U->>A: Submit arXiv URL or ID
+    A->>B: POST /v1/onboarding/seed
+    B->>E: Fetch seed category and five recent peers
+    E->>D: Persist papers and dispatch the document/AI pipeline
+    loop Until all five papers are ready or partial
+        B->>D: Read durable processing status
+        D-->>B: Current paper states
     end
+    B-->>A: Preferences and complete five-paper digest
     A-->>U: Display topics and ranked papers
 
     Note over U,D: 2. User taps a paper
