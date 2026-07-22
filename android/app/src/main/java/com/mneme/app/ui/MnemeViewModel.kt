@@ -21,6 +21,16 @@ import java.io.IOException
 class MnemeViewModel(
     private val repository: SkeletalDataRepository,
 ) : ViewModel() {
+    private val _onboardingState =
+        MutableStateFlow<OnboardingUiState>(
+            if (repository.requiresSeedOnboarding) {
+                OnboardingUiState.AwaitingSeed
+            } else {
+                OnboardingUiState.Ready
+            },
+        )
+    val onboardingState: StateFlow<OnboardingUiState> = _onboardingState.asStateFlow()
+
     private val _homeState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
     val homeState: StateFlow<HomeUiState> = _homeState.asStateFlow()
 
@@ -34,7 +44,30 @@ class MnemeViewModel(
     private var qaLoadJob: Job? = null
 
     init {
-        refreshBriefing()
+        if (!repository.requiresSeedOnboarding) {
+            refreshBriefing()
+        }
+    }
+
+    fun initializeFromSeed(arxivReference: String) {
+        require(arxivReference.isNotBlank()) { "An arXiv URL or identifier is required." }
+        viewModelScope.launch {
+            val normalized = arxivReference.trim()
+            _onboardingState.value = OnboardingUiState.Loading(normalized)
+            _homeState.value = HomeUiState.Loading
+            try {
+                _homeState.value = HomeUiState.Content(repository.initializeFromSeed(normalized))
+                _onboardingState.value = OnboardingUiState.Ready
+            } catch (error: IOException) {
+                _onboardingState.value = OnboardingUiState.Error(normalized, error.toUserMessage())
+            } catch (error: SerializationException) {
+                _onboardingState.value = OnboardingUiState.Error(normalized, error.toUserMessage())
+            }
+        }
+    }
+
+    fun editSeed() {
+        _onboardingState.value = OnboardingUiState.AwaitingSeed
     }
 
     fun refreshBriefing() {

@@ -3,6 +3,8 @@
 package com.mneme.app.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
@@ -21,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
@@ -41,6 +44,7 @@ import androidx.navigation.toRoute
 import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.demo.SkeletalContentRepository
+import com.mneme.app.ui.component.LoadingState
 import com.mneme.app.ui.home.HomeScreen
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.navigation.BriefingRoute
@@ -48,6 +52,7 @@ import com.mneme.app.ui.navigation.InterestsRoute
 import com.mneme.app.ui.navigation.PaperDetailRoute
 import com.mneme.app.ui.navigation.QaRoute
 import com.mneme.app.ui.navigation.SavedRoute
+import com.mneme.app.ui.onboarding.SeedOnboardingScreen
 import com.mneme.app.ui.saved.SavedScreen
 
 private enum class TopLevelDestination(
@@ -86,21 +91,46 @@ fun MnemeApp(
     modifier: Modifier = Modifier,
     onOpenSource: ((String) -> Unit)? = null,
 ) {
+    val onboardingState by viewModel.onboardingState.collectAsStateWithLifecycle()
     val homeState by viewModel.homeState.collectAsStateWithLifecycle()
     val paperState by viewModel.paperState.collectAsStateWithLifecycle()
     val qaState by viewModel.qaState.collectAsStateWithLifecycle()
-    MnemeAppScaffold(
-        snapshot = MnemeUiSnapshot(homeState, paperState, qaState),
-        actions =
-            MnemeUiActions(
-                refreshBriefing = viewModel::refreshBriefing,
-                requestPaper = { paperId -> viewModel.loadPaper(paperId) },
-                retryPaper = { paperId -> viewModel.loadPaper(paperId, force = true) },
-                requestQa = viewModel::askQuestion,
-            ),
-        onOpenSource = onOpenSource,
-        modifier = modifier,
-    )
+    when (val current = onboardingState) {
+        OnboardingUiState.AwaitingSeed ->
+            SeedOnboardingScreen(
+                initialReference = "",
+                errorMessage = null,
+                onSubmit = viewModel::initializeFromSeed,
+                modifier = modifier,
+            )
+        is OnboardingUiState.Loading ->
+            Box(
+                modifier = modifier.fillMaxSize().testTag("seed-onboarding-loading"),
+                contentAlignment = Alignment.Center,
+            ) {
+                LoadingState(message = stringResource(R.string.onboarding_loading))
+            }
+        is OnboardingUiState.Error ->
+            SeedOnboardingScreen(
+                initialReference = current.arxivReference,
+                errorMessage = current.message,
+                onSubmit = viewModel::initializeFromSeed,
+                modifier = modifier,
+            )
+        OnboardingUiState.Ready ->
+            MnemeAppScaffold(
+                snapshot = MnemeUiSnapshot(homeState, paperState, qaState),
+                actions =
+                    MnemeUiActions(
+                        refreshBriefing = viewModel::refreshBriefing,
+                        requestPaper = { paperId -> viewModel.loadPaper(paperId) },
+                        retryPaper = { paperId -> viewModel.loadPaper(paperId, force = true) },
+                        requestQa = viewModel::askQuestion,
+                    ),
+                onOpenSource = onOpenSource,
+                modifier = modifier,
+            )
+    }
 }
 
 @Composable
