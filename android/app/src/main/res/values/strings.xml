@@ -20,6 +20,14 @@
     <string name="nav_briefing">Today</string>
     <string name="nav_interests">You</string>
     <string name="nav_saved">Saved</string>
+    <string name="onboarding_brand">MNEME</string>
+    <string name="onboarding_description">Give Mneme one paper that represents your interests. The backend will prepare five related papers before your briefing opens.</string>
+    <string name="onboarding_input_label">Seed paper</string>
+    <string name="onboarding_input_placeholder">https://arxiv.org/abs/2607.01234</string>
+    <string name="onboarding_loading">Preparing five related papers...</string>
+    <string name="onboarding_submit">Build my research briefing</string>
+    <string name="onboarding_title">Start with one arXiv paper</string>
+    <string name="onboarding_wait_note">This screen will wait until all five papers are ready.</string>
     <string name="paper_abstract">Paper overview</string>
     <string name="paper_basic_summary">Basic summary</string>
     <string name="paper_card_inspectable">INSPECTABLE</string>

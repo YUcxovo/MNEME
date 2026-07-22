@@ -26,11 +26,12 @@ your Android SDK path, for example `sdk.dir=/home/user/Android/Sdk`.
 The configured debug app now exercises the README's skeletal tier across Android and the
 FastAPI backend:
 
-1. Read the authenticated demo user's topics.
-2. Request the current manual recommended briefing and display its ranked papers.
+1. Accept one arXiv abstract/PDF URL or identifier as the first-run seed paper.
+2. Wait while the backend derives its primary category and fully prepares five recent
+   papers from that category, then display the returned briefing as one complete result.
 3. Open a paper and request its stored summary.
-4. If summary work is still running, poll the public job resource and reload the summary
-   after the job succeeds.
+4. If later summary work is still running, poll the public job resource and reload the
+   summary after the job succeeds.
 5. Enter and submit one paper-scoped question through the backend RAG path.
 6. Display the backend's source-match status and citations, then open the arXiv paper.
 
@@ -74,9 +75,9 @@ credential rather than production authentication.
 
 Follow [`../backend/README.md`](../backend/README.md) to configure PostgreSQL/pgvector,
 Redis, the demo identity, provider credentials, migrations, API, and ARQ worker. The live
-path needs at least one ingested paper with completed summary and embedding stages for the
-full briefing -> summary -> Q&A sequence. Process several papers for a representative
-ranked briefing rather than limiting normal demo setup to a one-record smoke test.
+path requires the API, worker, database, Redis, and configured AI providers. The seed
+request itself fetches and processes the five-paper demo set; a previously processed
+category completes faster because durable jobs and artifacts are reused.
 
 After PostgreSQL and Redis are running, prepare the configured identity once:
 
@@ -95,17 +96,15 @@ uv run uvicorn mneme.main:app --reload
 uv run arq mneme.tasks.worker.WorkerSettings
 ```
 
-With the worker running, schedule a bounded current paper set and follow its durable stages
-in the worker log:
+Optionally warm a category before a time-constrained demo and follow its durable stages in
+the worker log:
 
 ```bash
 uv run python -m mneme.tasks.fetch_daily --category cs.AI --max-results 5
 ```
 
-The command is idempotent for each category and UTC date. Once the papers reach `ready` or
-`partial` with current summaries, the app's manual recommended-briefing request can rank
-and include them. Repeated app launches reuse a fresh manual briefing for 24 hours; this
-keeps the visible list stable instead of randomly changing it on every launch.
+The command is idempotent for each category and UTC date. Normal first-run setup does not
+require this warm-up command.
 
 The Android token must be the raw value whose digest is stored in
 `MNEME_DEMO_TOKEN_SHA256`. The app never logs the token and does not send it to the public
@@ -139,4 +138,5 @@ same policy. Generated Q&A answers are not persisted locally.
   production deployment are outside this integration unit.
 
 The Retrofit DTOs follow [`../docs/api/openapi-v0.1.yaml`](../docs/api/openapi-v0.1.yaml).
-No API or database schema change is introduced by the Android integration.
+The seed coordinator is an additive API contract change and does not change the database
+schema.

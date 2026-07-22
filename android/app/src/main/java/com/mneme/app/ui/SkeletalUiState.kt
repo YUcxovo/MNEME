@@ -3,6 +3,21 @@ package com.mneme.app.ui
 import com.mneme.app.ui.model.PaperDetailUiModel
 import com.mneme.app.ui.model.QaUiModel
 
+sealed interface OnboardingUiState {
+    data object Ready : OnboardingUiState
+
+    data object AwaitingSeed : OnboardingUiState
+
+    data class Loading(
+        val arxivReference: String,
+    ) : OnboardingUiState
+
+    data class Error(
+        val arxivReference: String,
+        val message: String,
+    ) : OnboardingUiState
+}
+
 sealed interface PaperDetailUiState {
     data object Idle : PaperDetailUiState
 

@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added first-run seed-paper onboarding that derives the user's initial arXiv category,
+  prepares five related papers through the live backend pipeline, and opens the Android
+  briefing only after the complete set is ready.
 - Added a Retrofit/OkHttp Android integration for the authenticated skeletal path across
   preferences, manual recommended briefings, paper metadata, async summaries/jobs, and
   user-entered single-paper Q&A.
