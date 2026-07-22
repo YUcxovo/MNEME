@@ -7,6 +7,7 @@ import com.mneme.app.data.network.MnemeRemoteDataSource
 import com.mneme.app.data.network.QUESTION_MAX_LENGTH
 import com.mneme.app.data.network.QuestionDto
 import com.mneme.app.data.network.RemoteResource
+import com.mneme.app.data.network.SeedInitializationRequestDto
 import com.mneme.app.ui.model.BriefingUiModel
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.PaperDetailUiModel
@@ -29,6 +30,10 @@ sealed interface PaperContentResult {
 }
 
 interface SkeletalDataRepository {
+    val requiresSeedOnboarding: Boolean
+
+    suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel
+
     suspend fun loadBriefing(): BriefingUiModel
 
     suspend fun loadPaper(paperId: String): PaperContentResult
@@ -45,6 +50,13 @@ interface SkeletalDataRepository {
 }
 
 class ControlledFixtureDataRepository : SkeletalDataRepository {
+    override val requiresSeedOnboarding: Boolean = false
+
+    override suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel {
+        val briefing = SeededSkeletalContentRepository.briefing()
+        return briefing
+    }
+
     override suspend fun loadBriefing(): BriefingUiModel = SeededSkeletalContentRepository.briefing()
 
     override suspend fun loadPaper(paperId: String): PaperContentResult =
@@ -69,6 +81,26 @@ class NetworkSkeletalDataRepository(
     private val cache: SkeletalCache,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
 ) : SkeletalDataRepository {
+    override val requiresSeedOnboarding: Boolean = true
+
+    override suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel {
+        require(arxivReference.isNotBlank()) { "An arXiv URL or identifier is required." }
+        val result =
+            remote.initializeFromSeed(
+                SeedInitializationRequestDto(arxivReference = arxivReference.trim()),
+            )
+        val refreshedAt = nowEpochMillis()
+        cache.storeBriefing(result.preferences, result.digest, refreshedAt)
+        return result.digest.toBriefing(
+            interests = result.preferences.topics,
+            disclosure =
+                disclosure(
+                    ContentOrigin.LIVE_BACKEND,
+                    "Five papers prepared from seed ${result.seedArxivId}.",
+                ),
+        )
+    }
+
     override suspend fun loadBriefing(): BriefingUiModel =
         try {
             val (preferences, digestResult) =

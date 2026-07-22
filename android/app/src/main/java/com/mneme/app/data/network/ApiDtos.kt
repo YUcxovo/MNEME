@@ -56,6 +56,20 @@ data class PreferenceUpdateDto(
 )
 
 @Serializable
+data class SeedInitializationRequestDto(
+    @SerialName("arxiv_reference") val arxivReference: String,
+)
+
+@Serializable
+data class SeedInitializationDto(
+    @SerialName("seed_arxiv_id") val seedArxivId: String,
+    val category: String,
+    @SerialName("paper_count") val paperCount: Int,
+    val preferences: PreferencesDto,
+    val digest: DigestDto,
+)
+
+@Serializable
 data class DigestEntryDto(
     val paper: PaperDto,
     val rank: Int,

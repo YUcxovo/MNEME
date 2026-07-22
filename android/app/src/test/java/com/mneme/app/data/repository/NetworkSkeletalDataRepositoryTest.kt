@@ -19,6 +19,8 @@ import com.mneme.app.data.network.PreferencesDto
 import com.mneme.app.data.network.QUESTION_MAX_LENGTH
 import com.mneme.app.data.network.QuestionDto
 import com.mneme.app.data.network.RemoteResource
+import com.mneme.app.data.network.SeedInitializationDto
+import com.mneme.app.data.network.SeedInitializationRequestDto
 import com.mneme.app.data.network.SummaryDto
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.SourceMatchUiStatus
@@ -30,6 +32,22 @@ import org.junit.Test
 import java.io.IOException
 
 class NetworkSkeletalDataRepositoryTest {
+    @Test
+    fun initializeFromSeed_waitsForCompletedBackendBriefingAndCachesIt() =
+        runBlocking {
+            val remote = FakeRemote()
+            val cache = FakeCache()
+            val repository = NetworkSkeletalDataRepository(remote, cache) { REFRESHED_AT }
+
+            val briefing = repository.initializeFromSeed(" https://arxiv.org/abs/2607.00001 ")
+
+            assertEquals("https://arxiv.org/abs/2607.00001", remote.seedRequests.single().arxivReference)
+            assertEquals(listOf("cs.IR"), briefing.interests)
+            assertEquals(listOf("paper-1"), briefing.papers.map { it.id })
+            assertEquals(ContentOrigin.LIVE_BACKEND, briefing.disclosure.origin)
+            assertEquals(REFRESHED_AT, cache.storedBriefingAt)
+        }
+
     @Test
     fun loadBriefing_mapsRankedLiveDigestAndStoresRoomBoundary() =
         runBlocking {
@@ -218,6 +236,7 @@ class NetworkSkeletalDataRepositoryTest {
         var paperFailure: Exception? = null
         val summaryResults = ArrayDeque<RemoteResource<SummaryDto>>()
         val questions = mutableListOf<QuestionDto>()
+        val seedRequests = mutableListOf<SeedInitializationRequestDto>()
 
         override suspend fun getHealth(): HealthDto = HealthDto("ok")
 
@@ -236,6 +255,18 @@ class NetworkSkeletalDataRepositoryTest {
         }
 
         override suspend fun updatePreferences(update: PreferenceUpdateDto): PreferencesDto = preferences
+
+        override suspend fun initializeFromSeed(request: SeedInitializationRequestDto): SeedInitializationDto {
+            seedRequests += request
+            val seedPreferences = preferences().copy(topics = listOf("cs.IR"))
+            return SeedInitializationDto(
+                seedArxivId = "2607.00001",
+                category = "cs.IR",
+                paperCount = 1,
+                preferences = seedPreferences,
+                digest = digest(entries = listOf(entry(paper, rank = 1, reason = "Related"))),
+            )
+        }
 
         override suspend fun listDigests(limit: Int): DigestPageDto = DigestPageDto(emptyList())
 
