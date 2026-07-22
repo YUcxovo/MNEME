@@ -97,6 +97,24 @@ paths:
                 $ref: "#/components/schemas/Preferences"
         default:
           $ref: "#/components/responses/Error"
+  /onboarding/seed:
+    post:
+      operationId: initializeFromSeed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SeedInitializationRequest"
+      responses:
+        "200":
+          description: Completed five-paper seed briefing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedInitializationResult"
+        default:
+          $ref: "#/components/responses/Error"
   /events:
     post:
       operationId: ingestEvents
@@ -309,6 +327,20 @@ components:
       properties:
         topics: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 100}}
         followed_authors: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 200}}
+    SeedInitializationRequest:
+      type: object
+      required: [arxiv_reference]
+      properties:
+        arxiv_reference: {type: string, minLength: 1, maxLength: 300}
+    SeedInitializationResult:
+      type: object
+      required: [seed_arxiv_id, category, paper_count, preferences, digest]
+      properties:
+        seed_arxiv_id: {type: string}
+        category: {type: string}
+        paper_count: {type: integer}
+        preferences: {$ref: "#/components/schemas/Preferences"}
+        digest: {$ref: "#/components/schemas/Digest"}
     UserEvent:
       type: object
       required: [event_id, event_type, occurred_at]

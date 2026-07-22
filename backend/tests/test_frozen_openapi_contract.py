@@ -16,6 +16,7 @@ IMPLEMENTED_OPERATIONS = (
     ("/papers/{paper_id}/summary", "get"),
     ("/users/me/preferences", "get"),
     ("/users/me/preferences", "put"),
+    ("/onboarding/seed", "post"),
     ("/digests", "get"),
     ("/digests/recommended", "post"),
     ("/qa/ask", "post"),
