@@ -16,6 +16,7 @@ from mneme.services.arxiv.parser import parse_arxiv_feed
 from mneme.services.arxiv.types import ArxivFeed
 
 CATEGORY_PATTERN = re.compile(r"^[a-z][a-z0-9-]*(?:\.[A-Za-z0-9-]+)?$")
+ARXIV_ID_PATTERN = re.compile(r"^(?:\d{4}\.\d{4,5}|[A-Za-z0-9._-]+/\d{7})(?:v[1-9]\d*)?$")
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
 
 
@@ -145,6 +146,16 @@ class ArxivClient:
                 "sortOrder": "descending",
             }
         )
+        if response.status_code != 200:
+            raise ArxivHTTPError(response.status_code)
+        return parse_arxiv_feed(response.content)
+
+    async def fetch_by_id(self, arxiv_id: str) -> ArxivFeed:
+        """Fetch the latest metadata for one validated arXiv identifier."""
+        normalized = arxiv_id.strip()
+        if len(normalized) > 64 or ARXIV_ID_PATTERN.fullmatch(normalized) is None:
+            raise ValueError("Invalid arXiv identifier")
+        response = await self._request_with_retries({"id_list": normalized})
         if response.status_code != 200:
             raise ArxivHTTPError(response.status_code)
         return parse_arxiv_feed(response.content)
