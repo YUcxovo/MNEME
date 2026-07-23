@@ -26,6 +26,7 @@ def test_citation_endpoint_and_deduplication_contract() -> None:
         "uq_citations_internal_edge",
         "uq_citations_external_target_edge",
         "uq_citations_external_source_edge",
+        "ix_citations_external_target_id",
         "ix_citations_target_paper_id",
     } <= index_names
     assert all(
