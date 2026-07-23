@@ -23,6 +23,7 @@ def test_paper_snapshot_supports_keyset_and_categories() -> None:
 
     assert not table.c.published_at.nullable
     assert not table.c.source_updated_at.nullable
+    assert table.c.semantic_scholar_id.nullable
     assert isinstance(table.c.categories.type, ARRAY)
     assert isinstance(status_type, Enum)
     assert set(status_type.enums) == {status.value for status in ProcessingStatus}
