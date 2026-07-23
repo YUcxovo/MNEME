@@ -351,7 +351,7 @@ components:
           enum: [paper_impression, paper_opened, paper_saved, paper_skipped, paper_shared, question_asked, digest_dismissed]
         paper_id: {type: string, format: uuid, nullable: true}
         occurred_at: {type: string, format: date-time}
-        duration_ms: {type: integer, minimum: 0, nullable: true}
+        duration_ms: {type: integer, minimum: 0, maximum: 2147483647, nullable: true}
         context: {type: object, additionalProperties: true}
     EventIngestionResult:
       type: object
