@@ -8,6 +8,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added Android citation-graph exploration with frozen API binding, a local d3 v7 WebView
+  renderer, persistent node selection, and paper-detail navigation.
 - Added first-run seed-paper onboarding that derives the user's initial arXiv category,
   prepares five related papers through the live backend pipeline, and opens the Android
   briefing only after the complete set is ready.

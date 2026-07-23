@@ -34,6 +34,8 @@ FastAPI backend:
    summary after the job succeeds.
 5. Enter and submit one paper-scoped question through the backend RAG path.
 6. Display the backend's source-match status and citations, then open the arXiv paper.
+7. Request the paper's bounded depth-two citation graph, inspect its backend algorithm
+   status, select a local node, and open that paper's detail screen.
 
 The UI labels live, cached, and controlled-fixture content separately. It also renders
 `matched`, `partial`, `not_checked`, and `insufficient_evidence` states without claiming
@@ -122,6 +124,20 @@ backend briefing exists, and labels that content as cached. With no cache, the a
 retryable error instead of silently substituting the fixture. Paper metadata follows the
 same policy. Generated Q&A answers are not persisted locally.
 
+### Citation graph
+
+Paper detail screens expose a citation-graph action backed by the frozen
+`GET /v1/graph/{paper_id}?depth=2&limit=50` contract. The graph includes only locally
+resolved paper UUIDs. Arrows follow the repository contract: the source paper cites the
+target paper.
+
+Rendering uses the repository-vendored d3 v7.9.0 bundle in a local WebView; it does not
+depend on a CDN. The selected node is mirrored in a native Compose card and accessible
+paper selector, remains selected while visiting a paper and navigating back, and can be
+opened through the normal paper-detail route. `ready` identifies the ranked/clustered
+backend result; `fallback` is displayed as the backend's deterministic citation baseline.
+The graph is not cached, so an unavailable backend produces a retryable error.
+
 ## Current client boundaries
 
 - Room schema version 3 stores paper metadata, digest cache payloads, preferences, and
@@ -134,7 +150,7 @@ same policy. Generated Q&A answers are not persisted locally.
 - DataStore persists explicit local settings. The existing WorkManager worker remains a
   no-op; live background digest refresh and notification permission UX are not part of the
   skeletal path.
-- Saved papers, behavior-event upload, search, graph exploration, login/JWT, FCM, and
+- Saved papers, behavior-event upload, search, login/JWT, FCM, and
   production deployment are outside this integration unit.
 
 The Retrofit DTOs follow [`../docs/api/openapi-v0.1.yaml`](../docs/api/openapi-v0.1.yaml).
