@@ -10,6 +10,7 @@ import com.mneme.app.data.network.RemoteResource
 import com.mneme.app.data.network.SeedInitializationRequestDto
 import com.mneme.app.ui.model.BriefingUiModel
 import com.mneme.app.ui.model.ContentOrigin
+import com.mneme.app.ui.model.GraphUiModel
 import com.mneme.app.ui.model.PaperDetailUiModel
 import com.mneme.app.ui.model.QaUiModel
 import kotlinx.coroutines.async
@@ -47,6 +48,8 @@ interface SkeletalDataRepository {
         paperId: String,
         question: String,
     ): QaUiModel
+
+    suspend fun loadGraph(paperId: String): GraphUiModel
 }
 
 class ControlledFixtureDataRepository : SkeletalDataRepository {
@@ -74,6 +77,10 @@ class ControlledFixtureDataRepository : SkeletalDataRepository {
     ): QaUiModel =
         SeededSkeletalContentRepository.qa(paperId, question)
             ?: throw ContentUnavailableException("A paper-specific answer is not available.")
+
+    override suspend fun loadGraph(paperId: String): GraphUiModel =
+        SeededSkeletalContentRepository.graph(paperId)
+            ?: throw ContentUnavailableException("A citation graph is not available for this paper.")
 }
 
 class NetworkSkeletalDataRepository(
@@ -196,6 +203,21 @@ class NetworkSkeletalDataRepository(
                 ),
             )
         return answer.toQa(paper, question)
+    }
+
+    override suspend fun loadGraph(paperId: String): GraphUiModel {
+        require(paperId.isNotBlank()) { "A paper identifier is required." }
+        return remote
+            .getPaperGraph(
+                paperId = paperId,
+                depth = GRAPH_DEPTH,
+                limit = GRAPH_NODE_LIMIT,
+            ).toGraphUi()
+    }
+
+    private companion object {
+        const val GRAPH_DEPTH = 2
+        const val GRAPH_NODE_LIMIT = 50
     }
 }
 

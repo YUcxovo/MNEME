@@ -40,8 +40,12 @@ class MnemeViewModel(
     private val _qaState = MutableStateFlow<QaUiState>(QaUiState.Idle)
     val qaState: StateFlow<QaUiState> = _qaState.asStateFlow()
 
+    private val _graphState = MutableStateFlow<GraphUiState>(GraphUiState.Idle)
+    val graphState: StateFlow<GraphUiState> = _graphState.asStateFlow()
+
     private var paperLoadJob: Job? = null
     private var qaLoadJob: Job? = null
+    private var graphLoadJob: Job? = null
 
     init {
         if (!repository.requiresSeedOnboarding) {
@@ -132,6 +136,29 @@ class MnemeViewModel(
             }
     }
 
+    fun loadGraph(
+        paperId: String,
+        force: Boolean = false,
+    ) {
+        if (!force && _graphState.value.matches(paperId)) {
+            return
+        }
+        graphLoadJob?.cancel()
+        graphLoadJob =
+            viewModelScope.launch {
+                _graphState.value = GraphUiState.Loading(paperId)
+                try {
+                    _graphState.value = GraphUiState.Content(repository.loadGraph(paperId))
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: IOException) {
+                    _graphState.value = GraphUiState.Error(paperId, error.toUserMessage())
+                } catch (error: SerializationException) {
+                    _graphState.value = GraphUiState.Error(paperId, error.toUserMessage())
+                }
+            }
+    }
+
     private suspend fun followPaperResult(initialResult: PaperContentResult) {
         var result = initialResult
         while (true) {
@@ -184,4 +211,12 @@ private fun String.toProgressMessage(): String =
         "parse_pdf" -> "Extracting the paper text..."
         "summarize_paper" -> "Generating the paper summary..."
         else -> "Preparing the paper summary..."
+    }
+
+private fun GraphUiState.matches(paperId: String): Boolean =
+    when (this) {
+        GraphUiState.Idle -> false
+        is GraphUiState.Loading -> this.paperId == paperId
+        is GraphUiState.Content -> graph.centerId == paperId
+        is GraphUiState.Error -> false
     }
