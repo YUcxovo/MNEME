@@ -275,6 +275,21 @@ class MnemeDatabaseTest {
                     durationMillis = 50,
                 )
             }
+            assertIllegalArgument {
+                repository.record(
+                    type = BehavioralEventType.PAPER_OPENED,
+                    paperId = paperId,
+                    occurredAtEpochMillis = -1,
+                )
+            }
+            assertIllegalArgument {
+                repository.record(
+                    type = BehavioralEventType.PAPER_OPENED,
+                    paperId = paperId,
+                    occurredAtEpochMillis = 10,
+                    durationMillis = Int.MAX_VALUE.toLong() + 1,
+                )
+            }
         }
 
     private suspend fun assertIllegalArgument(block: suspend () -> Unit) {
