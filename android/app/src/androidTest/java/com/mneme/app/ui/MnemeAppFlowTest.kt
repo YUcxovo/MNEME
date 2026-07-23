@@ -122,5 +122,52 @@ class MnemeAppFlowTest {
             hasText("Not checked"),
         )
         composeRule.onNodeWithText("Not checked").assertIsDisplayed()
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("explore-graph-action"),
+        )
+        composeRule.onNodeWithTag("explore-graph-action").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Citation connections").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("graph-screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Deterministic citation baseline").assertIsDisplayed()
+    }
+
+    @Test
+    fun graphFlow_opensSelectedPaperAndRestoresSelectionOnBack() {
+        composeRule.setContent {
+            MnemeTheme {
+                MnemeApp(onOpenSource = {})
+            }
+        }
+
+        composeRule.onNodeWithText("Attention Is All You Need").performClick()
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("explore-graph-action"),
+        )
+        composeRule.onNodeWithTag("explore-graph-action").performClick()
+        composeRule.onNodeWithTag("graph-screen").assertIsDisplayed()
+        composeRule
+            .onNodeWithTag(
+                "graph-node-${com.mneme.app.data.demo.SeededSkeletalContentRepository.NEIGHBOR_PAPER_ID}",
+            ).performClick()
+        composeRule.onNodeWithTag("graph-screen").performScrollToNode(
+            hasTestTag("selected-graph-paper-title"),
+        )
+        composeRule
+            .onNodeWithTag("selected-graph-paper-title")
+            .assertTextContains("Controlled neighbor paper")
+        composeRule.onNodeWithTag("open-selected-graph-paper").performClick()
+        composeRule.onNodeWithTag("paper-detail-screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Controlled neighbor paper").assertIsDisplayed()
+
+        composeRule.onNodeWithTag("navigate-back").performClick()
+        composeRule.onNodeWithTag("graph-screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("graph-screen").performScrollToNode(
+            hasTestTag("selected-graph-paper-title"),
+        )
+        composeRule
+            .onNodeWithTag("selected-graph-paper-title")
+            .assertTextContains("Controlled neighbor paper")
     }
 }
