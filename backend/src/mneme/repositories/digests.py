@@ -170,8 +170,13 @@ class DigestRepository:
             statement = statement.where(Paper.published_at < before)
         return list((await self._session.scalars(statement)).all())
 
-    async def mean_chunk_embeddings(self, paper_ids: list[UUID]) -> dict[UUID, tuple[float, ...]]:
-        """Return each paper's mean chunk embedding, where one exists."""
+    async def mean_chunk_embeddings(
+        self,
+        paper_ids: list[UUID],
+        *,
+        embedding_model: str,
+    ) -> dict[UUID, tuple[float, ...]]:
+        """Return latest-revision mean embeddings from exactly one model."""
         if not paper_ids:
             return {}
         latest_versions = (
@@ -199,7 +204,11 @@ class DigestRepository:
                     latest_versions.c.version_number == PaperVersion.version_number,
                 ),
             )
-            .where(PaperChunk.paper_id.in_(paper_ids), PaperChunk.embedding.is_not(None))
+            .where(
+                PaperChunk.paper_id.in_(paper_ids),
+                PaperChunk.embedding.is_not(None),
+                PaperChunk.embedding_model == embedding_model,
+            )
             .group_by(PaperChunk.paper_id)
         )
         rows = (await self._session.execute(statement)).all()
@@ -211,10 +220,15 @@ class DigestRepository:
         """Return the newest manual digest if it is still fresh."""
         statement = (
             select(Digest)
+            .outerjoin(UserPreference, UserPreference.user_id == Digest.user_id)
             .where(
                 Digest.user_id == user_id,
                 Digest.digest_type == DigestType.MANUAL,
                 Digest.generated_at >= utc_now() - max_age,
+                or_(
+                    UserPreference.updated_at.is_(None),
+                    Digest.generated_at >= UserPreference.updated_at,
+                ),
             )
             .order_by(Digest.generated_at.desc())
             .limit(1)
