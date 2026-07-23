@@ -86,6 +86,17 @@ def test_event_timestamp_must_be_timezone_aware() -> None:
 
 @pytest.mark.base
 @pytest.mark.api
+def test_json_event_types_are_not_coerced() -> None:
+    payload = _payload(UserEventType.PAPER_OPENED)
+
+    with pytest.raises(ValidationError):
+        UserEvent.model_validate({**payload, "occurred_at": 1_721_736_000})
+    with pytest.raises(ValidationError):
+        UserEvent.model_validate({**payload, "duration_ms": True})
+
+
+@pytest.mark.base
+@pytest.mark.api
 def test_api_event_maps_to_an_independent_service_record() -> None:
     payload = {
         **_payload(UserEventType.PAPER_OPENED),

@@ -16,6 +16,7 @@ from mneme.services.behavior import BEHAVIOR_MODEL_VERSION, BehaviorSignal
 from mneme.services.events import (
     BehaviorEventService,
     EventPaperNotFoundError,
+    EventTimestampOutOfRangeError,
     EventUserNotFoundError,
 )
 
@@ -52,6 +53,7 @@ class FakeEventRepository:
         self.transaction_state = FakeTransaction()
         self.inserted: list[EventRecord] = []
         self.signal_since: datetime | None = None
+        self.signal_until: datetime | None = None
         self.embedding_model: str | None = None
         self.stored: tuple[UUID, tuple[float, ...] | None, str, int] | None = None
 
@@ -73,9 +75,12 @@ class FakeEventRepository:
         self.inserted = events
         return len(events)
 
-    async def list_recent_signals(self, user_id: UUID, *, since: datetime) -> list[BehaviorSignal]:
+    async def list_recent_signals(
+        self, user_id: UUID, *, since: datetime, until: datetime
+    ) -> list[BehaviorSignal]:
         assert user_id == USER_ID
         self.signal_since = since
+        self.signal_until = until
         return self.signals
 
     async def mean_latest_embeddings(
@@ -140,6 +145,7 @@ def test_event_service_deduplicates_and_recomputes_in_one_transaction() -> None:
     assert repository.transaction_state.entered
     assert repository.transaction_state.exception_type is None
     assert repository.signal_since == NOW - timedelta(days=90)
+    assert repository.signal_until == NOW + timedelta(minutes=5)
     assert repository.embedding_model == "embedding-test-v1"
     assert repository.stored == (
         USER_ID,
@@ -191,3 +197,23 @@ def test_empty_batch_can_deterministically_clear_stale_behavior() -> None:
         "embedding-test-v1",
         BEHAVIOR_MODEL_VERSION,
     )
+
+
+@pytest.mark.base
+@pytest.mark.db
+def test_event_service_rejects_timestamps_beyond_clock_skew() -> None:
+    repository = FakeEventRepository()
+    event = _event(uuid4())
+    future_event = EventRecord(
+        event_id=event.event_id,
+        event_type=event.event_type,
+        paper_id=event.paper_id,
+        occurred_at=NOW + timedelta(minutes=5, microseconds=1),
+        duration_ms=event.duration_ms,
+        context=event.context,
+    )
+
+    with pytest.raises(EventTimestampOutOfRangeError):
+        asyncio.run(_service(repository).ingest(USER_ID, [future_event]))
+
+    assert not repository.transaction_state.entered

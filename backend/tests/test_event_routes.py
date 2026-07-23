@@ -17,6 +17,7 @@ from mneme.repositories.events import EventRecord
 from mneme.services.events import (
     EventIngestionStats,
     EventPaperNotFoundError,
+    EventTimestampOutOfRangeError,
     EventUserNotFoundError,
 )
 
@@ -93,28 +94,37 @@ def test_event_endpoint_accepts_raw_array_and_maps_records() -> None:
 @pytest.mark.base
 @pytest.mark.api
 @pytest.mark.parametrize(
-    ("error", "code", "message"),
+    ("error", "status_code", "code", "message"),
     [
         (
             EventUserNotFoundError(),
+            404,
             "user_not_found",
             "The authenticated user does not exist.",
         ),
         (
             EventPaperNotFoundError(),
+            404,
             "paper_not_found",
             "One or more referenced papers do not exist.",
+        ),
+        (
+            EventTimestampOutOfRangeError(),
+            422,
+            "validation_error",
+            "Event timestamps cannot be more than five minutes in the future.",
         ),
     ],
 )
 def test_event_endpoint_maps_expected_lookup_errors(
     error: Exception,
+    status_code: int,
     code: str,
     message: str,
 ) -> None:
     response = asyncio.run(_post(_application(FakeEventService(error)), [_payload()]))
 
-    assert response.status_code == 404
+    assert response.status_code == status_code
     assert response.json() == {
         "code": code,
         "message": message,
