@@ -54,6 +54,7 @@ class Citation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
             unique=True,
             postgresql_where=text("external_source_id IS NOT NULL AND target_paper_id IS NOT NULL"),
         ),
+        Index("ix_citations_external_target_id", "external_target_id"),
         Index("ix_citations_target_paper_id", "target_paper_id"),
     )
 
