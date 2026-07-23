@@ -27,7 +27,7 @@ single-paper Q&A -> arXiv source flow to those implemented REST APIs. It adds
 Retrofit/OkHttp, frozen-contract DTOs, a production ViewModel, summary-job polling, and
 Room-backed fallback with explicit data source labels. A blank Android demo token
 deliberately selects the existing controlled fixture instead. Behavior-event upload,
-graph UI/data binding, real WorkManager sync, and production authentication remain
+Android event UI/data binding, real WorkManager sync, and production authentication remain
 outside the skeletal integration. This branch adds Semantic Scholar graph synchronization,
 bounded graph persistence/API, transactional behavior events, and behavior-v1 preference
 updates for the client to consume.
@@ -424,7 +424,7 @@ Do not duplicate request/response schemas in this README. The frozen paths, para
 
 ### Communication Flow
 
-The sequence below combines the implemented seed-paper Android walkthrough with the target M3 integration contract. Backend paper, AI, scheduler/job, onboarding, event, and graph legs exist in this checkout; Android event sync, graph rendering, and background refresh remain to be connected.
+The sequence below combines the implemented seed-paper Android walkthrough with the target M3 integration contract. Backend paper, AI, scheduler/job, onboarding, event, and graph legs exist in this checkout; Android graph rendering is connected, while event sync and background refresh remain separate workstreams.
 
 ```mermaid
 sequenceDiagram
