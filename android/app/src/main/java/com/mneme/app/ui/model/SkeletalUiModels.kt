@@ -27,6 +27,34 @@ data class QaUiModel(
     val sources: List<SourceUiModel>,
 )
 
+data class GraphUiModel(
+    val centerId: String,
+    val nodes: List<GraphNodeUiModel>,
+    val edges: List<GraphEdgeUiModel>,
+    val algorithmStatus: GraphAlgorithmUiStatus,
+    val graphVersion: String?,
+    val disclosure: ContentDisclosureUiModel,
+)
+
+data class GraphNodeUiModel(
+    val id: String,
+    val title: String,
+    val category: String?,
+    val clusterId: String?,
+    val rankScore: Double?,
+)
+
+data class GraphEdgeUiModel(
+    val source: String,
+    val target: String,
+    val weight: Double?,
+)
+
+enum class GraphAlgorithmUiStatus {
+    READY,
+    FALLBACK,
+}
+
 data class SourceUiModel(
     val label: String,
     val location: String,

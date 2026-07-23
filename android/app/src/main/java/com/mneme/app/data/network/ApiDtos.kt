@@ -118,6 +118,31 @@ data class AnswerDto(
 )
 
 @Serializable
+data class GraphNodeDto(
+    val id: String,
+    val title: String,
+    val category: String? = null,
+    @SerialName("cluster_id") val clusterId: String? = null,
+    @SerialName("rank_score") val rankScore: Double? = null,
+)
+
+@Serializable
+data class GraphEdgeDto(
+    val source: String,
+    val target: String,
+    val weight: Double? = null,
+)
+
+@Serializable
+data class GraphDto(
+    @SerialName("center_id") val centerId: String,
+    val nodes: List<GraphNodeDto>,
+    val edges: List<GraphEdgeDto>,
+    @SerialName("algorithm_status") val algorithmStatus: String,
+    @SerialName("graph_version") val graphVersion: String? = null,
+)
+
+@Serializable
 data class JobDto(
     val id: String,
     val stage: String,
