@@ -411,7 +411,7 @@ components:
       properties:
         id: {type: string, format: uuid}
         title: {type: string}
-        category: {type: string}
+        category: {type: string, nullable: true}
         cluster_id: {type: string, nullable: true}
         rank_score: {type: number, nullable: true}
     GraphEdge:
