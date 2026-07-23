@@ -231,6 +231,57 @@ class MnemeApiClientTest {
         }
 
     @Test
+    fun uploadEvents_serializesFrozenBatchAndDecodesIdempotentCounts() =
+        runBlocking {
+            server.enqueue(
+                jsonResponse(
+                    """
+                    {
+                      "accepted": 1,
+                      "duplicates": 1
+                    }
+                    """.trimIndent(),
+                ),
+            )
+            val firstEventId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+            val secondEventId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+
+            val result =
+                createRemote().uploadEvents(
+                    listOf(
+                        UserEventDto(
+                            eventId = firstEventId,
+                            eventType = "paper_opened",
+                            paperId = PAPER_ID,
+                            occurredAt = "2026-07-24T03:00:00Z",
+                            durationMillis = 45_000,
+                        ),
+                        UserEventDto(
+                            eventId = secondEventId,
+                            eventType = "question_asked",
+                            paperId = PAPER_ID,
+                            occurredAt = "2026-07-24T03:01:00Z",
+                        ),
+                    ),
+                )
+
+            assertEquals(1, result.accepted)
+            assertEquals(1, result.duplicates)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/v1/events", request.path)
+            assertEquals("Bearer local-test-token", request.getHeader("Authorization"))
+            val body = request.body.readUtf8()
+            assertTrue(body.startsWith("["))
+            assertTrue(body.contains("\"event_id\":\"$firstEventId\""))
+            assertTrue(body.contains("\"event_type\":\"paper_opened\""))
+            assertTrue(body.contains("\"paper_id\":\"$PAPER_ID\""))
+            assertTrue(body.contains("\"occurred_at\":\"2026-07-24T03:00:00Z\""))
+            assertTrue(body.contains("\"duration_ms\":45000"))
+            assertTrue(body.contains("\"event_id\":\"$secondEventId\""))
+        }
+
+    @Test
     fun baseUrl_requiresFrozenVersionPrefix() {
         val error =
             runCatching { MnemeApiClient.normalizeBaseUrl("http://localhost:8000/") }
