@@ -68,6 +68,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Restored the last complete Room-backed briefing after an Android process restart instead
+  of requesting the seed paper again; fresh installs and cleared app data still onboard.
 - Preserved logical reading order for multi-column PDFs, added bounded overview evidence to
   single-paper retrieval, and prevented mixed provider refusal markers from discarding cited
   answers. Citation source matching now evaluates each cited local claim instead of penalizing

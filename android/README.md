@@ -43,6 +43,11 @@ The UI labels live, cached, and controlled-fixture content separately. It also r
 `matched`, `partial`, `not_checked`, and `insufficient_evidence` states without claiming
 that every answer or summary is verified.
 
+After one complete briefing is stored in Room, later process starts restore that local
+briefing before checking for backend updates. A fresh install or cleared application data
+still requests a seed paper. This is device-local continuity; the MVP does not add accounts
+or cross-device onboarding state.
+
 ### Configure the Android client
 
 The app reads these values at build time. The priority is Gradle project property,
