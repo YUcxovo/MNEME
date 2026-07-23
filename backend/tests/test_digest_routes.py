@@ -71,6 +71,11 @@ class FakeDigestRepository:
         self.candidate_calls: list[tuple[datetime, datetime | None, int]] = []
         self.embeddings = embeddings or {}
         self.embedding_calls: list[tuple[list[UUID], str]] = []
+        self.operation_calls: list[str] = []
+
+    async def lock_user(self, user_id: UUID) -> None:
+        assert user_id == USER_ID
+        self.operation_calls.append("lock")
 
     async def list_digests(
         self,
@@ -83,9 +88,11 @@ class FakeDigestRepository:
         return DigestPageResult(items=self.digests, next_cursor=self.next_cursor)
 
     async def get_fresh_recommended_digest(self, *, user_id: UUID, max_age) -> Digest | None:
+        self.operation_calls.append("fresh")
         return self.fresh
 
     async def get_preferences(self, user_id: UUID) -> UserPreference | None:
+        self.operation_calls.append("preferences")
         return self.preferences
 
     async def list_recent_candidates(
@@ -112,6 +119,7 @@ class FakeDigestRepository:
         generator_version: str,
         entries: list[DigestEntry],
     ) -> Digest:
+        self.operation_calls.append("create")
         digest = Digest(
             id=uuid4(),
             user_id=user_id,
@@ -330,6 +338,7 @@ def test_generated_digest_matches_frozen_contract() -> None:
     assert first["recommendation_reason"]
     assert first["paper"]["title"] == "Attention transformers revisited"
     assert repository.created[0].preference_model_version == 3
+    assert repository.operation_calls == ["lock", "fresh", "preferences", "create"]
 
 
 @pytest.mark.base
@@ -402,6 +411,23 @@ def test_weekly_generation_uses_an_exclusive_period_cutoff() -> None:
     assert bundle.digest.digest_type is DigestType.WEEKLY
     assert len(bundle.entries) == 1
     assert repository.candidate_calls == [(NOW - timedelta(days=14), NOW, 200)]
+    assert repository.operation_calls == ["lock", "preferences", "create"]
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_fresh_manual_digest_is_read_while_holding_user_lock() -> None:
+    fresh = _stored_digest()
+    repository = FakeDigestRepository(papers=[], preferences=None, fresh=fresh)
+    service = RecommendedDigestService(
+        cast(DigestRepository, repository), candidate_days=14, max_entries=10
+    )
+
+    bundle = asyncio.run(service.get_or_generate(USER_ID))
+
+    assert bundle.digest is fresh
+    assert repository.created == []
+    assert repository.operation_calls == ["lock", "fresh"]
 
 
 @pytest.mark.base

@@ -148,6 +148,23 @@ def test_digest_query_applies_timestamp_and_id_cursor() -> None:
 
 
 @pytest.mark.base
+@pytest.mark.db
+def test_digest_user_lock_serializes_preference_snapshots() -> None:
+    session = Mock(spec=AsyncSession)
+    session.scalar = AsyncMock(return_value=USER_ID)
+    repository = DigestRepository(cast(AsyncSession, session))
+
+    asyncio.run(repository.lock_user(USER_ID))
+
+    await_args = session.scalar.await_args
+    assert await_args is not None
+    statement = await_args.args[0]
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+    assert "FROM users" in sql
+    assert "FOR UPDATE" in sql
+
+
+@pytest.mark.base
 @pytest.mark.rag
 def test_candidate_query_requires_current_summary_and_usable_status() -> None:
     now = datetime(2026, 7, 21, tzinfo=UTC)
