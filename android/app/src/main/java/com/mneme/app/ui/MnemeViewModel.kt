@@ -3,6 +3,8 @@ package com.mneme.app.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.mneme.app.data.behavior.BehavioralEventTracker
+import com.mneme.app.data.behavior.NoOpBehavioralEventTracker
 import com.mneme.app.data.network.QUESTION_MAX_LENGTH
 import com.mneme.app.data.repository.PaperContentResult
 import com.mneme.app.data.repository.SkeletalDataRepository
@@ -20,6 +22,7 @@ import java.io.IOException
 
 class MnemeViewModel(
     private val repository: SkeletalDataRepository,
+    private val eventTracker: BehavioralEventTracker = NoOpBehavioralEventTracker,
 ) : ViewModel() {
     private val _onboardingState =
         MutableStateFlow<OnboardingUiState>(
@@ -87,6 +90,14 @@ class MnemeViewModel(
         }
     }
 
+    fun recordPaperImpressions(paperIds: List<String>) {
+        recordBehavior { eventTracker.recordPaperImpressions(paperIds) }
+    }
+
+    fun recordPaperOpened(paperId: String) {
+        recordBehavior { eventTracker.recordPaperOpened(paperId) }
+    }
+
     fun loadPaper(
         paperId: String,
         force: Boolean = false,
@@ -122,6 +133,7 @@ class MnemeViewModel(
         require(question.length <= QUESTION_MAX_LENGTH) {
             "Question must not exceed $QUESTION_MAX_LENGTH characters."
         }
+        recordBehavior { eventTracker.recordQuestionAsked(paperId) }
         qaLoadJob?.cancel()
         qaLoadJob =
             viewModelScope.launch {
@@ -180,15 +192,22 @@ class MnemeViewModel(
         }
     }
 
+    private fun recordBehavior(block: suspend () -> Unit) {
+        viewModelScope.launch {
+            runCatching { block() }
+        }
+    }
+
     class Factory(
         private val repository: SkeletalDataRepository,
+        private val eventTracker: BehavioralEventTracker = NoOpBehavioralEventTracker,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MnemeViewModel::class.java)) {
                 "Unsupported ViewModel class: ${modelClass.name}"
             }
-            return MnemeViewModel(repository) as T
+            return MnemeViewModel(repository, eventTracker) as T
         }
     }
 

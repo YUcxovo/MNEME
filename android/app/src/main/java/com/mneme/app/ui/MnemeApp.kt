@@ -82,6 +82,8 @@ private data class MnemeUiSnapshot(
 
 private data class MnemeUiActions(
     val refreshBriefing: () -> Unit,
+    val recordPaperImpressions: (List<String>) -> Unit,
+    val recordPaperOpened: (String) -> Unit,
     val requestPaper: (String) -> Unit,
     val retryPaper: (String) -> Unit,
     val requestQa: (String, String) -> Unit,
@@ -128,6 +130,8 @@ fun MnemeApp(
                 actions =
                     MnemeUiActions(
                         refreshBriefing = viewModel::refreshBriefing,
+                        recordPaperImpressions = viewModel::recordPaperImpressions,
+                        recordPaperOpened = viewModel::recordPaperOpened,
                         requestPaper = { paperId -> viewModel.loadPaper(paperId) },
                         retryPaper = { paperId -> viewModel.loadPaper(paperId, force = true) },
                         requestQa = viewModel::askQuestion,
@@ -180,6 +184,8 @@ fun MnemeApp(
         actions =
             MnemeUiActions(
                 refreshBriefing = {},
+                recordPaperImpressions = {},
+                recordPaperOpened = {},
                 requestPaper = loadPaper,
                 retryPaper = loadPaper,
                 requestQa = loadQa,
@@ -287,10 +293,19 @@ private fun MnemeNavHost(
         modifier = modifier,
     ) {
         composable<BriefingRoute> {
+            val briefing =
+                (snapshot.home as? HomeUiState.Content)
+                    ?.briefing
+            LaunchedEffect(briefing?.digest?.id) {
+                briefing?.let { current ->
+                    actions.recordPaperImpressions(current.papers.map { it.id })
+                }
+            }
             HomeScreen(
                 state = snapshot.home,
                 onRetry = actions.refreshBriefing,
                 onPaperClick = { paperId ->
+                    actions.recordPaperOpened(paperId)
                     navController.navigate(PaperDetailRoute(paperId))
                 },
             )
