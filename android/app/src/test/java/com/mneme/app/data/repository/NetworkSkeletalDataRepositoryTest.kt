@@ -9,6 +9,7 @@ import com.mneme.app.data.network.CitationDto
 import com.mneme.app.data.network.DigestDto
 import com.mneme.app.data.network.DigestEntryDto
 import com.mneme.app.data.network.DigestPageDto
+import com.mneme.app.data.network.EventIngestionResultDto
 import com.mneme.app.data.network.GraphDto
 import com.mneme.app.data.network.GraphEdgeDto
 import com.mneme.app.data.network.GraphNodeDto
@@ -25,6 +26,7 @@ import com.mneme.app.data.network.RemoteResource
 import com.mneme.app.data.network.SeedInitializationDto
 import com.mneme.app.data.network.SeedInitializationRequestDto
 import com.mneme.app.data.network.SummaryDto
+import com.mneme.app.data.network.UserEventDto
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.GraphAlgorithmUiStatus
 import com.mneme.app.ui.model.SourceMatchUiStatus
@@ -358,6 +360,9 @@ class NetworkSkeletalDataRepositoryTest {
             graphRequests += Triple(paperId, depth, limit)
             return graph
         }
+
+        override suspend fun uploadEvents(events: List<UserEventDto>): EventIngestionResultDto =
+            EventIngestionResultDto(accepted = events.size, duplicates = 0)
     }
 
     private class FakeCache : SkeletalCache {
