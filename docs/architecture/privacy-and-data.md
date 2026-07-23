@@ -32,14 +32,16 @@ public release.
 
 ## Generated-Artifact Metadata
 
-Every summary, embedding batch, Q&A response, recommendation run, and graph-algorithm run
-records enough metadata to reproduce or invalidate it:
+Persisted summaries, embeddings, Q&A responses, digests, and derived behavior vectors record
+enough metadata to reproduce or invalidate them:
 
 - provider and exact model snapshot;
 - prompt/algorithm/pipeline version;
 - temperature and relevant generation parameters;
 - input/content hash;
 - timestamp, latency, token usage, and estimated cost.
+
+The public graph response carries `graph_version` and `algorithm_status`; M3 graph enrichment is computed from persisted citation edges per request and is not stored as a generated artifact.
 
 Provider configuration and secrets live in environment variables or a secret manager,
 never in source control or Android resources.

@@ -14,23 +14,21 @@ The MVP graph is a paper citation graph, not an open-ended entity knowledge grap
 
 ```python
 class GraphRepository(Protocol):
-    async def upsert_papers(self, papers: Sequence[PaperNode]) -> None: ...
-    async def upsert_citations(self, edges: Sequence[CitationEdge]) -> None: ...
     async def get_ego_graph(
         self, paper_id: UUID, *, depth: int, max_nodes: int
-    ) -> GraphSnapshot: ...
-    async def save_algorithm_scores(
-        self, graph_version: str, scores: Sequence[NodeScore]
-    ) -> None: ...
+    ) -> GraphSnapshot | None: ...
 
-class GraphAlgorithm(Protocol):
-    def weight_edges(self, graph: GraphSnapshot) -> GraphSnapshot: ...
-    def cluster_nodes(self, graph: GraphSnapshot) -> GraphSnapshot: ...
-    def rank_nodes(self, graph: GraphSnapshot) -> GraphSnapshot: ...
-    def select_user_subgraph(
-        self, graph: GraphSnapshot, preference: UserPreferenceVector
-    ) -> GraphSnapshot: ...
+def build_graph_view(
+    *,
+    center_id: UUID,
+    nodes: dict[UUID, GraphNode],
+    citation_edges: list[GraphEdge],
+    keywords_by_paper: dict[UUID, set[str]] | None,
+    limit: int,
+) -> GraphView: ...
 ```
+
+Semantic Scholar writes use a separate `CitationGraphRepository.persist_neighbors(...)` boundary because provider identities, collision resolution, and transaction ownership are ingestion concerns rather than public graph-query concerns. The HTTP service calls the pure `build_graph_view` algorithm only after the SQL repository has enforced depth and node bounds. Algorithm results are computed per request in M3 rather than persisted as hidden mutable graph state.
 
 ## MVP Constraints and Fallback
 
@@ -47,5 +45,5 @@ class GraphAlgorithm(Protocol):
 - Default response limit is 50 nodes; hard maximum is 200.
 - If Yifan's algorithm is unavailable or fails, return the baseline citation graph with
   deterministic chronological ordering and `algorithm_status: "fallback"`.
-- The first persisted/public graph version is `citation-graph-v1`. Yifan's algorithm parameters
+- The first public graph version is `citation-graph-v1`. Yifan's algorithm parameters
   remain independently versioned; the interface above is frozen at the end of Milestone 1.

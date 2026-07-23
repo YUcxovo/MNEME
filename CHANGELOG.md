@@ -46,6 +46,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added cursor-paginated persisted Research Briefings and summary-route recovery from the earliest missing download, parse, or summarize stage.
 - Added additive migrations for parse provenance, download provenance, and recoverable dispatch leases.
 - Added deterministic PostgreSQL/pgvector end-to-end coverage for download, parse, summarize, chunk, embed, weekly digest, and authenticated result APIs.
+- Added a throttled and retrying Semantic Scholar client, explicit graph-sync CLI, bidirectional citation observation persistence, identity resolution, and bounded local traversal.
+- Added authenticated `GET /graph/{paper_id}` with depth/node limits, deterministic algorithm enrichment, and a safe baseline fallback.
+- Added deterministic `behavior-v1` aggregation and authenticated idempotent `POST /events` batches with transactional preference recomputation.
+- Added PostgreSQL/pgvector end-to-end coverage for event deduplication, exact-revision/model behavior vectors, rollback, and citation-graph queries.
 
 ### Changed
 
@@ -55,6 +59,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   visual system while retaining controlled repository fixtures and inspectable sources.
 - Updated Android CI so instrumented-test Gradle commands run from the Android project root.
 - Bound summaries, chunks, embeddings, retrieval, Q&A evidence, and digest candidates to exact arXiv revisions instead of paper-level artifacts.
+- Restricted behavior-based recommendation candidates to the behavior vector's embedding model and invalidated cached manual digests after preference changes.
 
 ### Fixed
 

@@ -2,7 +2,7 @@
 
 Ruiyu is the DRI for the ER model, SQLAlchemy models, and Alembic migrations. Yifan reviews
 fields used by summarization, embeddings, retrieval, recommendation, and evaluation. Hanyang
-reviews fields exposed through Android DTOs. This document is the v0.1 persistence contract, including the Milestone 1 baseline and additive Milestone 2 provenance/dispatch migrations; changes require the review process in `CONTRIBUTING.md`.
+reviews fields exposed through Android DTOs. This document is the v0.1 persistence contract, including the Milestone 1 baseline, Milestone 2 provenance/dispatch migrations, and Milestone 3 bidirectional citation identities; changes require the review process in `CONTRIBUTING.md`.
 
 ```mermaid
 erDiagram
