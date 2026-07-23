@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.AccountTree
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -41,6 +42,7 @@ import com.mneme.app.ui.theme.MnemeTheme
 fun PaperDetailScreen(
     paper: PaperDetailUiModel,
     onAskQuestion: () -> Unit,
+    onExploreGraph: () -> Unit,
     onOpenSource: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -75,25 +77,53 @@ fun PaperDetailScreen(
             )
         }
         item {
-            Button(
-                onClick = onAskQuestion,
-                modifier = Modifier.fillMaxWidth().testTag("ask-question-action"),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                shape = MaterialTheme.shapes.small,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                    contentDescription = null,
-                )
-                Text(
-                    text = stringResource(R.string.action_ask_question),
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-            }
+            PaperActions(
+                onExploreGraph = onExploreGraph,
+                onAskQuestion = onAskQuestion,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PaperActions(
+    onExploreGraph: () -> Unit,
+    onAskQuestion: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedButton(
+            onClick = onExploreGraph,
+            modifier = Modifier.fillMaxWidth().testTag("explore-graph-action"),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+            shape = MaterialTheme.shapes.small,
+        ) {
+            Icon(
+                imageVector = Icons.Default.AccountTree,
+                contentDescription = null,
+            )
+            Text(
+                text = stringResource(R.string.action_explore_graph),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        Button(
+            onClick = onAskQuestion,
+            modifier = Modifier.fillMaxWidth().testTag("ask-question-action"),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            shape = MaterialTheme.shapes.small,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                contentDescription = null,
+            )
+            Text(
+                text = stringResource(R.string.action_ask_question),
+                modifier = Modifier.padding(start = 8.dp),
+            )
         }
     }
 }
@@ -270,6 +300,7 @@ private fun PaperDetailScreenPreview() {
             PaperDetailScreen(
                 paper = it,
                 onAskQuestion = {},
+                onExploreGraph = {},
                 onOpenSource = {},
             )
         }
