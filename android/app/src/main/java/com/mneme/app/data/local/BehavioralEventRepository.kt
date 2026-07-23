@@ -22,17 +22,39 @@ enum class BehavioralEventType {
         get() = this != DIGEST_DISMISSED
 }
 
-class BehavioralEventRepository(
-    private val behavioralEventDao: BehavioralEventDao,
-    private val idGenerator: () -> UUID = UUID::randomUUID,
-) {
-    fun observeAll(): Flow<List<BehavioralEventEntity>> = behavioralEventDao.observeAll()
-
+interface BehavioralEventStore {
     suspend fun record(
         type: BehavioralEventType,
         paperId: UUID?,
         occurredAtEpochMillis: Long,
         durationMillis: Long? = null,
+    ): UUID
+
+    suspend fun reservePendingBatch(
+        limit: Int,
+        attemptedAtEpochMillis: Long,
+        staleBeforeEpochMillis: Long,
+    ): List<BehavioralEventEntity>
+
+    suspend fun markBatchSynced(eventIds: List<UUID>)
+
+    suspend fun returnBatchToPending(
+        eventIds: List<UUID>,
+        error: String?,
+    )
+}
+
+class BehavioralEventRepository(
+    private val behavioralEventDao: BehavioralEventDao,
+    private val idGenerator: () -> UUID = UUID::randomUUID,
+) : BehavioralEventStore {
+    fun observeAll(): Flow<List<BehavioralEventEntity>> = behavioralEventDao.observeAll()
+
+    override suspend fun record(
+        type: BehavioralEventType,
+        paperId: UUID?,
+        occurredAtEpochMillis: Long,
+        durationMillis: Long?,
     ): UUID {
         require(type.requiresPaperId == (paperId != null)) {
             if (type.requiresPaperId) {
@@ -46,6 +68,12 @@ class BehavioralEventRepository(
         }
         require(durationMillis == null || durationMillis >= 0) {
             "Event duration cannot be negative."
+        }
+        require(durationMillis == null || durationMillis <= Int.MAX_VALUE) {
+            "Event duration exceeds the frozen API limit."
+        }
+        require(occurredAtEpochMillis >= 0) {
+            "Event occurrence time cannot precede the Unix epoch."
         }
 
         val eventId = idGenerator()
@@ -61,7 +89,7 @@ class BehavioralEventRepository(
         return eventId
     }
 
-    suspend fun reservePendingBatch(
+    override suspend fun reservePendingBatch(
         limit: Int,
         attemptedAtEpochMillis: Long,
         staleBeforeEpochMillis: Long,
@@ -78,13 +106,13 @@ class BehavioralEventRepository(
         )
     }
 
-    suspend fun markBatchSynced(eventIds: List<UUID>) {
+    override suspend fun markBatchSynced(eventIds: List<UUID>) {
         if (eventIds.isNotEmpty()) {
             behavioralEventDao.markSynced(eventIds.map(UUID::toString))
         }
     }
 
-    suspend fun returnBatchToPending(
+    override suspend fun returnBatchToPending(
         eventIds: List<UUID>,
         error: String?,
     ) {
