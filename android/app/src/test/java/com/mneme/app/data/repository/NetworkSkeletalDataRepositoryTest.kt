@@ -9,6 +9,9 @@ import com.mneme.app.data.network.CitationDto
 import com.mneme.app.data.network.DigestDto
 import com.mneme.app.data.network.DigestEntryDto
 import com.mneme.app.data.network.DigestPageDto
+import com.mneme.app.data.network.GraphDto
+import com.mneme.app.data.network.GraphEdgeDto
+import com.mneme.app.data.network.GraphNodeDto
 import com.mneme.app.data.network.HealthDto
 import com.mneme.app.data.network.JobDto
 import com.mneme.app.data.network.MnemeRemoteDataSource
@@ -23,8 +26,10 @@ import com.mneme.app.data.network.SeedInitializationDto
 import com.mneme.app.data.network.SeedInitializationRequestDto
 import com.mneme.app.data.network.SummaryDto
 import com.mneme.app.ui.model.ContentOrigin
+import com.mneme.app.ui.model.GraphAlgorithmUiStatus
 import com.mneme.app.ui.model.SourceMatchUiStatus
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.SerializationException
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -220,6 +225,67 @@ class NetworkSkeletalDataRepositoryTest {
         assertTrue(remote.questions.isEmpty())
     }
 
+    @Test
+    fun loadGraph_mapsFrozenDirectionAndRequestsBoundedDepthTwoView() =
+        runBlocking {
+            val remote = FakeRemote()
+            remote.graph =
+                graph(
+                    status = "ready",
+                    edges = listOf(GraphEdgeDto(source = "paper-1", target = "paper-2", weight = 0.8)),
+                )
+            val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+            val graph = repository.loadGraph("paper-1")
+
+            assertEquals("paper-1", graph.centerId)
+            assertEquals(GraphAlgorithmUiStatus.READY, graph.algorithmStatus)
+            assertEquals("citation-graph-v1", graph.graphVersion)
+            assertEquals("paper-1", graph.edges.single().source)
+            assertEquals("paper-2", graph.edges.single().target)
+            assertEquals(ContentOrigin.LIVE_BACKEND, graph.disclosure.origin)
+            assertEquals(Triple("paper-1", 2, 50), remote.graphRequests.single())
+        }
+
+    @Test
+    fun fallbackGraph_isDisclosedAsBackendBaseline() =
+        runBlocking {
+            val remote = FakeRemote().apply { graph = graph(status = "fallback") }
+            val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+            val graph = repository.loadGraph("paper-1")
+
+            assertEquals(GraphAlgorithmUiStatus.FALLBACK, graph.algorithmStatus)
+            assertTrue(graph.disclosure.message.contains("deterministic baseline"))
+        }
+
+    @Test
+    fun graphOutsideNodeBoundary_isRejectedAsContractMismatch() {
+        val remote =
+            FakeRemote().apply {
+                graph =
+                    graph(
+                        status = "ready",
+                        edges = listOf(GraphEdgeDto(source = "paper-1", target = "missing")),
+                    )
+            }
+        val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+        assertThrows(SerializationException::class.java) {
+            runBlocking { repository.loadGraph("paper-1") }
+        }
+    }
+
+    @Test
+    fun graphWithUnknownAlgorithmStatus_isRejectedAsContractMismatch() {
+        val remote = FakeRemote().apply { graph = graph(status = "experimental") }
+        val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+        assertThrows(SerializationException::class.java) {
+            runBlocking { repository.loadGraph("paper-1") }
+        }
+    }
+
     private class FakeRemote : MnemeRemoteDataSource {
         var preferences: PreferencesDto = preferences()
         var digestResult: RemoteResource<DigestDto> = RemoteResource.Ready(digest())
@@ -232,11 +298,13 @@ class NetworkSkeletalDataRepositoryTest {
                 sourceMatchStatus = "insufficient_evidence",
                 conversationId = "conversation-1",
             )
+        var graph: GraphDto = graph(status = "fallback")
         var briefingFailure: Exception? = null
         var paperFailure: Exception? = null
         val summaryResults = ArrayDeque<RemoteResource<SummaryDto>>()
         val questions = mutableListOf<QuestionDto>()
         val seedRequests = mutableListOf<SeedInitializationRequestDto>()
+        val graphRequests = mutableListOf<Triple<String, Int, Int>>()
 
         override suspend fun getHealth(): HealthDto = HealthDto("ok")
 
@@ -280,6 +348,15 @@ class NetworkSkeletalDataRepositoryTest {
         override suspend fun askQuestion(question: QuestionDto): AnswerDto {
             questions += question
             return answer
+        }
+
+        override suspend fun getPaperGraph(
+            paperId: String,
+            depth: Int,
+            limit: Int,
+        ): GraphDto {
+            graphRequests += Triple(paperId, depth, limit)
+            return graph
         }
     }
 
@@ -410,6 +487,34 @@ class NetworkSkeletalDataRepositoryTest {
                 papers = listOf(cachedPaper("paper-1", "Cached paper")),
                 recommendationReasons = mapOf("paper-1" to "Cached reason"),
                 refreshedAtEpochMillis = REFRESHED_AT,
+            )
+
+        private fun graph(
+            status: String,
+            edges: List<GraphEdgeDto> = emptyList(),
+        ): GraphDto =
+            GraphDto(
+                centerId = "paper-1",
+                nodes =
+                    listOf(
+                        GraphNodeDto(
+                            id = "paper-1",
+                            title = "Center paper",
+                            category = "cs.IR",
+                            clusterId = "cluster-1",
+                            rankScore = 1.0,
+                        ),
+                        GraphNodeDto(
+                            id = "paper-2",
+                            title = "Cited paper",
+                            category = "cs.LG",
+                            clusterId = "cluster-2",
+                            rankScore = 0.6,
+                        ),
+                    ),
+                edges = edges,
+                algorithmStatus = status,
+                graphVersion = "citation-graph-v1",
             )
     }
 }
