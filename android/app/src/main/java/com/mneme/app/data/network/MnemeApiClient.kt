@@ -89,7 +89,7 @@ sealed interface RemoteResource<out T> {
 }
 
 @Suppress("TooManyFunctions")
-interface MnemeRemoteDataSource {
+interface MnemeRemoteDataSource : BehavioralEventRemoteDataSource {
     suspend fun getHealth(): HealthDto
 
     suspend fun listPapers(limit: Int = 20): PaperPageDto
@@ -117,6 +117,10 @@ interface MnemeRemoteDataSource {
         depth: Int = 1,
         limit: Int = 50,
     ): GraphDto
+}
+
+interface BehavioralEventRemoteDataSource {
+    suspend fun uploadEvents(events: List<UserEventDto>): EventIngestionResultDto
 }
 
 class MnemeApiException(
@@ -164,6 +168,8 @@ internal class RetrofitMnemeRemoteDataSource(
         depth: Int,
         limit: Int,
     ): GraphDto = api.getPaperGraph(paperId, depth, limit).requireBody(json)
+
+    override suspend fun uploadEvents(events: List<UserEventDto>) = api.uploadEvents(events).requireBody(json)
 }
 
 private fun <T> Response<T>.requireBody(json: Json): T {

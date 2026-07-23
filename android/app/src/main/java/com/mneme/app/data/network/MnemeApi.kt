@@ -68,4 +68,9 @@ interface MnemeApi {
         @Query("depth") depth: Int = 1,
         @Query("limit") limit: Int = 50,
     ): Response<GraphDto>
+
+    @POST("events")
+    suspend fun uploadEvents(
+        @Body events: List<UserEventDto>,
+    ): Response<EventIngestionResultDto>
 }
