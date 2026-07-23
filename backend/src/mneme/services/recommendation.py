@@ -57,6 +57,7 @@ class RecommendedDigestService:
         and embeddings, so serving the fresh snapshot instead of rescoring
         keeps the endpoint cheap and reproducible.
         """
+        await self._repository.lock_user(user_id)
         fresh = await self._repository.get_fresh_recommended_digest(
             user_id=user_id, max_age=_FRESHNESS
         )
@@ -68,7 +69,7 @@ class RecommendedDigestService:
                 papers_by_id={entry.paper_id: entry.paper for entry in fresh_entries},
             )
 
-        return await self.generate(
+        return await self._generate_locked(
             user_id,
             digest_type=DigestType.MANUAL,
             as_of=utc_now(),
@@ -84,6 +85,17 @@ class RecommendedDigestService:
         """Persist a deterministic digest snapshot for one cutoff instant."""
         if as_of.tzinfo is None:
             raise ValueError("Digest generation cutoff must be timezone-aware.")
+        await self._repository.lock_user(user_id)
+        return await self._generate_locked(user_id, digest_type=digest_type, as_of=as_of)
+
+    async def _generate_locked(
+        self,
+        user_id: UUID,
+        *,
+        digest_type: DigestType,
+        as_of: datetime,
+    ) -> DigestBundle:
+        """Generate while holding the same user lock as event ingestion."""
         preference_row = await self._repository.get_preferences(user_id)
         preferences = PreferenceView(
             explicit_topics=tuple(preference_row.explicit_topics)

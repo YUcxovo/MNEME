@@ -19,7 +19,7 @@ from mneme.models.artifact import PaperChunk, PaperSummary
 from mneme.models.base import utc_now
 from mneme.models.digest import Digest, DigestEntry, DigestType
 from mneme.models.paper import Paper, PaperAuthor, PaperVersion, ProcessingStatus
-from mneme.models.user import EMBEDDING_DIMENSIONS, UserPreference
+from mneme.models.user import EMBEDDING_DIMENSIONS, User, UserPreference
 
 _CURSOR_VERSION: Final = 1
 _CURSOR_FIELDS: Final = frozenset({"v", "generated_at", "id"})
@@ -100,6 +100,10 @@ class DigestRepository:
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
+
+    async def lock_user(self, user_id: UUID) -> None:
+        """Serialize digest snapshots with behavioral preference writers."""
+        await self._session.scalar(select(User.id).where(User.id == user_id).with_for_update())
 
     async def list_digests(
         self,
