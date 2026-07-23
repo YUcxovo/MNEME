@@ -152,6 +152,21 @@ data class JobDto(
 )
 
 @Serializable
+data class UserEventDto(
+    @SerialName("event_id") val eventId: String,
+    @SerialName("event_type") val eventType: String,
+    @SerialName("paper_id") val paperId: String? = null,
+    @SerialName("occurred_at") val occurredAt: String,
+    @SerialName("duration_ms") val durationMillis: Long? = null,
+)
+
+@Serializable
+data class EventIngestionResultDto(
+    val accepted: Int,
+    val duplicates: Int,
+)
+
+@Serializable
 data class ErrorResponseDto(
     val code: String,
     val message: String,
