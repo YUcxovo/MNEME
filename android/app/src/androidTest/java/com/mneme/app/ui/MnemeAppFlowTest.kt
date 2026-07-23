@@ -16,6 +16,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import com.mneme.app.data.behavior.BehavioralEventTracker
+import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.repository.ControlledFixtureDataRepository
 import com.mneme.app.ui.theme.MnemeTheme
 import org.junit.Assert.assertEquals
@@ -179,5 +181,60 @@ class MnemeAppFlowTest {
         composeRule
             .onNodeWithTag("selected-graph-paper-title")
             .assertTextContains("Systems study")
+    }
+
+    @Test
+    fun viewModelBackedApp_forwardsOnlyExistingInteractionsToEventTracker() {
+        val tracker = RecordingBehavioralEventTracker()
+        val viewModel = MnemeViewModel(ControlledFixtureDataRepository(), tracker)
+        composeRule.setContent {
+            MnemeTheme {
+                MnemeApp(viewModel = viewModel, onOpenSource = {})
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            tracker.impressionBatches.isNotEmpty()
+        }
+        composeRule.onNodeWithText("Attention Is All You Need").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            tracker.openedPaperIds.isNotEmpty()
+        }
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("ask-question-action"),
+        )
+        composeRule.onNodeWithTag("ask-question-action").performClick()
+        composeRule.onNodeWithTag("qa-question-input").performTextInput(
+            "What mechanism replaces recurrence?",
+        )
+        composeRule.onNodeWithTag("qa-submit-question").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            tracker.questionPaperIds.isNotEmpty()
+        }
+
+        composeRule.runOnIdle {
+            val paperId = SeededSkeletalContentRepository.PAPER_ID
+            assertEquals(listOf(listOf(paperId)), tracker.impressionBatches)
+            assertEquals(listOf(paperId), tracker.openedPaperIds)
+            assertEquals(listOf(paperId), tracker.questionPaperIds)
+        }
+    }
+
+    private class RecordingBehavioralEventTracker : BehavioralEventTracker {
+        val impressionBatches = mutableListOf<List<String>>()
+        val openedPaperIds = mutableListOf<String>()
+        val questionPaperIds = mutableListOf<String>()
+
+        override suspend fun recordPaperImpressions(paperIds: List<String>) {
+            impressionBatches += paperIds
+        }
+
+        override suspend fun recordPaperOpened(paperId: String) {
+            openedPaperIds += paperId
+        }
+
+        override suspend fun recordQuestionAsked(paperId: String) {
+            questionPaperIds += paperId
+        }
     }
 }
