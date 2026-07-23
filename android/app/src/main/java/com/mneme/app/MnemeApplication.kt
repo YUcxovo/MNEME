@@ -10,6 +10,7 @@ import com.mneme.app.data.repository.PaperContentResult
 import com.mneme.app.data.repository.SkeletalDataRepository
 import com.mneme.app.ui.MnemeViewModel
 import com.mneme.app.ui.model.BriefingUiModel
+import com.mneme.app.ui.model.GraphUiModel
 import com.mneme.app.ui.model.QaUiModel
 
 class MnemeApplication : Application() {
@@ -71,4 +72,6 @@ private class ConfigurationErrorRepository(
         paperId: String,
         question: String,
     ): QaUiModel = throw error
+
+    override suspend fun loadGraph(paperId: String): GraphUiModel = throw error
 }

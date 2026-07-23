@@ -1,5 +1,6 @@
 package com.mneme.app.ui
 
+import com.mneme.app.ui.model.GraphUiModel
 import com.mneme.app.ui.model.PaperDetailUiModel
 import com.mneme.app.ui.model.QaUiModel
 
@@ -53,6 +54,23 @@ sealed interface QaUiState {
         val question: String,
         val message: String,
     ) : QaUiState
+}
+
+sealed interface GraphUiState {
+    data object Idle : GraphUiState
+
+    data class Loading(
+        val paperId: String,
+    ) : GraphUiState
+
+    data class Content(
+        val graph: GraphUiModel,
+    ) : GraphUiState
+
+    data class Error(
+        val paperId: String,
+        val message: String,
+    ) : GraphUiState
 }
 
 internal fun QaUiState.submittedQuestion(): String? =
