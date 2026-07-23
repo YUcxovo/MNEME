@@ -21,6 +21,9 @@ def test_settings_defaults() -> None:
     assert settings.arxiv_max_results == 100
     assert settings.daily_arxiv_categories == ("cs.AI", "cs.LG")
     assert settings.arxiv_daily_max_results == 20
+    assert settings.semantic_scholar_request_interval_seconds == 1
+    assert settings.semantic_scholar_batch_size <= 500
+    assert settings.semantic_scholar_page_size <= 1000
     assert settings.paper_storage_dir == Path(".data/papers")
     assert settings.pdf_max_bytes == 50 * 1024 * 1024
     assert settings.pdf_download_timeout_seconds == 60

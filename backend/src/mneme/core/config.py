@@ -58,6 +58,14 @@ class Settings(BaseSettings):
     arxiv_max_results: int = Field(default=100, ge=1, le=2000)
     arxiv_daily_categories: str = "cs.AI,cs.LG"
     arxiv_daily_max_results: int = Field(default=20, ge=1, le=2000)
+    semantic_scholar_api_url: HttpUrl = HttpUrl("https://api.semanticscholar.org/graph/v1")
+    semantic_scholar_api_key: SecretStr | None = None
+    semantic_scholar_request_interval_seconds: float = Field(default=1.0, ge=0)
+    semantic_scholar_timeout_seconds: float = Field(default=30.0, gt=0)
+    semantic_scholar_max_attempts: int = Field(default=3, ge=1, le=10)
+    semantic_scholar_batch_size: int = Field(default=100, ge=1, le=500)
+    semantic_scholar_page_size: int = Field(default=100, ge=1, le=1000)
+    semantic_scholar_max_neighbors: int = Field(default=1000, ge=1, le=9999)
     paper_storage_dir: Path = Path(".data/papers")
     pdf_max_bytes: int = Field(default=50 * 1024 * 1024, ge=1024)
     pdf_download_timeout_seconds: float = Field(default=60.0, gt=0)
