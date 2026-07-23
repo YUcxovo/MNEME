@@ -1,9 +1,10 @@
 """Frozen v0.1 behavioral-event request and response schemas."""
 
+from datetime import datetime
 from typing import Self
 from uuid import UUID
 
-from pydantic import AwareDatetime, BaseModel, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, Field, StrictInt, field_validator, model_validator
 
 from mneme.models.user import UserEventType
 from mneme.repositories.events import EventRecord
@@ -16,8 +17,16 @@ class UserEvent(BaseModel):
     event_type: UserEventType
     paper_id: UUID | None = None
     occurred_at: AwareDatetime
-    duration_ms: int | None = Field(default=None, ge=0, le=2_147_483_647)
+    duration_ms: StrictInt | None = Field(default=None, ge=0, le=2_147_483_647)
     context: dict[str, object] = Field(default_factory=dict)
+
+    @field_validator("occurred_at", mode="before")
+    @classmethod
+    def require_datetime_input(cls, value: object) -> object:
+        """Accept ISO strings or datetime objects without numeric coercion."""
+        if not isinstance(value, (str, datetime)):
+            raise ValueError("occurred_at must be an ISO 8601 date-time")
+        return value
 
     @model_validator(mode="after")
     def validate_event_scope(self) -> Self:

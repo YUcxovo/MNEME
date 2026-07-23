@@ -18,6 +18,8 @@ from mneme.services.behavior import (
 
 logger = structlog.get_logger(__name__)
 
+EVENT_MAX_FUTURE_SKEW = timedelta(minutes=5)
+
 
 class EventUserNotFoundError(LookupError):
     """Raised when the authenticated demo user was not bootstrapped."""
@@ -25,6 +27,10 @@ class EventUserNotFoundError(LookupError):
 
 class EventPaperNotFoundError(LookupError):
     """Raised when a new event references an unknown paper."""
+
+
+class EventTimestampOutOfRangeError(ValueError):
+    """Raised when an event is too far ahead of the server clock."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,6 +65,11 @@ class BehaviorEventService:
         now = self._clock()
         if now.tzinfo is None:
             raise ValueError("Event ingestion clock must be timezone-aware.")
+        if any(event.occurred_at.tzinfo is None for event in events):
+            raise ValueError("Event timestamps must be timezone-aware.")
+        latest_allowed = now + EVENT_MAX_FUTURE_SKEW
+        if any(event.occurred_at > latest_allowed for event in events):
+            raise EventTimestampOutOfRangeError
 
         async with self._repository.transaction():
             if not await self._repository.lock_user(user_id):
@@ -84,6 +95,7 @@ class BehaviorEventService:
             signals = await self._repository.list_recent_signals(
                 user_id,
                 since=now - timedelta(days=BEHAVIOR_WINDOW_DAYS),
+                until=latest_allowed,
             )
             signal_papers = {signal.paper_id for signal in signals if signal.paper_id is not None}
             embeddings = await self._repository.mean_latest_embeddings(

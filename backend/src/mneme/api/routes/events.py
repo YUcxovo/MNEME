@@ -11,6 +11,7 @@ from mneme.api.schemas.events import EventIngestionResult, UserEvent
 from mneme.services.events import (
     BehaviorEventService,
     EventPaperNotFoundError,
+    EventTimestampOutOfRangeError,
     EventUserNotFoundError,
 )
 
@@ -45,6 +46,12 @@ async def ingest_events(
             status.HTTP_404_NOT_FOUND,
             "paper_not_found",
             "One or more referenced papers do not exist.",
+        ) from None
+    except EventTimestampOutOfRangeError:
+        raise ApiError(
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            "validation_error",
+            "Event timestamps cannot be more than five minutes in the future.",
         ) from None
     return EventIngestionResult(
         accepted=result.accepted,
