@@ -58,6 +58,7 @@ def test_alembic_script_directory_is_configured() -> None:
 
     assert Path(script.dir).resolve() == BACKEND_ROOT / "alembic"
     assert Path(script.versions).resolve() == BACKEND_ROOT / "alembic" / "versions"
+    assert script.get_current_head() == "0006"
 
 
 @pytest.mark.base
@@ -77,6 +78,7 @@ def test_migration_chain_renders_offline() -> None:
     assert "ADD COLUMN dispatched_at TIMESTAMP WITH TIME ZONE" in sql
     assert "ADD COLUMN semantic_scholar_id VARCHAR(128)" in sql
     assert "ADD COLUMN external_source_id VARCHAR(200)" in sql
+    assert "CREATE INDEX ix_citations_external_target_id" in sql
     assert "ck_citations_has_local_endpoint" in sql
     assert sql.index("UPDATE citations SET external_target_id = NULL") < sql.index(
         "ck_citations_one_target"
@@ -92,6 +94,7 @@ def test_downgrade_renders_in_reverse_order_and_keeps_vector_extension() -> None
     rendered_tables = set(re.findall(r"DROP TABLE (\w+)", sql))
     assert rendered_tables - {"alembic_version"} == EXPECTED_TABLES
     assert sql.index("DROP TABLE qa_messages") < sql.index("DROP TABLE authors")
+    assert "DROP INDEX ix_citations_external_target_id" in sql
     assert "DROP EXTENSION" not in sql
 
 
