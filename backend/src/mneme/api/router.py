@@ -3,6 +3,7 @@
 from fastapi import APIRouter
 
 from mneme.api.routes.digests import router as digests_router
+from mneme.api.routes.graphs import router as graphs_router
 from mneme.api.routes.health import router as health_router
 from mneme.api.routes.jobs import router as jobs_router
 from mneme.api.routes.onboarding import router as onboarding_router
@@ -20,3 +21,4 @@ api_router.include_router(preferences_router)
 api_router.include_router(summaries_router)
 api_router.include_router(qa_router)
 api_router.include_router(digests_router)
+api_router.include_router(graphs_router)
