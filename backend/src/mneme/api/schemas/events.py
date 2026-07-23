@@ -24,9 +24,15 @@ class UserEvent(BaseModel):
     @classmethod
     def require_datetime_input(cls, value: object) -> object:
         """Accept ISO strings or datetime objects without numeric coercion."""
-        if not isinstance(value, (str, datetime)):
-            raise ValueError("occurred_at must be an ISO 8601 date-time")
-        return value
+        if isinstance(value, datetime):
+            return value
+        if isinstance(value, str):
+            try:
+                datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError as error:
+                raise ValueError("occurred_at must be an ISO 8601 date-time") from error
+            return value
+        raise ValueError("occurred_at must be an ISO 8601 date-time")
 
     @model_validator(mode="after")
     def validate_event_scope(self) -> Self:
