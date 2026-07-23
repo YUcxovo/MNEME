@@ -50,6 +50,7 @@ erDiagram
     papers {
       uuid id PK
       string arxiv_id UK
+      string semantic_scholar_id UK
       string title
       text abstract
       string primary_category
@@ -122,6 +123,7 @@ erDiagram
     citations {
       uuid id PK
       uuid source_paper_id FK
+      string external_source_id
       uuid target_paper_id FK
       string external_target_id
       float algorithm_weight
@@ -196,7 +198,7 @@ erDiagram
   stable descending keyset for the paper-list cursor.
 - arXiv work IDs are stored without a trailing version suffix. `(paper_id, version_number)` is
   unique in `paper_versions`.
-- `user_events.paper_id`, `user_events.duration_ms`, artifact vectors, source licenses, source checksums, document provenance, citation targets, job error/timing fields, and model telemetry may be null when the corresponding information is unavailable.
+- `user_events.paper_id`, `user_events.duration_ms`, artifact vectors, source licenses, source checksums, document provenance, citation endpoints, job error/timing fields, and model telemetry may be null when the corresponding information is unavailable.
 - JSON objects and arrays use PostgreSQL JSONB unless an ordered scalar array is explicitly part
   of the schema. Paper categories use a PostgreSQL text array and preserve the primary category
   separately.
@@ -216,7 +218,8 @@ erDiagram
   provenance and lookup but are not unique because repeated text can be legitimate.
 - `paper_summaries` is unique on
   `(paper_version_id, input_hash, provider, model_snapshot, prompt_version)`.
-- A citation must have either `target_paper_id` or `external_target_id`.
+- A citation has exactly one source identity and one target identity: either a local paper UUID or
+  a Semantic Scholar paper ID for each endpoint. At least one endpoint must be local.
 - `digest_entries` has a composite primary key and a unique `(digest_id, rank)` constraint.
 - Non-negative checks apply to event duration, version number, chunk/page indexes, job attempts,
   digest rank, estimated cost, and relevance scores where applicable.
@@ -237,9 +240,10 @@ erDiagram
   latency, token counts, and estimated cost. User messages leave generation fields null.
 - Chunks are tied to an observed paper revision and retain section, page range, content hash,
   token count, and embedding model metadata.
-- A citation may initially reference an external paper ID; ingestion can resolve it later.
-- Citation edges are deduplicated separately for resolved internal targets and unresolved external
-  targets. Self-edges are rejected.
+- A citation endpoint may initially reference a Semantic Scholar paper ID; ingestion resolves it
+  when the corresponding paper enters the local catalog.
+- Citation edges are deduplicated independently for internal/internal, internal/external, and
+  external/internal identities. External/external and resolved self-edges are rejected.
 - Pipeline jobs may have no paper only for collection-level stages such as digest assembly.
 - Paper-scoped pipeline jobs bind to an exact paper revision; collection-level stages leave both
   paper identifiers null.
@@ -252,9 +256,9 @@ erDiagram
   credentials or a separate authentication table. An idempotent bootstrap command creates the
   configured demo user and initial preferences.
 
-## Deferred Algorithm Decision
+## Behavior Model Baseline
 
-The exact behavior weights and decay formula are deliberately not frozen in Milestone 1. Ruiyu
-must publish a versioned baseline before Milestone 3 begins. The initial implementation will use
-deterministic event weights plus time-decayed weighted averaging of paper embeddings; no online
-training is required for the MVP.
+Milestone 3 freezes the simple deterministic `behavior-v1` baseline in ADR 0002. It combines
+versioned event weights, a 30-day half-life, a 90-day aggregation window, and latest-revision paper
+embeddings. Later tuning must publish a new model version rather than silently changing stored
+vector semantics.

@@ -35,10 +35,17 @@ class GraphAlgorithm(Protocol):
 ## MVP Constraints and Fallback
 
 - Nodes are papers; edges are citations.
+- Citation direction is `source cites target`. Semantic Scholar references therefore produce
+  `center -> referenced` edges, while citations produce `citing -> center` edges.
+- A persisted edge may temporarily identify either endpoint by a Semantic Scholar paper ID, but
+  at least one endpoint must be a local paper. External endpoints are resolved when their paper
+  enters the local catalog.
+- The public graph contains only locally resolved paper UUIDs. Unresolved observations remain
+  persisted for later resolution and are not exposed as fake internal resources.
 - Categories and keywords are attributes, not separate concept nodes.
 - Default traversal depth is 1; maximum depth is 2.
 - Default response limit is 50 nodes; hard maximum is 200.
 - If Yifan's algorithm is unavailable or fails, return the baseline citation graph with
   deterministic chronological ordering and `algorithm_status: "fallback"`.
-- Algorithm parameters and scoring formulas are deferred until Milestone 3 and versioned
-  with `graph_version`; the interface above is frozen at the end of Milestone 1.
+- The first persisted/public graph version is `citation-graph-v1`. Yifan's algorithm parameters
+  remain independently versioned; the interface above is frozen at the end of Milestone 1.

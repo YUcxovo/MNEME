@@ -19,6 +19,8 @@ public release.
 - Do not send unnecessary profile fields, raw behavioral history, secrets, or identifiers.
 - Never log API keys, authorization headers, full prompts, full answers, or paper text.
 - Development uses synthetic users; demo behavior history contains no real personal data.
+- `behavior-v1` reads at most 90 days of events when deriving a preference vector. Raw MVP events
+  remain server-side and are never sent to an LLM or embedding provider.
 - OpenAI API data is not used for training by default unless the organization opts in;
   default abuse-monitoring retention may be up to 30 days. See
   <https://platform.openai.com/docs/models/default-usage-policies-by-endpoint>.
