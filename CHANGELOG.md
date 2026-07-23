@@ -10,6 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Added Android citation-graph exploration with frozen API binding, a local d3 v7 WebView
   renderer, persistent node selection, and paper-detail navigation.
+- Added contract-aligned Android behavioral-event capture for visible paper impressions,
+  paper opens, and paper-scoped questions, with a Room-backed retry queue, idempotent
+  `POST /events` batches, and network-constrained WorkManager synchronization.
 - Added first-run seed-paper onboarding that derives the user's initial arXiv category,
   prepares five related papers through the live backend pipeline, and opens the Android
   briefing only after the complete set is ready.

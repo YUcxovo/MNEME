@@ -14,8 +14,8 @@ Engineering sources of truth:
 - [`docs/adr/0001-mvp-auth.md`](docs/adr/0001-mvp-auth.md) -- MVP authentication decision
 - [`docs/adr/0002-m3-behavior-baseline.md`](docs/adr/0002-m3-behavior-baseline.md) -- deterministic behavior-v1 decision
 
-Current implementation status (2026-07-22): `dev` contains the merged backend/data and
-AI pipeline through Milestone 2, plus the controlled Android UI baseline. The backend
+Current implementation status (2026-07-24): `dev` contains the merged backend/data and
+AI platform through Milestone 3, plus the live skeletal Android path. The backend
 includes the v0.1 relational schema, demo-token authentication, arXiv metadata and
 revision-safe document ingestion, durable jobs, provider-routed summarization,
 section-aware chunking, embeddings, pgvector retrieval, single-paper Q&A,
@@ -26,11 +26,12 @@ This checkout connects seed-paper onboarding -> Android briefing -> paper summar
 single-paper Q&A -> arXiv source flow to those implemented REST APIs. It adds
 Retrofit/OkHttp, frozen-contract DTOs, a production ViewModel, summary-job polling, and
 Room-backed fallback with explicit data source labels. A blank Android demo token
-deliberately selects the existing controlled fixture instead. Behavior-event upload,
-Android event UI/data binding, real WorkManager sync, and production authentication remain
-outside the skeletal integration. This branch adds Semantic Scholar graph synchronization,
-bounded graph persistence/API, transactional behavior events, and behavior-v1 preference
-updates for the client to consume.
+deliberately selects the existing controlled fixture instead. Supported live interactions
+are queued locally and uploaded through the frozen event contract, and paper details expose
+the bounded citation graph. Background digest refresh and production authentication remain
+outside the Android integration. The backend provides Semantic Scholar graph
+synchronization, bounded graph persistence/API, transactional behavior events, and
+behavior-v1 preference updates.
 
 ---
 
@@ -424,7 +425,10 @@ Do not duplicate request/response schemas in this README. The frozen paths, para
 
 ### Communication Flow
 
-The sequence below combines the implemented seed-paper Android walkthrough with the target M3 integration contract. Backend paper, AI, scheduler/job, onboarding, event, and graph legs exist in this checkout; Android graph rendering is connected, while event sync and background refresh remain separate workstreams.
+The sequence below combines the implemented seed-paper Android walkthrough with the M3
+integration contract. Backend paper, AI, scheduler/job, onboarding, event, and graph legs
+exist in this checkout. Supported Android interactions use the event-sync path, and Android
+graph rendering is connected; background digest refresh remains a separate workstream.
 
 ```mermaid
 sequenceDiagram
