@@ -5,6 +5,7 @@ package com.mneme.app.ui
 import androidx.compose.runtime.Composable
 import com.mneme.app.ui.component.ErrorState
 import com.mneme.app.ui.component.LoadingState
+import com.mneme.app.ui.graph.GraphScreen
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.interests.InterestsScreen
 import com.mneme.app.ui.paper.PaperDetailScreen
@@ -35,9 +36,7 @@ internal fun InterestsDestination(
 internal fun PaperDestination(
     paperId: String,
     state: PaperDetailUiState,
-    onRetry: () -> Unit,
-    onAskQuestion: () -> Unit,
-    onOpenSource: (String) -> Unit,
+    actions: PaperDestinationActions,
 ) {
     when (state) {
         PaperDetailUiState.Idle -> LoadingState(message = "Loading paper and summary...")
@@ -46,13 +45,50 @@ internal fun PaperDestination(
             if (state.paper.paper.id == paperId) {
                 PaperDetailScreen(
                     paper = state.paper,
-                    onAskQuestion = onAskQuestion,
-                    onOpenSource = onOpenSource,
+                    onAskQuestion = actions.askQuestion,
+                    onExploreGraph = actions.exploreGraph,
+                    onOpenSource = actions.openSource,
                 )
             } else {
                 LoadingState(message = "Loading paper and summary...")
             }
-        is PaperDetailUiState.Error -> ErrorState(message = state.message, onRetry = onRetry)
+        is PaperDetailUiState.Error -> ErrorState(message = state.message, onRetry = actions.retry)
+    }
+}
+
+internal data class PaperDestinationActions(
+    val retry: () -> Unit,
+    val askQuestion: () -> Unit,
+    val exploreGraph: () -> Unit,
+    val openSource: (String) -> Unit,
+)
+
+@Composable
+internal fun GraphDestination(
+    paperId: String,
+    state: GraphUiState,
+    onRetry: () -> Unit,
+    onOpenPaper: (String) -> Unit,
+) {
+    when (state) {
+        GraphUiState.Idle -> LoadingState(message = "Loading citation connections...")
+        is GraphUiState.Loading -> LoadingState(message = "Loading citation connections...")
+        is GraphUiState.Content ->
+            if (state.graph.centerId == paperId) {
+                GraphScreen(
+                    graph = state.graph,
+                    onRetry = onRetry,
+                    onOpenPaper = onOpenPaper,
+                )
+            } else {
+                LoadingState(message = "Loading citation connections...")
+            }
+        is GraphUiState.Error ->
+            if (state.paperId == paperId) {
+                ErrorState(message = state.message, onRetry = onRetry)
+            } else {
+                LoadingState(message = "Loading citation connections...")
+            }
     }
 }
 

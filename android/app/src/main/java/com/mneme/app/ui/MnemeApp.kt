@@ -48,6 +48,7 @@ import com.mneme.app.ui.component.LoadingState
 import com.mneme.app.ui.home.HomeScreen
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.navigation.BriefingRoute
+import com.mneme.app.ui.navigation.GraphRoute
 import com.mneme.app.ui.navigation.InterestsRoute
 import com.mneme.app.ui.navigation.PaperDetailRoute
 import com.mneme.app.ui.navigation.QaRoute
@@ -76,6 +77,7 @@ private data class MnemeUiSnapshot(
     val home: HomeUiState,
     val paper: PaperDetailUiState,
     val qa: QaUiState,
+    val graph: GraphUiState,
 )
 
 private data class MnemeUiActions(
@@ -83,6 +85,8 @@ private data class MnemeUiActions(
     val requestPaper: (String) -> Unit,
     val retryPaper: (String) -> Unit,
     val requestQa: (String, String) -> Unit,
+    val requestGraph: (String) -> Unit,
+    val retryGraph: (String) -> Unit,
 )
 
 @Composable
@@ -95,6 +99,7 @@ fun MnemeApp(
     val homeState by viewModel.homeState.collectAsStateWithLifecycle()
     val paperState by viewModel.paperState.collectAsStateWithLifecycle()
     val qaState by viewModel.qaState.collectAsStateWithLifecycle()
+    val graphState by viewModel.graphState.collectAsStateWithLifecycle()
     when (val current = onboardingState) {
         OnboardingUiState.AwaitingSeed ->
             SeedOnboardingScreen(
@@ -119,13 +124,15 @@ fun MnemeApp(
             )
         OnboardingUiState.Ready ->
             MnemeAppScaffold(
-                snapshot = MnemeUiSnapshot(homeState, paperState, qaState),
+                snapshot = MnemeUiSnapshot(homeState, paperState, qaState, graphState),
                 actions =
                     MnemeUiActions(
                         refreshBriefing = viewModel::refreshBriefing,
                         requestPaper = { paperId -> viewModel.loadPaper(paperId) },
                         retryPaper = { paperId -> viewModel.loadPaper(paperId, force = true) },
                         requestQa = viewModel::askQuestion,
+                        requestGraph = { paperId -> viewModel.loadGraph(paperId) },
+                        retryGraph = { paperId -> viewModel.loadGraph(paperId, force = true) },
                     ),
                 onOpenSource = onOpenSource,
                 modifier = modifier,
@@ -141,6 +148,7 @@ fun MnemeApp(
 ) {
     var paperState by remember(repository) { mutableStateOf<PaperDetailUiState>(PaperDetailUiState.Idle) }
     var qaState by remember(repository) { mutableStateOf<QaUiState>(QaUiState.Idle) }
+    var graphState by remember(repository) { mutableStateOf<GraphUiState>(GraphUiState.Idle) }
     val briefing = remember(repository) { repository.briefing() }
     val loadPaper = { paperId: String ->
         paperState =
@@ -156,14 +164,27 @@ fun MnemeApp(
                     "A paper-specific answer is not available.",
                 )
     }
+    val loadGraph = { paperId: String ->
+        graphState =
+            repository.graph(paperId)?.let(GraphUiState::Content)
+                ?: GraphUiState.Error(paperId, "A citation graph is not available for this paper.")
+    }
     MnemeAppScaffold(
-        snapshot = MnemeUiSnapshot(HomeUiState.Content(briefing), paperState, qaState),
+        snapshot =
+            MnemeUiSnapshot(
+                HomeUiState.Content(briefing),
+                paperState,
+                qaState,
+                graphState,
+            ),
         actions =
             MnemeUiActions(
                 refreshBriefing = {},
                 requestPaper = loadPaper,
                 retryPaper = loadPaper,
                 requestQa = loadQa,
+                requestGraph = loadGraph,
+                retryGraph = loadGraph,
             ),
         onOpenSource = onOpenSource,
         modifier = modifier,
@@ -289,11 +310,21 @@ private fun MnemeNavHost(
             PaperDestination(
                 paperId = paperId,
                 state = snapshot.paper,
-                onRetry = { actions.retryPaper(paperId) },
-                onAskQuestion = { navController.navigate(QaRoute(paperId)) },
-                onOpenSource = onOpenSource,
+                actions =
+                    PaperDestinationActions(
+                        retry = { actions.retryPaper(paperId) },
+                        askQuestion = { navController.navigate(QaRoute(paperId)) },
+                        exploreGraph = { navController.navigate(GraphRoute(paperId)) },
+                        openSource = onOpenSource,
+                    ),
             )
         }
+        graphNavigation(
+            navController = navController,
+            state = snapshot.graph,
+            requestGraph = actions.requestGraph,
+            retryGraph = actions.retryGraph,
+        )
         composable<QaRoute> { entry ->
             val paperId = entry.toRoute<QaRoute>().paperId
             QaDestination(
@@ -357,5 +388,6 @@ private fun NavDestination?.titleRes(): Int =
             R.string.screen_title_paper
         }
         this?.hierarchy?.any { it.hasRoute<QaRoute>() } == true -> R.string.screen_title_qa
+        this?.hierarchy?.any { it.hasRoute<GraphRoute>() } == true -> R.string.screen_title_graph
         else -> R.string.screen_title_briefing
     }

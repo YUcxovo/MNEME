@@ -20,3 +20,8 @@ data class PaperDetailRoute(
 data class QaRoute(
     val paperId: String,
 )
+
+@Serializable
+data class GraphRoute(
+    val paperId: String,
+)
