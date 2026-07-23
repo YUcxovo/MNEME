@@ -93,8 +93,8 @@ The MVP UI says "Sources matched", never "Verified answer". If evidence is insuf
 
 - M1: freeze metric definitions and evaluation fixture format.
 - M2: create 5 manually checked QA cases while validating parsing/chunking.
-- M3: expand to 10-20 cases and run retrieval/citation regression tests.
-- M4: report final results and tune prompts/parameters.
+- M3: keep the existing seed fixtures as deterministic retrieval/citation regressions while completing the server-side integration path.
+- M4: expand to 10-20 manually checked cases, report final results, and tune prompts/parameters.
 
 Required metrics are parse success rate, retrieval recall@k, citation source-match rate, human answer-helpfulness score, digest relevance score, latency, and per-paper cost. The deterministic end-to-end test proves orchestration and persistence without making external arXiv, Redis-worker, or model calls; it is not a substitute for the manual quality evaluation.
 

@@ -35,9 +35,7 @@ Semantic Scholar writes use a separate `CitationGraphRepository.persist_neighbor
 - Nodes are papers; edges are citations.
 - Citation direction is `source cites target`. Semantic Scholar references therefore produce
   `center -> referenced` edges, while citations produce `citing -> center` edges.
-- A persisted edge may temporarily identify either endpoint by a Semantic Scholar paper ID, but
-  at least one endpoint must be a local paper. External endpoints are resolved when their paper
-  enters the local catalog.
+- A persisted edge may temporarily identify either endpoint by a Semantic Scholar paper ID, but at least one endpoint must be a local paper. Entering the local catalog does not trigger resolution by itself; a later graph-sync invocation must encounter the matching provider identity.
 - The public graph contains only locally resolved paper UUIDs. Unresolved observations remain
   persisted for later resolution and are not exposed as fake internal resources.
 - Categories and keywords are attributes, not separate concept nodes.
@@ -45,5 +43,6 @@ Semantic Scholar writes use a separate `CitationGraphRepository.persist_neighbor
 - Default response limit is 50 nodes; hard maximum is 200.
 - If Yifan's algorithm is unavailable or fails, return the baseline citation graph with
   deterministic chronological ordering and `algorithm_status: "fallback"`.
-- The first public graph version is `citation-graph-v1`. Yifan's algorithm parameters
-  remain independently versioned; the interface above is frozen at the end of Milestone 1.
+- The first public graph version is `citation-graph-v1`. Any weighting, ranking, clustering, or parameter change that alters public graph semantics must bump `graph_version`; `algorithm_status` reports whether enrichment succeeded or the deterministic fallback was used.
+
+The current operational command synchronizes one center paper at a time. A fleet-wide or parallel graph scheduler, including its cross-paper lock ordering, is deferred until integration demand justifies it.

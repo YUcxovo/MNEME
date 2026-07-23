@@ -76,7 +76,7 @@ The backend includes FastAPI/Uvicorn, Pydantic settings, structlog, async SQLAlc
 |-----------|---------|---------|------|
 | Python | 3.11+ | Development language | https://www.python.org |
 | FastAPI + Uvicorn | Current compatible releases | Async REST API and development server | https://fastapi.tiangolo.com |
-| Gunicorn | Current compatible release | Production process manager | https://gunicorn.org |
+| Gunicorn | Planned; not currently installed | Production process manager after deployment packaging is defined | https://gunicorn.org |
 | SQLAlchemy + asyncpg | SQLAlchemy 2.x | Async ORM and PostgreSQL driver | https://www.sqlalchemy.org |
 | Alembic | Current compatible release | Database migrations | https://alembic.sqlalchemy.org |
 | PostgreSQL + pgvector | PostgreSQL 16 baseline | Relational data and vector search | https://github.com/pgvector/pgvector |
@@ -156,7 +156,7 @@ value proposition: **Read - Remember - Plan - Engage - Connect**.
 | Tier | Stage 1: Receiving New Papers (READ) | Stage 2: Learning Your Interests (REMEMBER) | Stage 3: Planning What to Read (PLAN) | Stage 4: Asking With Sources (ENGAGE) | Stage 5: Exploring Connections (CONNECT) |
 |------|--------------------------------------|---------------------------------------------|---------------------------------------|---------------------------------------|------------------------------------------|
 | **Skeletal** | Fetch new arXiv papers, download PDFs, generate TLDR summaries | Seed paper sets initial interests | Assemble a manual briefing | Single-paper RAG Q&A | -- |
-| **MVP** | Section-aware chunking, embeddings | Track opens / saves / shares, update user interest model, generate rec reasons | Weekly Research Briefing + periodic local notification | Source-linked summaries, source-matched citations, follow-up Q&A | Bounded paper-citation graph, mobile d3-force visualization |
+| **MVP** | Section-aware chunking, embeddings | Track opens / saves / shares, update user interest model, generate rec reasons | Weekly Research Briefing + periodic local notification | Structured summaries, source-matched Q&A citations, follow-up Q&A | Bounded paper-citation graph, mobile d3-force visualization |
 | **Stretch** | On-device LLM research | -- | Shared team digest lists | Voice / camera input | Zotero / BibTeX export |
 
 ### Engine Architecture
@@ -262,8 +262,10 @@ pre-provisioned opaque demo token in the Bearer header; login/JWT lifecycle is o
 Long-running tasks
 (PDF download, summarization, embedding) are submitted to ARQ, an async Redis-backed
 task queue, rather than executed synchronously in the request handler. The frozen v0.1
-contract lives under `docs/api/`; FastAPI-generated OpenAPI becomes authoritative after all
-frozen routes are implemented and verified.
+compatibility baseline lives under `docs/api/`; all frozen routes are now implemented, so
+FastAPI-generated OpenAPI is the runtime source of truth. Contract tests compare operation
+IDs and documented response schema references, while focused route/schema tests cover
+reviewed runtime invariants; see `docs/api/README.md` for the exact governance boundary.
 
 **Core Engine Layer** -- Contains three sub-pipelines:
 
@@ -272,8 +274,8 @@ frozen routes are implemented and verified.
   and structure (pdfplumber). The Section-Aware Chunker splits papers into retrieval-ready
   chunks by section boundaries rather than fixed token windows.
 
-- *AI Pipeline*: The LLM Summarizer generates three-tier summaries (TLDR / structured /
-  claims with source links) using a configurable low-cost model, gated by BudgetGuard
+- *AI Pipeline*: The LLM Summarizer generates structured summaries (TLDR, key claims,
+  methodology, and limitations) using a configurable low-cost model, gated by BudgetGuard
   for cost control. The Embedding Provider vectorizes chunks using the configured model
   and stores them in pgvector. The RAG Engine implements the Retrieve -> Augment ->
   Generate -> Source Match loop. The MVP verifies that cited chunks came from retrieval and
@@ -337,22 +339,20 @@ flowchart TD
     E3 --> QUEUE
     E4 --> QUEUE
 
-    QUEUE --> INGEST["F2.2 Event Ingestion (dedup by event_id)"]
-    INGEST --> AGG["Daily Aggregation (user x paper -> signals)"]
-
-    AGG --> UPDATE["F2.3 Versioned Interest Vector Update (weights frozen before M3)"]
-
-    UPDATE --> CACHE["Cache user embedding -> Redis (24h TTL)"]
+    QUEUE --> INGEST["POST /events (dedup by event_id)"]
+    INGEST --> UPDATE["Same transaction: rebuild behavior-v1 from <=90d raw events"]
+    UPDATE --> PREFS["Persist model-labelled preference vector in PostgreSQL"]
 
     subgraph Digest["Digest Assembly"]
-        CANDIDATES["Candidate Papers (arXiv new + category match)"]
-        SCORE["Compute Relevance (cosine_sim x freshness x author_boost)"]
+        CANDIDATES["Recent papers with current-revision artifacts"]
+        SCORE["Weighted blend: topics .45 + behavior .35 + recency .20"]
         RANK["Rank & Select Top-K Weekly Briefing"]
         REASONS["Generate Recommendation Reasons (F2.3)"]
         ASSEMBLE["F3.1 Digest Assembly -> digests table"]
     end
 
     CANDIDATES --> SCORE
+    PREFS --> SCORE
     SCORE --> RANK
     RANK --> REASONS
     REASONS --> ASSEMBLE
@@ -366,7 +366,11 @@ flowchart TD
     ANDROID_N --> USER(["User receives intelligent push"])
 ```
 
+Recommendation scoring is a weighted average of explicit-topic match (`0.45`), same-model behavior-vector cosine similarity (`0.35`), and seven-day-half-life recency (`0.20`). When a preference or paper embedding is unavailable, its component is omitted and the remaining weights are renormalized. A manual recommended digest may be reused for up to 24 hours only if it is not older than the user's latest preference update.
+
 **Push strategy explained:**
+
+The notification bullets below describe the target Android integration policy; the current skeletal client does not yet perform live digest polling or issue data-backed recommendation notifications.
 
 - **Weekly Batch** (default): A curated digest every Monday morning prevents
   notification fatigue. Users receive a single weekly notification rather than
@@ -385,7 +389,7 @@ flowchart TD
 ## APIs and Controller
 
 The Android client communicates with the FastAPI backend exclusively via RESTful JSON.
-The authoritative frozen contract is [`docs/api/openapi-v0.1.yaml`](docs/api/openapi-v0.1.yaml).
+The frozen v0.1 compatibility baseline is [`docs/api/openapi-v0.1.yaml`](docs/api/openapi-v0.1.yaml); FastAPI's generated `/openapi.json` is authoritative for the running checkout.
 Protected endpoints use the pre-provisioned opaque demo token in the
 `Authorization: Bearer <token>` header; the MVP has no login or JWT lifecycle.
 
@@ -403,16 +407,16 @@ Production:  https://<domain>/v1
 | `GET`  | `/v1/health` | Service health (no auth) | Implemented on `dev` |
 | `GET`  | `/v1/papers` | Cursor-paginated papers | Implemented on `dev` |
 | `GET`  | `/v1/papers/{paper_id}` | Get paper detail; `paper_id` is an internal UUID | Implemented on `dev` |
-| `GET`  | `/v1/papers/{paper_id}/summary` | Ready revision summary or `202` durable job | Implemented on `dev`; recovery extended on this branch |
+| `GET`  | `/v1/papers/{paper_id}/summary` | Ready revision summary or `202` durable job | Implemented on `dev` |
 | `GET`  | `/v1/digests` | Cursor-paginated Research Briefings | Implemented on `dev` |
 | `POST` | `/v1/digests/recommended` | Get or synchronously generate a manual recommended briefing | Implemented on `dev` |
 | `POST` | `/v1/qa/ask` | Submit a single-paper RAG question | Implemented on `dev` |
-| `POST` | `/v1/events` | Batch-upload behavioral tracking events | Frozen contract only (M3) |
-| `GET`  | `/v1/graph/{paper_id}` | Get a bounded paper-citation ego graph | Frozen contract only (M3) |
+| `POST` | `/v1/events` | Batch-upload behavioral tracking events | Implemented on this branch |
+| `GET`  | `/v1/graph/{paper_id}` | Get a bounded paper-citation ego graph | Implemented on this branch |
 | `GET`  | `/v1/users/me/preferences` | Get current user's interest preferences | Implemented on `dev` |
 | `PUT`  | `/v1/users/me/preferences` | Replace explicit topics and followed authors | Implemented on `dev` |
-| `POST` | `/v1/onboarding/seed` | Prepare a complete five-paper briefing from one arXiv seed | Implemented on this branch |
-| `GET`  | `/v1/jobs/{job_id}` | Poll durable asynchronous job state | Implemented on this branch |
+| `POST` | `/v1/onboarding/seed` | Prepare a complete five-paper briefing from one arXiv seed | Implemented on `dev` |
+| `GET`  | `/v1/jobs/{job_id}` | Poll durable asynchronous job state | Implemented on `dev` |
 
 ### Detailed Endpoint Specifications
 
@@ -420,9 +424,7 @@ Do not duplicate request/response schemas in this README. The frozen paths, para
 
 ### Communication Flow
 
-The sequence below is the implemented skeletal integration. Behavior events, graph
-exploration, and background notification refresh remain later MVP work and are not shown as
-part of this path.
+The sequence below combines the implemented seed-paper Android walkthrough with the target M3 integration contract. Backend paper, AI, scheduler/job, onboarding, event, and graph legs exist in this checkout; Android event sync, graph rendering, and background refresh remain to be connected.
 
 ```mermaid
 sequenceDiagram
@@ -464,11 +466,35 @@ sequenceDiagram
 
     Note over U,D: 3. User asks a question
     U->>A: Submit question
-    A->>B: POST /v1/qa/ask {question, paper_id}
+    A->>B: POST /v1/qa/ask {question, paper_id, conversation_id?}
     B->>E: RAG: embed -> retrieve -> augment -> generate -> verify
     E-->>B: Answer + source-matched citations
     B-->>A: JSON response
     A-->>U: Display answer, match status, and citations
+
+    Note over U,D: 4. User browses knowledge graph
+    U->>A: Open knowledge graph
+    A->>B: GET /v1/graph/{paper_id}?depth=2
+    B->>E: BFS traversal -> filter -> rank
+    E-->>B: Graph JSON (nodes + edges)
+    B-->>A: JSON response
+    A->>A: Inject JSON into WebView d3-force
+    A-->>U: Render interactive graph
+
+    Note over A,B: 5. Background: behavioral events
+    A->>A: Collect events in local buffer
+    A->>B: POST /v1/events (batch)
+    B->>D: Dedup events and rebuild behavior-v1 atomically
+    D-->>B: {accepted: N, duplicates: M}
+
+    Note over A,B: 6. Background: push notification
+    B->>E: Weekly scheduler triggers digest assembly
+    E->>E: Compute relevance, determine push mode
+    E->>D: Store digest
+    A->>B: WorkManager periodic check
+    B-->>A: New digest available
+    A->>A: NotificationCompat build + notify
+    A-->>U: Push notification
 ```
 
 ---

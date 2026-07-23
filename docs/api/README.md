@@ -1,14 +1,8 @@
 # API Contract Governance
 
-The frozen OpenAPI document is `openapi-v0.1.yaml`. It is the contract between the Android
-and backend sub-teams until every v0.1 route exists and FastAPI can become the complete
-generated source of truth.
+The frozen OpenAPI document is `openapi-v0.1.yaml`. It remains the v0.1 compatibility baseline between the Android and backend sub-teams. All frozen routes now exist, so FastAPI-generated OpenAPI from the checked-out application is the runtime implementation source of truth.
 
-As of 2026-07-22, FastAPI implements and contract-tests `health`, `papers`,
-`users/me/preferences`, seed-paper onboarding, revision-safe paper summaries,
-single-paper Q&A, digest listing/recommendation, and durable job status. `events` and
-`graph` remain represented only by the frozen contract until their Milestone 3
-persistence services are implemented.
+As of 2026-07-23, FastAPI implements all 13 frozen operations: health, paper list/detail, explicit preferences, seed-paper onboarding, revision-safe summaries, event ingestion, digest list/recommendation, single-paper Q&A, bounded citation graphs, and durable job status. The contract regression compares every operation ID and each documented response's top-level schema reference with `openapi-v0.1.yaml`; focused schema and route tests cover reviewed authentication, parameter, request, payload, and stable-error invariants. This is not a byte-for-byte or complete structural diff of the two OpenAPI documents.
 
 ## Ownership
 
@@ -18,7 +12,7 @@ persistence services are implemented.
 - Data-model reviewer: Yifan reviews AI/RAG fields; Ruiyu approves persistence impact
 
 Any breaking change requires Ruiyu, the endpoint owner, and Hanyang to approve the PR.
-The committed contract remains authoritative while later-milestone routes are absent or only skeletons. Backend contract tests load the frozen YAML and compare every implemented operation's ID and declared response schemas with FastAPI's generated OpenAPI; route tests separately validate runtime payloads, authentication, parameters, and errors. The generated document becomes authoritative only after all frozen routes are represented in the application. Breaking changes require a new API version or an explicit coordinated migration.
+The generated document is authoritative for what the running checkout serves. The committed YAML remains the frozen compatibility baseline reviewed by both sub-teams; any intentional difference must update the baseline, Android fixtures, and regression tests in one coordinated change. Breaking changes require a new API version or an explicit coordinated migration.
 
 ## Fixed v0.1 Decisions
 
@@ -37,6 +31,7 @@ The committed contract remains authoritative while later-milestone routes are ab
 - Errors use the shared `ErrorResponse` schema with a stable machine-readable code
 - Paper lists use descending `(published_at, id)` keyset pagination encoded as an opaque cursor
 - `PUT /users/me/preferences` is a complete replacement of both explicit preference lists
+- Behavioral-event timestamps must be timezone-aware ISO 8601 values and no more than five minutes ahead of the server clock
 
 ## Shared Error Codes
 
