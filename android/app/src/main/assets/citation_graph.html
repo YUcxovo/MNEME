@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+    <style>
+        html, body {
+            width: 100%;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            background: #0d1b31;
+            color: #f5efe2;
+            font-family: sans-serif;
+        }
+
+        #graph {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .edge {
+            stroke: #59677c;
+            stroke-opacity: 0.78;
+        }
+
+        .node circle {
+            stroke: #d9deea;
+            stroke-width: 1.5px;
+        }
+
+        .node.center circle {
+            stroke: #e2b478;
+            stroke-width: 3px;
+        }
+
+        .node.selected circle {
+            stroke: #78bfd2;
+            stroke-width: 4px;
+        }
+
+        .node text {
+            fill: #f5efe2;
+            font-size: 11px;
+            paint-order: stroke;
+            stroke: #081222;
+            stroke-width: 3px;
+            stroke-linejoin: round;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<div id="graph" aria-label="Interactive citation graph"></div>
+<script src="d3.v7.min.js"></script>
+<script src="citation_graph.js"></script>
+</body>
+</html>
