@@ -20,6 +20,7 @@ IMPLEMENTED_OPERATIONS = (
     ("/digests", "get"),
     ("/digests/recommended", "post"),
     ("/qa/ask", "post"),
+    ("/graph/{paper_id}", "get"),
     ("/jobs/{job_id}", "get"),
 )
 
