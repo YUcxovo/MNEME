@@ -16,7 +16,8 @@ erDiagram
     authors ||--o{ paper_authors : writes
     papers ||--o{ paper_chunks : contains
     papers ||--o{ paper_summaries : summarizes
-    papers ||--o{ citations : cites
+    papers o|--o{ citations : local_source
+    papers o|--o{ citations : local_target
     papers ||--o{ digest_entries : appears_in
     papers ||--o{ qa_conversations : scopes
     papers ||--o{ pipeline_jobs : processes
@@ -218,12 +219,11 @@ erDiagram
   provenance and lookup but are not unique because repeated text can be legitimate.
 - `paper_summaries` is unique on
   `(paper_version_id, input_hash, provider, model_snapshot, prompt_version)`.
-- A citation has exactly one source identity and one target identity: either a local paper UUID or
-  a Semantic Scholar paper ID for each endpoint. At least one endpoint must be local.
+- A citation has exactly one source identity and one target identity: either a local paper UUID or a Semantic Scholar paper ID for each endpoint. `source_paper_id` and `target_paper_id` are therefore independently nullable, but each must be paired with a non-null local or external identity and at least one endpoint must be local. The two Mermaid relations above represent the optional local source and optional local target roles separately.
 - `digest_entries` has a composite primary key and a unique `(digest_id, rank)` constraint.
 - Non-negative checks apply to event duration, version number, chunk/page indexes, job attempts,
   digest rank, estimated cost, and relevance scores where applicable.
-- Query indexes cover papers by `(published_at, id)` and `(primary_category, published_at)`, jobs by `(status, stage)` and `(status, dispatched_at)`, events by `(user_id, occurred_at)`, and foreign-key lookup columns.
+- Query indexes cover papers by `(published_at, id)` and `(primary_category, published_at)`, jobs by `(status, stage)` and `(status, dispatched_at)`, events by `(user_id, occurred_at)`, external citation identities, and foreign-key lookup columns.
 
 ## Fixed Decisions
 
@@ -240,8 +240,7 @@ erDiagram
   latency, token counts, and estimated cost. User messages leave generation fields null.
 - Chunks are tied to an observed paper revision and retain section, page range, content hash,
   token count, and embedding model metadata.
-- A citation endpoint may initially reference a Semantic Scholar paper ID; ingestion resolves it
-  when the corresponding paper enters the local catalog.
+- A citation endpoint may initially reference a Semantic Scholar paper ID. After the corresponding paper enters the local catalog, a later graph-sync invocation that encounters its provider identity resolves matching observations.
 - Citation edges are deduplicated independently for internal/internal, internal/external, and
   external/internal identities. External/external and resolved self-edges are rejected.
 - Pipeline jobs may have no paper only for collection-level stages such as digest assembly.

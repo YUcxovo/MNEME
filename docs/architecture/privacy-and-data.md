@@ -32,14 +32,12 @@ public release.
 
 ## Generated-Artifact Metadata
 
-Persisted summaries, embeddings, Q&A responses, digests, and derived behavior vectors record
-enough metadata to reproduce or invalidate them:
+Metadata is recorded according to the artifact type rather than pretending every artifact has provider-generation telemetry:
 
-- provider and exact model snapshot;
-- prompt/algorithm/pipeline version;
-- temperature and relevant generation parameters;
-- input/content hash;
-- timestamp, latency, token usage, and estimated cost.
+- generated summaries and assistant Q&A messages retain provider/model/prompt identity, input hash, generation parameters as applicable, timestamp, latency, token counts, and estimated cost;
+- chunks and embeddings retain the exact paper revision, content hash, and embedding model;
+- digests retain generation time, preference-model version, generator version, ranked scores, and recommendation reasons;
+- a derived behavior vector retains only its embedding model, behavior model version, and update time; raw `user_events` remain its authoritative inputs.
 
 The public graph response carries `graph_version` and `algorithm_status`; M3 graph enrichment is computed from persisted citation edges per request and is not stored as a generated artifact.
 

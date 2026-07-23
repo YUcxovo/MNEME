@@ -49,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a throttled and retrying Semantic Scholar client, explicit graph-sync CLI, bidirectional citation observation persistence, identity resolution, and bounded local traversal.
 - Added authenticated `GET /graph/{paper_id}` with depth/node limits, deterministic algorithm enrichment, and a safe baseline fallback.
 - Added deterministic `behavior-v1` aggregation and authenticated idempotent `POST /events` batches with transactional preference recomputation.
-- Added PostgreSQL/pgvector end-to-end coverage for event deduplication, exact-revision/model behavior vectors, rollback, and citation-graph queries.
+- Added PostgreSQL/pgvector end-to-end coverage for event deduplication, exact-revision/model behavior vectors, rollback, bounded citation-graph queries, and unresolved-to-local citation resolution across later graph synchronization.
 
 ### Changed
 
@@ -68,6 +68,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   answers. Citation source matching now evaluates each cited local claim instead of penalizing
   multi-source answers as a whole. PDF and legacy sidecar text now drop database-unsafe control
   characters before chunk persistence.
+- Rejected behavioral events more than five minutes ahead of the server clock and bounded preference recomputation to the same accepted time range.
+- Serialized recommended-digest freshness checks and generation with behavioral preference updates so a concurrently ingested event cannot leave a newly generated stale digest reusable.
+- Indexed unresolved external citation targets for later provider-identity resolution.
 - Prevented current-revision summary and Q&A responses from reusing stale artifacts from an older arXiv revision.
 - Decoded PostgreSQL aggregate pgvector values through the vector type before recommendation scoring.
 - Aligned generated async-response OpenAPI documentation and optional summary fields with the frozen v0.1 contract.

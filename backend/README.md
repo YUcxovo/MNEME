@@ -87,6 +87,19 @@ A simple production cron can invoke both commands daily while the ARQ worker run
 
 Running the weekly command daily is intentional: the durable weekly identity makes it a safe recovery mechanism if Monday's Redis dispatch fails. Both CLIs emit machine-readable JSON and return a nonzero status on scheduling failure.
 
+## Synchronize citation graphs
+
+Synchronize both references and citations for one local paper by UUID or unversioned arXiv ID:
+
+```bash
+uv run python -m mneme.tasks.sync_semantic_graph --arxiv-id 2401.00001 --limit 50
+uv run python -m mneme.tasks.sync_semantic_graph --paper-id <paper-uuid>
+```
+
+The client serializes requests, applies configured throttling and bounded retries, and paginates within the configured neighbor limit. A Semantic Scholar API key is optional but recommended for a stable individual limit. Observations with one unknown endpoint remain stored under the provider paper ID. After that paper enters the local catalog, a later graph-sync invocation that sees its provider identity resolves the stored observation. The public endpoint exposes only locally resolved nodes and never performs external synchronization during a GET request.
+
+`POST /v1/events` stores raw client UUIDs once and recomputes `behavior-v1` in the same PostgreSQL transaction. Event timestamps must be timezone-aware ISO 8601 values and cannot be more than five minutes ahead of the server clock; the recomputation query uses the same upper bound. The frozen baseline uses signed event weights, opened-paper duration tiers, a 30-day half-life, a 90-day window, and the latest paper revision from the configured embedding model. Algorithm tuning is intentionally deferred; changing semantics requires a new model version and ADR update.
+
 ## Pipeline and artifacts
 
 The staged flow is `fetch_metadata -> download_pdf -> parse_pdf -> summarize_paper + chunk_paper -> embed_chunks -> assemble_digest`. Each paper-scoped stage receives both `paper_id` and `paper_version_id`; generated summaries, chunks, embeddings, provenance, and status reconciliation therefore cannot cross arXiv revisions.
@@ -141,7 +154,7 @@ The evaluation fixture format and seed cases are documented in `docs/architectur
 
 ## Database migrations
 
-Alembic uses `MNEME_DATABASE_URL`. The migration chain creates the v0.1 pgvector schema, adds revision download/parse provenance, and adds recoverable job dispatch leases.
+Alembic uses `MNEME_DATABASE_URL`. The migration chain creates the v0.1 pgvector schema, adds revision download/parse provenance and recoverable dispatch leases, then adds bidirectional Semantic Scholar citation identities plus traversal and unresolved-target resolution indexes.
 
 ```bash
 uv run alembic upgrade head
@@ -179,7 +192,7 @@ Database integration and end-to-end pipeline tests run when `MNEME_DATABASE_URL`
   token is configured; real WorkManager background sync remains unfinished.
 - Semantic Scholar synchronization is an explicit single-paper CLI; fleet-wide selection and scheduling are deferred until integration needs justify them.
 - Behavior preferences recompute when `/events` is called. Scheduled recomputation after embeddings arrive or events age out is deferred, and behavior-v1 tuning requires a new model version.
-- Public graphs include only locally resolved citation endpoints; unresolved provider observations remain server-side until their papers are ingested.
+- Public graphs include only locally resolved citation endpoints; unresolved provider observations remain server-side until their papers are ingested and a later graph synchronization sees the matching provider identity.
 
 ## Layout
 
