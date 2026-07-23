@@ -174,6 +174,18 @@ def test_event_endpoint_rejects_batches_above_contract_limit() -> None:
 
 @pytest.mark.base
 @pytest.mark.api
+def test_event_endpoint_rejects_numeric_timestamp_strings() -> None:
+    service = FakeEventService()
+    payload = {**_payload(), "occurred_at": "1721736000"}
+
+    response = asyncio.run(_post(_application(service), [payload]))
+
+    assert response.status_code == 422
+    assert service.calls == []
+
+
+@pytest.mark.base
+@pytest.mark.api
 def test_event_openapi_matches_frozen_contract() -> None:
     schema = _application(FakeEventService()).openapi()
     operation = schema["paths"]["/v1/events"]["post"]
