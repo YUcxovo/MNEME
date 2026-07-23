@@ -105,16 +105,22 @@ async def _seed(database: Database) -> FixtureIds:
     y_axis = [0.0, 1.0, *([0.0] * 1534)]
     async with database.session_factory() as session, session.begin():
         session.add(User(id=ids.user, display_name=f"M3 User {suffix}"))
-        session.add(UserPreference(user_id=ids.user, explicit_topics=[], followed_authors=[]))
         session.add_all(
             [
                 _paper(ids.center, f"m3.{suffix}.1", "Center paper"),
                 _paper(ids.incoming, f"m3.{suffix}.2", "Incoming paper"),
                 _paper(ids.outgoing, f"m3.{suffix}.3", "Outgoing paper"),
+            ]
+        )
+        await session.flush()
+        session.add(UserPreference(user_id=ids.user, explicit_topics=[], followed_authors=[]))
+        session.add_all(
+            [
                 PaperVersion(id=old_version, paper_id=ids.center, version_number=1),
                 PaperVersion(id=latest_version, paper_id=ids.center, version_number=2),
             ]
         )
+        await session.flush()
         session.add_all(
             [
                 _chunk(
