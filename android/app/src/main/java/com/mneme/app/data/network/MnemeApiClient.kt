@@ -111,6 +111,12 @@ interface MnemeRemoteDataSource {
     suspend fun getJob(jobId: String): JobDto
 
     suspend fun askQuestion(question: QuestionDto): AnswerDto
+
+    suspend fun getPaperGraph(
+        paperId: String,
+        depth: Int = 1,
+        limit: Int = 50,
+    ): GraphDto
 }
 
 class MnemeApiException(
@@ -152,6 +158,12 @@ internal class RetrofitMnemeRemoteDataSource(
     override suspend fun getJob(jobId: String): JobDto = api.getJob(jobId).requireBody(json)
 
     override suspend fun askQuestion(question: QuestionDto): AnswerDto = api.askQuestion(question).requireBody(json)
+
+    override suspend fun getPaperGraph(
+        paperId: String,
+        depth: Int,
+        limit: Int,
+    ): GraphDto = api.getPaperGraph(paperId, depth, limit).requireBody(json)
 }
 
 private fun <T> Response<T>.requireBody(json: Json): T {

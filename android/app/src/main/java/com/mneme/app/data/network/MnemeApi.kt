@@ -61,4 +61,11 @@ interface MnemeApi {
     suspend fun askQuestion(
         @Body question: QuestionDto,
     ): Response<AnswerDto>
+
+    @GET("graph/{paper_id}")
+    suspend fun getPaperGraph(
+        @Path("paper_id") paperId: String,
+        @Query("depth") depth: Int = 1,
+        @Query("limit") limit: Int = 50,
+    ): Response<GraphDto>
 }

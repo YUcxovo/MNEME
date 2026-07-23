@@ -185,6 +185,52 @@ class MnemeApiClientTest {
         }
 
     @Test
+    fun citationGraph_decodesFrozenShapeAndSendsBounds() =
+        runBlocking {
+            server.enqueue(
+                jsonResponse(
+                    """
+                    {
+                      "center_id": "$PAPER_ID",
+                      "nodes": [
+                        {
+                          "id": "$PAPER_ID",
+                          "title": "Center paper",
+                          "category": "cs.IR",
+                          "cluster_id": "cluster-1",
+                          "rank_score": 1.0
+                        },
+                        {
+                          "id": "$CITED_PAPER_ID",
+                          "title": "Cited paper"
+                        }
+                      ],
+                      "edges": [
+                        {
+                          "source": "$PAPER_ID",
+                          "target": "$CITED_PAPER_ID",
+                          "weight": 0.75
+                        }
+                      ],
+                      "algorithm_status": "ready",
+                      "graph_version": "citation-graph-v1"
+                    }
+                    """.trimIndent(),
+                ),
+            )
+
+            val graph = createRemote().getPaperGraph(PAPER_ID, depth = 2, limit = 50)
+
+            assertEquals(PAPER_ID, graph.centerId)
+            assertEquals("cluster-1", graph.nodes.first().clusterId)
+            assertEquals(CITED_PAPER_ID, graph.edges.single().target)
+            assertEquals("ready", graph.algorithmStatus)
+            val request = server.takeRequest()
+            assertEquals("/v1/graph/$PAPER_ID?depth=2&limit=50", request.path)
+            assertEquals("Bearer local-test-token", request.getHeader("Authorization"))
+        }
+
+    @Test
     fun baseUrl_requiresFrozenVersionPrefix() {
         val error =
             runCatching { MnemeApiClient.normalizeBaseUrl("http://localhost:8000/") }
@@ -214,5 +260,6 @@ class MnemeApiClientTest {
 
     companion object {
         private const val PAPER_ID = "11111111-1111-4111-8111-111111111111"
+        private const val CITED_PAPER_ID = "22222222-2222-4222-8222-222222222222"
     }
 }
