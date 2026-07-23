@@ -12,6 +12,7 @@ Engineering sources of truth:
 - [`docs/architecture/pipeline-and-reliability.md`](docs/architecture/pipeline-and-reliability.md) -- jobs, evaluation, demo mode, observability
 - [`docs/architecture/privacy-and-data.md`](docs/architecture/privacy-and-data.md) -- licensing, privacy, reproducibility
 - [`docs/adr/0001-mvp-auth.md`](docs/adr/0001-mvp-auth.md) -- MVP authentication decision
+- [`docs/adr/0002-m3-behavior-baseline.md`](docs/adr/0002-m3-behavior-baseline.md) -- deterministic behavior-v1 decision
 
 Current implementation status (2026-07-22): `dev` contains the merged backend/data and
 AI pipeline through Milestone 2, plus the controlled Android UI baseline. The backend
@@ -26,8 +27,10 @@ single-paper Q&A -> arXiv source flow to those implemented REST APIs. It adds
 Retrofit/OkHttp, frozen-contract DTOs, a production ViewModel, summary-job polling, and
 Room-backed fallback with explicit data source labels. A blank Android demo token
 deliberately selects the existing controlled fixture instead. Behavior-event upload,
-graph persistence/API/UI, real WorkManager sync, and production authentication remain
-outside the skeletal integration.
+graph UI/data binding, real WorkManager sync, and production authentication remain
+outside the skeletal integration. This branch adds Semantic Scholar graph synchronization,
+bounded graph persistence/API, transactional behavior events, and behavior-v1 preference
+updates for the client to consume.
 
 ---
 
@@ -65,7 +68,7 @@ cd android
 ./gradlew ktlintCheck           # Lint check
 ```
 
-### Backend (Milestone 2 pipeline available on `dev`)
+### Backend (Milestone 3 platform available on this branch)
 
 The backend includes FastAPI/Uvicorn, Pydantic settings, structlog, async SQLAlchemy/asyncpg, PostgreSQL/pgvector, Alembic, Redis/ARQ, a rate-limited arXiv client, revision-safe local document artifacts, PyMuPDF/pdfplumber parsing, provider-routed AI services, durable staged jobs, daily/weekly schedulers, and the test toolchain. See [`backend/README.md`](backend/README.md) for operational setup, recovery semantics, and current limitations.
 
