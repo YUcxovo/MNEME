@@ -2,6 +2,7 @@
     <string name="app_name">Mneme</string>
     <string name="brand_mark">M</string>
     <string name="action_ask_question">Ask about this paper</string>
+    <string name="action_explore_graph">Explore citation graph</string>
     <string name="action_back">Back</string>
     <string name="action_open">Open</string>
     <string name="action_open_source">Open source paper</string>
@@ -13,6 +14,19 @@
     <string name="content_source_live">LIVE BACKEND DATA</string>
     <string name="home_empty_body">Choose topics in Interests to personalize future briefings.</string>
     <string name="home_empty_title">Your research feed is ready for its first paper.</string>
+    <string name="graph_accessible_nodes">SELECT A PAPER</string>
+    <string name="graph_direction_legend">Arrow direction: source paper cites target paper.</string>
+    <string name="graph_empty_body">The backend has no locally resolved citation nodes for this paper yet.</string>
+    <string name="graph_empty_title">No citation connections yet</string>
+    <string name="graph_gesture_hint">Drag nodes to inspect the layout. Pinch or scroll to zoom, and tap a node to keep it selected.</string>
+    <string name="graph_open_selected">Open selected paper</string>
+    <string name="graph_retry">Refresh graph</string>
+    <string name="graph_selected_center">CENTER PAPER</string>
+    <string name="graph_selected_paper">SELECTED PAPER</string>
+    <string name="graph_status_fallback">Deterministic citation baseline</string>
+    <string name="graph_status_ready">Ranked and clustered graph</string>
+    <string name="graph_title">Citation connections</string>
+    <string name="graph_version">Graph version: %1$s</string>
     <string name="interests_description">These topics seed the recommendations in your research briefing.</string>
     <string name="interests_topics_label">YOUR TOPICS</string>
     <string name="kicker_research_briefing">WEEKLY RESEARCH BRIEFING</string>
@@ -63,6 +77,7 @@
     <string name="saved_empty_body">This controlled demo does not include saved papers.</string>
     <string name="saved_empty_title">No saved papers yet</string>
     <string name="screen_title_briefing">Research briefing</string>
+    <string name="screen_title_graph">Citation graph</string>
     <string name="screen_title_interests">Research interests</string>
     <string name="screen_title_paper">Paper summary</string>
     <string name="screen_title_qa">Cited Q&amp;A</string>
@@ -71,6 +86,14 @@
     <plurals name="briefing_match_summary">
         <item quantity="one">%1$d paper matched to your topics.</item>
         <item quantity="other">%1$d papers matched to your topics.</item>
+    </plurals>
+    <plurals name="graph_directed_citation_count">
+        <item quantity="one">%1$d directed citation</item>
+        <item quantity="other">%1$d directed citations</item>
+    </plurals>
+    <plurals name="graph_local_paper_count">
+        <item quantity="one">%1$d local paper</item>
+        <item quantity="other">%1$d local papers</item>
     </plurals>
     <plurals name="briefing_paper_count">
         <item quantity="one">%1$d PAPER</item>
