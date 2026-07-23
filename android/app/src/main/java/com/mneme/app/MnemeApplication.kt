@@ -109,7 +109,7 @@ private class ConfigurationErrorRepository(
 ) : SkeletalDataRepository {
     private val error = ContentUnavailableException(message)
 
-    override val requiresSeedOnboarding: Boolean = false
+    override suspend fun restoreBriefing(): BriefingUiModel = throw error
 
     override suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel = throw error
 

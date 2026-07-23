@@ -103,6 +103,13 @@ fun MnemeApp(
     val qaState by viewModel.qaState.collectAsStateWithLifecycle()
     val graphState by viewModel.graphState.collectAsStateWithLifecycle()
     when (val current = onboardingState) {
+        OnboardingUiState.Checking ->
+            Box(
+                modifier = modifier.fillMaxSize().testTag("briefing-restore-loading"),
+                contentAlignment = Alignment.Center,
+            ) {
+                LoadingState(message = stringResource(R.string.briefing_restore_loading))
+            }
         OnboardingUiState.AwaitingSeed ->
             SeedOnboardingScreen(
                 initialReference = "",

@@ -7,6 +7,7 @@
     <string name="action_open">Open</string>
     <string name="action_open_source">Open source paper</string>
     <string name="briefing_recommended_paper">RECOMMENDED</string>
+    <string name="briefing_restore_loading">Restoring your research briefing...</string>
     <string name="briefing_interests">YOUR TOPICS</string>
     <string name="briefing_today">Today</string>
     <string name="controlled_demo_title">CONTROLLED DEMO</string>

@@ -5,6 +5,8 @@ import com.mneme.app.ui.model.PaperDetailUiModel
 import com.mneme.app.ui.model.QaUiModel
 
 sealed interface OnboardingUiState {
+    data object Checking : OnboardingUiState
+
     data object Ready : OnboardingUiState
 
     data object AwaitingSeed : OnboardingUiState

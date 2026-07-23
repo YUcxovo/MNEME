@@ -36,6 +36,20 @@ internal fun DigestDto.toBriefing(
 }
 
 internal fun CachedBriefing.toBriefing(): BriefingUiModel =
+    toBriefing(
+        message =
+            "The live refresh failed; showing the last successful backend briefing " +
+                "from ${Instant.ofEpochMilli(refreshedAtEpochMillis).toDateLabel()}.",
+    )
+
+internal fun CachedBriefing.toRestoredBriefing(): BriefingUiModel =
+    toBriefing(
+        message =
+            "Restored the last successful briefing from this device while checking " +
+                "for updates.",
+    )
+
+private fun CachedBriefing.toBriefing(message: String): BriefingUiModel =
     BriefingUiModel(
         digest =
             DigestUiModel(
@@ -47,9 +61,7 @@ internal fun CachedBriefing.toBriefing(): BriefingUiModel =
         disclosure =
             disclosure(
                 origin = ContentOrigin.CACHED_BACKEND,
-                message =
-                    "The live refresh failed; showing the last successful backend briefing " +
-                        "from ${Instant.ofEpochMilli(refreshedAtEpochMillis).toDateLabel()}.",
+                message = message,
             ),
         interests = interests,
         papers =
