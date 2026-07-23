@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mneme.models.base import utc_now
 from mneme.models.graph import Citation
 from mneme.models.paper import Paper
-from mneme.services.semantic_scholar import CitationDirection, SemanticPaper
+from mneme.services.semantic_scholar.types import CitationDirection, SemanticPaper
 
 
 class CitationIdentityConflict(RuntimeError):
