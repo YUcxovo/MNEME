@@ -192,7 +192,12 @@ def test_embedding_mean_is_limited_to_each_papers_latest_revision() -> None:
     session.execute = AsyncMock(return_value=rows)
     repository = DigestRepository(cast(AsyncSession, session))
 
-    embeddings = asyncio.run(repository.mean_chunk_embeddings([paper_id]))
+    embeddings = asyncio.run(
+        repository.mean_chunk_embeddings(
+            [paper_id],
+            embedding_model="embedding-test-v1",
+        )
+    )
 
     assert embeddings == {}
     await_args = session.execute.await_args
@@ -203,3 +208,27 @@ def test_embedding_mean_is_limited_to_each_papers_latest_revision() -> None:
     assert "JOIN paper_versions ON paper_versions.id = paper_chunks.paper_version_id" in sql
     assert "max(paper_versions.version_number)" in sql
     assert "anon_1.version_number = paper_versions.version_number" in sql
+    assert "paper_chunks.embedding_model =" in sql
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_fresh_digest_query_rejects_snapshots_older_than_preferences() -> None:
+    session = Mock(spec=AsyncSession)
+    session.scalar = AsyncMock(return_value=None)
+    repository = DigestRepository(cast(AsyncSession, session))
+
+    result = asyncio.run(
+        repository.get_fresh_recommended_digest(
+            user_id=uuid4(),
+            max_age=timedelta(hours=24),
+        )
+    )
+
+    assert result is None
+    await_args = session.scalar.await_args
+    assert await_args is not None
+    statement = await_args.args[0]
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+    assert "LEFT OUTER JOIN user_preferences" in sql
+    assert "digests.generated_at >= user_preferences.updated_at" in sql
