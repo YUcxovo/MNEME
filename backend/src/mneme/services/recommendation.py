@@ -100,7 +100,16 @@ class RecommendedDigestService:
             limit=_CANDIDATE_POOL_LIMIT,
             before=as_of,
         )
-        embeddings = await self._repository.mean_chunk_embeddings([paper.id for paper in papers])
+        embeddings = (
+            await self._repository.mean_chunk_embeddings(
+                [paper.id for paper in papers],
+                embedding_model=preference_row.behavior_embedding_model,
+            )
+            if preference_row is not None
+            and preference_row.behavior_embedding is not None
+            and preference_row.behavior_embedding_model is not None
+            else {}
+        )
         candidates = [
             PaperCandidate(
                 paper_id=paper.id,
