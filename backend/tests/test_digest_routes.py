@@ -59,6 +59,7 @@ class FakeDigestRepository:
         fresh: Digest | None = None,
         digests: list[Digest] | None = None,
         next_cursor: str | None = None,
+        embeddings: dict[UUID, tuple[float, ...]] | None = None,
     ) -> None:
         self.papers = papers
         self.preferences = preferences
@@ -68,6 +69,8 @@ class FakeDigestRepository:
         self.created: list[Digest] = []
         self.list_calls: list[tuple[UUID, int, DigestCursor | None]] = []
         self.candidate_calls: list[tuple[datetime, datetime | None, int]] = []
+        self.embeddings = embeddings or {}
+        self.embedding_calls: list[tuple[list[UUID], str]] = []
 
     async def list_digests(
         self,
@@ -91,8 +94,14 @@ class FakeDigestRepository:
         self.candidate_calls.append((since, before, limit))
         return self.papers[:limit]
 
-    async def mean_chunk_embeddings(self, paper_ids):
-        return {}
+    async def mean_chunk_embeddings(
+        self,
+        paper_ids: list[UUID],
+        *,
+        embedding_model: str,
+    ) -> dict[UUID, tuple[float, ...]]:
+        self.embedding_calls.append((paper_ids, embedding_model))
+        return self.embeddings
 
     async def create_digest(
         self,
@@ -345,9 +354,11 @@ def test_topic_matching_paper_outranks_unrelated_one() -> None:
 @pytest.mark.base
 @pytest.mark.api
 def test_cold_start_user_without_preferences_still_gets_a_digest() -> None:
-    application = _application(
-        FakeDigestRepository(papers=[_paper("Anything recent", age_days=0.5)], preferences=None)
+    repository = FakeDigestRepository(
+        papers=[_paper("Anything recent", age_days=0.5)],
+        preferences=None,
     )
+    application = _application(repository)
 
     response = asyncio.run(_post(application))
 
@@ -355,6 +366,7 @@ def test_cold_start_user_without_preferences_still_gets_a_digest() -> None:
     payload = response.json()
     assert len(payload["entries"]) == 1
     assert payload["entries"][0]["recommendation_reason"]
+    assert repository.embedding_calls == []
 
 
 @pytest.mark.base
@@ -390,6 +402,39 @@ def test_weekly_generation_uses_an_exclusive_period_cutoff() -> None:
     assert bundle.digest.digest_type is DigestType.WEEKLY
     assert len(bundle.entries) == 1
     assert repository.candidate_calls == [(NOW - timedelta(days=14), NOW, 200)]
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_behavior_recommendations_request_only_the_matching_embedding_model() -> None:
+    paper = _paper("Behavior match", age_days=1)
+    preferences = UserPreference(
+        user_id=USER_ID,
+        explicit_topics=[],
+        followed_authors=[],
+        behavior_embedding=[1.0, 0.0],
+        behavior_embedding_model="embedding-test-v1",
+        model_version=1,
+    )
+    repository = FakeDigestRepository(
+        papers=[paper],
+        preferences=preferences,
+        embeddings={paper.id: (1.0, 0.0)},
+    )
+    service = RecommendedDigestService(
+        cast(DigestRepository, repository), candidate_days=14, max_entries=10
+    )
+
+    bundle = asyncio.run(
+        service.generate(
+            USER_ID,
+            digest_type=DigestType.MANUAL,
+            as_of=NOW,
+        )
+    )
+
+    assert repository.embedding_calls == [([paper.id], "embedding-test-v1")]
+    assert bundle.entries[0].relevance_score > 0
 
 
 @pytest.mark.base
