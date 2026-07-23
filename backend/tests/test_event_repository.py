@@ -72,7 +72,7 @@ def test_user_lock_and_signal_history_queries_preserve_transaction_ordering() ->
         repository = EventRepository(cast(AsyncSession, session))
 
         assert await repository.lock_user(USER_ID)
-        signals = await repository.list_recent_signals(USER_ID, since=NOW)
+        signals = await repository.list_recent_signals(USER_ID, since=NOW, until=NOW)
         assert signals[0].duration_ms == 45_000
         return (
             cast(ClauseElement, session.scalar.await_args.args[0]),
@@ -84,6 +84,7 @@ def test_user_lock_and_signal_history_queries_preserve_transaction_ordering() ->
     history_sql = str(history_statement.compile(dialect=postgresql.dialect()))
     assert "FOR UPDATE" in lock_sql
     assert "user_events.occurred_at >=" in history_sql
+    assert "user_events.occurred_at <=" in history_sql
     assert "ORDER BY user_events.occurred_at, user_events.id" in history_sql
 
 

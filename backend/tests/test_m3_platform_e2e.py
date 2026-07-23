@@ -24,7 +24,7 @@ from mneme.models.user import User, UserEvent, UserPreference
 
 DATABASE_URL = os.getenv("MNEME_DATABASE_URL", "")
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
-NOW = datetime(2026, 7, 23, 12, 0, tzinfo=UTC)
+NOW = datetime.now(UTC)
 EMBEDDING_MODEL = "m3-e2e-embedding-v1"
 
 pytestmark = [pytest.mark.db, pytest.mark.api, pytest.mark.pipeline, pytest.mark.rag]
