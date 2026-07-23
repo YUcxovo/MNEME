@@ -232,6 +232,16 @@ jobs:
               if: steps.android-cats.outputs.skip != 'true'
               run: ./gradlew test -PincludeTags="${{ steps.android-cats.outputs.cats }}"
 
+            - name: Enable KVM group permissions
+              if: contains(steps.android-cats.outputs.cats, 'instrumented')
+              run: |
+                  echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+                    | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+                  sudo udevadm control --reload-rules
+                  sudo udevadm trigger --name-match=kvm
+                  test -r /dev/kvm
+                  test -w /dev/kvm
+
             - name: Instrumented Test (emulator)
               if: contains(steps.android-cats.outputs.cats, 'instrumented')
               uses: reactivecircus/android-emulator-runner@v2
@@ -240,7 +250,9 @@ jobs:
                   api-level: 34
                   arch: x86_64
                   target: google_apis
-                  emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+                  disk-size: 4096M
+                  disable-linux-hw-accel: false
+                  emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
                   script: ./gradlew connectedAndroidTest -PincludeTags="instrumented"
 
             - name: Assemble Debug
