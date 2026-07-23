@@ -88,7 +88,13 @@ class EventRepository:
         inserted_ids = list((await self._session.scalars(statement)).all())
         return len(inserted_ids)
 
-    async def list_recent_signals(self, user_id: UUID, *, since: datetime) -> list[BehaviorSignal]:
+    async def list_recent_signals(
+        self,
+        user_id: UUID,
+        *,
+        since: datetime,
+        until: datetime,
+    ) -> list[BehaviorSignal]:
         """Load authoritative raw signals in deterministic order."""
         rows = (
             await self._session.execute(
@@ -98,7 +104,11 @@ class EventRepository:
                     UserEvent.occurred_at,
                     UserEvent.duration_ms,
                 )
-                .where(UserEvent.user_id == user_id, UserEvent.occurred_at >= since)
+                .where(
+                    UserEvent.user_id == user_id,
+                    UserEvent.occurred_at >= since,
+                    UserEvent.occurred_at <= until,
+                )
                 .order_by(UserEvent.occurred_at, UserEvent.id)
             )
         ).all()
