@@ -58,6 +58,7 @@ class Paper(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     arxiv_id: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    semantic_scholar_id: Mapped[str | None] = mapped_column(String(128), unique=True, nullable=True)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     abstract: Mapped[str] = mapped_column(Text, nullable=False)
     primary_category: Mapped[str] = mapped_column(String(64), nullable=False)

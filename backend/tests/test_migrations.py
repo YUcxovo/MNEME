@@ -75,6 +75,12 @@ def test_migration_chain_renders_offline() -> None:
     assert "ADD COLUMN parsed_checksum VARCHAR(64)" in sql
     assert "ADD COLUMN paper_version_id UUID" in sql
     assert "ADD COLUMN dispatched_at TIMESTAMP WITH TIME ZONE" in sql
+    assert "ADD COLUMN semantic_scholar_id VARCHAR(128)" in sql
+    assert "ADD COLUMN external_source_id VARCHAR(200)" in sql
+    assert "ck_citations_has_local_endpoint" in sql
+    assert sql.index("UPDATE citations SET external_target_id = NULL") < sql.index(
+        "ck_citations_one_target"
+    )
     assert "fk_pipeline_jobs_version_paper" in sql
 
 
