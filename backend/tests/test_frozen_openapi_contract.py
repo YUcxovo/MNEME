@@ -17,6 +17,7 @@ IMPLEMENTED_OPERATIONS = (
     ("/users/me/preferences", "get"),
     ("/users/me/preferences", "put"),
     ("/onboarding/seed", "post"),
+    ("/events", "post"),
     ("/digests", "get"),
     ("/digests/recommended", "post"),
     ("/qa/ask", "post"),
