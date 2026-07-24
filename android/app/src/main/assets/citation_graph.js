@@ -6,17 +6,15 @@
     let nodeSelection = null;
     let simulation = null;
 
-    function stableHash(value) {
-        let hash = 0;
-        for (let index = 0; index < value.length; index += 1) {
-            hash = ((hash << 5) - hash + value.charCodeAt(index)) | 0;
-        }
-        return Math.abs(hash);
+    function nodeColorKey(node) {
+        return node.clusterId || node.category || "uncategorized";
     }
 
-    function nodeColor(node) {
-        const key = node.clusterId || node.category || "uncategorized";
-        return palette[stableHash(key) % palette.length];
+    function graphColorMap(nodes) {
+        const keys = Array.from(new Set(nodes.map(nodeColorKey))).sort();
+        return new Map(keys.map(function (key, index) {
+            return [key, palette[index % palette.length]];
+        }));
     }
 
     function nodeRadius(node, centerId) {
@@ -28,7 +26,7 @@
     }
 
     function shortTitle(title) {
-        return title.length > 30 ? title.slice(0, 27) + "..." : title;
+        return title.length > 18 ? title.slice(0, 15) + "..." : title;
     }
 
     function notifySelection(id) {
@@ -60,6 +58,29 @@
         const height = Math.max(360, document.documentElement.clientHeight || 360);
         const nodes = payload.nodes.map(function (node) { return Object.assign({}, node); });
         const edges = payload.edges.map(function (edge) { return Object.assign({}, edge); });
+        const colorMap = graphColorMap(nodes);
+        const clusterKeys = Array.from(colorMap.keys());
+        const clusterIndex = new Map(clusterKeys.map(function (key, index) { return [key, index]; }));
+        const linkDistance = Math.max(76, Math.min(96, width / 4));
+        const chargeStrength = -Math.max(130, Math.min(260, 2400 / Math.max(nodes.length, 1)));
+        const horizontalPadding = Math.min(64, width / 5);
+
+        function clusterAngle(node) {
+            const index = clusterIndex.get(nodeColorKey(node)) || 0;
+            return (2 * Math.PI * index / Math.max(clusterKeys.length, 1)) - (Math.PI / 2);
+        }
+
+        function clusterX(node) {
+            return node.id === payload.centerId
+                ? width / 2
+                : width / 2 + Math.cos(clusterAngle(node)) * width * 0.22;
+        }
+
+        function clusterY(node) {
+            return node.id === payload.centerId
+                ? height / 2
+                : height / 2 + Math.sin(clusterAngle(node)) * height * 0.2;
+        }
         d3.select("html").style("height", height + "px");
         d3.select("body").style("height", height + "px");
         host.style("height", height + "px");
@@ -68,6 +89,7 @@
             .attr("width", width)
             .attr("height", height)
             .attr("viewBox", [0, 0, width, height])
+            .classed("dense", nodes.length > 20)
             .attr("role", "img")
             .attr("aria-label", "Directed paper citation graph");
 
@@ -146,11 +168,11 @@
 
         nodeSelection.append("circle")
             .attr("r", function (node) { return nodeRadius(node, payload.centerId); })
-            .attr("fill", nodeColor);
+            .attr("fill", function (node) { return colorMap.get(nodeColorKey(node)); });
 
         nodeSelection.append("text")
             .attr("x", 0)
-            .attr("y", function (node) { return nodeRadius(node, payload.centerId) + 17; })
+            .attr("y", function (node) { return nodeRadius(node, payload.centerId) + 14; })
             .attr("text-anchor", "middle")
             .text(function (node) { return shortTitle(node.title); });
 
@@ -165,18 +187,25 @@
                 "link",
                 d3.forceLink(edges)
                     .id(function (node) { return node.id; })
-                    .distance(105)
+                    .distance(linkDistance)
                     .strength(0.55)
             )
-            .force("charge", d3.forceManyBody().strength(-310))
+            .force("charge", d3.forceManyBody().strength(chargeStrength))
             .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("cluster-x", d3.forceX(clusterX).strength(0.08))
+            .force("cluster-y", d3.forceY(clusterY).strength(0.08))
             .force(
                 "collision",
                 d3.forceCollide().radius(function (node) {
-                    return nodeRadius(node, payload.centerId) + 24;
+                    return nodeRadius(node, payload.centerId) + 20;
                 })
             )
             .on("tick", function () {
+                nodes.forEach(function (node) {
+                    const radius = nodeRadius(node, payload.centerId);
+                    node.x = Math.max(horizontalPadding, Math.min(width - horizontalPadding, node.x));
+                    node.y = Math.max(radius + 8, Math.min(height - radius - 32, node.y));
+                });
                 linkSelection
                     .attr("x1", function (edge) { return edge.source.x; })
                     .attr("y1", function (edge) { return edge.source.y; })

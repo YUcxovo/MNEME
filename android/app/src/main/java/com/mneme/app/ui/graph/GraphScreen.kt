@@ -83,7 +83,7 @@ private fun GraphContent(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(390.dp)
+                        .height(460.dp)
                         .testTag("citation-graph-webview"),
             )
         }

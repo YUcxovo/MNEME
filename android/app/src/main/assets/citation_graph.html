@@ -48,6 +48,15 @@
             stroke-linejoin: round;
             pointer-events: none;
         }
+
+        svg.dense .node text {
+            display: none;
+        }
+
+        svg.dense .node.center text,
+        svg.dense .node.selected text {
+            display: block;
+        }
     </style>
 </head>
 <body>
