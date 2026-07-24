@@ -61,4 +61,9 @@ interface MnemeApi {
     suspend fun askQuestion(
         @Body question: QuestionDto,
     ): Response<AnswerDto>
+
+    @POST("events")
+    suspend fun ingestEvents(
+        @Body events: List<UserEventDto>,
+    ): Response<EventIngestionResultDto>
 }

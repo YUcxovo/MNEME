@@ -133,3 +133,18 @@ data class ErrorResponseDto(
     @SerialName("request_id") val requestId: String,
     val details: JsonObject? = null,
 )
+
+@Serializable
+data class UserEventDto(
+    @SerialName("event_id") val eventId: String,
+    @SerialName("event_type") val eventType: String,
+    @SerialName("paper_id") val paperId: String? = null,
+    @SerialName("occurred_at") val occurredAt: String,
+    @SerialName("duration_ms") val durationMillis: Long? = null,
+)
+
+@Serializable
+data class EventIngestionResultDto(
+    val accepted: Int,
+    val duplicates: Int,
+)

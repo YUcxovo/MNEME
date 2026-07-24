@@ -16,22 +16,49 @@ class MnemeApplication : Application() {
     val container: MnemeApplicationContainer by lazy {
         MnemeApplicationContainer(this)
     }
+
+    override fun onCreate() {
+        super.onCreate()
+        com.mneme.app.sync.BehavioralEventSyncScheduler
+            .schedule(androidx.work.WorkManager.getInstance(this))
+    }
 }
 
 class MnemeApplicationContainer(
     application: Application,
 ) {
+    private val database by lazy { MnemeDatabase.create(application) }
+
+    private val remote: com.mneme.app.data.network.MnemeRemoteDataSource? by lazy {
+        if (BuildConfig.MNEME_DEMO_TOKEN.isBlank()) {
+            null
+        } else {
+            runCatching {
+                MnemeApiClient.create(
+                    BuildConfig.MNEME_API_BASE_URL,
+                    BuildConfig.MNEME_DEMO_TOKEN,
+                )
+            }.getOrNull()
+        }
+    }
+
+    val behavioralEventSynchronizer: com.mneme.app.sync.BehavioralEventSynchronizer? by lazy {
+        remote?.let {
+            com.mneme.app.sync.BehavioralEventSynchronizer(
+                com.mneme.app.data.local.BehavioralEventRepository(
+                    database.behavioralEventDao(),
+                ),
+                it,
+            )
+        }
+    }
+
     private val repository: SkeletalDataRepository by lazy {
         if (BuildConfig.MNEME_DEMO_TOKEN.isBlank()) {
             ControlledFixtureDataRepository()
         } else {
             runCatching {
-                val database = MnemeDatabase.create(application)
-                val remote =
-                    MnemeApiClient.create(
-                        baseUrl = BuildConfig.MNEME_API_BASE_URL,
-                        demoToken = BuildConfig.MNEME_DEMO_TOKEN,
-                    )
+                val remote = requireNotNull(remote)
                 com.mneme.app.data.repository.NetworkSkeletalDataRepository(
                     remote = remote,
                     cache = RoomSkeletalCache(database, MnemeApiClient.json),

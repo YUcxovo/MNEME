@@ -9,6 +9,7 @@ import com.mneme.app.data.network.CitationDto
 import com.mneme.app.data.network.DigestDto
 import com.mneme.app.data.network.DigestEntryDto
 import com.mneme.app.data.network.DigestPageDto
+import com.mneme.app.data.network.EventIngestionResultDto
 import com.mneme.app.data.network.HealthDto
 import com.mneme.app.data.network.JobDto
 import com.mneme.app.data.network.MnemeRemoteDataSource
@@ -22,6 +23,7 @@ import com.mneme.app.data.network.RemoteResource
 import com.mneme.app.data.network.SeedInitializationDto
 import com.mneme.app.data.network.SeedInitializationRequestDto
 import com.mneme.app.data.network.SummaryDto
+import com.mneme.app.data.network.UserEventDto
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.SourceMatchUiStatus
 import kotlinx.coroutines.runBlocking
@@ -281,6 +283,9 @@ class NetworkSkeletalDataRepositoryTest {
             questions += question
             return answer
         }
+
+        override suspend fun ingestEvents(events: List<UserEventDto>): EventIngestionResultDto =
+            EventIngestionResultDto(accepted = events.size, duplicates = 0)
     }
 
     private class FakeCache : SkeletalCache {

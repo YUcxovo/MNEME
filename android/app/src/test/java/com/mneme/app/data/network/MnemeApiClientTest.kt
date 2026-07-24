@@ -185,6 +185,34 @@ class MnemeApiClientTest {
         }
 
     @Test
+    fun eventUpload_serializesFrozenBatchAndDecodesIdempotencyResult() =
+        runBlocking {
+            server.enqueue(jsonResponse("""{"accepted":1,"duplicates":0}"""))
+
+            val result =
+                createRemote().ingestEvents(
+                    listOf(
+                        UserEventDto(
+                            eventId = "22222222-2222-4222-8222-222222222222",
+                            eventType = "paper_opened",
+                            paperId = PAPER_ID,
+                            occurredAt = "2026-07-24T10:00:00Z",
+                            durationMillis = 4000,
+                        ),
+                    ),
+                )
+
+            assertEquals(1, result.accepted)
+            assertEquals(0, result.duplicates)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/v1/events", request.path)
+            val body = request.body.readUtf8()
+            assertTrue(body.contains("\"event_type\":\"paper_opened\""))
+            assertTrue(body.contains("\"occurred_at\":\"2026-07-24T10:00:00Z\""))
+        }
+
+    @Test
     fun baseUrl_requiresFrozenVersionPrefix() {
         val error =
             runCatching { MnemeApiClient.normalizeBaseUrl("http://localhost:8000/") }
