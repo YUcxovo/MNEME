@@ -97,3 +97,38 @@ they exercise single-paper QA (the M3 scope) without cross-paper synthesis:
 M2 expands the set alongside the summarization prompt; M4 grows it to 10-20
 pairs and adds recall@k, source-match rate, and helpfulness on top of the
 keyword-coverage placeholder.
+
+## Expanded set (qa-seed-v2, Milestone 4)
+
+`backend/tests/fixtures/eval/qa_seed_v2.json` grows the set to 15 cases. The
+five v1 cases keep their `fixture_id` values so per-fixture metric history
+stays comparable across versions. Ten new cases split into:
+
+- Seven answerable cases covering two additional papers (BERT 1810.04805,
+  ViT 2010.11929) plus second questions against the v1 papers, so recall@k
+  is graded against more than one section per paper.
+- Three out-of-scope cases marked `expect_refusal: true` (with
+  `must_cite: false` and no keywords): the correct behavior is the stable
+  refusal answer. These grade calibrated refusal instead of answer quality.
+
+The format change adding `expect_refusal` bumped the fixture version per the
+rules above; v1 files remain valid because the field defaults to `false`.
+
+## RAG-graded metrics (Milestone 4)
+
+`RagEvaluationHarness` drives the full retrieval + grounded-answer pipeline
+(not just completion text) and reports, per run:
+
+| Metric | Definition |
+|---|---|
+| `recall_at_k` | Answerable fixtures with a `section_hint` whose retrieved chunks include a section matching the hint (containment either direction, casefolded) |
+| `source_match_rate` | Answered cases whose `source_match_status` is fully MATCHED; PARTIAL is reported separately as `partial_match_rate`, never folded in |
+| `citation_rate` | Answered cases carrying at least one verified citation |
+| `refusal_accuracy` | `expect_refusal` fixtures that were actually refused |
+| `false_refusal_rate` | Answerable fixtures wrongly refused |
+| `mean_keyword_coverage` | Keyword coverage over answered answerable cases (helpfulness placeholder; real helpfulness needs human judgment) |
+| tokens / cost / latency | Summed from `CompletionResult` telemetry; refusals that never reach the provider contribute zero |
+
+Rates are `null` when no fixture in the set applies to them. Keyword coverage
+remains a lexical placeholder: it measures term presence, not semantic
+correctness, and is never reported as helpfulness without human review.

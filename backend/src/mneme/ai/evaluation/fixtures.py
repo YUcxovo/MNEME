@@ -3,14 +3,16 @@
 import json
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class QAFixture(BaseModel):
     """One manually curated question with grading hints.
 
-    ``expected_keywords`` powers the M1 keyword-coverage placeholder metric;
-    richer grading (recall@k, source-match rate) lands with real retrieval.
+    ``expected_keywords`` powers the keyword-coverage placeholder metric.
+    ``expect_refusal`` marks deliberately out-of-scope questions: the correct
+    behavior is the stable refusal answer, so keyword and citation grading do
+    not apply and ``must_cite`` must be false.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
@@ -20,8 +22,18 @@ class QAFixture(BaseModel):
     section_hint: str | None = None
     question: str = Field(min_length=1)
     reference_answer: str = Field(min_length=1)
-    expected_keywords: tuple[str, ...] = Field(min_length=1)
+    expected_keywords: tuple[str, ...] = ()
     must_cite: bool = True
+    expect_refusal: bool = False
+
+    @model_validator(mode="after")
+    def _check_grading_hints(self) -> "QAFixture":
+        if self.expect_refusal:
+            if self.must_cite:
+                raise ValueError("expect_refusal fixtures must set must_cite to false")
+        elif not self.expected_keywords:
+            raise ValueError("answerable fixtures need at least one expected keyword")
+        return self
 
 
 class QAFixtureFile(BaseModel):
