@@ -118,6 +118,10 @@ When `MNEME_DEMO_TOKEN` is blank, the app deliberately uses
 `SeededSkeletalContentRepository`. The UI identifies this as controlled fixture data and
 states that no live backend or model call is made. This mode keeps previews, UI tests, and
 an offline presentation path deterministic; it is not evidence of backend integration.
+Its citation graph uses 12 synthetic nodes and 18 synthetic directed edges to exercise
+branching, merging, clusters, rank variation, selection, and navigation. A separate
+50-node device test covers the bounded endpoint limit; neither fixture makes a real
+citation claim.
 
 When a token is configured, a failed live briefing refresh uses Room only if a previous
 backend briefing exists, and labels that content as cached. With no cache, the app shows a
