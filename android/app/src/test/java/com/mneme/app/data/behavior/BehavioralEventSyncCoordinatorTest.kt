@@ -5,6 +5,7 @@ import com.mneme.app.data.local.BehavioralEventType
 import com.mneme.app.data.local.entity.BehavioralEventEntity
 import com.mneme.app.data.network.BehavioralEventRemoteDataSource
 import com.mneme.app.data.network.EventIngestionResultDto
+import com.mneme.app.data.network.MnemeApiException
 import com.mneme.app.data.network.UserEventDto
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -14,6 +15,17 @@ import java.io.IOException
 import java.util.UUID
 
 class BehavioralEventSyncCoordinatorTest {
+    @Test
+    fun syncPending_emptyQueueIsIdle() =
+        runBlocking {
+            val store = FakeStore(listOf(emptyList()))
+            val coordinator = BehavioralEventSyncCoordinator(store, FakeRemote()) { SYNCED_AT }
+
+            assertEquals(BehavioralEventSyncResult.Idle, coordinator.syncPending())
+            assertTrue(store.syncedIds.isEmpty())
+            assertTrue(store.returnedIds.isEmpty())
+        }
+
     @Test
     fun syncPending_uploadsFrozenDtosAndMarksAcceptedAndDuplicateEventsSynced() =
         runBlocking {
@@ -64,6 +76,34 @@ class BehavioralEventSyncCoordinatorTest {
             assertEquals(listOf(FIRST_EVENT_ID), store.returnedIds)
             assertEquals(BehavioralEventSyncCoordinator.NETWORK_ERROR, store.returnedError)
             assertTrue(store.syncedIds.isEmpty())
+        }
+
+    @Test
+    fun syncPending_serverFailureReturnsStableIdsForRetry() =
+        runBlocking {
+            val store = FakeStore(listOf(listOf(event(FIRST_EVENT_ID, "paper_opened", OCCURRED_AT))))
+            val remote = FakeRemote(failure = apiFailure(503))
+            val coordinator = BehavioralEventSyncCoordinator(store, remote) { SYNCED_AT }
+
+            val result = coordinator.syncPending()
+
+            assertEquals(BehavioralEventSyncResult.Retry("api_503"), result)
+            assertEquals(listOf(FIRST_EVENT_ID), store.returnedIds)
+            assertEquals("api_503", store.returnedError)
+        }
+
+    @Test
+    fun syncPending_clientFailureStopsAutomaticRetryButPreservesPendingEvent() =
+        runBlocking {
+            val store = FakeStore(listOf(listOf(event(FIRST_EVENT_ID, "paper_opened", OCCURRED_AT))))
+            val remote = FakeRemote(failure = apiFailure(401))
+            val coordinator = BehavioralEventSyncCoordinator(store, remote) { SYNCED_AT }
+
+            val result = coordinator.syncPending()
+
+            assertEquals(BehavioralEventSyncResult.Failed("api_401"), result)
+            assertEquals(listOf(FIRST_EVENT_ID), store.returnedIds)
+            assertEquals("api_401", store.returnedError)
         }
 
     @Test
@@ -146,6 +186,14 @@ class BehavioralEventSyncCoordinatorTest {
         private const val PAPER_ID = "11111111-1111-4111-8111-111111111111"
         private const val OCCURRED_AT = 1_784_862_000_000L
         private const val SYNCED_AT = OCCURRED_AT + 120_000
+
+        private fun apiFailure(statusCode: Int) =
+            MnemeApiException(
+                statusCode = statusCode,
+                errorCode = "test_error",
+                message = "Test API failure",
+                requestId = "request-test",
+            )
 
         private fun event(
             id: UUID,

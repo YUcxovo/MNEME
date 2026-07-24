@@ -24,6 +24,10 @@ sealed interface BehavioralEventSyncResult {
     data class Retry(
         val reason: String,
     ) : BehavioralEventSyncResult
+
+    data class Failed(
+        val reason: String,
+    ) : BehavioralEventSyncResult
 }
 
 private sealed interface BatchUploadResult {
@@ -35,6 +39,21 @@ private sealed interface BatchUploadResult {
     data class Retry(
         val reason: String,
     ) : BatchUploadResult
+
+    data class Failed(
+        val reason: String,
+    ) : BatchUploadResult
+}
+
+private sealed interface UploadAttempt {
+    data class Response(
+        val result: EventIngestionResultDto,
+    ) : UploadAttempt
+
+    data class Failure(
+        val reason: String,
+        val retryable: Boolean,
+    ) : UploadAttempt
 }
 
 class BehavioralEventSyncCoordinator(
@@ -74,6 +93,9 @@ class BehavioralEventSyncCoordinator(
                     is BatchUploadResult.Retry -> {
                         outcome = BehavioralEventSyncResult.Retry(batchResult.reason)
                     }
+                    is BatchUploadResult.Failed -> {
+                        outcome = BehavioralEventSyncResult.Failed(batchResult.reason)
+                    }
                 }
             }
         }
@@ -82,34 +104,39 @@ class BehavioralEventSyncCoordinator(
 
     private suspend fun uploadBatch(batch: List<BehavioralEventEntity>): BatchUploadResult {
         val eventIds = batch.map { UUID.fromString(it.id) }
-        var failureReason: String? = null
-        val result =
+        val attempt =
             try {
-                remote.uploadEvents(batch.map(BehavioralEventEntity::toDto))
+                UploadAttempt.Response(remote.uploadEvents(batch.map(BehavioralEventEntity::toDto)))
             } catch (error: CancellationException) {
                 store.returnBatchToPending(eventIds, SYNC_CANCELLED)
                 throw error
             } catch (error: MnemeApiException) {
-                failureReason = "api_${error.statusCode}"
-                null
+                UploadAttempt.Failure(
+                    reason = "api_${error.statusCode}",
+                    retryable = error.statusCode >= SERVER_ERROR_MIN_STATUS,
+                )
             } catch (_: SerializationException) {
-                failureReason = SERIALIZATION_ERROR
-                null
+                UploadAttempt.Failure(SERIALIZATION_ERROR, retryable = true)
             } catch (_: IOException) {
-                failureReason = NETWORK_ERROR
-                null
+                UploadAttempt.Failure(NETWORK_ERROR, retryable = true)
             }
-        if (result == null) {
-            val reason = checkNotNull(failureReason)
-            store.returnBatchToPending(eventIds, reason)
-            return BatchUploadResult.Retry(reason)
-        }
-        return if (result.matches(batch.size)) {
-            store.markBatchSynced(eventIds)
-            BatchUploadResult.Synced(result.accepted, result.duplicates)
-        } else {
-            store.returnBatchToPending(eventIds, INVALID_RESULT)
-            BatchUploadResult.Retry(INVALID_RESULT)
+        return when (attempt) {
+            is UploadAttempt.Response ->
+                if (attempt.result.matches(batch.size)) {
+                    store.markBatchSynced(eventIds)
+                    BatchUploadResult.Synced(attempt.result.accepted, attempt.result.duplicates)
+                } else {
+                    store.returnBatchToPending(eventIds, INVALID_RESULT)
+                    BatchUploadResult.Retry(INVALID_RESULT)
+                }
+            is UploadAttempt.Failure -> {
+                store.returnBatchToPending(eventIds, attempt.reason)
+                if (attempt.retryable) {
+                    BatchUploadResult.Retry(attempt.reason)
+                } else {
+                    BatchUploadResult.Failed(attempt.reason)
+                }
+            }
         }
     }
 
@@ -123,6 +150,8 @@ class BehavioralEventSyncCoordinator(
         const val NETWORK_ERROR = "network_error"
         const val SERIALIZATION_ERROR = "serialization_error"
         const val SYNC_CANCELLED = "sync_cancelled"
+
+        private const val SERVER_ERROR_MIN_STATUS = 500
     }
 }
 

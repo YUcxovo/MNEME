@@ -29,6 +29,7 @@ class BehavioralEventSyncWorker(
             is BehavioralEventSyncResult.Synced,
             -> Result.success()
             is BehavioralEventSyncResult.Retry -> Result.retry()
+            is BehavioralEventSyncResult.Failed -> Result.failure()
         }
     }
 }
