@@ -25,6 +25,13 @@ class MnemeApplication : Application() {
     val container: MnemeApplicationContainer by lazy {
         MnemeApplicationContainer(this)
     }
+
+    override fun onCreate() {
+        super.onCreate()
+        if (BuildConfig.MNEME_DEMO_TOKEN.isNotBlank()) {
+            BehavioralEventSyncScheduler.enqueue(WorkManager.getInstance(this))
+        }
+    }
 }
 
 class MnemeApplicationContainer(

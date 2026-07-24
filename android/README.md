@@ -159,8 +159,9 @@ The graph is not cached, so an unavailable backend produces a retryable error.
 - `OfflineCacheRepository` still retains recent briefing content for 14 days and opened
   papers for 30 days.
 - DataStore persists explicit local settings. `BehavioralEventSyncWorker` uploads pending
-  events with network constraints and exponential backoff. The separate digest-refresh
-  worker remains a no-op.
+  events with network constraints and exponential backoff. A live configuration also
+  schedules a recovery pass on application start so an interrupted pending batch does not
+  require another user interaction. The separate digest-refresh worker remains a no-op.
 - The client records only interactions exposed by the current product: paper impressions,
   paper opens, and paper-scoped questions. Save, skip, share, and digest-dismiss events are
   not fabricated while those UI controls are absent.
