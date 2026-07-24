@@ -45,7 +45,6 @@ import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.demo.SkeletalContentRepository
 import com.mneme.app.ui.component.LoadingState
-import com.mneme.app.ui.home.HomeScreen
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.navigation.BriefingRoute
 import com.mneme.app.ui.navigation.GraphRoute
@@ -137,8 +136,8 @@ fun MnemeApp(
                 actions =
                     MnemeUiActions(
                         refreshBriefing = viewModel::refreshBriefing,
-                        recordPaperImpressions = viewModel::recordPaperImpressions,
-                        recordPaperOpened = viewModel::recordPaperOpened,
+                        recordPaperImpressions = viewModel.behavioralEvents::recordPaperImpressions,
+                        recordPaperOpened = viewModel.behavioralEvents::recordPaperOpened,
                         requestPaper = { paperId -> viewModel.loadPaper(paperId) },
                         retryPaper = { paperId -> viewModel.loadPaper(paperId, force = true) },
                         requestQa = viewModel::askQuestion,
@@ -299,24 +298,13 @@ private fun MnemeNavHost(
         startDestination = BriefingRoute,
         modifier = modifier,
     ) {
-        composable<BriefingRoute> {
-            val briefing =
-                (snapshot.home as? HomeUiState.Content)
-                    ?.briefing
-            LaunchedEffect(briefing?.digest?.id) {
-                briefing?.let { current ->
-                    actions.recordPaperImpressions(current.papers.map { it.id })
-                }
-            }
-            HomeScreen(
-                state = snapshot.home,
-                onRetry = actions.refreshBriefing,
-                onPaperClick = { paperId ->
-                    actions.recordPaperOpened(paperId)
-                    navController.navigate(PaperDetailRoute(paperId))
-                },
-            )
-        }
+        briefingNavigation(
+            navController = navController,
+            state = snapshot.home,
+            refreshBriefing = actions.refreshBriefing,
+            recordPaperImpressions = actions.recordPaperImpressions,
+            recordPaperOpened = actions.recordPaperOpened,
+        )
         composable<SavedRoute> {
             SavedScreen()
         }

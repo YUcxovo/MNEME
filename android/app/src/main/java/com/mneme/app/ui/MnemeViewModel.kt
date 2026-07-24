@@ -24,6 +24,8 @@ class MnemeViewModel(
     private val repository: SkeletalDataRepository,
     private val eventTracker: BehavioralEventTracker = NoOpBehavioralEventTracker,
 ) : ViewModel() {
+    val behavioralEvents = MnemeBehavioralEventRecorder(eventTracker, viewModelScope)
+
     private val _onboardingState =
         MutableStateFlow<OnboardingUiState>(OnboardingUiState.Checking)
     val onboardingState: StateFlow<OnboardingUiState> = _onboardingState.asStateFlow()
@@ -96,14 +98,6 @@ class MnemeViewModel(
         }
     }
 
-    fun recordPaperImpressions(paperIds: List<String>) {
-        recordBehavior { eventTracker.recordPaperImpressions(paperIds) }
-    }
-
-    fun recordPaperOpened(paperId: String) {
-        recordBehavior { eventTracker.recordPaperOpened(paperId) }
-    }
-
     fun loadPaper(
         paperId: String,
         force: Boolean = false,
@@ -139,7 +133,7 @@ class MnemeViewModel(
         require(question.length <= QUESTION_MAX_LENGTH) {
             "Question must not exceed $QUESTION_MAX_LENGTH characters."
         }
-        recordBehavior { eventTracker.recordQuestionAsked(paperId) }
+        behavioralEvents.recordQuestionAsked(paperId)
         qaLoadJob?.cancel()
         qaLoadJob =
             viewModelScope.launch {
@@ -195,12 +189,6 @@ class MnemeViewModel(
                     result = repository.refreshPaper(current.paperId, current.jobId)
                 }
             }
-        }
-    }
-
-    private fun recordBehavior(block: suspend () -> Unit) {
-        viewModelScope.launch {
-            runCatching { block() }
         }
     }
 
