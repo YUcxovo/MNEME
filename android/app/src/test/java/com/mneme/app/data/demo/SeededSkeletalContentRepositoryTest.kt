@@ -25,8 +25,35 @@ class SeededSkeletalContentRepositoryTest {
         assertTrue(qa?.answer?.contains("cannot generate a new answer") == true)
         assertEquals("Model Architecture", qa?.sources?.single()?.location)
         assertTrue(briefing.disclosure.message.contains("No live backend or model call"))
-        assertTrue(graph?.disclosure?.message?.contains("not a claim about a real citation") == true)
-        assertNotNull(repository.paper(SeededSkeletalContentRepository.NEIGHBOR_PAPER_ID))
+        assertTrue(graph?.disclosure?.message?.contains("not a claim about real citations") == true)
+        requireNotNull(graph)
+        assertEquals(ControlledCitationGraphFixture.NODE_COUNT, graph.nodes.size)
+        assertEquals(ControlledCitationGraphFixture.EDGE_COUNT, graph.edges.size)
+        assertEquals(
+            graph.nodes.size,
+            graph.nodes
+                .map { it.id }
+                .toSet()
+                .size,
+        )
+        assertTrue(
+            graph.nodes
+                .mapNotNull { it.clusterId }
+                .toSet()
+                .size >= 4,
+        )
+        assertTrue(
+            graph.nodes
+                .mapNotNull { it.category }
+                .toSet()
+                .size >= 5,
+        )
+        assertTrue(graph.edges.any { it.source == graph.centerId })
+        assertTrue(graph.edges.any { it.target == graph.centerId })
+        val nodeIds = graph.nodes.mapTo(mutableSetOf()) { it.id }
+        assertTrue(graph.edges.all { it.source in nodeIds && it.target in nodeIds })
+        assertTrue(graph.nodes.all { repository.paper(it.id) != null })
+        assertNotNull(repository.paper(SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID))
     }
 
     @Test
