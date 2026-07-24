@@ -152,7 +152,7 @@ class FakeSession:
         self.commits += 1
 
 
-def _llm_service(provider: FakeLLMProvider) -> LLMService:
+def _llm_service(provider: FakeLLMProvider, *, daily_cap_usd: Decimal = Decimal("5")) -> LLMService:
     redis = cast(Redis, FakeRedis())
     return LLMService(
         router=ModelRouter({AITask.SUMMARIZE: "claude-haiku-4-5", AITask.QA: "claude-haiku-4-5"}),
@@ -160,14 +160,14 @@ def _llm_service(provider: FakeLLMProvider) -> LLMService:
         cache=LLMCache(
             redis, enabled=True, ttl_seconds={AITask.SUMMARIZE: 604800, AITask.QA: 86400}
         ),
-        budget=BudgetGuard(redis, daily_cap_usd=Decimal("5")),
+        budget=BudgetGuard(redis, daily_cap_usd=daily_cap_usd),
     )
 
 
-def _embedding_service() -> EmbeddingService:
+def _embedding_service(*, daily_cap_usd: Decimal = Decimal("5")) -> EmbeddingService:
     return EmbeddingService(
         provider=FakeEmbeddingProvider(),
-        budget=BudgetGuard(cast(Redis, FakeRedis()), daily_cap_usd=Decimal("5")),
+        budget=BudgetGuard(cast(Redis, FakeRedis()), daily_cap_usd=daily_cap_usd),
         model="text-embedding-3-small",
         batch_size=8,
     )
@@ -179,6 +179,8 @@ def _application(
     artifacts: FakeArtifactRepository,
     qa_repository: FakeQaRepository,
     provider: FakeLLMProvider,
+    llm_cap_usd: Decimal = Decimal("5"),
+    embedding_cap_usd: Decimal = Decimal("5"),
 ) -> FastAPI:
     async def principal_override() -> Principal:
         return Principal(user_id=USER_ID)
@@ -204,8 +206,8 @@ def _application(
     async def session_override() -> FakeSession:
         return FakeSession()
 
-    llm = _llm_service(provider)
-    embedder = _embedding_service()
+    llm = _llm_service(provider, daily_cap_usd=llm_cap_usd)
+    embedder = _embedding_service(daily_cap_usd=embedding_cap_usd)
     settings = Settings(environment="testing")
 
     application = FastAPI()
@@ -353,6 +355,44 @@ def test_provider_failure_maps_to_stable_ai_error() -> None:
 
     assert response.status_code == 503
     assert response.json()["code"] == "ai_provider_error"
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_exhausted_llm_budget_returns_stable_429() -> None:
+    application = _application(
+        catalog=FakePaperCatalogRepository(_paper()),
+        artifacts=FakeArtifactRepository([(FakeChunkRow(), 0.9)]),
+        qa_repository=FakeQaRepository(),
+        provider=FakeLLMProvider(),
+        llm_cap_usd=Decimal("0"),
+    )
+
+    response = asyncio.run(
+        _post(application, {"question": "What replaces recurrence?", "paper_id": str(PAPER_ID)})
+    )
+
+    assert response.status_code == 429
+    assert response.json()["code"] == "ai_budget_exhausted"
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_exhausted_embedding_budget_returns_stable_429() -> None:
+    application = _application(
+        catalog=FakePaperCatalogRepository(_paper()),
+        artifacts=FakeArtifactRepository([(FakeChunkRow(), 0.9)]),
+        qa_repository=FakeQaRepository(),
+        provider=FakeLLMProvider(),
+        embedding_cap_usd=Decimal("0"),
+    )
+
+    response = asyncio.run(
+        _post(application, {"question": "What replaces recurrence?", "paper_id": str(PAPER_ID)})
+    )
+
+    assert response.status_code == 429
+    assert response.json()["code"] == "ai_budget_exhausted"
 
 
 @pytest.mark.base
