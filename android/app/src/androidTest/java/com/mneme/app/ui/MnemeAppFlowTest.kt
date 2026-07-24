@@ -147,19 +147,29 @@ class MnemeAppFlowTest {
         )
         composeRule.onNodeWithTag("explore-graph-action").performClick()
         composeRule.onNodeWithTag("graph-screen").assertIsDisplayed()
+        composeRule.onNodeWithTag("graph-screen").performScrollToNode(
+            hasTestTag("graph-node-chooser"),
+        )
+        composeRule.onNodeWithTag("graph-node-chooser").performScrollToNode(
+            hasTestTag(
+                "graph-node-" +
+                    com.mneme.app.data.demo.SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID,
+            ),
+        )
         composeRule
             .onNodeWithTag(
-                "graph-node-${com.mneme.app.data.demo.SeededSkeletalContentRepository.NEIGHBOR_PAPER_ID}",
+                "graph-node-" +
+                    com.mneme.app.data.demo.SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID,
             ).performClick()
         composeRule.onNodeWithTag("graph-screen").performScrollToNode(
             hasTestTag("selected-graph-paper-title"),
         )
         composeRule
             .onNodeWithTag("selected-graph-paper-title")
-            .assertTextContains("Controlled neighbor paper")
+            .assertTextContains("Systems study")
         composeRule.onNodeWithTag("open-selected-graph-paper").performClick()
         composeRule.onNodeWithTag("paper-detail-screen").assertIsDisplayed()
-        composeRule.onNodeWithText("Controlled neighbor paper").assertIsDisplayed()
+        composeRule.onNodeWithText("Systems study").assertIsDisplayed()
 
         composeRule.onNodeWithTag("navigate-back").performClick()
         composeRule.onNodeWithTag("graph-screen").assertIsDisplayed()
@@ -168,6 +178,6 @@ class MnemeAppFlowTest {
         )
         composeRule
             .onNodeWithTag("selected-graph-paper-title")
-            .assertTextContains("Controlled neighbor paper")
+            .assertTextContains("Systems study")
     }
 }

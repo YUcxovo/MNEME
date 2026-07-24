@@ -4,9 +4,6 @@ import com.mneme.app.ui.model.BriefingUiModel
 import com.mneme.app.ui.model.ContentDisclosureUiModel
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.DigestUiModel
-import com.mneme.app.ui.model.GraphAlgorithmUiStatus
-import com.mneme.app.ui.model.GraphEdgeUiModel
-import com.mneme.app.ui.model.GraphNodeUiModel
 import com.mneme.app.ui.model.GraphUiModel
 import com.mneme.app.ui.model.PaperDetailUiModel
 import com.mneme.app.ui.model.PaperUiModel
@@ -29,7 +26,8 @@ interface SkeletalContentRepository {
 
 object SeededSkeletalContentRepository : SkeletalContentRepository {
     const val PAPER_ID = "1706.03762"
-    const val NEIGHBOR_PAPER_ID = "controlled-neighbor-1"
+    const val NEIGHBOR_PAPER_ID = ControlledCitationGraphFixture.PRIMARY_NEIGHBOR_ID
+    const val DEEP_GRAPH_PAPER_ID = ControlledCitationGraphFixture.DEEP_NEIGHBOR_ID
 
     private val disclosure =
         ContentDisclosureUiModel(
@@ -58,16 +56,6 @@ object SeededSkeletalContentRepository : SkeletalContentRepository {
                     "attention instead of recurrent layers.",
         )
 
-    private val neighborPaper =
-        PaperUiModel(
-            id = NEIGHBOR_PAPER_ID,
-            title = "Controlled neighbor paper",
-            authors = "Repository renderer fixture",
-            category = "cs.AI",
-            summary =
-                "This paper exists only in the controlled Android fixture for graph navigation tests.",
-        )
-
     private val detail =
         PaperDetailUiModel(
             paper = paper,
@@ -87,25 +75,6 @@ object SeededSkeletalContentRepository : SkeletalContentRepository {
                     "or generation quality.",
             sourceMatchStatus = SourceMatchUiStatus.NOT_CHECKED,
             source = source,
-        )
-
-    private val neighborDetail =
-        PaperDetailUiModel(
-            paper = neighborPaper,
-            disclosure = disclosure,
-            abstractText =
-                "This local fixture has no claim about a real citation relationship or source paper.",
-            keyClaims = emptyList(),
-            methodology = null,
-            limitation = "Use the live backend for real paper and citation data.",
-            sourceMatchStatus = SourceMatchUiStatus.NOT_CHECKED,
-            source =
-                SourceUiModel(
-                    label = "No external source in the controlled graph fixture",
-                    location = "Android renderer fixture",
-                    url = "https://arxiv.org/",
-                    matchStatus = SourceMatchUiStatus.NOT_CHECKED,
-                ),
         )
 
     private val qa =
@@ -146,7 +115,7 @@ object SeededSkeletalContentRepository : SkeletalContentRepository {
 
     override fun paper(paperId: String): PaperDetailUiModel? =
         detail.takeIf { it.paper.id == paperId }
-            ?: neighborDetail.takeIf { it.paper.id == paperId }
+            ?: ControlledCitationGraphFixture.paperDetail(paperId, disclosure)
 
     override fun qa(
         paperId: String,
@@ -158,42 +127,7 @@ object SeededSkeletalContentRepository : SkeletalContentRepository {
 
     override fun graph(paperId: String): GraphUiModel? =
         if (paperId == PAPER_ID) {
-            GraphUiModel(
-                centerId = PAPER_ID,
-                nodes =
-                    listOf(
-                        GraphNodeUiModel(
-                            id = PAPER_ID,
-                            title = paper.title,
-                            category = paper.category,
-                            clusterId = "controlled-cluster",
-                            rankScore = 1.0,
-                        ),
-                        GraphNodeUiModel(
-                            id = NEIGHBOR_PAPER_ID,
-                            title = neighborPaper.title,
-                            category = neighborPaper.category,
-                            clusterId = "controlled-cluster",
-                            rankScore = 0.5,
-                        ),
-                    ),
-                edges =
-                    listOf(
-                        GraphEdgeUiModel(
-                            source = PAPER_ID,
-                            target = NEIGHBOR_PAPER_ID,
-                            weight = 0.5,
-                        ),
-                    ),
-                algorithmStatus = GraphAlgorithmUiStatus.FALLBACK,
-                graphVersion = "controlled-renderer-fixture-v1",
-                disclosure =
-                    ContentDisclosureUiModel(
-                        origin = ContentOrigin.CONTROLLED_FIXTURE,
-                        message =
-                            "Controlled renderer fixture. Its edge is not a claim about a real citation.",
-                    ),
-            )
+            ControlledCitationGraphFixture.graph(paper, disclosure)
         } else {
             null
         }
