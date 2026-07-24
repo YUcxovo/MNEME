@@ -189,8 +189,7 @@ Database integration and end-to-end pipeline tests run when `MNEME_DATABASE_URL`
 - Local document storage must be mounted at the same path for every API/worker process; distributed object storage and garbage collection are deferred.
 - The worker's automatic recovery scan can reconstruct revision-scoped jobs. Collection-level daily and weekly jobs are recovered by repeatable CLI invocations because their hashed durable identities do not contain reconstructable arguments.
 - The Android skeletal path can call the backend through Retrofit/OkHttp when its demo
-  token is configured. Behavioral events use WorkManager-backed upload; background digest
-  refresh remains unfinished.
+  token is configured; real WorkManager background sync remains unfinished.
 - Semantic Scholar synchronization is an explicit single-paper CLI; fleet-wide selection and scheduling are deferred until integration needs justify them.
 - Behavior preferences recompute when `/events` is called. Scheduled recomputation after embeddings arrive or events age out is deferred, and behavior-v1 tuning requires a new model version.
 - Public graphs include only locally resolved citation endpoints; unresolved provider observations remain server-side until their papers are ingested and a later graph synchronization sees the matching provider identity.
