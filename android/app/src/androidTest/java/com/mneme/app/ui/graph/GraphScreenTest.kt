@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -23,6 +24,8 @@ import com.mneme.app.ui.GraphUiState
 import com.mneme.app.ui.model.ContentDisclosureUiModel
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.GraphAlgorithmUiStatus
+import com.mneme.app.ui.model.GraphEdgeUiModel
+import com.mneme.app.ui.model.GraphNodeUiModel
 import com.mneme.app.ui.model.GraphUiModel
 import com.mneme.app.ui.theme.MnemeTheme
 import org.junit.Assert.assertEquals
@@ -57,20 +60,25 @@ class GraphScreenTest {
         composeRule.onNodeWithTag("citation-graph-webview").assertIsDisplayed()
         composeRule.onNodeWithTag("graph-source-notice").assertIsDisplayed()
         composeRule.onNodeWithText("Deterministic citation baseline").assertIsDisplayed()
+        composeRule.onNodeWithTag("graph-screen").performScrollToNode(
+            hasTestTag("graph-node-chooser"),
+        )
+        composeRule.onNodeWithTag("graph-node-chooser").performScrollToNode(
+            hasTestTag("graph-node-${SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID}"),
+        )
         composeRule
-            .onNodeWithTag("graph-node-${SeededSkeletalContentRepository.NEIGHBOR_PAPER_ID}")
+            .onNodeWithTag("graph-node-${SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID}")
             .performClick()
         composeRule.onNodeWithTag("graph-screen").performScrollToNode(
-            androidx.compose.ui.test
-                .hasTestTag("selected-graph-paper-title"),
+            hasTestTag("selected-graph-paper-title"),
         )
         composeRule
             .onNodeWithTag("selected-graph-paper-title")
-            .assertTextContains("Controlled neighbor paper")
+            .assertTextContains("Systems study")
         composeRule.onNodeWithTag("open-selected-graph-paper").performClick()
 
         composeRule.runOnIdle {
-            assertEquals(SeededSkeletalContentRepository.NEIGHBOR_PAPER_ID, openedPaper.get())
+            assertEquals(SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID, openedPaper.get())
         }
     }
 
@@ -120,25 +128,51 @@ class GraphScreenTest {
             webView.get().evaluateJavascript(
                 "typeof d3 + ':' + document.body.dataset.rendererReady + ':' + " +
                     "document.querySelectorAll('.node').length + ':' + " +
-                    "(document.querySelector('#graph').getBoundingClientRect().height > 300)",
+                    "document.querySelectorAll('.edge').length + ':' + " +
+                    "(document.querySelector('#graph').getBoundingClientRect().height > 300) + ':' + " +
+                    "document.querySelectorAll('.node.center').length + ':' + " +
+                    "document.querySelectorAll('.node.selected').length",
                 javaScriptState::set,
             )
         }
         composeRule.waitUntil(timeoutMillis = WEBVIEW_TIMEOUT_MILLIS) {
             javaScriptState.get() != null
         }
-        assertEquals("\"object:true:2:true\"", javaScriptState.get())
+        assertEquals("\"object:true:12:18:true:1:1\"", javaScriptState.get())
 
         composeRule.runOnIdle {
             webView.get().evaluateJavascript(
                 "window.MnemeGraph.selectNodeById(" +
-                    "'${SeededSkeletalContentRepository.NEIGHBOR_PAPER_ID}')",
+                    "'${SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID}')",
                 null,
             )
         }
         composeRule.waitUntil(timeoutMillis = WEBVIEW_TIMEOUT_MILLIS) {
-            selectedPaper.get() == SeededSkeletalContentRepository.NEIGHBOR_PAPER_ID
+            selectedPaper.get() == SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID
         }
+        javaScriptState.set(null)
+        composeRule.runOnIdle {
+            webView.get().evaluateJavascript(
+                "document.querySelector('.node.selected').dataset.nodeId + ':' + " +
+                    "(new Set(Array.from(document.querySelectorAll('.node circle'))" +
+                    ".map(function (node) { return node.getAttribute('fill'); })).size >= 4) + ':' + " +
+                    "(Array.from(document.querySelectorAll('.edge'))" +
+                    ".every(function (edge) { return edge.getAttribute('marker-end') === " +
+                    "'url(#citation-arrow)'; })) + ':' + " +
+                    "(function () { const svg = document.querySelector('svg').getBoundingClientRect(); " +
+                    "return Array.from(document.querySelectorAll('.node circle')).every(function (node) { " +
+                    "const rect = node.getBoundingClientRect(); return rect.left >= svg.left && " +
+                    "rect.right <= svg.right && rect.top >= svg.top && rect.bottom <= svg.bottom; }); }())",
+                javaScriptState::set,
+            )
+        }
+        composeRule.waitUntil(timeoutMillis = WEBVIEW_TIMEOUT_MILLIS) {
+            javaScriptState.get() != null
+        }
+        assertEquals(
+            "\"${SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID}:true:true:true\"",
+            javaScriptState.get(),
+        )
     }
 
     @Test
@@ -176,6 +210,64 @@ class GraphScreenTest {
     }
 
     @Test
+    fun localD3Renderer_handlesBoundedFiftyNodeGraph() {
+        val graph = boundedGraph()
+        val webView = AtomicReference<WebView>()
+        val rendererReady = AtomicBoolean(false)
+        val selectedPaper = AtomicReference<String>()
+        val javaScriptState = AtomicReference<String>()
+        composeRule.setContent {
+            CitationGraphWebView(
+                graph = graph,
+                onNodeSelected = selectedPaper::set,
+                modifier = Modifier.height(390.dp),
+                onWebViewCreated = webView::set,
+                onRendererReady = { rendererReady.set(true) },
+            )
+        }
+        composeRule.waitUntil(timeoutMillis = WEBVIEW_TIMEOUT_MILLIS) {
+            rendererReady.get() && webView.get() != null
+        }
+
+        composeRule.runOnIdle {
+            webView.get().evaluateJavascript(
+                "document.querySelectorAll('.node').length + ':' + " +
+                    "document.querySelectorAll('.edge').length + ':' + " +
+                    "document.querySelector('svg').classList.contains('dense') + ':' + " +
+                    "document.querySelectorAll('.node.center').length",
+                javaScriptState::set,
+            )
+        }
+        composeRule.waitUntil(timeoutMillis = WEBVIEW_TIMEOUT_MILLIS) {
+            javaScriptState.get() != null
+        }
+        assertEquals("\"50:73:true:1\"", javaScriptState.get())
+
+        composeRule.runOnIdle {
+            webView.get().evaluateJavascript(
+                "window.MnemeGraph.selectNodeById('stress-paper-49')",
+                null,
+            )
+        }
+        composeRule.waitUntil(timeoutMillis = WEBVIEW_TIMEOUT_MILLIS) {
+            selectedPaper.get() == "stress-paper-49"
+        }
+        javaScriptState.set(null)
+        composeRule.runOnIdle {
+            webView.get().evaluateJavascript(
+                "document.querySelector('.node.selected').dataset.nodeId + ':' + " +
+                    "Array.from(document.querySelectorAll('.node text')).filter(function (label) { " +
+                    "return getComputedStyle(label).display !== 'none'; }).length",
+                javaScriptState::set,
+            )
+        }
+        composeRule.waitUntil(timeoutMillis = WEBVIEW_TIMEOUT_MILLIS) {
+            javaScriptState.get() != null
+        }
+        assertEquals("\"stress-paper-49:2\"", javaScriptState.get())
+    }
+
+    @Test
     fun readyGraph_reportsRankedAndClusteredStatus() {
         val graph =
             requireNotNull(
@@ -207,6 +299,48 @@ class GraphScreenTest {
                     message = "The backend returned no locally resolved nodes.",
                 ),
         )
+
+    private fun boundedGraph(): GraphUiModel {
+        val categories = listOf("cs.AI", "cs.CL", "cs.LG", "cs.IR", "stat.ML")
+        val nodes =
+            (0 until 50).map { index ->
+                GraphNodeUiModel(
+                    id = "stress-paper-$index",
+                    title = "Bounded renderer paper $index",
+                    category = categories[index % categories.size],
+                    clusterId = "cluster-${index % 6}",
+                    rankScore = 1.0 - index / 50.0,
+                )
+            }
+        val chainEdges =
+            (1 until 50).map { index ->
+                GraphEdgeUiModel(
+                    source = "stress-paper-$index",
+                    target = "stress-paper-${index - 1}",
+                    weight = 0.5,
+                )
+            }
+        val crossEdges =
+            (2 until 50 step 2).map { index ->
+                GraphEdgeUiModel(
+                    source = "stress-paper-$index",
+                    target = "stress-paper-${(index + 7) % 50}",
+                    weight = 0.3,
+                )
+            }
+        return GraphUiModel(
+            centerId = "stress-paper-0",
+            nodes = nodes,
+            edges = chainEdges + crossEdges,
+            algorithmStatus = GraphAlgorithmUiStatus.READY,
+            graphVersion = "bounded-renderer-stress-fixture",
+            disclosure =
+                ContentDisclosureUiModel(
+                    origin = ContentOrigin.CONTROLLED_FIXTURE,
+                    message = "Controlled fifty-node renderer stress fixture.",
+                ),
+        )
+    }
 
     private companion object {
         const val WEBVIEW_TIMEOUT_MILLIS = 10_000L
