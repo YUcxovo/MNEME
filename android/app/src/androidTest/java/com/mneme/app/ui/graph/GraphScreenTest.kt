@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -80,6 +81,43 @@ class GraphScreenTest {
         composeRule.runOnIdle {
             assertEquals(SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID, openedPaper.get())
         }
+    }
+
+    @Test
+    fun graphSelection_survivesSavedStateRestore() {
+        val graph =
+            requireNotNull(
+                SeededSkeletalContentRepository.graph(SeededSkeletalContentRepository.PAPER_ID),
+            )
+        val restorationTester = StateRestorationTester(composeRule)
+        restorationTester.setContent {
+            MnemeTheme {
+                GraphScreen(
+                    graph = graph,
+                    onRetry = {},
+                    onOpenPaper = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("graph-screen").performScrollToNode(
+            hasTestTag("graph-node-chooser"),
+        )
+        composeRule.onNodeWithTag("graph-node-chooser").performScrollToNode(
+            hasTestTag("graph-node-${SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID}"),
+        )
+        composeRule
+            .onNodeWithTag("graph-node-${SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID}")
+            .performClick()
+
+        restorationTester.emulateSavedInstanceStateRestore()
+
+        composeRule.onNodeWithTag("graph-screen").performScrollToNode(
+            hasTestTag("selected-graph-paper-title"),
+        )
+        composeRule
+            .onNodeWithTag("selected-graph-paper-title")
+            .assertTextContains("Systems study")
     }
 
     @Test
