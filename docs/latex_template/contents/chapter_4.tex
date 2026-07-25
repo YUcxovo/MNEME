@@ -1,36 +1,213 @@
+﻿% !TEX root = ../main.tex
+
 \chapter{App Development and Testing}
 
-\section{Front-end Development}
-\subsection{Design Pattern}
+\section{Evidence and Implementation Status}
 
-\subsection{UI Controls}
-ImageView, MapView, ListView
+This chapter begins with status because the supplied materials contain detailed future-tense engineering plans but no product source repository.
+Table~\ref{tab:status} prevents design intent from being promoted into an implementation claim.
 
-\subsection{Navigation Controllers}
+\begin{table}[htbp]
+\centering
+\caption{Current evidence status. ``Current'' refers only to the materials supplied for this thesis draft.}
+\label{tab:status}
+\begin{tabular}{P{4.5cm}P{3.2cm}P{6.3cm}}
+\toprule
+Artifact or claim & State & Basis and boundary \\
+\midrule
+Five-chapter research design and TC/RQ/C/E traceability & \implemented{} (document) & Controlling outline and workflow artifacts exist. \\
+Interactive mobile workflow & \observed{} & HTML prototype and UI/UX mockups exist; not a production Android build. \\
+Android client, backend, database, and job pipeline & \planned{} & Architecture and acceptance criteria exist; source revision was not supplied. \\
+Revision-aware lineage and invalidation & \planned{} & Design specified; E1 artifacts absent. \\
+Evidence-bounded question-answering effectiveness & \pending & E2 dataset, configurations, traces, and results absent. \\
+Adaptive recommendation effectiveness & \pending & E3 event streams, baselines, and results absent. \\
+Mobile latency and reliability & \pending & Build, device matrix, and system logs absent. \\
+Five-participant prototype findings & \observed{}; \limited{} & Task counts appear in the final presentation; participant-level records absent. \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsection{Other Aspects}
+\section{E1: Revision and Representation Evaluation}
 
-\section{Back-end Development}
-The specific content for this section depends on your project. You can write in details how each module is implemented and how they interact with each other.
+\subsection{Evaluation Question}
 
-\textbf{This section should include your methods for solving the research challenges and problems you mentioned above in Chapter 1.2.}
+E1 tests the contribution promise that every claim-bearing artifact can be traced to the intended paper revision and that a revision update cannot silently leave stale derivatives marked current.
 
-\section{Testing Results}
+\subsection{Dataset and Fixtures}
 
-\subsection{Testing Tool}
-You can introduce whether the app is for iOS or Android, the phone model, and configuration.
+The final evaluation should freeze a corpus containing:
+\begin{itemize}
+  \item papers with at least two known revisions;
+  \item unchanged, locally edited, and structurally changed sections;
+  \item single- and multi-column layouts;
+  \item equations, tables, figures, appendices, and broken text layers;
+  \item metadata-only or abstract-only degraded cases.
+\end{itemize}
+For each fixture, a gold manifest records logical identity, revision identity, expected sections, changed regions, and affected derived artifacts.
 
-\subsection{UI Testing}
-If all buttons responsive, layout expected, etc.
+\subsection{Metrics}
 
-\subsection{Acceptance Testing for Features}
+E1 reports logical-identity accuracy, revision-identity accuracy, changed-section detection, stale-artifact invalidation precision and recall, section-boundary F1, reading-order error rate, and degraded-mode accuracy.
+Performance must be stratified by layout and revision-change type.
+Failure analysis should identify identity collision, missed revision, parse order, boundary, caption, and invalidation errors.
 
-\subsection{Performance Testing}
-Table 6-6 shows an example in Chinese. You have to write thesis in English.
+\begin{table}[htbp]
+\centering
+\caption{E1 result schema. Values must be inserted from frozen fixtures and logs.}
+\begin{tabular}{P{4.6cm}P{2.2cm}P{2.2cm}P{3.8cm}}
+\toprule
+Measure & Baseline & MNEME & Evidence artifact \\
+\midrule
+Logical/revision identity accuracy & \pending & \pending & Fixture manifest + test log \\
+Stale-artifact invalidation precision/recall & \pending & \pending & Dependency trace \\
+Section boundary F1 & \pending & \pending & Gold section annotations \\
+Degraded-mode accuracy & \pending & \pending & Parser status log \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\begin{figure}
-    \centering
-    \includegraphics[width=0.7\linewidth]{figures/test1.png}
-    \caption{Caption}
-    \label{fig:enter-label}
-\end{figure}
+\section{E2: Retrieval, Answer, and Citation Evaluation}
+
+\subsection{Evaluation Questions}
+
+E2 asks whether the planned section-aware, evidence-bounded pipeline improves the ability to find relevant scientific evidence and whether generated claims remain supported and sufficiently covered.
+It also asks how the pipeline behaves when evidence is absent, misplaced, or surrounded by distractors.
+
+\subsection{Frozen Scholarly Question-Answering Set}
+
+The final dataset should contain questions written against frozen paper revisions and gold evidence spans.
+It should cover factual questions, method and dataset questions, comparison questions, multi-section questions, cross-paper questions, follow-ups, and unanswerable questions.
+Questions and evidence are split by paper to reduce leakage.
+Each item records acceptable answer content, one or more evidence spans, answerability, and scope.
+
+\subsection{Baselines and Ablations}
+
+The evaluation compares:
+\begin{enumerate}
+  \item long-context generation without retrieval;
+  \item fixed-size chunk retrieval;
+  \item section-aware retrieval;
+  \item section-aware retrieval with neighboring-context expansion;
+  \item the full pipeline without consistency verification;
+  \item the full pipeline without coverage verification;
+  \item the full pipeline with identifier-only verification.
+\end{enumerate}
+These comparisons isolate retrieval unit, context expansion, and each verification layer.
+They also guard against assuming that every additional stage improves quality or latency.
+
+\subsection{Metrics}
+
+Retrieval is measured with Recall@\(k\), mean reciprocal rank, and nDCG against gold spans.
+Answer quality is evaluated with task-appropriate exact, semantic, or human judgments.
+Citation correctness measures whether cited evidence supports a claim; citation completeness measures whether material claims are supported.
+Abstention precision and recall are reported for unanswerable items.
+Latency and model cost are reported separately.
+Automatic evaluators are calibrated on a human-reviewed subset because reference-free evaluation is not itself ground truth~\cite{es2024ragas,saadfalcon2024ares}.
+
+\begin{table}[htbp]
+\centering
+\caption{E2 result schema. Component metrics prevent a fluent answer from hiding retrieval or citation failure.}
+\begin{tabular}{P{4.0cm}P{2.1cm}P{2.1cm}P{2.1cm}P{2.1cm}}
+\toprule
+Configuration & Retrieval & Answer & Citation & Latency / cost \\
+\midrule
+Long context & \pending & \pending & \pending & \pending \\
+Fixed chunks & \pending & \pending & \pending & \pending \\
+Section-aware & \pending & \pending & \pending & \pending \\
+Full evidence-bounded pipeline & \pending & \pending & \pending & \pending \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{E3: Interest-Memory Evaluation}
+
+\subsection{Evaluation Questions}
+
+E3 tests whether adaptive interest state improves future paper ranking under a temporal split, whether short- and long-term state serve distinct roles, and whether users can correct the model consistently.
+The evaluation does not treat historical clicks as perfect preference labels.
+
+\subsection{Data and Baselines}
+
+The final evaluation freezes event sequences with exposure records, event semantics, timestamps, and paper candidates.
+Where real longitudinal data are unavailable, synthetic sequences may test deterministic update invariants but cannot establish user benefit.
+Baselines include explicit interests only, long-term history only, recent events only, one-timescale EMA, and the full multi-timescale design.
+
+\subsection{Metrics and Tests}
+
+Ranking metrics include Recall@\(k\) and nDCG@\(k\) on future eligible positive events.
+Diversity and novelty are reported to detect narrowing or repetition.
+Adaptation delay measures how quickly a confirmed new interest affects ranking.
+Negative-feedback sensitivity tests whether a bounded skip signal has an appropriate rather than overwhelming effect.
+Correction consistency tests whether editing or deleting a visible interest produces predictable ranking and explanation changes.
+
+\begin{table}[htbp]
+\centering
+\caption{E3 result schema. Metrics must be reported on a temporal split with exposure-aware labels.}
+\begin{tabular}{P{4.0cm}P{2.1cm}P{2.1cm}P{2.1cm}P{2.1cm}}
+\toprule
+Model & Ranking & Diversity & Adaptation & Correction \\
+\midrule
+Explicit only & \pending & \pending & \pending & \pending \\
+Recent only & \pending & \pending & \pending & \pending \\
+Single-timescale baseline & \pending & \pending & \pending & \pending \\
+Multi-timescale design & \pending & \pending & \pending & \pending \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{E4: Systems and Usability Evaluation}
+
+\subsection{Systems Measurements}
+
+The systems evaluation requires an immutable build, backend revision, model/provider configuration, device matrix, network conditions, and corpus snapshot.
+It reports digest-load latency, paper-detail latency, Q\&A first-token and completion latency, graph expansion latency, event-upload success, synchronization conflicts, background-task completion, notification delivery, cache hit rate, and daily model cost.
+Each distribution includes sample count and percentile statistics.
+Failure injection covers offline operation, provider timeout, malformed document, empty retrieval, verification failure, and duplicate event upload.
+
+\subsection{Usability Protocol}
+
+The supplied task design is retained because it covers the core research loop:
+\begin{enumerate}
+  \item identify why a paper was recommended and open it;
+  \item identify the main contribution and verify a source;
+  \item ask a dataset question and inspect cited evidence;
+  \item open the graph and inspect a related paper;
+  \item change a digest preference or interest topic.
+\end{enumerate}
+The final dataset must contain one row per participant and task with completion, time, taps, error path, confusion code, and observation.
+The study report must describe recruitment, consent, moderator instructions, prototype/build version, analysis procedure, and missing data.
+
+\subsection{Available Formative Observation}
+
+As stated in Chapter 2, the final presentation reports task-success counts of 5, 5, 5, 2, and 4 out of five.
+Within that report, the graph task is the only major drop-off.
+This observation supports the decision to make graph actions explicit.
+It does not show that the subsequent redesign improves completion because no retest is supplied.
+
+\section{Threats to Validity}
+
+\subsection{Construct Validity}
+
+Citation correctness is not scientific truth.
+A span can support a claim in one paper while the broader literature disagrees.
+Likewise, a click or long reading duration is not identical to research interest.
+The evaluation therefore reports operational constructs and avoids treating them as complete measures of understanding or intent.
+
+\subsection{Internal Validity}
+
+Generator, embedding, and judge models can change over time.
+Unrecorded provider updates may alter results.
+All experiments must freeze model identifiers where possible and record dates, prompts, parameters, and outputs.
+LLM-as-judge measurements require calibration against human annotations.
+
+\subsection{External Validity}
+
+A small course-project corpus may not represent the diversity of scientific PDFs, disciplines, or revision practices.
+A five-participant formative prototype study cannot establish broad usability.
+Results must be stratified and conclusions restricted to the evaluated documents, questions, devices, and participants.
+
+\subsection{Reproducibility}
+
+The current draft lacks the source revision, experimental data, and raw usability records needed for reproduction.
+This is a present evidence gap, not a formatting issue.
+The thesis can become empirically complete only when those artifacts are supplied, linked, and audited.

@@ -1,13 +1,60 @@
-% !TEX root = ../main.tex
+﻿% !TEX root = ../main.tex
 
 \chapter{Conclusions}
 
-\section{Discussions}
+\section{Answers to the Research Questions}
 
-\section{Main Conclusions}
-……
+\subsection{RQ1: Revision-Correct Representation}
 
-\section{Outlook}
-……
+The design answers RQ1 by separating logical paper identity from revision identity and carrying revision, content hash, transformation configuration, and lineage into derived artifacts.
+This answer establishes a testable invariant.
+It does not establish that the invariant holds in a running system because the source revision and E1 logs are missing.
 
+\subsection{RQ2: Evidence-Bounded Assistance}
+
+The design answers RQ2 by decomposing answers into claims and distinguishing identifier validity, evidence availability, consistency, and coverage.
+It defines scoped retrieval, resolvable source spans, and abstention.
+The literature supports the need for these distinctions~\cite{gao2023alce,es2024ragas,huang2024grounded,niu2024ragtruth}.
+Whether the complete pipeline improves retrieval or citation quality remains \pending{} until E2 is executed.
+
+\subsection{RQ3: Adaptive Interest Memory}
+
+The design answers RQ3 with separable explicit, short-term, and long-term state, bounded implicit-event semantics, inspectable recommendation reasons, and user correction.
+This is a defensible alternative to treating one opaque vector as authoritative.
+Its benefit for ranking, diversity, adaptation, or user control remains \pending{} until E3 provides temporal and correction evidence.
+
+\subsection{RQ4: Bounded Mobile Integration}
+
+The prototype demonstrates that the intended workflow can be represented as mobile interactions.
+The supplied presentation reports that participants completed the digest, evidence, Q\&A, and preference tasks more often than the graph task.
+Because raw records and a production build are absent, this evidence is \observed{}/\limited{}.
+Mobile latency, reliability, privacy behavior, and redesign effectiveness remain unestablished.
+
+\section{Contribution and Limitations}
+
+The current contribution is an evidence-first system and evaluation framework.
+It connects four mechanisms through explicit traceability and makes its own evidence state visible.
+This framing avoids two common errors: describing a technology stack as novelty and treating fluent, citation-bearing output as verified understanding.
+
+The same evidence-first standard limits the conclusion.
+The supplied materials do not justify claims of production implementation, improved RAG quality, successful behavioral adaptation, or general usability.
+Those limitations do not invalidate the design contribution, but they prevent the thesis from claiming empirical completion.
+
+\section{Prioritized Future Work}
+
+The first priority is not an additional product feature.
+It is an immutable repository and build freeze that permits a verified implementation inventory.
+The second priority is completion of E1--E3 with frozen data, baselines, configurations, outputs, and analyses.
+The third priority is an E4 package containing system logs and participant-level usability records, followed by a focused retest of graph discoverability.
+
+Only after the core evidence chain is complete should the project prioritize stretch features such as autonomous multi-hop research, voice input, camera OCR, collaboration, or on-device language models.
+These features broaden capability but do not repair missing evidence for the central contribution.
+
+\section{Final Statement}
+
+MNEME is most defensible when understood not as an autonomous researcher, but as an accountable mobile loop for continuing literature work.
+The loop is useful only if paper revisions remain identifiable, generated claims remain inspectable, behavioral adaptation remains correctable, and mobile integration preserves those properties.
+This draft defines how each promise can be tested and marks where evidence is still required.
+
+\clearpage
 
