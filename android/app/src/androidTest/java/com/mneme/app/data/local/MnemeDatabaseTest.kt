@@ -23,6 +23,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class MnemeDatabaseTest {
@@ -118,6 +119,67 @@ class MnemeDatabaseTest {
                     .first()
                     ?.lastSuccessfulRefreshAtEpochMillis,
             )
+        }
+
+    @Test
+    fun offlineCachePrune_retainsRecentAndRecentlyOpenedContentAfterReconnect() =
+        runBlocking {
+            val now = TimeUnit.DAYS.toMillis(100)
+            val repository =
+                OfflineCacheRepository(
+                    paperDao = database.paperDao(),
+                    digestDao = database.digestDao(),
+                    cacheMetadataDao = database.cacheMetadataDao(),
+                )
+            database.paperDao().upsertAll(
+                listOf(
+                    paper("recent", "2401.00011", now - TimeUnit.DAYS.toMillis(13)),
+                    paper("opened", "2401.00012", now - TimeUnit.DAYS.toMillis(20)),
+                    paper("expired", "2401.00013", now - TimeUnit.DAYS.toMillis(15)),
+                ),
+            )
+            repository.markPaperOpened("opened", now - TimeUnit.DAYS.toMillis(29))
+            database.digestDao().upsertAll(
+                listOf(
+                    DigestEntity(
+                        id = "recent-digest",
+                        title = "Recent",
+                        summary = "Summary",
+                        digestType = "daily",
+                        generatedAtEpochMillis = now - TimeUnit.DAYS.toMillis(13),
+                    ),
+                    DigestEntity(
+                        id = "expired-digest",
+                        title = "Expired",
+                        summary = "Summary",
+                        digestType = "daily",
+                        generatedAtEpochMillis = now - TimeUnit.DAYS.toMillis(15),
+                    ),
+                ),
+            )
+
+            repository.recordSuccessfulRefresh(now)
+            val result = repository.pruneExpiredContent(now)
+
+            assertEquals(1, result.removedPapers)
+            assertEquals(1, result.removedDigests)
+            assertEquals(
+                listOf("recent", "opened"),
+                database
+                    .paperDao()
+                    .observeAll()
+                    .first()
+                    .map(PaperEntity::id),
+            )
+            assertEquals(
+                listOf("recent-digest"),
+                database
+                    .digestDao()
+                    .observeAll()
+                    .first()
+                    .map(DigestEntity::id),
+            )
+            assertEquals(now, repository.observeMetadata().first()?.lastSuccessfulRefreshAtEpochMillis)
         }
 
     @Test
