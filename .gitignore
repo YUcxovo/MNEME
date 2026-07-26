@@ -97,5 +97,6 @@ google-services.json
 *.log
 tmp/
 temp/
+/docs/latex_output/
 .claude/
 .agents/
