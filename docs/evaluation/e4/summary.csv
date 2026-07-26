@@ -1,0 +1,37 @@
+track,scenario,condition,n,success_count,success_rate,p50_ms,p95_ms,min_ms,max_ms
+startup,cold_process,,20,20,1.0,2773.0,4444.0,1450.0,5733.0
+startup,warm_task_resume,,20,20,1.0,133.5,445.0,21.0,1919.0
+state,cached_offline_disclosure,,30,30,1.0,0.227,0.439,0.164,2.84
+state,cached_server_failure_disclosure,,30,30,1.0,0.231,0.362,0.198,0.429
+state,cached_warm_start,,30,30,1.0,0.227,0.376,0.159,0.516
+state,invalid_cache_error,,30,30,1.0,0.203,0.635,0.156,0.653
+state,live_seed,,30,30,1.0,0.124,0.293,0.111,0.378
+state,three_stage_job_polling,,10,10,1.0,3008.418,3064.345,3001.749,3064.345
+graph,render_ready,cold_webview; nodes=1,20,20,1.0,139.749,298.019,98.643,367.565
+graph,render_ready,cold_webview; nodes=12,20,20,1.0,454.149,913.746,227.886,1058.07
+graph,render_ready,cold_webview; nodes=25,20,20,1.0,315.039,734.19,129.623,786.137
+graph,render_ready,cold_webview; nodes=50,20,20,1.0,306.793,928.176,144.531,1066.427
+graph,render_ready,warm_update; nodes=1,30,30,1.0,83.001,150.84,76.794,198.947
+graph,render_ready,warm_update; nodes=12,30,30,1.0,95.59,331.895,70.413,1851.85
+graph,render_ready,warm_update; nodes=25,30,30,1.0,97.767,361.523,80.381,368.042
+graph,render_ready,warm_update; nodes=50,30,30,1.0,111.814,513.785,77.745,641.6
+graph,select_node,cold_webview; nodes=1,20,20,1.0,32.764,46.022,24.027,129.649
+graph,select_node,cold_webview; nodes=12,20,20,1.0,35.971,392.792,26.416,925.38
+graph,select_node,cold_webview; nodes=25,20,20,1.0,48.675,568.963,26.254,589.67
+graph,select_node,cold_webview; nodes=50,20,20,1.0,49.098,353.71,29.605,690.499
+graph,select_node,warm_update; nodes=1,30,30,1.0,32.279,103.68,24.83,126.363
+graph,select_node,warm_update; nodes=12,30,30,1.0,32.968,208.816,24.932,475.085
+graph,select_node,warm_update; nodes=25,30,30,1.0,32.759,128.642,26.807,150.176
+graph,select_node,warm_update; nodes=50,30,30,1.0,37.86,163.644,27.533,202.407
+graph_state,empty,,30,30,1.0,66.281,115.613,53.032,180.186
+graph_state,fallback,,30,30,1.0,103.375,831.843,79.419,1883.09
+graph_state,ready,,30,30,1.0,97.114,320.089,77.948,1173.367
+event_sync,duplicate_replay,controlled,30,30,1.0,18.95,50.222,12.311,55.298
+event_sync,queue_write,controlled,30,30,1.0,10.287,32.261,6.474,67.72
+event_sync,retry_success,controlled,30,30,1.0,54.999,91.794,9.955,140.6
+event_sync,retryable_http_failure,controlled,30,30,1.0,15.613,80.332,12.16,109.651
+event_sync,controlled_failure_before_live_retry,live_backend,5,5,1.0,8.028,8.616,7.772,8.616
+event_sync,live_client_readback,live_backend,5,5,1.0,26.776,135.906,20.094,135.906
+event_sync,live_duplicate_replay,live_backend,5,5,1.0,24.21,125.869,15.79,125.869
+event_sync,live_queue_write,live_backend,5,5,1.0,13.85,19.061,10.498,19.061
+event_sync,live_retry_upload,live_backend,5,5,1.0,33.049,188.478,27.949,188.478

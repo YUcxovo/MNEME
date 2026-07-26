@@ -56,3 +56,25 @@ Every controlled result is labelled as controlled. The live readback records
 the number of digest entries and preference-model version returned by the
 backend. A zero-entry digest is a valid measured outcome and must not be
 rewritten as a successful recommendation result.
+
+## Recorded run
+
+The recorded run used the Android 14/API 34 `sdk_gphone64_x86_64` emulator with
+four virtual processors and a 192 MiB application heap. All 810 controlled
+samples and all 25 live-backend stages met their stated success conditions.
+Eleven existing graph and app-flow tests also passed, including the selected
+paper's Open Paper action and selection restoration after back navigation.
+
+The cold-process start had a 2,773 ms median and a 4,444 ms p95. Warm task
+resume had a 133.5 ms median and a 445 ms p95. Across the four graph sizes,
+median DOM-ready latency ranged from 139.749 to 454.149 ms for a new WebView
+and from 83.001 to 111.814 ms for an existing WebView. Median node-selection
+callback latency ranged from 32.28 to 49.098 ms.
+
+Each of the five live repetitions uploaded three new events, recognized the
+same three identifiers on replay, and returned a live briefing model to the
+client. The live upload median was 33.049 ms, and client readback was 26.776
+ms. The returned digest contained zero papers in every repetition because the
+local evaluation database had no candidates in the active digest window. The
+run therefore demonstrates client-loop reachability and idempotent ingestion,
+not recommendation quality or adaptation.

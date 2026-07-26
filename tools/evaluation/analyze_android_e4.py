@@ -103,11 +103,11 @@ def summarize(
                 condition=condition,
                 n=len(group),
                 success_count=successes,
-                success_rate=successes / len(group),
-                p50_ms=statistics.median(durations),
-                p95_ms=nearest_rank(durations, 0.95),
-                min_ms=min(durations),
-                max_ms=max(durations),
+                success_rate=round(successes / len(group), 6),
+                p50_ms=round(statistics.median(durations), 3),
+                p95_ms=round(nearest_rank(durations, 0.95), 3),
+                min_ms=round(min(durations), 3),
+                max_ms=round(max(durations), 3),
             ),
         )
     return summaries
@@ -172,7 +172,11 @@ def write_summary(
         newline="",
         encoding="utf-8",
     ) as handle:
-        writer = csv.DictWriter(handle, fieldnames=list(asdict(summaries[0])))
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=list(asdict(summaries[0])),
+            lineterminator="\n",
+        )
         writer.writeheader()
         for item in summaries:
             writer.writerow(asdict(item))
@@ -213,7 +217,7 @@ def plot_graph_latency(summaries: list[Summary]) -> None:
         ("render_ready", "DOM ready"),
         ("select_node", "Selection callback"),
     ]
-    figure, axes = plt.subplots(1, 2, figsize=(9.2, 3.55), constrained_layout=True)
+    figure, axes = plt.subplots(1, 2, figsize=(9.2, 4.2))
     for axis, (scenario, title) in zip(axes, scenarios, strict=True):
         for phase, label, color in phases:
             points = [
@@ -247,10 +251,21 @@ def plot_graph_latency(summaries: list[Summary]) -> None:
         axis.set_ylabel("Latency (ms)")
         axis.set_xticks(node_counts)
         axis.grid(axis="y")
-    axes[0].legend(frameon=False, fontsize=8)
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(
+        handles,
+        labels,
+        frameon=False,
+        fontsize=8,
+        ncol=4,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 0.86),
+    )
+    figure.subplots_adjust(top=0.7, bottom=0.15, left=0.08, right=0.98, wspace=0.16)
     figure.suptitle(
         "Android citation-graph renderer and selection latency",
         x=0.01,
+        y=0.98,
         ha="left",
         fontsize=13,
         fontweight="bold",
@@ -317,6 +332,15 @@ def plot_mobile_reliability(summaries: list[Summary]) -> None:
     figure, axes = plt.subplots(1, 2, figsize=(10.2, 4.6), constrained_layout=True)
     plot_latency_list(axes[0], lookup, left_items, "Mobile state resolution")
     plot_latency_list(axes[1], lookup, right_items, "Event synchronization")
+    handles, labels = axes[0].get_legend_handles_labels()
+    figure.legend(
+        handles,
+        labels,
+        frameon=False,
+        ncol=2,
+        loc="upper right",
+        bbox_to_anchor=(0.985, 0.975),
+    )
     figure.suptitle(
         "Measured Android client reliability paths",
         x=0.01,
@@ -344,11 +368,10 @@ def plot_latency_list(
     axis.scatter(p50, positions, color=TEAL, s=40, label="p50", zorder=4)
     axis.set_yticks(positions, labels)
     axis.invert_yaxis()
-    axis.set_xscale("symlog", linthresh=1)
-    axis.set_xlabel("Latency (ms, symlog scale)")
+    axis.set_xscale("log")
+    axis.set_xlabel("Latency (ms, log scale)")
     axis.set_title(title, loc="left", fontweight="bold")
     axis.grid(axis="x")
-    axis.legend(frameon=False, loc="lower right")
     for position, result in zip(positions, results, strict=True):
         axis.annotate(
             f"{result.success_count}/{result.n}",
@@ -425,10 +448,11 @@ def plot_client_loop() -> None:
         ((2.6, 3.68), (3.25, 3.68)),
         ((5.5, 3.68), (6.15, 3.68)),
         ((8.4, 3.68), (9.05, 3.68)),
-        ((10.18, 3.05), (8.38, 1.9)),
-        ((6.15, 1.32), (5.5, 1.32)),
+        ((9.05, 3.22), (5.5, 1.68)),
         ((3.25, 1.32), (1.55, 3.05)),
-        ((7.28, 3.05), (7.28, 1.9)),
+        ((7.02, 3.05), (7.02, 1.9)),
+        ((7.56, 1.9), (7.56, 3.05)),
+        ((9.5, 3.05), (8.25, 1.9)),
     ]
     for start, end in arrows:
         axis.add_patch(
@@ -489,7 +513,7 @@ def add_box(
         y + height - 0.27,
         title,
         color=color,
-        fontsize=10,
+        fontsize=8.8,
         fontweight="bold",
         va="top",
     )
