@@ -1,27 +1,43 @@
-﻿% !TEX root = ../main.tex
+% !TEX root = ../main.tex
 
 \chapter{App Development and Testing}
 
+\section{Frozen Revisions, Environment, and Reproducibility}
+
+This chapter evaluates the system against inspected source revisions rather than design documents.
+Two revisions bound the claims that follow.
+The integrated repository state is commit \texttt{70eb54c} of the MNEME repository, which contains the backend service, the AI service layer, the Android client, and their test suites.
+The AI evaluation additions of Milestone~4 --- the graded evaluation harness, the expanded fixture set, the live evaluation command, and the cost audit --- exist on branch \texttt{feat/ai-m4-eval} (tip \texttt{59af174}, pull request open at the time of writing) and are cited with that revision explicitly.
+A statement about code that appears in neither revision is a design statement and belongs to Chapter~3.
+
+The backend is a Python/FastAPI service with PostgreSQL and \texttt{pgvector} for storage and vector search, Redis for caching, budget accounting, and job queues, and ARQ workers for background processing.
+The AI layer routes each task to a configured provider; Anthropic, OpenAI, and DeepSeek adapters are implemented, providers are inferred from model identifiers, and misconfigured routes fail at startup rather than on the first request.
+Embeddings default to \texttt{text-embedding-3-small} at 1536 dimensions, matching the frozen \texttt{vector(1536)} schema; each chunk row stores its embedding model so a model swap cannot leave orphan vectors.
+Every completion persists provider, model snapshot, prompt version, input hash, token counts, estimated cost, and latency, so any live run is auditable from the database without extra instrumentation.
+A deterministic fake provider drives the software tests; no software test in this thesis is presented as a research result.
+
 \section{Evidence and Implementation Status}
 
-This chapter begins with status because the supplied materials contain detailed future-tense engineering plans but no product source repository.
-Table~\ref{tab:status} prevents design intent from being promoted into an implementation claim.
+Table~\ref{tab:status} classifies the current evidence.
+The classification prevents design intent from being promoted into an implementation claim and prevents implemented software from being promoted into a measured research outcome.
 
 \begin{table}[htbp]
 \centering
-\caption{Current evidence status. ``Current'' refers only to the materials supplied for this thesis draft.}
+\caption{Current evidence status at the stated revisions. Code presence is verified by inspection; behavioral claims for backend and client subsystems require their domain owners' sign-off.}
 \label{tab:status}
 \begin{tabular}{P{4.5cm}P{3.2cm}P{6.3cm}}
 \toprule
 Artifact or claim & State & Basis and boundary \\
 \midrule
-Five-chapter research design and TC/RQ/C/E traceability & \implemented{} (document) & Controlling outline and workflow artifacts exist. \\
-Interactive mobile workflow & \observed{} & HTML prototype and UI/UX mockups exist; not a production Android build. \\
-Android client, backend, database, and job pipeline & \planned{} & Architecture and acceptance criteria exist; source revision was not supplied. \\
-Revision-aware lineage and invalidation & \planned{} & Design specified; E1 artifacts absent. \\
-Evidence-bounded question-answering effectiveness & \pending & E2 dataset, configurations, traces, and results absent. \\
-Adaptive recommendation effectiveness & \pending & E3 event streams, baselines, and results absent. \\
-Mobile latency and reliability & \pending & Build, device matrix, and system logs absent. \\
+AI service layer: section-aware chunking, embeddings, dense retrieval, rerank, grounded Q\&A with refusal and citation verification, summarization, recommendation scoring, caching, budget guard, model routing & \implemented{} & \texttt{70eb54c}, \texttt{backend/src/mneme/ai}; unit and API tests pass with a fake provider. Tests establish specified behavior, not answer quality. \\
+Cross-revision retrieval isolation & \implemented{} (software test) & Chunks bind to \texttt{paper\_version\_id}; an API test asserts Q\&A retrieval cannot mix revisions. E1 research metrics remain \pending. \\
+RAG-graded evaluation harness, 15-case fixture set, live evaluation command & \implemented{} & \texttt{feat/ai-m4-eval} at \texttt{59af174}; not yet merged into the integrated branch. \\
+E2 quality results (recall, source match, refusal, latency, cost) & \pending & Requires a live run of the evaluation command against ingested fixture papers. \\
+AI cost audit & \observed{} & Static call-site and list-price analysis at \texttt{1a604b3}; estimates, not measured spend. \\
+Backend ingestion, jobs, and graph platform & \implemented{} (code) & Present with tests at \texttt{70eb54c}; behavioral claims pending Ruiyu's sign-off. E1/E3 research results \pending. \\
+Android client, offline cache, event queue, graph UI & \implemented{} (code) & Present with tests at \texttt{70eb54c}; behavioral and device claims pending Heng's and Hanyang's sign-off. \\
+Adaptive recommendation effectiveness & \pending & behavior-v1 supplies the behavior embedding; E3 event streams, baselines, and results absent. \\
+Mobile latency and reliability & \pending & Device matrix and system measurements absent. \\
 Five-participant prototype findings & \observed{}; \limited{} & Task counts appear in the final presentation; participant-level records absent. \\
 \bottomrule
 \end{tabular}
@@ -32,6 +48,13 @@ Five-participant prototype findings & \observed{}; \limited{} & Task counts appe
 \subsection{Evaluation Question}
 
 E1 tests the contribution promise that every claim-bearing artifact can be traced to the intended paper revision and that a revision update cannot silently leave stale derivatives marked current.
+
+\subsection{Implemented Basis}
+
+Two mechanisms from the inspected revision already constrain this evaluation.
+Chunking is deterministic: the same parsed sections always produce the same chunk contents and content hashes, which makes the embed stage idempotent and makes re-chunking comparable across runs.
+Retrieval is revision-scoped: every chunk row binds to a \texttt{paper\_version\_id}, and an implemented API test asserts that Q\&A over one revision cannot return chunks of another.
+These are software facts at \texttt{70eb54c}; they do not by themselves establish parser structure quality or invalidation completeness.
 
 \subsection{Dataset and Fixtures}
 
@@ -44,6 +67,7 @@ The final evaluation should freeze a corpus containing:
   \item metadata-only or abstract-only degraded cases.
 \end{itemize}
 For each fixture, a gold manifest records logical identity, revision identity, expected sections, changed regions, and affected derived artifacts.
+Fixture construction and result sign-off belong to the backend/data owner.
 
 \subsection{Metrics}
 
@@ -70,51 +94,76 @@ Degraded-mode accuracy & \pending & \pending & Parser status log \\
 
 \subsection{Evaluation Questions}
 
-E2 asks whether the planned section-aware, evidence-bounded pipeline improves the ability to find relevant scientific evidence and whether generated claims remain supported and sufficiently covered.
-It also asks how the pipeline behaves when evidence is absent, misplaced, or surrounded by distractors.
+E2 asks whether the implemented section-aware, evidence-bounded pipeline finds the evidence a question needs, whether generated claims remain matched to their cited sources, and whether the system refuses when evidence is absent.
+It also asks what each pipeline stage contributes, and at what latency and cost.
 
-\subsection{Frozen Scholarly Question-Answering Set}
+\subsection{Evaluated Pipeline}
 
-The final dataset should contain questions written against frozen paper revisions and gold evidence spans.
-It should cover factual questions, method and dataset questions, comparison questions, multi-section questions, cross-paper questions, follow-ups, and unanswerable questions.
-Questions and evidence are split by paper to reduce leakage.
-Each item records acceptable answer content, one or more evidence spans, answerability, and scope.
+The evaluated configuration is the implemented pipeline at \texttt{70eb54c}, not an idealized design.
+Retrieval embeds the question and performs dense approximate-nearest-neighbor search over one revision's chunks in \texttt{pgvector}, returning the top \(k=8\) by cosine similarity plus up to two early-document \emph{context anchors} that preserve overview context.
+Reranking is an honest lexical blend rather than a learned cross-encoder: the final score is \(0.7\) times vector similarity plus \(0.3\) times the fraction of the question's content words present in the chunk, with stopwords removed.
+Ties break on original retrieval order, so reranking is deterministic for identical inputs; the top \(n=4\) chunks become evidence, and anchors outside the top \(n\) are appended rather than displacing question-specific evidence.
 
-\subsection{Baselines and Ablations}
+Generation is refused before any model call when no evidence reaches a minimum score of \(0.25\); the model may also decline by emitting a designated insufficient-evidence marker, and both paths return the same fixed refusal answer.
+After generation, citation verification checks every bracketed marker against the evidence list: markers outside the list are dropped rather than repaired, and each cited chunk is compared with the local claim sentences that carry its marker.
+A citation is \emph{source-matched} when at least \(30\%\) of the claim's content words appear in the cited chunk; answers are then labeled matched, partial, or insufficient.
+This is retrieved-source matching, not semantic entailment, and the thesis does not claim otherwise; the distinction follows the citation-quality framing of ALCE~\cite{gao2023alce} and the hallucination evidence in RAGTruth~\cite{niu2024ragtruth}.
 
-The evaluation compares:
-\begin{enumerate}
-  \item long-context generation without retrieval;
-  \item fixed-size chunk retrieval;
-  \item section-aware retrieval;
-  \item section-aware retrieval with neighboring-context expansion;
-  \item the full pipeline without consistency verification;
-  \item the full pipeline without coverage verification;
-  \item the full pipeline with identifier-only verification.
-\end{enumerate}
-These comparisons isolate retrieval unit, context expansion, and each verification layer.
-They also guard against assuming that every additional stage improves quality or latency.
+Completions are cached in Redis (24-hour TTL for Q\&A, 7-day for summaries) with the prompt version in the cache key, so template changes invalidate cleanly.
+A shared daily budget guard in Redis refuses provider calls once the configured daily cap (default \$5) is spent; the check-then-spend sequence can overshoot by at most the in-flight completions, which is acceptable for a daily stop.
+
+\subsection{Frozen Question Set}
+
+The current frozen set is \texttt{qa-seed-v2} on \texttt{feat/ai-m4-eval}: 15 manually curated cases over seven arXiv papers, comprising 12 answerable questions and 3 out-of-scope cases whose correct behavior is refusal.
+Each case records the target paper, a section hint, the question, a reference answer, expected keywords, and whether refusal is expected; duplicate identifiers are rejected at load time.
+The set is a seed, not a benchmark: it is large enough to exercise every pipeline path and grading rule, and too small to support significance claims.
+A final evaluation should extend it with multi-section, comparison, follow-up, and distractor-heavy strata, keeping questions and evidence split by paper to reduce leakage; multi-turn strata follow the motivation of mtRAG~\cite{katsis2025mtrag}.
+
+\subsection{Run Procedure}
+
+The live evaluation command (\texttt{python -m mneme.cli.run\_qa\_eval}) grades the full retrieval and grounded-answer pipeline against ingested, parsed, and embedded fixture papers, using the same code paths as the production route.
+Fixtures whose paper is missing or unembedded are reported as skipped, never silently dropped, and skips are recorded in the output report.
+Each run must record the repository revision, model routes, prompt versions, fixture version, and the full per-case JSON report as its raw artifact.
 
 \subsection{Metrics}
 
-Retrieval is measured with Recall@\(k\), mean reciprocal rank, and nDCG against gold spans.
-Answer quality is evaluated with task-appropriate exact, semantic, or human judgments.
-Citation correctness measures whether cited evidence supports a claim; citation completeness measures whether material claims are supported.
-Abstention precision and recall are reported for unanswerable items.
-Latency and model cost are reported separately.
-Automatic evaluators are calibrated on a human-reviewed subset because reference-free evaluation is not itself ground truth~\cite{es2024ragas,saadfalcon2024ares}.
+The graded report computes:
+\begin{itemize}
+  \item \textbf{retrieval hit rate at \(k\)}: whether any retrieved section title matches the fixture's section hint, checked by bidirectional containment after case folding; this is a section-level proxy, not span-level gold annotation;
+  \item \textbf{source-match rate}: the fraction of answered cases whose every citation is source-matched; partially matched answers are reported separately and never folded into the headline rate;
+  \item \textbf{citation rate}: answered cases carrying at least one verified citation;
+  \item \textbf{refusal accuracy} on out-of-scope cases and \textbf{false-refusal rate} on answerable cases;
+  \item \textbf{keyword coverage} of expected keywords, a lexical proxy for answer content;
+  \item token counts, estimated cost, and latency per case and in aggregate.
+\end{itemize}
+Lexical proxies are acknowledged as such.
+Before any headline quality claim, automatic grades must be calibrated against a human-reviewed subset, because reference-free evaluation is not itself ground truth~\cite{es2024ragas,saadfalcon2024ares}.
+
+\subsection{Baselines and Ablations}
+
+The planned comparisons isolate what each stage contributes:
+\begin{enumerate}
+  \item long-context generation without retrieval, motivated by position-sensitivity findings~\cite{liu2024lost};
+  \item fixed-size chunk retrieval versus the implemented section-aware chunking;
+  \item dense retrieval only versus the vector-plus-lexical rerank;
+  \item the pipeline without context anchors;
+  \item the pipeline without citation verification;
+  \item varied refusal thresholds around the deployed \(0.25\).
+\end{enumerate}
+The comparisons guard against assuming that every additional stage improves quality or latency~\cite{wang2024bestpractices}.
+Naming a cross-encoder or another learned reranker as part of MNEME is gated on implementing it and passing this ablation; until then, vector-plus-lexical remains the accurate description.
 
 \begin{table}[htbp]
 \centering
 \caption{E2 result schema. Component metrics prevent a fluent answer from hiding retrieval or citation failure.}
 \begin{tabular}{P{4.0cm}P{2.1cm}P{2.1cm}P{2.1cm}P{2.1cm}}
 \toprule
-Configuration & Retrieval & Answer & Citation & Latency / cost \\
+Configuration & Retrieval & Source match / refusal & Keyword coverage & Latency / cost \\
 \midrule
 Long context & \pending & \pending & \pending & \pending \\
 Fixed chunks & \pending & \pending & \pending & \pending \\
-Section-aware & \pending & \pending & \pending & \pending \\
-Full evidence-bounded pipeline & \pending & \pending & \pending & \pending \\
+Dense only & \pending & \pending & \pending & \pending \\
+Full pipeline (deployed) & \pending & \pending & \pending & \pending \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -126,18 +175,25 @@ Full evidence-bounded pipeline & \pending & \pending & \pending & \pending \\
 E3 tests whether adaptive interest state improves future paper ranking under a temporal split, whether short- and long-term state serve distinct roles, and whether users can correct the model consistently.
 The evaluation does not treat historical clicks as perfect preference labels.
 
+\subsection{Implemented Scoring Basis}
+
+The implemented recommendation scorer at \texttt{70eb54c} blends three signals: explicit topic match (weight 0.45), cosine similarity between the user's learned behavior embedding and the paper's mean chunk embedding (weight 0.35), and publication recency with a one-week half-life (weight 0.2).
+Missing signals redistribute their weight over the available ones, so a cold-start user still receives a meaningful score; ranking is deterministic with a stable tie-break.
+Each entry carries human-readable reasons derived from its dominant signals, not free-form post-hoc text, consistent with the scrutability requirement of Chapter~3~\cite{ramos2024scrutable}.
+The behavior embedding itself is produced by behavior-v1, owned and signed off by the backend/data owner; this chapter evaluates the composition, not the internals of the behavior model.
+
 \subsection{Data and Baselines}
 
 The final evaluation freezes event sequences with exposure records, event semantics, timestamps, and paper candidates.
 Where real longitudinal data are unavailable, synthetic sequences may test deterministic update invariants but cannot establish user benefit.
-Baselines include explicit interests only, long-term history only, recent events only, one-timescale EMA, and the full multi-timescale design.
+Baselines include explicit interests only, recency only, behavior-v1 with the deployed weights, and any frozen v2 candidate; a v2 comparison is reportable only after its definition and migration are frozen.
 
 \subsection{Metrics and Tests}
 
 Ranking metrics include Recall@\(k\) and nDCG@\(k\) on future eligible positive events.
 Diversity and novelty are reported to detect narrowing or repetition.
 Adaptation delay measures how quickly a confirmed new interest affects ranking.
-Negative-feedback sensitivity tests whether a bounded skip signal has an appropriate rather than overwhelming effect.
+Negative-feedback sensitivity tests whether a bounded skip signal has an appropriate rather than overwhelming effect, respecting the exposure-eligibility rule of Chapter~3~\cite{zhang2025unpaired}.
 Correction consistency tests whether editing or deleting a visible interest produces predictable ranking and explanation changes.
 
 \begin{table}[htbp]
@@ -148,9 +204,9 @@ Correction consistency tests whether editing or deleting a visible interest prod
 Model & Ranking & Diversity & Adaptation & Correction \\
 \midrule
 Explicit only & \pending & \pending & \pending & \pending \\
-Recent only & \pending & \pending & \pending & \pending \\
-Single-timescale baseline & \pending & \pending & \pending & \pending \\
-Multi-timescale design & \pending & \pending & \pending & \pending \\
+Recency only & \pending & \pending & \pending & \pending \\
+behavior-v1 (deployed weights) & \pending & \pending & \pending & \pending \\
+Frozen v2 candidate (if any) & \pending & \pending & \pending & \pending \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -159,10 +215,12 @@ Multi-timescale design & \pending & \pending & \pending & \pending \\
 
 \subsection{Systems Measurements}
 
-The systems evaluation requires an immutable build, backend revision, model/provider configuration, device matrix, network conditions, and corpus snapshot.
+The systems evaluation requires an immutable build, backend revision, model and provider configuration, device matrix, network conditions, and corpus snapshot.
 It reports digest-load latency, paper-detail latency, Q\&A first-token and completion latency, graph expansion latency, event-upload success, synchronization conflicts, background-task completion, notification delivery, cache hit rate, and daily model cost.
 Each distribution includes sample count and percentile statistics.
-Failure injection covers offline operation, provider timeout, malformed document, empty retrieval, verification failure, and duplicate event upload.
+The AI-side instrumentation for this evaluation is already implemented: every completion persists token counts, estimated cost, and latency, and budget exhaustion surfaces to the client as an explicit rate-limit response rather than a silent failure.
+Failure injection covers offline operation, provider timeout, budget exhaustion, malformed document, empty retrieval, verification failure, and duplicate event upload.
+Client and device measurements are supplied and signed off by the client owners.
 
 \subsection{Usability Protocol}
 
@@ -175,7 +233,7 @@ The supplied task design is retained because it covers the core research loop:
   \item change a digest preference or interest topic.
 \end{enumerate}
 The final dataset must contain one row per participant and task with completion, time, taps, error path, confusion code, and observation.
-The study report must describe recruitment, consent, moderator instructions, prototype/build version, analysis procedure, and missing data.
+The study report must describe recruitment, consent, moderator instructions, prototype or build version, analysis procedure, and missing data.
 
 \subsection{Available Formative Observation}
 
@@ -184,30 +242,54 @@ Within that report, the graph task is the only major drop-off.
 This observation supports the decision to make graph actions explicit.
 It does not show that the subsequent redesign improves completion because no retest is supplied.
 
+\section{AI Cost and Latency Audit}
+
+\subsection{Method and Scope}
+
+Model cost is a first-class evaluation dimension because the assistant runs continuously against a paid provider.
+A static audit at revision \texttt{1a604b3} inventoried every provider call site, its trigger, default model route, cache behavior, and budget check.
+All dollar figures in this section are estimates from provider list prices (reviewed 2026-07) and token approximations, classified \observed{}; measured spend comes from the persisted cost telemetry once the deployed pipeline has run, and remains \pending.
+
+There are four provider call sites: the summarization worker (background job per paper version), grounded Q\&A (per request), query embedding, and batched chunk embedding; recommendation scoring makes no provider calls because it reuses stored vectors.
+All completion sites check the shared daily budget and persist full cost telemetry.
+
+\subsection{Estimated Unit Economics}
+
+Under the deployed caps (summary input 60{,}000 characters, summary output 1024 tokens, Q\&A context of roughly six 450-token chunks, Q\&A output 512 tokens), one paper summary on the default flagship route costs an estimated \$0.10, one grounded answer roughly \$0.028, and embedding a full paper roughly \$0.0003.
+Against the default \$5 daily cap, a single bulk ingestion day of about 50 summaries can exhaust the budget on the flagship tier, while a cheaper tier fits roughly 250 summaries per day.
+A full 15-case evaluation run is estimated at \$0.34 on the flagship tier versus \$0.07 on a light tier.
+
+\subsection{Findings}
+
+The audit's headline finding is that the default routing sends bulk summarization --- schema-constrained background work, and the dominant spend at roughly five times Q\&A cost per unit --- to the most expensive configured model, while the flagship tier is better reserved for user-visible grounded answers.
+Rerouting summarization to a cheaper tier is recommended but deliberately deferred: the decision is gated on a summary-quality comparison over the summarization fixture set, because structured-output fidelity, not only cost, decides the route.
+Secondary findings: the single shared daily cap can let a heavy ingestion day starve interactive Q\&A (acceptable for the demo deployment; split per-task caps if observed); the embedding batch size is three orders of magnitude below LLM cost and needs no change; and the caching posture is sound because prompt versions key every cache entry and unknown models price at the most expensive tier, so budget accounting never undercounts.
+No default was changed by the audit; the routing decision remains open with its owner recorded.
+
 \section{Threats to Validity}
 
 \subsection{Construct Validity}
 
-Citation correctness is not scientific truth.
-A span can support a claim in one paper while the broader literature disagrees.
+Source matching is lexical overlap with cited evidence, not semantic entailment and not scientific truth; a span can support a claim in one paper while the broader literature disagrees~\cite{wadden2020scifact}.
+Keyword coverage is a lexical proxy for answer content, and the section-hint retrieval grade is a section-level proxy for span-level relevance.
 Likewise, a click or long reading duration is not identical to research interest.
 The evaluation therefore reports operational constructs and avoids treating them as complete measures of understanding or intent.
 
 \subsection{Internal Validity}
 
-Generator, embedding, and judge models can change over time.
-Unrecorded provider updates may alter results.
-All experiments must freeze model identifiers where possible and record dates, prompts, parameters, and outputs.
-LLM-as-judge measurements require calibration against human annotations.
+Generator, embedding, and judge models can change over time, and unrecorded provider updates may alter results.
+The implemented telemetry mitigates but does not remove this risk: every persisted completion records provider, model snapshot, prompt version, and input hash, and evaluation runs must additionally freeze fixture versions and configuration.
+Estimated costs derive from list prices and token approximations and may diverge from billed spend.
+Any LLM-as-judge measurement requires calibration against human annotations before it supports a claim.
 
 \subsection{External Validity}
 
-A small course-project corpus may not represent the diversity of scientific PDFs, disciplines, or revision practices.
+The 15-case seed set covers seven machine-learning papers from arXiv; conclusions from it do not transfer to other disciplines, layouts, or revision practices without a larger stratified corpus.
 A five-participant formative prototype study cannot establish broad usability.
 Results must be stratified and conclusions restricted to the evaluated documents, questions, devices, and participants.
 
 \subsection{Reproducibility}
 
-The current draft lacks the source revision, experimental data, and raw usability records needed for reproduction.
-This is a present evidence gap, not a formatting issue.
-The thesis can become empirically complete only when those artifacts are supplied, linked, and audited.
+The source repository, revisions, fixture sets, and evaluation tooling are supplied and inspectable, which closes the largest gap of the earlier draft.
+The remaining gaps are execution artifacts: no live graded run, no measured cost or latency distributions, no E1/E3 fixture corpora, and no raw usability records exist yet.
+Each such gap is marked \pending{} with an owner, and the thesis becomes empirically complete only when those artifacts are produced, linked, and audited at a frozen revision.
