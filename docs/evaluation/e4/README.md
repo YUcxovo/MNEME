@@ -65,12 +65,14 @@ four virtual processors and a 192 MiB application heap. All 810 controlled
 samples and all 25 live-backend stages met their stated success conditions.
 Eleven existing graph and app-flow tests also passed, including the selected
 paper's Open Paper action and selection restoration after back navigation.
-The retained connected-test XML identifies the five `MnemeAppFlowTest` cases
+The retained XML comes from `./gradlew connectedDebugAndroidTest` on the same
+source snapshot and emulator. It identifies the five `MnemeAppFlowTest` cases
 and six `GraphScreenTest` cases used for this count.
 
 The cold-process start had a 2,773 ms median and a 4,444 ms p95. The task
 foreground/resume operation had a 133.5 ms median and a 445 ms p95. All 20
-operations made the controlled activity visible. Android classified 9 as
+operations returned a non-empty `WaitTime` record for `MainActivity`; the
+startup runner does not inspect rendered UI content. Android classified 9 as
 `HOT` and returned `UNKNOWN (0)` for 11; the distribution therefore
 characterizes the measured foreground/resume operation and is not presented as
 20 independently confirmed hot starts. The retained latency is the
