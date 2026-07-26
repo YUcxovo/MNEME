@@ -1,74 +1,66 @@
 ﻿% !TEX root = ../main.tex
 
-\chapter{App Design}
+\chapter{System Design and Technical Mechanisms}
 
-\section{System Context and Trust Boundaries}
+\section{Design Method and Implementation Cutoff}
 
-The planned architecture contains three logical layers.
-The mobile client manages the reading interface, local state, background synchronization, notifications, and graph rendering.
-Application services ingest papers, schedule processing, answer client requests, update interest state, assemble digests, and orchestrate model calls.
-Data and model services store structured metadata, vector representations, events, and cached outputs and connect to external scholarly and model providers.
+This chapter translates the four technical challenges introduced in Chapter~1 into mechanisms that can be inspected and evaluated. The design follows one dependency chain rather than four isolated feature lists. Revision-safe representation (C1) supplies the identifiers and provenance required by evidence-bounded assistance (C2). The same revision-scoped representations provide inputs to the interest model (C3), while the mobile integration and citation graph (C4) expose evidence, feedback, and failure state to the reader. Each section therefore states a problem, the implemented mechanism, a considered alternative, and the evaluation hook that Chapter~4 must exercise.
+
+Unless a subsection is explicitly marked \planned{}, implementation claims in this chapter refer to the integrated repository snapshot \texttt{b945d3c}. This cutoff contains the backend pipeline, behavior baseline, citation-graph platform, Android graph flow, and durable behavioral-event upload path. A passing test is treated as evidence that the checked-out software satisfies a specified invariant; it is not treated as a measurement of research quality, user benefit, latency, or robustness in an uncontrolled environment. Those outcomes remain \pending{} until the corresponding E1--E4 protocols are executed.
+
+MNEME has four operational trust regions. The Android client owns presentation, cached reader state, background synchronization, and local interaction capture. The FastAPI application owns authentication, request validation, domain services, and public state transitions. PostgreSQL is authoritative for papers, revisions, artifacts, jobs, preferences, events, digests, and resolved citation relations; Redis and ARQ execute attempts but do not define durable truth. External scholarly and model providers remain outside the trusted boundary. Identifiers, configuration versions, quality state, and failures must remain explicit whenever data cross one of these regions.
 
 \begin{figure}[htbp]
 \centering
 \fbox{\parbox{0.88\textwidth}{
 \textbf{FIGURE PLACEHOLDER --- Evidence-first mobile literature loop.}\\
-The final vector figure will show: scholarly source $\rightarrow$ revision-aware ingestion $\rightarrow$ versioned sections/chunks $\rightarrow$ evidence-bounded answer and digest $\rightarrow$ mobile verification/correction actions $\rightarrow$ bounded interest update. Trust boundaries will separate the mobile client, application services, data stores, and external providers.
+The final vector figure will show: scholarly source $\rightarrow$ exact-revision ingestion $\rightarrow$ versioned artifacts and chunks $\rightarrow$ grounded answer and briefing $\rightarrow$ mobile inspection and behavioral events $\rightarrow$ versioned interest update. Trust boundaries will separate Android, FastAPI workers, PostgreSQL/Redis, and external providers.\\
+\textbf{Owner:} Hanyang (visual integration), with Ruiyu and Yifan validating technical labels. \textbf{Dependency:} final API and worker state diagrams. \textbf{Expected artifact:} editable vector figure plus print-safe PDF. \textbf{Finalization trigger:} implementation freeze for E1--E4.
 }}
-\caption{Planned evidence-first loop. The figure describes the system design; it does not assert that every component has been implemented.}
+\caption{Evidence-first dependency loop and trust boundaries. The final figure will distinguish implemented paths from planned final-version extensions.}
 \label{fig:loop}
 \end{figure}
 
-Figure~\ref{fig:loop} summarizes the intended evidence-first loop and the boundaries across which provenance and failure state must remain visible.
-The most important architecture property is not the selected framework.
-It is the preservation of identifiers, configuration, and failure state across layer boundaries.
-A client should never receive an answer citation without the paper revision and evidence locator required to resolve it.
-An interest update should never occur without an event identifier and a declared signal type.
-A background task should never silently replace a derived artifact while leaving dependent outputs marked current.
+Figure~\ref{fig:loop} will serve as the chapter's visual index. Three invariants connect its components. First, a paper-derived output must identify the exact source revision. Second, a state-changing request must carry a stable identity so that retry does not duplicate its effect. Third, degraded results and failures must remain visible instead of being converted into apparently complete output. These invariants turn the central problem of continuous literature understanding into testable system properties.
 
-\section{C1: Revision-Aware Ingestion and Representation}
+\section{C1: Revision-Safe Literature Representation}
+\label{sec:c1-revision}
 
-\subsection{Identity Model}
+\subsection{Logical Works, Observed Revisions, and Artifact Lineage}
 
-MNEME distinguishes a logical paper identifier \(p\) from a revision identifier \(r\).
-The logical identifier groups versions of one scholarly work; the revision identifier selects an immutable content state.
-A derived artifact \(a\) is defined by
+The first technical challenge is continuity under change: a paper identifier remains useful across updates, but an answer or embedding is valid only for the content from which it was derived. MNEME therefore separates a logical paper identifier \(p\) from an observed revision identifier \(r\). A \texttt{papers} row represents the work and maintains discovery metadata; a \texttt{paper\_versions} row records an exact provider revision, content checksum, storage location, parser quality, and processing state. Downstream chunks, embeddings, summaries, jobs, and graph synchronization inputs bind to the revision row rather than only to the logical work.
+
+The lineage of a derived artifact \(a\) is modeled as
 \[
-  a = f(p,r,\theta,h),
+  a = f(p,r,h,\theta),
 \]
-where \(f\) is a transformation, \(\theta\) is its configuration, and \(h\) is the source-content hash.
-Two artifacts are interchangeable only if the system can justify equality of the relevant inputs.
+where \(h\) is the source-content checksum and \(\theta\) includes the stage, parser, prompt, model, or embedding version relevant to transformation \(f\). Reuse is safe only when all material inputs for that artifact class match. In particular, equality of \(p\) does not imply equality of \(a\). The database constraints and repositories enforce this distinction by using internal UUIDs for relationships and uniqueness constraints for provider identifiers and revision labels.
 
-For arXiv material, the external identifier and version suffix can seed this model, but the design should not depend on one provider.
-The stored record therefore includes provider, external identifier, logical identifier, revision label, source URL, fetch timestamp, content hash, and parent revision when known.
-The PDF and extracted text are associated with the revision, not only with the logical paper.
+The arXiv synchronizer applies this identity model in two steps. It normalizes a provider identifier to locate or create the logical paper, then inserts only previously unseen revisions. A newer metadata observation may refresh the logical paper snapshot without mutating an existing revision. The transaction also normalizes author identities and returns exact revision identifiers for subsequent work. This design avoids an in-place-update alternative in which the latest PDF silently replaces its predecessor; that alternative is simpler to query but makes prior summaries and citations impossible to interpret after an update.
 
-\subsection{Parsing and Degraded Modes}
+\subsection{Durable Stage Identity and Recovery}
 
-The planned parser first extracts text and layout cues, then identifies section boundaries and figure or table captions.
-Scientific PDFs vary in columns, typography, embedded text quality, and reading order.
-The parser therefore records a quality label:
+Processing is decomposed into metadata fetch, PDF download, parsing, summarization, chunking, embedding, and digest assembly. Paper-scoped stages carry both \texttt{paper\_id} and \texttt{paper\_version\_id}. A canonical serialization of the stage, scope, pipeline version, and material inputs is hashed into an idempotency key. A unique database constraint then maps logically equivalent submissions to one durable job row even when an API request, scheduler, or worker retries.
+
+PostgreSQL records the job state \texttt{queued}, \texttt{running}, \texttt{succeeded}, or \texttt{failed}, along with attempt counts, timestamps, leases, and the latest internal error. Redis/ARQ receives a stable attempt identifier only after the durable row exists. Dispatch leases allow interrupted enqueue operations to be reclaimed, and a recovery service periodically re-enqueues revision-scoped work that is eligible for retry. The public \texttt{GET /jobs/\{job\_id\}} endpoint exposes durable progress while withholding internal exception text. This database-first design was chosen over treating the queue as the source of truth because queue retention and worker availability should not determine whether processing history can be reconstructed.
+
+The download and artifact stores extend idempotency to the file system. Downloads enforce size, media signature, retry policy, and an expected checksum when available. New bytes are written to a temporary file, synchronized, and atomically installed with \texttt{os.replace}. Structured parse artifacts and their sidecars follow the same installation pattern. Consequently, a process failure can leave either the previous complete artifact or a recoverable temporary file, rather than a partially overwritten file that appears valid.
+
+\subsection{Parsing, Quality Tiers, and Degraded Operation}
+
+The parser combines PyMuPDF text blocks with pdfplumber layout hints. It removes repeated headers and footers, estimates column structure, orders blocks within each column, and detects headings before assembling sections. This approach retains more source structure than flat text extraction while remaining deterministic and inspectable. Scientific PDFs nevertheless vary in embedded text, reading order, typography, and page layout. The parser therefore records one of three implemented quality tiers:
 \begin{itemize}
-  \item \texttt{full}: required sections and reading order pass validation;
-  \item \texttt{partial}: useful content is available, but one or more structural checks fail;
-  \item \texttt{abstract\_only}: full-text processing cannot be trusted and the system falls back to authoritative metadata.
+  \item \texttt{structured}: section structure and ordered text pass the parser's checks;
+  \item \texttt{text\_only}: useful full text is available but structural confidence is insufficient;
+  \item \texttt{abstract\_only}: full-text processing cannot be trusted, so downstream services use provider metadata rather than pretending that section-level evidence exists.
 \end{itemize}
-The label must influence later behavior.
-For example, a paper in \texttt{abstract\_only} state must not produce page- or section-level claims as if full text were available.
+The processing status is reconciled from artifacts belonging to the latest observed revision. A revision can become \texttt{ready} only when a non-abstract summary exists, chunks exist, and those chunks have compatible embeddings; otherwise the paper remains partial or failed. Quality is therefore a control input to downstream behavior, not a decorative label.
 
-\subsection{Section-Aware Chunks and Lineage}
+\subsection{Revision Isolation and the E1 Contract}
 
-Chunks remain within a section whenever possible.
-A chunk record contains the logical and revision identifiers, section identifier and title, local index, token range, preceding and following context references, content hash, and embedding configuration.
-Large sections may be split recursively with bounded overlap.
-The design choice is not assumed superior to every alternative.
-Recent RAG studies show that chunking choices interact with retrieval quality, noise, and global context~\cite{zhao2024longrag,wang2024bestpractices}.
-E2 must therefore compare section-aware chunks with fixed-size and context-expanded baselines.
+Section-aware chunking runs only after the parser has produced a revision-scoped document. Each chunk stores the exact \texttt{paper\_version\_id}, section title, stable local order, content hash, token count, and embedding provenance. Sentence-aware splitting and bounded overlap avoid crossing section boundaries when the source structure permits it. Chunking research indicates that retrieval performance depends on the interaction between segmentation, context expansion, and later retrieval stages rather than on a universally optimal chunk size~\cite{wang2024bestpractices}. MNEME therefore treats its current section-aware policy as an implemented configuration to be compared in E2, not as an already proven improvement.
 
-When a new revision arrives, the system compares source hashes and derived dependencies.
-Changed artifacts become stale; unchanged artifacts may be reused only if the transformation contract permits it.
-Answers and summaries that depend on stale chunks must not remain labeled current.
-E1 tests this invariant explicitly.
+E1 closes the C1 argument by testing the properties that implementation tests alone cannot establish across a representative corpus. Its fixtures will include multiple revisions, malformed or layout-diverse PDFs, interrupted stages, duplicate submissions, and stale-artifact scenarios. The primary outcomes are cross-revision contamination, idempotent recovery, parse-quality distribution, provenance completeness, and processing latency. The current repository already tests key software invariants, including revision-scoped retrieval and job idempotency; corpus-level rates and performance values remain \pending{}. This bounded conclusion is important: C1 establishes an inspectable mechanism for continuity, while E1 must determine how reliably that mechanism operates on the selected evidence set.
 
 \section{C2: Evidence-Bounded Assistance}
 
@@ -209,4 +201,3 @@ Logs exclude unnecessary paper content and behavioral details.
 Users can inspect and delete their event history.
 Daily budget limits constrain model calls, and content/configuration hashes permit safe caching.
 These controls are part of the design; their implementation and effectiveness remain to be verified against a source revision and E1--E4 artifacts.
-
