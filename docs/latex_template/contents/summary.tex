@@ -8,7 +8,7 @@
 
 The design answers RQ1 by separating logical paper identity from revision identity and carrying revision, content hash, transformation configuration, and lineage into derived artifacts.
 This answer establishes a testable invariant.
-It does not establish that the invariant holds in a running system because the source revision and E1 logs are missing.
+The inspected source revision supports an implementation inventory, but the invariant still requires E1 execution logs before it can be established empirically.
 
 \subsection{RQ2: Evidence-Bounded Assistance}
 
@@ -19,9 +19,9 @@ Whether the complete pipeline improves retrieval or citation quality remains \pe
 
 \subsection{RQ3: Adaptive Interest Memory}
 
-The design answers RQ3 with separable explicit, short-term, and long-term state, bounded implicit-event semantics, inspectable recommendation reasons, and user correction.
-This is a defensible alternative to treating one opaque vector as authoritative.
-Its benefit for ranking, diversity, adaptation, or user control remains \pending{} until E3 provides temporal and correction evidence.
+The design answers RQ3 with explicit interests, bounded implicit-event semantics, one bounded time-decayed normalized behavior-v1 vector, inspectable recommendation reasons, and user correction.
+Separable short-term and long-term state remains planned behavior-v2 rather than a current implementation claim.
+The behavior-v1 model's benefit for ranking, diversity, adaptation, or user control remains \pending{} until E3 provides temporal and correction evidence.
 
 \subsection{RQ4: Bounded Mobile Integration}
 
@@ -37,13 +37,13 @@ It connects four mechanisms through explicit traceability and makes its own evid
 This framing avoids two common errors: describing a technology stack as novelty and treating fluent, citation-bearing output as verified understanding.
 
 The same evidence-first standard limits the conclusion.
-The supplied materials do not justify claims of production implementation, improved RAG quality, successful behavioral adaptation, or general usability.
+The inspected source snapshots support only the bounded implementation claims documented in this thesis; they do not justify claims of production readiness, improved RAG quality, successful behavioral adaptation, or general usability.
 Those limitations do not invalidate the design contribution, but they prevent the thesis from claiming empirical completion.
 
 \section{Prioritized Future Work}
 
 The first priority is not an additional product feature.
-It is an immutable repository and build freeze that permits a verified implementation inventory.
+It is an execution freeze at an inspected repository revision that permits a verified implementation inventory and reproducible evaluation runs.
 The second priority is completion of E1--E3 with frozen data, baselines, configurations, outputs, and analyses.
 The third priority is an E4 package containing system logs and participant-level usability records, followed by a focused retest of graph discoverability.
 
@@ -57,4 +57,3 @@ The loop is useful only if paper revisions remain identifiable, generated claims
 This draft defines how each promise can be tested and marks where evidence is still required.
 
 \clearpage
-

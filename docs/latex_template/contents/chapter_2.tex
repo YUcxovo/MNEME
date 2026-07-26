@@ -40,7 +40,7 @@ R2.2 & Represent generated answers as claims linked to source spans. & Every ext
 R2.3 & Distinguish identifier, availability, consistency, and coverage checks. & Failure fixtures trigger the intended verification label. & TC2--E2 \\
 R2.4 & Abstain when available evidence does not support an answer. & Unanswerable questions are evaluated separately from answerable questions. & TC2--E2 \\
 R3.1 & Record explicit and implicit events with documented semantics and deduplication identifiers. & Replayed event batches are idempotent and event provenance is inspectable. & TC3--E3 \\
-R3.2 & Maintain separable short-term and long-term interest state. & Synthetic event sequences yield predictable state changes at both time scales. & TC3--E3 \\
+R3.2 & Maintain one bounded, time-decayed normalized behavior-v1 vector; keep separable multi-timescale state as planned behavior-v2. & Synthetic event replays yield predictable bounded and decayed behavior-v1 updates. & TC3--E3 \\
 R3.3 & Explain recommendation reasons using inspectable evidence from the interest state. & Reasons map to declared topics, authors, papers, or events. & TC3--E3 \\
 R3.4 & Permit users to edit, suppress, or delete inferred interests and behavioral history. & Correction tests confirm that the visible and ranking states change consistently. & TC3--E3 \\
 R4.1 & Preserve essential reading state during intermittent connectivity. & Offline and reconnection scenarios retain consistent local state. & TC4--E4 \\
@@ -116,4 +116,3 @@ These counts are classified as \observed{}/\limited{}, not \measured{} final evi
 The supplied folder does not include the participant-by-task table, timing and tap records, coded observations, consent documentation, or locally accessible recordings.
 The companion draft presentation explicitly contains blank fields for those artifacts.
 Consequently, the counts can motivate a design iteration, but they cannot establish a general usability effect or validate the redesign.
-

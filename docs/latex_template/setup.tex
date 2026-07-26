@@ -66,6 +66,12 @@
 
 \hypersetup{
   hidelinks,
-  pdfauthor={Team MNEME},
+  pdfauthor={Heng Zhao; Hanyang Wang; Ruiyu Jiang; Yifan Zhang},
   pdftitle={MNEME: A Mobile-Native AI Research Agent for Continuous Literature Understanding}
+}
+
+% Keep the tabular author layout on the title page, while overriding the
+% class-generated PDF metadata with a plain text value after the preamble.
+\AtBeginDocument{
+  \hypersetup{pdfauthor={Heng Zhao; Hanyang Wang; Ruiyu Jiang; Yifan Zhang}}
 }

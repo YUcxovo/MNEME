@@ -49,8 +49,9 @@ TC2 therefore separates four checks: identifier validity, evidence availability,
 
 \subsection{TC3: Adaptive and Inspectable Interest Memory}
 
-Research interests have multiple time scales.
-A paper opened during a short course assignment may not represent a stable research direction, whereas repeated saving, questioning, and explicit topic editing may provide stronger evidence.
+The implemented behavior-v1 model is deliberately narrower than a multi-timescale memory.
+It maintains one bounded, time-decayed normalized vector from declared implicit events; explicit topic editing remains separately inspectable and correctable.
+Short-term and long-term state separation is reserved for planned behavior-v2 until a frozen implementation and E3 evidence are available.
 TC3 must combine explicit and implicit signals while preserving their different meanings.
 The system must also expose why an interest changed and permit correction or deletion.
 
@@ -90,7 +91,7 @@ TC & RQ & Contribution & Evaluation & Current status \\
 \midrule
 TC1 & RQ1 & C1: revision-aware identity, lineage, and derived-artifact invalidation & E1: identity, update, parsing, and provenance fixtures & \planned \\
 TC2 & RQ2 & C2: section-aware retrieval and claim-level source verification & E2: retrieval, answer, citation, abstention, and failure analysis & \pending \\
-TC3 & RQ3 & C3: explicit-plus-implicit multi-timescale interest memory with correction & E3: temporal recommendation, ablation, diversity, and correction tests & \pending \\
+TC3 & RQ3 & C3: explicit interests plus a bounded, time-decayed behavior-v1 vector with correction; multi-timescale behavior-v2 planned & E3: temporal recommendation, ablation, diversity, and correction tests & \pending \\
 TC4 & RQ4 & C4: mobile integration with visible evidence, failure, and control & E4: device/system measurements and task-level usability study & \observed{}; \limited \\
 \bottomrule
 \end{tabular}
@@ -98,13 +99,13 @@ TC4 & RQ4 & C4: mobile integration with visible evidence, failure, and control &
 
 The first contribution is a provenance contract: each derived artifact is associated with a logical paper, a specific revision, a transformation configuration, and a content hash.
 The second contribution is an evidence-bounded assistance contract: answers are decomposed into claims, claims point to source spans, and verification distinguishes different failure types.
-The third contribution is a bounded adaptation contract: behavioral events have declared semantics and weights, multiple time scales remain separable, and users can inspect or correct the resulting state.
+The third contribution is a bounded adaptation contract: behavior-v1 maps declared behavioral events to one bounded, time-decayed normalized vector, while users can inspect or correct the resulting state. Multi-timescale state remains a behavior-v2 plan rather than an implemented claim.
 The fourth contribution is an integration and evaluation framework that connects these mechanisms to a mobile research workflow.
 
 \section{Scope and Claim Boundary}
 
-The available materials include a controlling thesis outline, acceptance criteria, an architecture design, a story map, an interactive HTML prototype, user-interface and user-experience (UI/UX) mockups, and a final usability presentation.
-They do not include a product source repository, an immutable source revision, E1--E3 result artifacts, or participant-level E4 records.
+The available materials include a controlling thesis outline, acceptance criteria, an architecture design, a story map, an interactive HTML prototype, user-interface and user-experience (UI/UX) mockups, a final usability presentation, and an inspected source repository with exact implementation snapshots.
+E1--E3 result artifacts and participant-level E4 records remain unavailable.
 Accordingly, Chapters 2 and 3 describe the design and prototype using \planned{} or \observed{} language.
 Chapter 4 specifies complete evaluations and reports only the limited observations supported by the presentation.
 Chapter 5 does not claim that the pending experiments succeeded.
@@ -115,4 +116,3 @@ Chapter 2 translates the four challenges into functional, non-functional, ethica
 Chapter 3 defines the four design contributions and their cross-cutting invariants.
 Chapter 4 separates evidence status from evaluation design and specifies E1--E4.
 Chapter 5 answers each research question at the strength permitted by the current evidence.
-
