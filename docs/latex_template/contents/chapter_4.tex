@@ -6,7 +6,8 @@
 
 This chapter evaluates the system against inspected source revisions rather than design documents.
 Two revisions bound the claims that follow.
-The integrated repository state is commit \texttt{70eb54c} of the MNEME repository, which contains the backend service, the AI service layer, the Android client, and their test suites.
+The integrated repository state is commit \texttt{b945d3c} of the MNEME repository --- the same snapshot Chapter~3 declares as its implementation cutoff --- which contains the backend service, the AI service layer, the behavior baseline, the citation-graph platform, the integrated Android client, and their test suites.
+An earlier draft of this chapter cited the older snapshot \texttt{70eb54c}; the AI service tree (\texttt{backend/src/mneme/ai} and its configuration) was verified identical between the two revisions by direct comparison, so no AI implementation claim changed under the alignment, while backend and client rows in Table~\ref{tab:status} now describe the integrated state.
 The AI evaluation additions of Milestone~4 --- the graded evaluation harness, the expanded fixture set, the live evaluation command, and the cost audit --- exist on branch \texttt{feat/ai-m4-eval} (tip \texttt{59af174}, pull request open at the time of writing) and are cited with that revision explicitly.
 A statement about code that appears in neither revision is a design statement and belongs to Chapter~3.
 
@@ -23,19 +24,20 @@ The classification prevents design intent from being promoted into an implementa
 
 \begin{table}[htbp]
 \centering
+\small\renewcommand{\arraystretch}{0.92}
 \caption{Current evidence status at the stated revisions. Code presence is verified by inspection; behavioral claims for backend and client subsystems require their domain owners' sign-off.}
 \label{tab:status}
 \begin{tabular}{P{4.5cm}P{3.2cm}P{6.3cm}}
 \toprule
 Artifact or claim & State & Basis and boundary \\
 \midrule
-AI service layer: section-aware chunking, embeddings, dense retrieval, rerank, grounded Q\&A with refusal and citation verification, summarization, recommendation scoring, caching, budget guard, model routing & \implemented{} & \texttt{70eb54c}, \texttt{backend/src/mneme/ai}; unit and API tests pass with a fake provider. Tests establish specified behavior, not answer quality. \\
+AI service layer: section-aware chunking, embeddings, dense retrieval, rerank, grounded Q\&A with refusal and citation verification, summarization, recommendation scoring, caching, budget guard, model routing & \implemented{} & \texttt{b945d3c}, \texttt{backend/src/mneme/ai}; unit and API tests pass with a fake provider. Tests establish specified behavior, not answer quality. \\
 Cross-revision retrieval isolation & \implemented{} (software test) & Chunks bind to \texttt{paper\_version\_id}; an API test asserts Q\&A retrieval cannot mix revisions. E1 research metrics remain \pending. \\
 RAG-graded evaluation harness, 15-case fixture set, live evaluation command & \implemented{} & \texttt{feat/ai-m4-eval} at \texttt{59af174}; not yet merged into the integrated branch. \\
 E2 quality results (recall, source match, refusal, latency, cost) & \pending & Requires a live run of the evaluation command against ingested fixture papers. \\
 AI cost audit & \observed{} & Static call-site and list-price analysis at \texttt{1a604b3}; estimates, not measured spend. \\
-Backend ingestion, jobs, and graph platform & \implemented{} (code) & Present with tests at \texttt{70eb54c}; behavioral claims pending Ruiyu's sign-off. E1/E3 research results \pending. \\
-Android client, offline cache, event queue, graph UI & \implemented{} (code) & Present with tests at \texttt{70eb54c}; behavioral and device claims pending Heng's and Hanyang's sign-off. \\
+Backend ingestion, jobs, behavior-v1, and graph platform & \implemented{} (code) & Present with tests at \texttt{b945d3c}; behavioral claims pending Ruiyu's sign-off. E1/E3 research results \pending. \\
+Android client, offline cache, event queue, graph UI & \implemented{} (code) & Present with tests at \texttt{b945d3c}; behavioral and device claims pending Heng's and Hanyang's sign-off. \\
 Adaptive recommendation effectiveness & \pending & behavior-v1 supplies the behavior embedding; E3 event streams, baselines, and results absent. \\
 Mobile latency and reliability & \pending & Device matrix and system measurements absent. \\
 Five-participant prototype findings & \observed{}; \limited{} & Task counts appear in the final presentation; participant-level records absent. \\
@@ -53,8 +55,8 @@ E1 tests the contribution promise that every claim-bearing artifact can be trace
 
 Two mechanisms from the inspected revision already constrain this evaluation.
 Chunking is deterministic: the same parsed sections always produce the same chunk contents and content hashes, which makes the embed stage idempotent and makes re-chunking comparable across runs.
-Retrieval is revision-scoped: every chunk row binds to a \texttt{paper\_version\_id}, and an implemented API test asserts that Q\&A over one revision cannot return chunks of another.
-These are software facts at \texttt{70eb54c}; they do not by themselves establish parser structure quality or invalidation completeness.
+Retrieval is revision-scoped: each chunk row binds to a \texttt{paper\_version\_id}, and an implemented API test asserts that Q\&A over one revision cannot return chunks of another.
+These are software facts at \texttt{b945d3c}; they do not by themselves establish parser structure quality or invalidation completeness.
 
 \subsection{Dataset and Fixtures}
 
@@ -99,7 +101,7 @@ It also asks what each pipeline stage contributes, and at what latency and cost.
 
 \subsection{Evaluated Pipeline}
 
-The evaluated configuration is the implemented pipeline at \texttt{70eb54c}, not an idealized design.
+The evaluated configuration is the implemented pipeline at \texttt{b945d3c}, not an idealized design.
 Retrieval embeds the question and performs dense approximate-nearest-neighbor search over one revision's chunks in \texttt{pgvector}, returning the top \(k=8\) by cosine similarity plus up to two early-document \emph{context anchors} that preserve overview context.
 Reranking is an honest lexical blend rather than a learned cross-encoder: the final score is \(0.7\) times vector similarity plus \(0.3\) times the fraction of the question's content words present in the chunk, with stopwords removed.
 Ties break on original retrieval order, so reranking is deterministic for identical inputs; the top \(n=4\) chunks become evidence, and anchors outside the top \(n\) are appended rather than displacing question-specific evidence.
@@ -177,7 +179,7 @@ The evaluation does not treat historical clicks as perfect preference labels.
 
 \subsection{Implemented Scoring Basis}
 
-The implemented recommendation scorer at \texttt{70eb54c} blends three signals: explicit topic match (weight 0.45), cosine similarity between the user's learned behavior embedding and the paper's mean chunk embedding (weight 0.35), and publication recency with a one-week half-life (weight 0.2).
+The implemented recommendation scorer at \texttt{b945d3c} blends three signals: explicit topic match (weight 0.45), cosine similarity between the user's learned behavior embedding and the paper's mean chunk embedding (weight 0.35), and publication recency with a one-week half-life (weight 0.2).
 Missing signals redistribute their weight over the available ones, so a cold-start user still receives a meaningful score; ranking is deterministic with a stable tie-break.
 Each entry carries human-readable reasons derived from its dominant signals, not free-form post-hoc text, consistent with the scrutability requirement of Chapter~3~\cite{ramos2024scrutable}.
 The behavior embedding itself is produced by behavior-v1, owned and signed off by the backend/data owner; this chapter evaluates the composition, not the internals of the behavior model.
@@ -248,7 +250,8 @@ It does not show that the subsequent redesign improves completion because no ret
 
 Model cost is a first-class evaluation dimension because the assistant runs continuously against a paid provider.
 A static audit at revision \texttt{1a604b3} inventoried every provider call site, its trigger, default model route, cache behavior, and budget check.
-All dollar figures in this section are estimates from provider list prices (reviewed 2026-07) and token approximations, classified \observed{}; measured spend comes from the persisted cost telemetry once the deployed pipeline has run, and remains \pending.
+All dollar figures in this section are estimates from provider list prices and token approximations, classified \observed{}; measured spend comes from the persisted cost telemetry once the deployed pipeline has run, and remains \pending.
+The price rows behind these figures were re-verified against the official provider pricing pages on 2026-07-26 and retained, with source links and the deployed cap assumptions, in the repository artifact \texttt{docs/evaluation/ai-cost-price-snapshot-2026-07-26.md}; the companion script \texttt{ai\_cost\_recompute.py} recomputes every dollar figure in this section from that snapshot and fails if prose and calculation diverge.
 
 There are four provider call sites: the summarization worker (background job per paper version), grounded Q\&A (per request), query embedding, and batched chunk embedding; recommendation scoring makes no provider calls because it reuses stored vectors.
 All completion sites check the shared daily budget and persist full cost telemetry.
@@ -279,7 +282,7 @@ The evaluation therefore reports operational constructs and avoids treating them
 
 Generator, embedding, and judge models can change over time, and unrecorded provider updates may alter results.
 The implemented telemetry mitigates but does not remove this risk: every persisted completion records provider, model snapshot, prompt version, and input hash, and evaluation runs must additionally freeze fixture versions and configuration.
-Estimated costs derive from list prices and token approximations and may diverge from billed spend.
+Estimated costs derive from the retained list-price snapshot and token approximations and may diverge from billed spend.
 Any LLM-as-judge measurement requires calibration against human annotations before it supports a claim.
 
 \subsection{External Validity}
