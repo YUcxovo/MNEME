@@ -93,7 +93,7 @@ measure_launch_pair() {
             "$cold_total" \
             "$cold_wait" \
             "$([[ -n "$cold_wait" ]] && printf true || printf false)" \
-            'controlled_fixture_activity_visible' \
+            'main_activity_wait_time_present' \
             >>"$startup_file"
         printf 'startup,warm_task_resume,%s,%s,%s,%s,%s,%s\n' \
             "$iteration" \
@@ -101,7 +101,7 @@ measure_launch_pair() {
             "$warm_total" \
             "$warm_wait" \
             "$([[ -n "$warm_wait" ]] && printf true || printf false)" \
-            'controlled_fixture_activity_visible' \
+            'main_activity_wait_time_present' \
             >>"$startup_file"
     fi
     "$ADB" shell input keyevent 3
