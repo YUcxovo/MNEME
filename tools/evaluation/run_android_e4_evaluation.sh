@@ -118,6 +118,13 @@ done
     -w \
     -r \
     -e class \
+    com.mneme.app.ui.graph.GraphScreenTest,com.mneme.app.ui.MnemeAppFlowTest \
+    com.mneme.app.test/androidx.test.runner.AndroidJUnitRunner
+
+"$ADB" shell am instrument \
+    -w \
+    -r \
+    -e class \
     com.mneme.app.evaluation.E4StateMeasurementTest,com.mneme.app.evaluation.E4EventSyncMeasurementTest,com.mneme.app.ui.graph.E4GraphMeasurementTest \
     com.mneme.app.test/androidx.test.runner.AndroidJUnitRunner
 

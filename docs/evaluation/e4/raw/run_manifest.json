@@ -1,0 +1,9 @@
+{
+  "schema_version": "e4-run-manifest-v1",
+  "measured_at_utc": "2026-07-26T11:31:58Z",
+  "repository_revision": "10c619334fa40f5351aa00e8741d028dde406277",
+  "branch": "feat/android-e4-evidence",
+  "live_backend_url": "http://10.0.2.2:8000/v1/",
+  "startup_mode": "blank-token controlled fixture",
+  "live_token_retained": false
+}
