@@ -152,39 +152,69 @@ Behavior-v1 intentionally has strong limitations. It compresses distinct interes
 E3 will measure ranking quality on a frozen replay set, sensitivity to event types and time decay, stability under sparse or contradictory feedback, cold-start behavior, and the fidelity of displayed reasons. Current tests establish deterministic aggregation, idempotent transactional ingestion, model compatibility, and stable ranking. No ranking-quality or user-benefit result is claimed in this initial draft.
 
 \section{C4: Bounded Mobile Integration}
+\label{sec:c4-mobile}
 
-\subsection{Local State and Synchronization}
+\subsection{Citation Identity and Bounded Graph Assembly}
 
-The planned Android client keeps digest snapshots, paper metadata, reading state, pending events, and user preferences in local storage.
-Background work uploads events and checks for new digests subject to operating-system constraints.
-Every synchronization operation is idempotent.
-Conflicts are resolved by explicit version and timestamp policies rather than last-write-wins without inspection.
+The fourth technical challenge is interaction continuity: the mobile interface must expose the sources, state changes, and failures produced by C1--C3 without hiding them behind a visually plausible screen. The citation graph provides the clearest cross-layer case. Its internal model is a directed paper graph, not an entity-level knowledge graph. An edge \(p_s\rightarrow p_t\) means that source paper \(p_s\) cites target paper \(p_t\); categories and keywords remain attributes rather than graph nodes.
 
-\subsection{Notifications}
+Semantic Scholar synchronization retrieves references and citations outside the database transaction, then persists both directions atomically. Either endpoint may initially be represented by an external Semantic Scholar identifier, but at least one endpoint must be a local paper. Partial uniqueness constraints cover the valid internal/internal and internal/external endpoint combinations. When a later synchronization observes a matching local provider identity, the repository resolves external endpoints, removes self-edges, and merges duplicates. Unresolved observations remain internal rather than being exposed as fake local papers.
 
-Notifications are delivery mechanisms, not evidence that a recommendation is useful.
-The design supports scheduled digests, bounded high-relevance alerts, deduplication, daily caps, and user-configurable preferences.
-The notification contains enough context to explain why it was sent and deep-links to the corresponding digest or paper snapshot.
-E4 must measure delivery reliability and task consequences rather than assuming that more timely delivery is beneficial.
+The public \texttt{GET /graph/\{paper\_id\}} query performs a bounded bidirectional traversal over resolved local UUIDs. Depth defaults to one and cannot exceed two; response size defaults to 50 nodes and cannot exceed 200. The pure enrichment algorithm ranks and clusters the bounded snapshot per request. If enrichment raises an exception, the service returns the deterministic citation baseline with \texttt{algorithm\_status=fallback} instead of failing the entire endpoint. Responses carry \texttt{graph\_version=citation-graph-v1}, so a future change in weighting, ranking, or clustering cannot silently change public semantics.
 
-\subsection{Graph Boundary}
+Persisting provider observations before resolution was chosen over discarding unknown neighbors because later catalog growth can repair the graph without repeating every historical query. Persisting enriched layouts was rejected for the current version because it would create hidden mutable state and invalidation rules before the graph interaction is validated. The trade-off is that enrichment cost is paid per request and the public graph intentionally excludes unresolved scholarly neighbors.
 
-The planned graph is rendered in a WebView with a Kotlin--JavaScript bridge.
-Graph data are supplied as versioned nodes and edges; interaction callbacks identify the selected node and requested action.
-The bridge is a trust boundary because injected data, event routing, and gesture conflicts can fail independently.
-The UI must display selected state and a stable primary action.
-The formative presentation's graph finding motivates these requirements but does not prove the redesign succeeds.
+\subsection{Mobile Rendering, Cache State, and Event Delivery}
+
+The Android paper-detail screen requests a depth-two, 50-node graph and renders it with a repository-vendored D3 bundle in a local WebView. A Kotlin--JavaScript bridge mirrors selected-node identity into a native Compose card and accessible selector, and the selection survives navigation to another paper and back. The UI displays whether the backend returned the enriched or fallback algorithm. Graphs are not cached at the implementation cutoff; a network failure therefore becomes a retryable graph error rather than a stale visualization presented as current.
+
+Briefings and paper metadata use a different state policy. Room stores live backend snapshots and labels restored content as cached. If a configured live request fails and no prior live snapshot exists, the client shows an error instead of substituting controlled fixture data. Fixtures remain available only through an explicitly labeled demonstration path. Generated Q\&A is not persisted locally, so an offline reader can inspect cached papers and briefings but cannot receive an apparently verified new answer.
+
+Behavioral interactions close the C3 feedback loop. The client records only UI actions that actually exist at the cutoff: impressions, paper opens, and paper-scoped questions. Room schema version 4 stores pending event UUIDs and retry state. The synchronization coordinator reserves batches of at most 50, reclaims attempts stale for 15 minutes, validates the server's accepted-plus-duplicate count, and returns failed attempts to pending state. A unique WorkManager job requires connectivity and uses exponential backoff; application startup also schedules recovery. Save, skip, share, and digest-dismiss events are supported by the backend vocabulary but are not fabricated by a client that lacks those controls.
 
 \subsection{Visible Failure and Degraded Operation}
 
-The client distinguishes unavailable content, stale content, provider failure, unsupported answer, and synchronization delay.
-Cached content carries its last-updated revision and time.
-An offline reader can inspect already downloaded evidence, but the system must not imply that a new question has been verified when the required service is unavailable.
+The current integration distinguishes live, cached, fixture, fallback, retryable failure, and insufficient-evidence states at their relevant boundaries. This vocabulary prevents a successful rendering from being confused with fresh or model-produced content. It is incomplete: live background digest refresh remains a no-op, notification permission and delivery UX are not integrated, saved-paper behavior is absent, and the graph has no offline cache. These items are \planned{} final-version work rather than current capabilities.
 
-\section{Cross-Cutting Safety and Reproducibility}
+\begin{figure}[htbp]
+\centering
+\fbox{\parbox{0.88\textwidth}{
+\textbf{FIGURE PLACEHOLDER --- Device-visible graph and feedback walkthrough.}\\
+The final composite will show the live briefing state, revision-aware paper detail, graph selection with algorithm status, grounded Q\&A or refusal, event queue transition, and visible offline/error state.\\
+\textbf{Owner:} Hanyang (visual system) and Heng (device evidence), with Ruiyu validating event/graph contracts. \textbf{Dependency:} release-candidate APK, reachable backend, and frozen E4 script. \textbf{Expected artifact:} annotated screenshots plus an interaction-state diagram. \textbf{Finalization trigger:} successful device walkthrough and evidence sign-off by all affected domain owners.
+}}
+\caption{Planned E4 walkthrough linking mobile-visible state to backend graph and behavior contracts. Runtime images are intentionally deferred from the initial draft.}
+\label{fig:mobile-walkthrough}
+\end{figure}
 
-The system logs model and prompt versions, retrieval configuration, data revision, and verification policy for each generated output.
-Logs exclude unnecessary paper content and behavioral details.
-Users can inspect and delete their event history.
-Daily budget limits constrain model calls, and content/configuration hashes permit safe caching.
-These controls are part of the design; their implementation and effectiveness remain to be verified against a source revision and E1--E4 artifacts.
+E4 will measure task completion, state comprehension, graph interaction correctness, event-delivery recovery, and notification behavior after the missing delivery path is implemented. Current Android tests establish deterministic state transitions and synchronization outcomes in the test environment. They do not establish usability, device reliability, or notification benefit. Heng and Hanyang own the client and E4 sign-off; Ruiyu owns the server event and graph contracts; Yifan owns graph-enrichment semantics.
+
+\section{Cross-Cutting Reliability, Privacy, and Evolvability}
+
+The four contributions share one reliability rule: durable domain state precedes replaceable execution or presentation state. PostgreSQL owns revision, job, event, preference, digest, completion, and citation records. Redis accelerates queueing and cache reuse, while Android Room preserves explicitly labeled local snapshots and pending events. Stable identifiers make retries idempotent at each boundary. Public APIs return controlled error categories and do not expose stored worker exceptions.
+
+Model-facing operations persist provider, model snapshot, prompt version, token counts, latency, estimated cost, and input hashes. BudgetGuard constrains configured daily spending, and deterministic input identities permit cache reuse. These mechanisms make a run auditable but do not by themselves demonstrate affordable or low-latency operation; Chapter~4 retains those results as \pending{}. Raw behavioral history and the learned preference vector remain server-side and are not added to external model prompts merely because they are available. Secrets are environment configuration rather than repository data. User-facing deletion and a complete privacy audit remain final-version obligations.
+
+The design keeps change explicit through versioned parser, behavior, graph, embedding, prompt, and generator identities. This is deliberately more verbose than overwriting ``current'' state, but it localizes future upgrades: behavior-v2 can coexist with behavior-v1, a graph-v2 can alter public semantics without relabeling old responses, and a replacement verifier can be evaluated against the same revision-scoped chunks. Versioning is therefore part of the technical method rather than administrative metadata.
+
+\section{Initial-to-Final Iteration Ledger}
+
+The initial draft is argument-complete but not evidence-complete. Table~\ref{tab:chapter3-ledger} records the unresolved transitions that must not be silently converted into claims when the final thesis is assembled.
+
+\begin{table}[htbp]
+\centering
+\caption{Chapter~3 iteration ledger. ``Done'' requires the named artifact and domain-owner sign-off, not prose completion alone.}
+\label{tab:chapter3-ledger}
+\begin{tabular}{@{}P{0.13\textwidth}P{0.27\textwidth}P{0.25\textwidth}P{0.22\textwidth}@{}}
+\toprule
+Trace & Initial-draft state & Finalization artifact & Owner and trigger \\
+\midrule
+C1/E1 & Mechanism and invariants inspected at \texttt{b945d3c}; metrics \pending{} & Frozen corpus, revision/recovery report, provenance and latency plots & Ruiyu; E1 protocol executed on frozen code/configuration \\
+C2/E2 & Single-paper interface and limitations documented; quality \pending{} & Question set, human labels, retrieval/citation/refusal results & Yifan; AI revision and annotation guide frozen \\
+C3/E3 & behavior-v1 and scorer frozen; behavior-v2 remains \planned{} & Replay set, baselines/ablation, versioned ADR and result plots & Ruiyu with Yifan; evaluate v2 only if implemented before E3 freeze \\
+C4/E4 & Live graph and event upload implemented; digest refresh and notification UX \planned{} & Device walkthrough, state-comprehension study, delivery/recovery results & Heng and Hanyang; release APK and E4 script frozen \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Cross-domain prose requires the evidence owner rather than the chapter integrator to approve technical claims. Ruiyu signs the C1 and C3 mechanisms and the persistence side of C2/C4; Yifan signs the AI and graph-enrichment mechanisms; Heng and Hanyang sign the Android behavior, screenshots, and E4 observations. Unresolved items remain labeled \planned{} or \pending{} in the final manuscript if their trigger is not met. This rule preserves room for genuine iteration without allowing anticipated work to be narrated as completed evidence.
