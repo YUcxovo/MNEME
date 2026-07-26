@@ -45,7 +45,6 @@ import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.demo.SkeletalContentRepository
 import com.mneme.app.ui.component.LoadingState
-import com.mneme.app.ui.home.HomeScreen
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.navigation.BriefingRoute
 import com.mneme.app.ui.navigation.GraphRoute
@@ -82,6 +81,8 @@ private data class MnemeUiSnapshot(
 
 private data class MnemeUiActions(
     val refreshBriefing: () -> Unit,
+    val recordPaperImpressions: (List<String>) -> Unit,
+    val recordPaperOpened: (String) -> Unit,
     val requestPaper: (String) -> Unit,
     val retryPaper: (String) -> Unit,
     val requestQa: (String, String) -> Unit,
@@ -101,6 +102,13 @@ fun MnemeApp(
     val qaState by viewModel.qaState.collectAsStateWithLifecycle()
     val graphState by viewModel.graphState.collectAsStateWithLifecycle()
     when (val current = onboardingState) {
+        OnboardingUiState.Checking ->
+            Box(
+                modifier = modifier.fillMaxSize().testTag("briefing-restore-loading"),
+                contentAlignment = Alignment.Center,
+            ) {
+                LoadingState(message = stringResource(R.string.briefing_restore_loading))
+            }
         OnboardingUiState.AwaitingSeed ->
             SeedOnboardingScreen(
                 initialReference = "",
@@ -128,6 +136,8 @@ fun MnemeApp(
                 actions =
                     MnemeUiActions(
                         refreshBriefing = viewModel::refreshBriefing,
+                        recordPaperImpressions = viewModel.behavioralEvents::recordPaperImpressions,
+                        recordPaperOpened = viewModel.behavioralEvents::recordPaperOpened,
                         requestPaper = { paperId -> viewModel.loadPaper(paperId) },
                         retryPaper = { paperId -> viewModel.loadPaper(paperId, force = true) },
                         requestQa = viewModel::askQuestion,
@@ -180,6 +190,8 @@ fun MnemeApp(
         actions =
             MnemeUiActions(
                 refreshBriefing = {},
+                recordPaperImpressions = {},
+                recordPaperOpened = {},
                 requestPaper = loadPaper,
                 retryPaper = loadPaper,
                 requestQa = loadQa,
@@ -286,15 +298,13 @@ private fun MnemeNavHost(
         startDestination = BriefingRoute,
         modifier = modifier,
     ) {
-        composable<BriefingRoute> {
-            HomeScreen(
-                state = snapshot.home,
-                onRetry = actions.refreshBriefing,
-                onPaperClick = { paperId ->
-                    navController.navigate(PaperDetailRoute(paperId))
-                },
-            )
-        }
+        briefingNavigation(
+            navController = navController,
+            state = snapshot.home,
+            refreshBriefing = actions.refreshBriefing,
+            recordPaperImpressions = actions.recordPaperImpressions,
+            recordPaperOpened = actions.recordPaperOpened,
+        )
         composable<SavedRoute> {
             SavedScreen()
         }

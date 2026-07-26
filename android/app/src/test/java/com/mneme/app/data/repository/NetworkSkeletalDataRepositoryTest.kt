@@ -9,6 +9,7 @@ import com.mneme.app.data.network.CitationDto
 import com.mneme.app.data.network.DigestDto
 import com.mneme.app.data.network.DigestEntryDto
 import com.mneme.app.data.network.DigestPageDto
+import com.mneme.app.data.network.EventIngestionResultDto
 import com.mneme.app.data.network.GraphDto
 import com.mneme.app.data.network.GraphEdgeDto
 import com.mneme.app.data.network.GraphNodeDto
@@ -25,6 +26,7 @@ import com.mneme.app.data.network.RemoteResource
 import com.mneme.app.data.network.SeedInitializationDto
 import com.mneme.app.data.network.SeedInitializationRequestDto
 import com.mneme.app.data.network.SummaryDto
+import com.mneme.app.data.network.UserEventDto
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.GraphAlgorithmUiStatus
 import com.mneme.app.ui.model.SourceMatchUiStatus
@@ -37,6 +39,28 @@ import org.junit.Test
 import java.io.IOException
 
 class NetworkSkeletalDataRepositoryTest {
+    @Test
+    fun restoreBriefing_withoutDeviceCache_requiresSeedOnboarding() =
+        runBlocking {
+            val repository = NetworkSkeletalDataRepository(FakeRemote(), FakeCache())
+
+            assertEquals(null, repository.restoreBriefing())
+        }
+
+    @Test
+    fun restoreBriefing_withDeviceCache_returnsPreviousBriefing() =
+        runBlocking {
+            val cache = FakeCache().apply { cachedBriefing = cachedBriefing() }
+            val repository = NetworkSkeletalDataRepository(FakeRemote(), cache)
+
+            val restored = checkNotNull(repository.restoreBriefing())
+
+            assertEquals(ContentOrigin.CACHED_BACKEND, restored.disclosure.origin)
+            assertTrue(restored.disclosure.message.contains("this device"))
+            assertEquals(listOf("paper-1"), restored.papers.map { it.id })
+            assertEquals("Cached reason", restored.papers.single().summary)
+        }
+
     @Test
     fun initializeFromSeed_waitsForCompletedBackendBriefingAndCachesIt() =
         runBlocking {
@@ -358,6 +382,9 @@ class NetworkSkeletalDataRepositoryTest {
             graphRequests += Triple(paperId, depth, limit)
             return graph
         }
+
+        override suspend fun uploadEvents(events: List<UserEventDto>): EventIngestionResultDto =
+            EventIngestionResultDto(accepted = events.size, duplicates = 0)
     }
 
     private class FakeCache : SkeletalCache {

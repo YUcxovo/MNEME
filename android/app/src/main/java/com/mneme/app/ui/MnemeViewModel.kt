@@ -3,6 +3,8 @@ package com.mneme.app.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.mneme.app.data.behavior.BehavioralEventTracker
+import com.mneme.app.data.behavior.NoOpBehavioralEventTracker
 import com.mneme.app.data.network.QUESTION_MAX_LENGTH
 import com.mneme.app.data.repository.PaperContentResult
 import com.mneme.app.data.repository.SkeletalDataRepository
@@ -20,15 +22,12 @@ import java.io.IOException
 
 class MnemeViewModel(
     private val repository: SkeletalDataRepository,
+    private val eventTracker: BehavioralEventTracker = NoOpBehavioralEventTracker,
 ) : ViewModel() {
+    val behavioralEvents = MnemeBehavioralEventRecorder(eventTracker, viewModelScope)
+
     private val _onboardingState =
-        MutableStateFlow<OnboardingUiState>(
-            if (repository.requiresSeedOnboarding) {
-                OnboardingUiState.AwaitingSeed
-            } else {
-                OnboardingUiState.Ready
-            },
-        )
+        MutableStateFlow<OnboardingUiState>(OnboardingUiState.Checking)
     val onboardingState: StateFlow<OnboardingUiState> = _onboardingState.asStateFlow()
 
     private val _homeState = MutableStateFlow<HomeUiState>(HomeUiState.Loading)
@@ -48,9 +47,7 @@ class MnemeViewModel(
     private var graphLoadJob: Job? = null
 
     init {
-        if (!repository.requiresSeedOnboarding) {
-            refreshBriefing()
-        }
+        restoreBriefing()
     }
 
     fun initializeFromSeed(arxivReference: String) {
@@ -76,12 +73,26 @@ class MnemeViewModel(
 
     fun refreshBriefing() {
         viewModelScope.launch {
-            _homeState.value = HomeUiState.Loading
+            _homeState.updateFrom(repository, showLoading = true)
+        }
+    }
+
+    private fun restoreBriefing() {
+        viewModelScope.launch {
             try {
-                _homeState.value = HomeUiState.Content(repository.loadBriefing())
+                val restored = repository.restoreBriefing()
+                if (restored == null) {
+                    _onboardingState.value = OnboardingUiState.AwaitingSeed
+                    return@launch
+                }
+                _homeState.value = HomeUiState.Content(restored)
+                _onboardingState.value = OnboardingUiState.Ready
+                _homeState.updateFrom(repository, showLoading = false)
             } catch (error: IOException) {
+                _onboardingState.value = OnboardingUiState.Ready
                 _homeState.value = HomeUiState.Error(error.toUserMessage())
             } catch (error: SerializationException) {
+                _onboardingState.value = OnboardingUiState.Ready
                 _homeState.value = HomeUiState.Error(error.toUserMessage())
             }
         }
@@ -122,6 +133,7 @@ class MnemeViewModel(
         require(question.length <= QUESTION_MAX_LENGTH) {
             "Question must not exceed $QUESTION_MAX_LENGTH characters."
         }
+        behavioralEvents.recordQuestionAsked(paperId)
         qaLoadJob?.cancel()
         qaLoadJob =
             viewModelScope.launch {
@@ -182,18 +194,35 @@ class MnemeViewModel(
 
     class Factory(
         private val repository: SkeletalDataRepository,
+        private val eventTracker: BehavioralEventTracker = NoOpBehavioralEventTracker,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MnemeViewModel::class.java)) {
                 "Unsupported ViewModel class: ${modelClass.name}"
             }
-            return MnemeViewModel(repository) as T
+            return MnemeViewModel(repository, eventTracker) as T
         }
     }
 
     companion object {
         const val JOB_POLL_INTERVAL_MILLIS = 1_000L
+    }
+}
+
+private suspend fun MutableStateFlow<HomeUiState>.updateFrom(
+    repository: SkeletalDataRepository,
+    showLoading: Boolean,
+) {
+    if (showLoading) {
+        value = HomeUiState.Loading
+    }
+    try {
+        value = HomeUiState.Content(repository.loadBriefing())
+    } catch (error: IOException) {
+        value = HomeUiState.Error(error.toUserMessage())
+    } catch (error: SerializationException) {
+        value = HomeUiState.Error(error.toUserMessage())
     }
 }
 

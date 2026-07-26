@@ -31,7 +31,7 @@ sealed interface PaperContentResult {
 }
 
 interface SkeletalDataRepository {
-    val requiresSeedOnboarding: Boolean
+    suspend fun restoreBriefing(): BriefingUiModel?
 
     suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel
 
@@ -53,7 +53,7 @@ interface SkeletalDataRepository {
 }
 
 class ControlledFixtureDataRepository : SkeletalDataRepository {
-    override val requiresSeedOnboarding: Boolean = false
+    override suspend fun restoreBriefing(): BriefingUiModel = loadBriefing()
 
     override suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel {
         val briefing = SeededSkeletalContentRepository.briefing()
@@ -88,7 +88,7 @@ class NetworkSkeletalDataRepository(
     private val cache: SkeletalCache,
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
 ) : SkeletalDataRepository {
-    override val requiresSeedOnboarding: Boolean = true
+    override suspend fun restoreBriefing(): BriefingUiModel? = cache.getBriefing()?.toRestoredBriefing()
 
     override suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel {
         require(arxivReference.isNotBlank()) { "An arXiv URL or identifier is required." }
