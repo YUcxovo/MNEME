@@ -9,6 +9,12 @@ $ENV{'TZ'}='Asia/Shanghai';
 # Ensure './texmf//' is in '$TEXINPUTS'.
 ensure_path( 'TEXINPUTS', './texmf//' );
 
+# Register './texmf' as a proper TDS tree so engine-level lookups (e.g. the
+# XeTeX loader for the badge PDFs) resolve it too; TEXINPUTS alone only
+# covers macro-level \input searches on some distributions.
+use Cwd;
+$ENV{'TEXMFHOME'} = getcwd() . '/texmf';
+
 # PDF generate method
 #   - 1 pdfLaTeX
 #   - 3 LaTeX + DVIPDFMx
