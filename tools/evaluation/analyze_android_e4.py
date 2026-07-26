@@ -267,9 +267,13 @@ def plot_graph_latency(summaries: list[Summary]) -> None:
 
 def plot_mobile_reliability(summaries: list[Summary]) -> None:
     lookup = result_lookup(summaries)
-    left_items = [
+    startup_items = [
         ("startup", "cold_process", "", "Cold process start"),
-        ("startup", "warm_task_resume", "", "Warm task resume"),
+        ("startup", "warm_task_resume", "", "Task foreground / resume"),
+        ("state", "three_stage_job_polling", "", "Three-stage job polling"),
+    ]
+    state_items = [
+        ("state", "live_seed", "", "Live briefing state"),
         ("state", "cached_warm_start", "", "Cached briefing restore"),
         (
             "state",
@@ -284,9 +288,8 @@ def plot_mobile_reliability(summaries: list[Summary]) -> None:
             "Server-failure disclosure",
         ),
         ("state", "invalid_cache_error", "", "Invalid-cache error state"),
-        ("state", "three_stage_job_polling", "", "Three-stage job polling"),
     ]
-    right_items = [
+    event_items = [
         ("event_sync", "queue_write", "controlled", "Queue three events"),
         (
             "event_sync",
@@ -320,18 +323,35 @@ def plot_mobile_reliability(summaries: list[Summary]) -> None:
             "Live client readback",
         ),
     ]
-    figure, axes = plt.subplots(1, 2, figsize=(10.2, 4.6), constrained_layout=True)
-    plot_latency_list(axes[0], lookup, left_items, "Mobile state resolution")
-    plot_latency_list(axes[1], lookup, right_items, "Event synchronization")
-    handles, labels = axes[0].get_legend_handles_labels()
-    figure.legend(
-        handles,
-        labels,
-        frameon=False,
-        ncol=2,
-        loc="upper right",
-        bbox_to_anchor=(0.985, 0.975),
+    figure = plt.figure(figsize=(10.2, 7.0), constrained_layout=True)
+    grid = figure.add_gridspec(2, 2, height_ratios=(1.0, 1.25))
+    axes = [
+        figure.add_subplot(grid[0, 0]),
+        figure.add_subplot(grid[0, 1]),
+        figure.add_subplot(grid[1, :]),
+    ]
+    plot_latency_list(
+        axes[0],
+        lookup,
+        startup_items,
+        "Process, task and polling operations",
+        log_scale=True,
     )
+    plot_latency_list(
+        axes[1],
+        lookup,
+        state_items,
+        "Controlled content-state transitions",
+        log_scale=False,
+    )
+    plot_latency_list(
+        axes[2],
+        lookup,
+        event_items,
+        "Controlled and live event operations",
+        log_scale=True,
+    )
+    axes[2].legend(frameon=False, ncol=2, loc="upper right")
     save_figure(figure, "mobile_reliability")
 
 
@@ -340,6 +360,8 @@ def plot_latency_list(
     lookup: dict[tuple[str, str, str], Summary],
     items: list[tuple[str, str, str, str]],
     title: str,
+    *,
+    log_scale: bool,
 ) -> None:
     results = [lookup[item[:3]] for item in items]
     labels = [item[3] for item in items]
@@ -351,8 +373,9 @@ def plot_latency_list(
     axis.scatter(p50, positions, color=TEAL, s=40, label="p50", zorder=4)
     axis.set_yticks(positions, labels)
     axis.invert_yaxis()
-    axis.set_xscale("log")
-    axis.set_xlabel("Latency (ms, log scale)")
+    if log_scale:
+        axis.set_xscale("log")
+    axis.set_xlabel(f"Latency (ms{', log scale' if log_scale else ''})")
     axis.set_title(title, loc="left", fontweight="bold")
     axis.grid(axis="x")
     for position, result in zip(positions, results, strict=True):
