@@ -63,106 +63,93 @@ Section-aware chunking runs only after the parser has produced a revision-scoped
 E1 closes the C1 argument by testing the properties that implementation tests alone cannot establish across a representative corpus. Its fixtures will include multiple revisions, malformed or layout-diverse PDFs, interrupted stages, duplicate submissions, and stale-artifact scenarios. The primary outcomes are cross-revision contamination, idempotent recovery, parse-quality distribution, provenance completeness, and processing latency. The current repository already tests key software invariants, including revision-scoped retrieval and job idempotency; corpus-level rates and performance values remain \pending{}. This bounded conclusion is important: C1 establishes an inspectable mechanism for continuity, while E1 must determine how reliably that mechanism operates on the selected evidence set.
 
 \section{C2: Evidence-Bounded Assistance}
+\label{sec:c2-evidence}
 
-\subsection{Retrieval Scope and Trace}
+\subsection{Current Scope and Retrieval Boundary}
 
-Each question has a declared scope: one revision, a selected set of papers, or a user library snapshot.
-The retrieval trace stores the query, embedding model, candidate filters, ranking configuration, retrieved chunk identifiers, scores, and context expansion.
-This trace is necessary because the same generated answer may be interpreted differently when produced from a single paper versus a broad library.
+The second technical challenge is evidence continuity: generated assistance must remain resolvable to the source revision that conditioned it. The current Q\&A endpoint deliberately accepts one logical paper, resolves its latest observed revision, and retrieves only chunks whose \texttt{paper\_id}, \texttt{paper\_version\_id}, and embedding model match that request. Cross-paper synthesis, library-wide questions, and multi-turn scope expansion are not implemented claims. This narrow boundary makes the source set explicit and prevents conversation history from silently widening it.
 
-Long context is not treated as an automatic substitute for retrieval.
-Evidence position can affect model use~\cite{liu2024lost}, and retrieval may add irrelevant context.
-The planned pipeline therefore evaluates both recall of relevant evidence and resistance to distractors.
-
-\subsection{Claim and Evidence Objects}
-
-The generator returns a structured answer consisting of claims:
+Dense pgvector retrieval supplies question-specific candidates, while early chunks from the introduction or document overview may be retained as stable context anchors. A deterministic reranker combines normalized vector similarity and lexical question overlap as
 \[
-  A = \{c_1,c_2,\ldots,c_n\}.
+  R(q,c)=0.7D(q,c)+0.3L(q,c).
 \]
-Each claim \(c_i\) contains claim text, one or more evidence references, an answerability state, and verification results.
-An evidence reference contains the logical paper and revision identifiers, section and chunk identifiers, a character or sentence span, and the retrieved text hash.
+The implementation describes this exactly as a lexical blend rather than a cross-encoder. Context anchors add orientation without displacing the highest-ranked evidence. This choice preserves a lightweight, reproducible baseline; it does not establish that the coefficients or anchor policy are optimal. E2 must compare the implemented section-aware configuration with fixed-size and context-expanded alternatives.
 
-This representation separates four questions:
-\begin{enumerate}
-  \item \textbf{Identifier validity}: does the cited paper revision exist in the retrieval trace?
-  \item \textbf{Evidence availability}: can the cited source span be resolved?
-  \item \textbf{Consistency}: does the evidence support, contradict, or fail to determine the claim?
-  \item \textbf{Coverage}: do the cited spans support all material parts of the answer?
-\end{enumerate}
-ALCE motivates explicit citation-quality dimensions~\cite{gao2023alce}, while fine-grained attribution work shows why a document identifier alone is insufficient~\cite{huang2024grounded}.
-RAGTruth further demonstrates that RAG outputs can contain unsupported or contradictory content despite retrieved context~\cite{niu2024ragtruth}.
+\subsection{Generation, Refusal, and Source Matching}
 
-\subsection{Generation and Verification}
+Retrieved chunks are rendered with section and page metadata before model generation, and the prompt requires numbered evidence markers. If no candidate reaches the configured evidence threshold, or if the provider returns an insufficient-evidence marker, the service emits a fixed refusal rather than calling absence of retrieved evidence a negative factual answer. A returned marker is accepted only when it indexes a chunk actually supplied to the model. Each public citation then carries the stored chunk identity and its revision-scoped metadata.
 
-The planned generation prompt provides retrieved chunks with immutable metadata and requires structured output.
-Post-generation checks reject identifiers that were not retrieved and unresolved spans.
-Consistency and coverage checks may combine deterministic validation, natural-language inference, and human review.
-No automatic judge is treated as ground truth.
-RAGAS and ARES illustrate component-level evaluation and the value of human calibration~\cite{es2024ragas,saadfalcon2024ares}.
+The post-generation verifier separates identifier validity from a limited lexical source-match check. It splits the answer into local claims, removes the marker, and measures content-word overlap with the cited chunk. A threshold of 0.3 yields \texttt{matched}, \texttt{partial}, or \texttt{insufficient\_evidence}. This check can detect missing markers and severe lexical mismatch, but it is not semantic entailment and cannot establish that every material proposition is supported. That limitation matters because retrieved context does not prevent unsupported or contradictory generation~\cite{niu2024ragtruth}. ALCE likewise treats citation correctness and completeness as separate evaluation dimensions~\cite{gao2023alce}. Chapter~4 therefore combines automated retrieval and citation measures with human annotation instead of promoting \texttt{matched} to ``factually correct.''
 
-If no retrieved evidence supports an answer, the correct behavior is abstention or a scoped clarification request.
-The interface should distinguish ``no evidence found'' from provider failure and from a failed consistency check.
-This distinction prevents the absence of an answer from being presented as a confident negative claim.
+\subsection{Replaceable Interface and the E2 Contract}
 
-\subsection{Multi-Turn Boundaries}
+The retrieval, reranking, generation, and verification stages communicate through typed objects rather than provider-specific payloads. Model identifiers, prompt versions, token usage, latency, cost estimate, input hash, and cache state are persisted with completions. This boundary permits a later reranker or semantic verifier to replace one stage without changing paper and revision identity. It also gives E2 a reproducible configuration record.
 
-A follow-up question may depend on prior entities or scope, but conversation history must not silently widen the evidence set.
-MNEME retains a bounded number of turns and records the retrieval query derived from each turn.
-Scope changes are visible.
-E2 treats first-turn, follow-up, non-standalone, and unanswerable questions as separate strata, following the need for dedicated multi-turn RAG evaluation~\cite{katsis2025mtrag}.
+E2 evaluates the complete boundary rather than only the final prose. It will measure evidence retrieval, citation correctness and completeness, refusal behavior on unanswerable questions, and answer utility on a frozen question set. Tests at the implementation cutoff establish revision filtering and marker validation, while the quality metrics remain \pending{}. Yifan owns the AI-method and result sign-off for this section; Ruiyu owns the revision and persistence claims on which it depends.
 
 \section{C3: Adaptive and Inspectable Interest Memory}
+\label{sec:c3-behavior}
 
-\subsection{Event Semantics}
+\subsection{A Versioned Behavioral Contract}
 
-The planned event vocabulary includes explicit topic edits and paper saves as well as implicit opens, reading duration, skips after exposure, shares, and questions.
-Each event contains an event identifier, user identifier, paper and revision identifiers when applicable, event type, timestamp, context, and client-generated deduplication key.
-The event model records observation, not intent.
-For example, a long open duration may indicate careful reading, interruption, or abandonment.
-Its weight must therefore be bounded and tested.
+The third technical challenge is preference continuity: MNEME must adapt to interaction history without presenting noisy behavior as certain intent. The public \texttt{POST /events} contract accepts batches of client-generated UUIDs with an event type, timezone-aware timestamp, optional paper, and duration only for an open event. The backend rejects unknown papers, invalid event combinations, and timestamps more than five minutes in the future. Duplicate UUIDs are acknowledged without repeating their effect.
 
-\subsection{Multi-Timescale State}
+Event insertion and preference recomputation occur in one database transaction while the user row is locked. A failure therefore commits neither the new observations nor a profile derived from only part of the batch. The Android client uses the same UUID as its durable queue identity and reserves, retries, and marks batches as synchronized. This end-to-end identity is preferable to server-generated event identifiers because a client retry after an ambiguous network failure remains idempotent.
 
-Let \(e_t\) be the embedding associated with an eligible event and \(w_t\) its declared signal weight.
-A baseline short-term state can be represented by
+The contract records observations rather than inferred intent. An impression, a short open, and a save have distinct semantics, but none proves why the user acted. For this reason the current model is named and versioned as \texttt{behavior-v1}; its output is an inspectable deterministic baseline rather than a learned claim about cognition.
+
+\subsection{Behavior-v1 Aggregation}
+
+Let event \(i\) have base weight \(b_i\), opened-duration multiplier \(m_i\), age \(\Delta_i\) in days, and a paper representation \(v_i\). Only events within a 90-day window whose paper has a model-compatible representation are eligible. The effective signed weight is
 \[
-  s_t = \operatorname{norm}\left(\alpha_s s_{t-1} + (1-\alpha_s)w_t e_t\right),
+  \widetilde{w}_i=b_i m_i 2^{-\Delta_i/30}.
 \]
-while a long-term state uses a slower update,
+The duration multiplier is 0.5 below 30 seconds, 1.0 from 30 through 180 seconds or when duration is absent, and 1.5 above 180 seconds; it applies only to \texttt{paper\_opened}. Slightly future timestamps within the accepted skew are assigned age zero. The base weights are shown in Table~\ref{tab:behavior-weights}.
+
+\begin{table}[htbp]
+\centering
+\caption{Frozen event semantics in \texttt{behavior-v1}. A zero weight retains the observation without moving the vector.}
+\label{tab:behavior-weights}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Event & Base weight \(b_i\) \\
+\midrule
+\texttt{paper\_impression} & 0.1 \\
+\texttt{paper\_opened} & 1.0 \\
+\texttt{paper\_saved} & 3.0 \\
+\texttt{paper\_skipped} & -1.0 \\
+\texttt{paper\_shared} & 4.0 \\
+\texttt{question\_asked} & 2.0 \\
+\texttt{digest\_dismissed} & 0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For each paper, \(v_i\) is the mean of chunk embeddings from its latest observed revision, filtered to the embedding model configured for recommendation. The unnormalized profile and stored unit vector are
 \[
-  \ell_t = \operatorname{norm}\left(\alpha_\ell \ell_{t-1} + (1-\alpha_\ell)w_t e_t\right),
-  \qquad \alpha_\ell > \alpha_s.
+  z=\frac{\sum_i \widetilde{w}_i v_i}{\sum_i |\widetilde{w}_i|},
+  \qquad
+  u=\frac{z}{\lVert z\rVert_2}.
 \]
-The recommendation state may combine explicit preferences \(x_t\), short-term state, and long-term state:
+Absolute-weight normalization prevents positive and negative signals from making a near-zero denominator. If no compatible signal remains or \(z\) is degenerate, the behavior vector is absent rather than fabricated. The preference row stores the vector together with its embedding model and behavior-model version, so a recommendation service cannot silently compare incompatible spaces.
+
+\subsection{Recommendation Composition and Inspectable Reasons}
+
+The current recommendation baseline connects explicit and observed preferences without merging their provenance. For candidate \(p\), it computes explicit-topic match \(T\), behavior-vector cosine similarity \(B\), and a recency score \(F=2^{-d/7}\), where \(d\) is paper age in days. When all signals are available,
 \[
-  u_t = \operatorname{norm}\left(\beta_x x_t + \beta_s s_t + \beta_\ell \ell_t\right).
+  S(p)=0.45T(p)+0.35B(p)+0.20F(p).
 \]
-These equations specify a baseline to be frozen before E3.
-The coefficients are not claimed optimal.
-They must be documented, ablated, and tested against static and recent-only alternatives.
+If explicit topics or compatible embeddings are absent, the missing weights are removed and the remaining weighted sum is divided by the available total. Scores therefore remain comparable within \([0,1]\) for a cold-start user. Stable UUID ordering breaks score ties, and a generated digest freezes its generator version and candidate snapshot rather than changing as preferences update.
 
-\subsection{Negative and Missing Feedback}
+Displayed reasons are selected from the contributing signals whose strength crosses a fixed threshold, such as matched explicit topics, similarity to recently engaged papers, or recency. They are not model-generated rationalizations. Prior work on scrutable recommendation profiles motivates keeping recommendation state visible and editable~\cite{ramos2024scrutable}; MNEME implements the narrower property that reasons derive from the same components that produced the score. Whether users understand or trust these reasons remains an E3/E4 question.
 
-A skip is eligible as negative evidence only after the system establishes exposure.
-Silence outside an exposure window is missing data, not a negative preference.
-Unpaired-feedback research highlights the difficulty of interpreting engagement and silent disengagement over long horizons~\cite{zhang2025unpaired}.
-MNEME therefore stores event provenance and caps the influence of any single implicit event.
-Explicit removal of a topic overrides inferred positive evidence until the user changes that decision or an explicit policy expires.
+\subsection{Limitations, Planned Iteration, and the E3 Contract}
 
-\subsection{Recommendation Score and Reason}
+Behavior-v1 intentionally has strong limitations. It compresses distinct interests into one vector; uses fixed, hand-specified event weights; represents a paper by the latest compatible revision even when the event concerned an earlier one; and recomputes when event batches arrive rather than continuously as time decay changes. A skip is treated as negative only when the client has recorded the supported interaction, but exposure and intent can still be ambiguous. The current implementation also lacks diversity, author-follow, and repetition terms that appeared in earlier design notes. This chapter does not claim those terms exist.
 
-A candidate score can combine semantic match, freshness, followed-author or citation relations, diversity, and delivery constraints:
-\[
-  S(p,u_t)=\lambda_m M(p,u_t)+\lambda_f F(p)+\lambda_a A(p)
-            +\lambda_d D(p,\mathcal{L})-\lambda_n N(p),
-\]
-where \(M\) is the match to the interest state, \(F\) is freshness, \(A\) is an explicit author or relation boost, \(D\) rewards diversity relative to the current list \(\mathcal{L}\), and \(N\) represents notification or repetition penalties.
-Every term must be defined and exposed to E3 ablation.
+\textbf{PLANNED FINAL ITERATION --- behavior-v2.} The name records an intended research iteration, not a frozen algorithm. Ruiyu owns the behavioral contract and Yifan owns recommendation integration. The dependency is a literature-backed mathematical definition plus pilot event distributions. The expected artifacts are an ADR, versioned implementation and migration, frozen coefficients, and an E3 comparison against static, recent-only, and behavior-v1 baselines. The finalization trigger is completion of those artifacts before the final E3 run; if the trigger is not met, the thesis will report behavior-v1 as the evaluated baseline rather than retrofitting an unimplemented method into the narrative.
 
-The displayed recommendation reason is derived from inspectable contributors, such as an explicit topic, a saved paper, or an author watchlist.
-It is not a free-form post-hoc explanation of an opaque score.
-Editable natural-language profiles demonstrate one route to scrutable preference representations~\cite{ramos2024scrutable}; MNEME adopts the more general requirement that visible reasons and editable state must remain consistent.
+E3 will measure ranking quality on a frozen replay set, sensitivity to event types and time decay, stability under sparse or contradictory feedback, cold-start behavior, and the fidelity of displayed reasons. Current tests establish deterministic aggregation, idempotent transactional ingestion, model compatibility, and stable ranking. No ranking-quality or user-benefit result is claimed in this initial draft.
 
 \section{C4: Bounded Mobile Integration}
 
