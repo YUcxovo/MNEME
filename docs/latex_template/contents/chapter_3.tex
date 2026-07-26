@@ -176,18 +176,18 @@ Behavioral interactions close the C3 feedback loop. The client records only UI a
 
 The current integration distinguishes live, cached, fixture, fallback, retryable failure, and insufficient-evidence states at their relevant boundaries. This vocabulary prevents a successful rendering from being confused with fresh or model-produced content. It is incomplete: live background digest refresh remains a no-op, notification permission and delivery UX are not integrated, saved-paper behavior is absent, and the graph has no offline cache. These items are \planned{} final-version work rather than current capabilities.
 
+The native client represents onboarding, briefing, paper-detail, paper-scoped question, and graph operations with explicit loading, content, and error states.
+For asynchronous paper preparation, it polls the returned job once per second until the paper becomes ready or the job reports a terminal failure.
+This client orchestration exposes progress without making a claim about parser or summarization quality.
+
 \begin{figure}[htbp]
 \centering
-\fbox{\parbox{0.88\textwidth}{
-\textbf{FIGURE PLACEHOLDER --- Device-visible graph and feedback walkthrough.}\\
-The final composite will show the live briefing state, revision-aware paper detail, graph selection with algorithm status, grounded Q\&A or refusal, event queue transition, and visible offline/error state.\\
-\textbf{Owner:} Hanyang (visual system) and Heng (device evidence), with Ruiyu validating event/graph contracts. \textbf{Dependency:} release-candidate APK, reachable backend, and frozen E4 script. \textbf{Expected artifact:} annotated screenshots plus an interaction-state diagram. \textbf{Finalization trigger:} successful device walkthrough and evidence sign-off by all affected domain owners.
-}}
-\caption{Planned E4 walkthrough linking mobile-visible state to backend graph and behavior contracts. Runtime images are intentionally deferred from the initial draft.}
-\label{fig:mobile-walkthrough}
+\includegraphics[width=0.94\textwidth]{mneme_android_loop}
+\caption{Implemented Android state and event loop. The upper path restores or refreshes reader-visible content with an explicit origin. The lower path returns visible interactions through durable, duplicate-aware synchronization. The figure describes client orchestration and does not imply recommendation adaptation.}
+\label{fig:android-loop}
 \end{figure}
 
-E4 will measure task completion, state comprehension, graph interaction correctness, event-delivery recovery, and notification behavior after the missing delivery path is implemented. Current Android tests establish deterministic state transitions and synchronization outcomes in the test environment. They do not establish usability, device reliability, or notification benefit. Heng and Hanyang own the client and E4 sign-off; Ruiyu owns the server event and graph contracts; Yifan owns graph-enrichment semantics.
+E4 currently measures client startup, visible origin and failure states, graph interaction correctness, and event-delivery recovery on one Android emulator, including a separate live-backend event loop. Chapter~4 reports these results independently from controlled ViewModel and WebView measurements. The measurements do not establish physical-device reliability, usability, notification benefit, graph quality, or recommendation adaptation. Participant evaluation and notification delivery remain planned.
 
 \section{Cross-Cutting Reliability, Privacy, and Evolvability}
 
@@ -212,7 +212,7 @@ Trace & Initial-draft state & Finalization artifact & Owner and trigger \\
 C1/E1 & Mechanism and invariants inspected at \texttt{b945d3c}; metrics \pending{} & Frozen corpus, revision/recovery report, provenance and latency plots & Ruiyu; E1 protocol executed on frozen code/configuration \\
 C2/E2 & Single-paper interface and limitations documented; quality \pending{} & Question set, human labels, retrieval/citation/refusal results & Yifan; AI revision and annotation guide frozen \\
 C3/E3 & behavior-v1 and scorer frozen; behavior-v2 remains \planned{} & Replay set, baselines/ablation, versioned ADR and result plots & Ruiyu with Yifan; evaluate v2 only if implemented before E3 freeze \\
-C4/E4 & Live graph and event upload implemented; digest refresh and notification UX \planned{} & Device walkthrough, state-comprehension study, delivery/recovery results & Heng and Hanyang; release APK and E4 script frozen \\
+C4/E4 & Client reliability, graph interaction, and event recovery measured on one emulator; participant and notification evaluation \planned{} & Additional physical-device and participant evidence, if completed & Heng and Hanyang; E4 evidence reviewed against the frozen protocol \\
 \bottomrule
 \end{tabular}
 \end{table}

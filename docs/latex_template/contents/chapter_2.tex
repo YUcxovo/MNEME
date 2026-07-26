@@ -116,3 +116,49 @@ These counts are classified as \observed{}/\limited{}, not \measured{} final evi
 The supplied folder does not include the participant-by-task table, timing and tap records, coded observations, consent documentation, or locally accessible recordings.
 The companion draft presentation explicitly contains blank fields for those artifacts.
 Consequently, the counts can motivate a design iteration, but they cannot establish a general usability effect or validate the redesign.
+
+\section{Mobile Acceptance and Evidence Boundaries}
+
+The mobile requirements become testable when each one names a reader-visible result under a defined condition.
+Table~\ref{tab:mobile-acceptance} extends the existing R4 requirements with client-side acceptance conditions.
+It specifies what the Android client must expose; Chapter~4 reports the corresponding E4 measurements.
+
+\begin{table}[htbp]
+\centering
+\caption{Client-side acceptance conditions for bounded mobile integration.}
+\label{tab:mobile-acceptance}
+\begin{tabular}{P{2.4cm}P{6.2cm}P{5.3cm}}
+\toprule
+Requirement link & Observable acceptance condition & E4 evidence \\
+\midrule
+R4.1: reading continuity &
+A stored backend briefing remains available when refresh fails, carries a cached-content label, and is never substituted for live content without disclosure.
+When no valid stored briefing exists, the client presents a retryable error. &
+Controlled live, cached, offline, server-failure, and invalid-cache trials. \\
+\addlinespace
+R4.1 and R4.3: asynchronous work &
+Paper preparation exposes loading, processing, ready, and error states.
+Polling terminates at a completed or failed job and does not leave the interface in an unexplained waiting state. &
+Controlled three-stage polling and startup/resume measurements. \\
+\addlinespace
+R4.3: graph interaction &
+The graph declares ready, fallback, or empty state.
+A selected node remains visible in the native interface and provides an Open Paper action that returns to the same graph selection. &
+Graph-state trials at the declared client bound and graph/navigation software tests. \\
+\addlinespace
+R3.1 and R4.1: event return &
+Visible paper interactions enter a durable queue with stable identifiers.
+Retryable failures preserve pending work, and replayed identifiers are acknowledged as duplicates. &
+Controlled queue/retry/replay trials and a separate live-backend trace. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These conditions support implementation and systems acceptance.
+They do not establish whether readers understand every status label or whether the graph redesign improves task completion.
+No participant retest accompanied the Android measurements, so those user-facing effects remain unestablished.
+
+The implemented event payload also narrows the privacy boundary.
+Paper impressions, paper opens, and submitted paper-scoped questions are represented by an event type, relevant identifiers, and a timestamp.
+The submitted question text is not copied into the synchronization event.
+This data-minimization decision reduces the behavioral content held in the client queue; it is not a complete privacy or security audit.
