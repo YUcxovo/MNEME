@@ -259,18 +259,9 @@ def plot_graph_latency(summaries: list[Summary]) -> None:
         fontsize=8,
         ncol=4,
         loc="upper center",
-        bbox_to_anchor=(0.5, 0.86),
+        bbox_to_anchor=(0.5, 0.98),
     )
-    figure.subplots_adjust(top=0.7, bottom=0.15, left=0.08, right=0.98, wspace=0.16)
-    figure.suptitle(
-        "Android citation-graph renderer and selection latency",
-        x=0.01,
-        y=0.98,
-        ha="left",
-        fontsize=13,
-        fontweight="bold",
-        color=INK,
-    )
+    figure.subplots_adjust(top=0.82, bottom=0.15, left=0.08, right=0.98, wspace=0.16)
     save_figure(figure, "graph_latency")
 
 
@@ -341,14 +332,6 @@ def plot_mobile_reliability(summaries: list[Summary]) -> None:
         loc="upper right",
         bbox_to_anchor=(0.985, 0.975),
     )
-    figure.suptitle(
-        "Measured Android client reliability paths",
-        x=0.01,
-        ha="left",
-        fontsize=13,
-        fontweight="bold",
-        color=INK,
-    )
     save_figure(figure, "mobile_reliability")
 
 
@@ -385,9 +368,9 @@ def plot_latency_list(
 
 
 def plot_client_loop() -> None:
-    figure, axis = plt.subplots(figsize=(10.2, 4.25))
+    figure, axis = plt.subplots(figsize=(10.2, 3.7))
     axis.set_xlim(0, 12)
-    axis.set_ylim(0, 5.5)
+    axis.set_ylim(0.5, 4.6)
     axis.axis("off")
 
     boxes = [
@@ -467,23 +450,6 @@ def plot_client_loop() -> None:
             ),
         )
 
-    axis.text(
-        0.35,
-        5.1,
-        "Android client state and event loop evaluated in E4",
-        color=INK,
-        fontsize=14,
-        fontweight="bold",
-        va="top",
-    )
-    axis.text(
-        0.35,
-        4.7,
-        "Solid paths are implemented client behavior; recommendation and graph-algorithm quality are outside this evaluation.",
-        color=MUTED,
-        fontsize=9,
-        va="top",
-    )
     save_figure(figure, "android_client_loop")
 
 
