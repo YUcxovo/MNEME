@@ -9,7 +9,7 @@ network performance.
 
 The evaluation covers:
 
-- cold process start and warm task resume;
+- cold process start and task foreground/resume;
 - live, cached, offline, server-failure, and invalid-cache UI states;
 - asynchronous paper-job polling;
 - graph rendering at 1, 12, 25, and 50 nodes;
@@ -41,13 +41,14 @@ token is passed to the instrumentation process and is not written to an
 artifact.
 
 The runner performs three warm-up launch pairs followed by 20 measured cold
-and warm launch pairs. Controlled state, graph, and event tests have their own
-discarded warm-up iterations. The live event loop runs five independent
-repetitions against the configured backend.
+process starts and 20 measured task foreground/resume operations. Controlled
+state, graph, and event tests have their own discarded warm-up iterations. The
+live event loop runs five repetitions against the configured backend.
 
 ## Artifacts and interpretation
 
-`raw/` retains the direct CSV output, device environment, and run manifest.
+`raw/` retains the direct CSV output, device environment, run manifest, and the
+connected Android test result XML.
 `summary.csv` and `summary.json` contain sample counts, successful outcomes,
 sample medians, and nearest-rank 95th percentiles. `figures/` contains the
 result plots and an architecture figure.
@@ -64,9 +65,17 @@ four virtual processors and a 192 MiB application heap. All 810 controlled
 samples and all 25 live-backend stages met their stated success conditions.
 Eleven existing graph and app-flow tests also passed, including the selected
 paper's Open Paper action and selection restoration after back navigation.
+The retained connected-test XML identifies the five `MnemeAppFlowTest` cases
+and six `GraphScreenTest` cases used for this count.
 
-The cold-process start had a 2,773 ms median and a 4,444 ms p95. Warm task
-resume had a 133.5 ms median and a 445 ms p95. Across the four graph sizes,
+The cold-process start had a 2,773 ms median and a 4,444 ms p95. The task
+foreground/resume operation had a 133.5 ms median and a 445 ms p95. All 20
+operations made the controlled activity visible. Android classified 9 as
+`HOT` and returned `UNKNOWN (0)` for 11; the distribution therefore
+characterizes the measured foreground/resume operation and is not presented as
+20 independently confirmed hot starts. The retained latency is the
+`wait_time_ms` field because `total_time_ms` is blank for the unknown launch
+class. Across the four graph sizes,
 median DOM-ready latency ranged from 139.749 to 454.149 ms for a new WebView
 and from 83.001 to 111.814 ms for an existing WebView. Median node-selection
 callback latency ranged from 32.28 to 49.098 ms.
