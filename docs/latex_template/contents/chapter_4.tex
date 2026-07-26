@@ -244,6 +244,167 @@ Within that report, the graph task is the only major drop-off.
 This observation supports the decision to make graph actions explicit.
 It does not show that the subsequent redesign improves completion because no retest is supplied.
 
+\subsection{Android Evaluation Scope}
+\label{sec:e4-android}
+
+The executed Android subset of E4 measured one Android 14/API 34 Google emulator with four virtual processors and a 192~MiB application heap.
+Three startup pairs were discarded as warm-up.
+The retained startup set contains 20 cold process starts and 20 task foreground/resume operations.
+Controlled state, graph, and event tests used their own discarded warm-up iterations.
+Medians are sample medians and p95 values use the nearest-rank definition.
+Appendix~\ref{app:android-e4} gives the complete sample inventory and success conditions.
+
+The repeated trials cover process and task activation, five content-state conditions, one polling path, four graph sizes, three graph disclosures, and four controlled event stages.
+All samples met the success condition defined for their group; their audit total is 810.
+The groups remain separate in the results below.
+The live-backend trace contains five repetitions with five recorded stages per repetition; it is not pooled with the controlled results.
+Together, the subsections map the acceptance conditions in Table~\ref{tab:mobile-acceptance} to observed client behavior.
+State and polling results address content and asynchronous-work conditions, graph results address selected-state and navigation conditions, and event results address retry and duplicate acknowledgement.
+Because no participant retest was run, this mapping establishes software acceptance only.
+
+\subsection{Mobile State and Reliability Results}
+
+Figure~\ref{fig:mobile-reliability} and Table~\ref{tab:mobile-reliability} report startup, resume, controlled state, and polling latency.
+All 20 cold starts and all 20 task foreground/resume operations returned a wait-time record for the requested Android activity.
+The startup runner does not inspect rendered UI content.
+Cold process start had a median of 2,773~ms and p95 of 4,444~ms.
+The task foreground/resume operation had a median of 133.5~ms and p95 of 445~ms.
+Android classified nine operations as hot starts and returned \texttt{UNKNOWN (0)} for eleven.
+The distribution uses the retained wait-time field and is limited to the foreground/resume operation.
+The records do not constitute 20 independently confirmed hot starts.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{mneme_mobile_reliability}
+\caption{Android client latency and reliability. Separate panels prevent process/task timing, controlled content-state transitions, and event operations from being treated as one timing family. Controlled state timings begin after fixture input; they are not network or display-frame latency.}
+\label{fig:mobile-reliability}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Android startup, controlled state, and polling results. Latencies are in milliseconds.}
+\label{tab:mobile-reliability}
+\begin{tabular}{P{5.1cm}P{1.5cm}P{2.2cm}P{2.2cm}P{2.2cm}}
+\toprule
+Condition & \(n\) & Successful & Median & p95 \\
+\midrule
+Cold process start & 20 & 20 & 2,773 & 4,444 \\
+Task foreground/resume & 20 & 20 & 133.5 & 445 \\
+\addlinespace
+Live seed transition (controlled) & 30 & 30 & 0.124 & 0.293 \\
+Cached warm start (controlled) & 30 & 30 & 0.227 & 0.376 \\
+Cached offline disclosure (controlled) & 30 & 30 & 0.227 & 0.439 \\
+Cached server-failure disclosure (controlled) & 30 & 30 & 0.231 & 0.362 \\
+Invalid-cache error (controlled) & 30 & 30 & 0.203 & 0.635 \\
+\addlinespace
+Three-stage job polling (controlled) & 10 & 10 & 3,008.418 & 3,064.345 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The five controlled content-state conditions each completed 30 of 30 trials.
+Their sub-millisecond values measure the ViewModel transition after a deterministic fixture result is delivered.
+The values cannot be interpreted as live service latency or UI frame time.
+The three-stage paper job completed in all ten trials with a median of 3,008.418~ms, consistent with the one-second client polling interval across three processing stages.
+
+\subsection{Bounded Graph Results}
+
+The graph experiment exercised 1, 12, 25, and 50 nodes.
+The upper bound matches the client request contract.
+Each size was measured in a newly created WebView and as an update to an existing WebView.
+Figure~\ref{fig:graph-latency} shows the resulting distributions; Table~\ref{tab:graph-latency} reports their medians and p95 values.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{mneme_graph_latency}
+\caption{Citation-graph presentation and selection latency by node count. Render timing ends when the local graph page reports DOM readiness. It does not measure convergence of the force-directed layout.}
+\label{fig:graph-latency}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{Graph DOM-ready and native selection-callback latency. Each cell is median / p95 in milliseconds.}
+\label{tab:graph-latency}
+\begin{tabular}{P{1.3cm}P{3.0cm}P{3.0cm}P{3.0cm}P{3.0cm}}
+\toprule
+Nodes & New WebView ready & Existing WebView ready & New WebView selection & Existing WebView selection \\
+\midrule
+1  & 139.749 / 298.019 & 83.001 / 150.840 & 32.764 / 46.022  & 32.279 / 103.680 \\
+12 & 454.149 / 913.746 & 95.590 / 331.895 & 35.971 / 392.792 & 32.968 / 208.816 \\
+25 & 315.039 / 734.190 & 97.767 / 361.523 & 48.675 / 568.963 & 32.759 / 128.642 \\
+50 & 306.793 / 928.176 & 111.814 / 513.785 & 49.098 / 353.710 & 37.860 / 163.644 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Every ready and selection sample succeeded at each evaluated size.
+Median DOM-ready latency ranged from 139.749 to 454.149~ms for a new WebView and from 83.001 to 111.814~ms for an existing WebView.
+Median selection-callback latency ranged from 32.279 to 49.098~ms.
+The non-monotonic medians and wider p95 values at several sizes show emulator scheduling and WebView initialization variability; the experiment does not support a linear scaling model.
+
+Ready, fallback, and empty graph states each completed 30 of 30 controlled disclosure trials.
+The existing graph and app-flow suite passed 11 of 11 tests, including node selection, Open Paper navigation, and selection restoration after returning from paper detail.
+These results establish the specified presentation and navigation behavior.
+They do not measure graph usefulness, discoverability, ranking, clustering, or layout quality.
+
+\subsection{Event Synchronization and Live Readback}
+
+The controlled event experiment isolated local queue and acknowledgement behavior from network variability.
+Table~\ref{tab:event-controlled} reports 30 trials for each stage.
+All queue writes, retryable failures, subsequent retries, and duplicate replays met their success conditions.
+
+\begin{table}[htbp]
+\centering
+\caption{Controlled client event-synchronization results. Latencies are in milliseconds.}
+\label{tab:event-controlled}
+\begin{tabular}{P{5.0cm}P{1.3cm}P{2.0cm}P{2.0cm}P{2.0cm}}
+\toprule
+Stage & \(n\) & Successful & Median & p95 \\
+\midrule
+Durable queue write & 30 & 30 & 10.287 & 32.261 \\
+Retryable HTTP failure & 30 & 30 & 15.613 & 80.332 \\
+Retry success & 30 & 30 & 54.999 & 91.794 \\
+Duplicate replay & 30 & 30 & 18.950 & 50.222 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The live trace then exercised the same client coordinator against a running backend.
+In each of five repetitions, the client queued three new events, recovered from an injected retryable failure, uploaded the batch, replayed the same identifiers, and requested a briefing through the standard client data path.
+Table~\ref{tab:event-live} keeps these network-dependent stages separate from the controlled results.
+
+\begin{table}[htbp]
+\centering
+\caption{Live-backend event-loop results over five repetitions. Latencies are in milliseconds.}
+\label{tab:event-live}
+\begin{tabular}{P{5.0cm}P{1.3cm}P{2.0cm}P{2.0cm}P{2.0cm}}
+\toprule
+Stage & \(n\) & Successful & Median & p95 \\
+\midrule
+Queue three client events & 5 & 5 & 13.850 & 19.061 \\
+Injected failure before retry & 5 & 5 & 8.028 & 8.616 \\
+Upload after retry & 5 & 5 & 33.049 & 188.478 \\
+Replay the same identifiers & 5 & 5 & 24.210 & 125.869 \\
+Read back a live briefing & 5 & 5 & 26.776 & 135.906 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Each live upload accepted three new identifiers, and each replay recognized the same three identifiers as duplicates.
+Every readback carried a live-backend origin.
+The returned digest contained zero papers in all five repetitions, and the preference-model version remained 1.
+The local evaluation database had no paper inside the active 14-day digest window.
+The live result therefore supports client-loop reachability and duplicate-aware ingestion.
+It supplies no evidence of preference change, recommendation adaptation, or recommendation quality.
+
+\subsection{E4 Claim Boundary}
+
+The device measurements come from one emulator and do not estimate physical-device variability.
+Graph render timing ends at a DOM-ready callback, while the force simulation may continue.
+Controlled state and event success conditions establish the specified software transitions; no participant data show whether readers understand the labels or recovery actions.
+The live trace uses one local backend configuration and returns an empty digest.
+Within these limits, E4 provides measured evidence for the bounded Android interaction path.
+
 \section{AI Cost and Latency Audit}
 
 \subsection{Method and Scope}
