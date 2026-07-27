@@ -108,6 +108,21 @@ iterations may reuse PostgreSQL artifacts, Redis completions, and local
 embeddings, so their timing distribution must not be described as five cold
 first-run measurements.
 
+## Recorded run
+
+The retained run completed all 38 fixed-path stages successfully. The visible
+Compose path reached a six-node, five-edge graph, selected a different node,
+and opened that paper. Each of the six repeated repository stages succeeded in
+all five repetitions.
+
+Both additional seeds also completed their required client paths. Seed
+`2010.11929` returned five papers and a six-node, five-edge graph in
+48.058 seconds. Seed `2106.09685` returned five papers and a seven-node,
+six-edge graph in 46.598 seconds. Graph loading and opening a neighbour took
+less than 40 milliseconds in both rows; most elapsed time was the synchronous
+first-time preparation of the five-paper briefing. These are two acceptance
+observations, not a population latency estimate.
+
 This evaluation does not assess whether the selected five papers are relevant,
 whether the generated answer is scientifically correct, whether any returned
 source semantically entails the claim, whether the graph neighbourhood is
