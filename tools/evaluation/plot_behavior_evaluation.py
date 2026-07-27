@@ -11,9 +11,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import tempfile
 from pathlib import Path
 
+os.environ.setdefault(
+    "MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "mneme-matplotlib")
+)
+
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_EVALUATION_DIR = REPO_ROOT / "docs/evaluation/behavior"
@@ -48,7 +55,9 @@ MODEL_COLORS = {
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Plot recorded behavior evaluation summaries.")
+    parser = argparse.ArgumentParser(
+        description="Plot recorded behavior evaluation summaries."
+    )
     parser.add_argument(
         "--evaluation-dir",
         type=Path,
@@ -58,11 +67,15 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def load_artifacts(evaluation_dir: Path) -> tuple[dict[str, object], list[dict[str, object]]]:
+def load_artifacts(
+    evaluation_dir: Path,
+) -> tuple[dict[str, object], list[dict[str, object]]]:
     summary_path = evaluation_dir / "summary.json"
     cases_path = evaluation_dir / "raw/case_results.jsonl"
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
-    cases = [json.loads(line) for line in cases_path.read_text(encoding="utf-8").splitlines()]
+    cases = [
+        json.loads(line) for line in cases_path.read_text(encoding="utf-8").splitlines()
+    ]
     if summary.get("schema_version") != "behavior-evaluation-summary-v1":
         raise ValueError("Unsupported behavior summary schema.")
     if summary.get("controlled_synthetic") is not True:
@@ -122,18 +135,25 @@ def plot_ranking_comparison(summary: dict[str, object], figure_dir: Path) -> Non
     axis.set_xticks(list(x_positions), [label for _, label in metrics])
     axis.set_ylim(0, 1.12)
     axis.set_ylabel("Macro mean across applicable controlled cases")
-    axis.set_title("Controlled ranking comparison", loc="left", fontweight="bold")
-    axis.text(
-        0,
-        1.02,
+    figure.suptitle(
+        "Controlled ranking comparison",
+        x=0.1,
+        y=0.98,
+        ha="left",
+        fontsize=12,
+        fontweight="bold",
+        color=INK,
+    )
+    figure.text(
+        0.1,
+        0.91,
         "Undefined cold-start relevance metrics are excluded, not treated as zero.",
-        transform=axis.transAxes,
         color=MUTED,
         fontsize=8.5,
     )
     axis.grid(axis="y")
     axis.legend(frameon=False, ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.13))
-    figure.subplots_adjust(bottom=0.24, top=0.86, left=0.1, right=0.98)
+    figure.subplots_adjust(bottom=0.24, top=0.84, left=0.1, right=0.98)
     save_figure(figure, figure_dir, "ranking_comparison")
 
 
@@ -148,8 +168,10 @@ def plot_mechanism_deltas(summary: dict[str, object], figure_dir: Path) -> None:
         "v2-no-negative-channel",
         "v2-no-confidence-gate",
     )
-    lookup = {(row["pair_id"], row["model_id"]): row["target_score_delta"] for row in rows}
-    figure, axes = plt.subplots(1, 2, figsize=(10.2, 4.8), sharex=False)
+    lookup = {
+        (row["pair_id"], row["model_id"]): row["target_score_delta"] for row in rows
+    }
+    figure, axes = plt.subplots(1, 2, figsize=(11.2, 4.8), sharex=False)
     colors = (BLUE, TEAL, GOLD, CORAL, PURPLE)
     for axis, pair_id, title in zip(
         axes,
@@ -161,12 +183,37 @@ def plot_mechanism_deltas(summary: dict[str, object], figure_dir: Path) -> None:
         positions = list(range(len(models)))
         bars = axis.barh(positions, values, color=colors)
         axis.axvline(0, color=INK, linewidth=0.9)
-        axis.set_yticks(positions, [MODEL_LABELS[model] for model in models])
+        axis.set_yticks(
+            positions,
+            [MODEL_LABELS[model] for model in models],
+            fontsize=8.5,
+        )
         axis.invert_yaxis()
         axis.set_xlabel("Target score after minus before")
         axis.set_title(title, loc="left", fontweight="bold")
         axis.grid(axis="x")
-        axis.bar_label(bars, fmt="%+.3f", fontsize=8, padding=3)
+        minimum = min(0.0, *values)
+        maximum = max(0.0, *values)
+        span = max(maximum - minimum, 0.1)
+        axis.set_xlim(minimum - 0.14 * span, maximum + 0.14 * span)
+        for bar, value in zip(bars, values, strict=True):
+            if value < 0 and abs(value) >= 0.08:
+                label_x = value + 0.012 * span
+                label_alignment = "left"
+                label_color = "white"
+            else:
+                label_x = value + (0.012 * span if value >= 0 else -0.012 * span)
+                label_alignment = "left" if value >= 0 else "right"
+                label_color = INK
+            axis.text(
+                label_x,
+                bar.get_y() + bar.get_height() / 2,
+                f"{value:+.3f}",
+                va="center",
+                ha=label_alignment,
+                color=label_color,
+                fontsize=8,
+            )
     figure.suptitle(
         "Mechanism response on paired controlled traces",
         x=0.08,
@@ -176,11 +223,11 @@ def plot_mechanism_deltas(summary: dict[str, object], figure_dir: Path) -> None:
         fontweight="bold",
         color=INK,
     )
-    figure.subplots_adjust(top=0.82, bottom=0.15, left=0.19, right=0.98, wspace=0.48)
+    figure.subplots_adjust(top=0.82, bottom=0.15, left=0.2, right=0.98, wspace=0.55)
     save_figure(figure, figure_dir, "mechanism_deltas")
 
 
-def save_figure(figure: object, figure_dir: Path, stem: str) -> None:
+def save_figure(figure: Figure, figure_dir: Path, stem: str) -> None:
     figure_dir.mkdir(parents=True, exist_ok=True)
     figure.savefig(figure_dir / f"{stem}.png", dpi=220, bbox_inches="tight")
     figure.savefig(figure_dir / f"{stem}.pdf", bbox_inches="tight")
