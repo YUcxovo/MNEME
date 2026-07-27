@@ -357,9 +357,12 @@ class LiveCoreProductPathTest {
 
     private fun captureComposeScreenshot(fileName: String) {
         composeRule.waitForIdle()
+        val screenshot =
+            InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()
+                ?: return
         LiveCoreMeasurementFiles.captureScreenshot(
             fileName,
-            InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot(),
+            screenshot,
         )
     }
 
