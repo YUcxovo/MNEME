@@ -2,410 +2,102 @@
 
 \chapter{App Development and Testing}
 
-\section{Frozen Revisions, Environment, and Reproducibility}
-
-This chapter evaluates the system against inspected source revisions rather than design documents.
-Two revisions bound the claims that follow.
-The integrated repository state is commit \texttt{b945d3c} of the MNEME repository --- the same snapshot Chapter~3 declares as its implementation cutoff --- which contains the backend service, the AI service layer, the behavior baseline, the citation-graph platform, the integrated Android client, and their test suites.
-An earlier draft of this chapter cited the older snapshot \texttt{70eb54c}; the AI service tree (\texttt{backend/src/mneme/ai} and its configuration) was verified identical between the two revisions by direct comparison, so no AI implementation claim changed under the alignment, while backend and client rows in Table~\ref{tab:status} now describe the integrated state.
-The AI evaluation additions of Milestone~4 --- the graded evaluation harness, the expanded fixture set, the live evaluation command, and the cost audit --- exist on branch \texttt{feat/ai-m4-eval} (tip \texttt{59af174}, pull request open at the time of writing) and are cited with that revision explicitly.
-A statement about code that appears in neither revision is a design statement and belongs to Chapter~3.
-
-The backend is a Python/FastAPI service with PostgreSQL and \texttt{pgvector} for storage and vector search, Redis for caching, budget accounting, and job queues, and ARQ workers for background processing.
-The AI layer routes each task to a configured provider; Anthropic, OpenAI, and DeepSeek adapters are implemented, providers are inferred from model identifiers, and misconfigured routes fail at startup rather than on the first request.
-Embeddings default to \texttt{text-embedding-3-small} at 1536 dimensions, matching the frozen \texttt{vector(1536)} schema; each chunk row stores its embedding model so a model swap cannot leave orphan vectors.
-Every completion persists provider, model snapshot, prompt version, input hash, token counts, estimated cost, and latency, so any live run is auditable from the database without extra instrumentation.
-A deterministic fake provider drives the software tests; no software test in this thesis is presented as a research result.
-
-\section{Development Process and Interim Deliverables}
-
-\subsection{Milestone Decomposition}
-
-Development was organized around vertical evidence paths rather than completing isolated screens.
-The first path establishes paper identity, metadata ingestion, durable jobs, and a protected catalog response.
-The second prepares a selected revision into sections, chunks, summaries, and embeddings.
-The third exposes source-linked retrieval and Q\&A.
-The fourth connects explicit interests and behavioral events to a versioned briefing.
-The fifth presents a bounded graph and returns mobile events to the server.
-This ordering limits late integration risk because every additional mechanism must produce a stored result, a public response, a client representation, a visible state, and an executable check.
-
-The mid-term report records completion of foundational FastAPI, persistence, AI-service, and Android state artifacts.
-It also records deliberate gaps: final connected briefing refresh, notification UX, complete graph recovery, final live quality runs, and broader usability evidence.
-Those gaps are retained in the status table rather than being hidden by the presence of a prototype.
-
-\subsection{Backend and AI Deliverables}
-
-At the interim cutoff, the backend exposes session, catalog, job, summary, question, interest, event, briefing, and graph boundaries.
-Paper records and observed revisions are separated; workers perform long-running preparation; and job state survives process restart.
-The AI layer supplies deterministic test adapters, provider routing, prompt and model identity, token and cost telemetry, summary schemas, chunk embeddings, single-paper retrieval, bounded evidence markers, refusal, and limited source matching.
-The data model stores the lineage needed to connect a completion back to its paper revision and source chunks.
-
-These deliverables demonstrate software feasibility and create research instrumentation.
-They do not establish parser quality, answer correctness, recommendation benefit, or user trust.
-Those claims require E1--E3 and the final E4 workflow respectively.
-
-\subsection{Android Deliverables}
-
-The Android client is organized around Compose presentation, ViewModels, repositories, Retrofit network services, Room persistence, and WorkManager background execution.
-The implemented state model distinguishes loading, live, cached, controlled fixture, empty, fallback, and retryable error paths where applicable.
-Briefings and paper records can be retained locally; pending behavioral events use UUIDs and retry metadata; the graph uses a local D3 bundle inside a WebView while selection is mirrored into native state.
-
-Heng's implementation scope covers the live briefing and paper states backed by local cache, the recoverable event-delivery path, background refresh/notification integration, and the bounded citation-graph client.
-At the stated cutoff, cache-backed states, event queueing, WorkManager recovery, and graph interaction are present in code; live briefing refresh and the complete notification permission/delivery flow remain planned.
-This split is repeated in the E4 matrix so that ownership does not become an unqualified completion claim.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=5,width=0.94\textwidth]{figures/source_materials/uiux_mockups.pdf}
-  \caption{Read--Ask--Connect branches used to align Android screens with paper, Q\&A, graph, search, and interest resources during development.}
-  \label{fig:read-ask-connect}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=8,width=0.94\textwidth]{figures/source_materials/storymap_architecture.pdf}
-  \caption{End-to-end data flow from ingestion through personalization, evidence-linked engagement, and citation-graph connection in the supplied engineering pack.}
-  \label{fig:development-flow}
-\end{figure}
-
-\subsection{Testing Layers}
-
-The project uses four evidence layers.
-Unit tests check deterministic transformations and boundary validation.
-Repository and API tests check transactions, identity, idempotency, and controlled responses.
-Integration tests check that client and server models agree and that visible state follows backend outcomes.
-Research evaluations measure quality, usefulness, latency, cost, and failure on frozen datasets or participant tasks.
-Passing a lower layer is necessary but never substituted for a higher layer.
-
-\begin{table}[htbp]
-\centering
-\caption{Development evidence layers and the conclusions each layer permits.}
-\label{tab:test-layers}
-\begin{tabular}{P{2.7cm}P{5.2cm}P{5.4cm}}
-\toprule
-Layer & Example artifact & Permitted conclusion \\
-\midrule
-Unit & parser helper, scorer, verifier, state reducer test & the function follows its specified rule on the test inputs \\
-Repository/API & revision isolation, idempotent job/event, response validation & the boundary preserves stated identity and transaction invariants \\
-Integration/device & client mapping, Room migration, worker retry, graph bridge & components interoperate in the recorded environment and failure case \\
-Research evaluation & frozen corpus, QA labels, replay set, moderated task data & measured quality or usefulness within the stated sample and configuration \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=14,width=0.94\textwidth]{figures/source_materials/midterm_report.pdf}
-  \caption{Milestone~1 engineering-result summary from the dated mid-term report. It is retained as an interim-cutoff artifact and does not substitute for the final frozen evaluation.}
-  \label{fig:midterm-engineering-results-1}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=15,width=0.94\textwidth]{figures/source_materials/midterm_report.pdf}
-  \caption{Continuation of the Milestone~1 implementation and test inventory, including backend and Android evidence available at that cutoff.}
-  \label{fig:midterm-engineering-results-2}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=16,width=0.94\textwidth]{figures/source_materials/midterm_report.pdf}
-  \caption{Interim artifact and verification matrix used to distinguish executable software evidence from pending research measurements.}
-  \label{fig:midterm-artifact-matrix}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=17,width=0.94\textwidth]{figures/source_materials/midterm_report.pdf}
-  \caption{Reproducibility and result-traceability requirements documented at the mid-term checkpoint.}
-  \label{fig:midterm-reproducibility}
-\end{figure}
-
-\section{Evidence and Implementation Status}
-
-Table~\ref{tab:status} classifies the current evidence.
-The classification prevents design intent from being promoted into an implementation claim and prevents implemented software from being promoted into a measured research outcome.
-
-\begin{table}[htbp]
-\centering
-\small\renewcommand{\arraystretch}{0.92}
-\caption{Current evidence status at the stated revisions. Code presence is verified by inspection; behavioral claims for backend and client subsystems require their domain owners' sign-off.}
-\label{tab:status}
-\begin{tabular}{P{4.5cm}P{3.2cm}P{6.3cm}}
-\toprule
-Artifact or claim & State & Basis and boundary \\
-\midrule
-AI service layer: section-aware chunking, embeddings, dense retrieval, rerank, grounded Q\&A with refusal and citation verification, summarization, recommendation scoring, caching, budget guard, model routing & \implemented{} & \texttt{b945d3c}, \texttt{backend/src/mneme/ai}; unit and API tests pass with a fake provider. Tests establish specified behavior, not answer quality. \\
-Cross-revision retrieval isolation & \implemented{} (software test) & Chunks bind to \texttt{paper\_version\_id}; an API test asserts Q\&A retrieval cannot mix revisions. E1 research metrics remain \pending. \\
-RAG-graded evaluation harness, 15-case fixture set, live evaluation command & \implemented{} & \texttt{feat/ai-m4-eval} at \texttt{59af174}; not yet merged into the integrated branch. \\
-E2 quality results (recall, source match, refusal, latency, cost) & \pending & Requires a live run of the evaluation command against ingested fixture papers. \\
-AI cost audit & \observed{} & Static call-site and list-price analysis at \texttt{1a604b3}; estimates, not measured spend. \\
-Backend ingestion, jobs, behavior-v1, and graph platform & \implemented{} (code) & Present with tests at \texttt{b945d3c}; behavioral claims pending Ruiyu's sign-off. E1/E3 research results \pending. \\
-Android client, offline cache, event queue, graph UI & \implemented{} (code) & Present with tests at \texttt{b945d3c}; behavioral and device claims pending Heng's and Hanyang's sign-off. \\
-Adaptive recommendation effectiveness & \pending & behavior-v1 supplies the behavior embedding; E3 event streams, baselines, and results absent. \\
-Mobile latency and reliability & \pending & Device matrix and system measurements absent. \\
-Five-participant prototype findings & \observed{}; \limited{} & Task counts appear in the final presentation; participant-level records absent. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{E1: Revision and Representation Evaluation}
-
-\subsection{Evaluation Question}
-
-E1 tests the contribution promise that every claim-bearing artifact can be traced to the intended paper revision and that a revision update cannot silently leave stale derivatives marked current.
-
-\subsection{Implemented Basis}
-
-Two mechanisms from the inspected revision already constrain this evaluation.
-Chunking is deterministic: the same parsed sections always produce the same chunk contents and content hashes, which makes the embed stage idempotent and makes re-chunking comparable across runs.
-Retrieval is revision-scoped: each chunk row binds to a \texttt{paper\_version\_id}, and an implemented API test asserts that Q\&A over one revision cannot return chunks of another.
-These are software facts at \texttt{b945d3c}; they do not by themselves establish parser structure quality or invalidation completeness.
-
-\subsection{Dataset and Fixtures}
-
-The final evaluation should freeze a corpus containing:
-\begin{itemize}
-  \item papers with at least two known revisions;
-  \item unchanged, locally edited, and structurally changed sections;
-  \item single- and multi-column layouts;
-  \item equations, tables, figures, appendices, and broken text layers;
-  \item metadata-only or abstract-only degraded cases.
-\end{itemize}
-For each fixture, a gold manifest records logical identity, revision identity, expected sections, changed regions, and affected derived artifacts.
-Fixture construction and result sign-off belong to the backend/data owner.
-
-\subsection{Metrics}
-
-E1 reports logical-identity accuracy, revision-identity accuracy, changed-section detection, stale-artifact invalidation precision and recall, section-boundary F1, reading-order error rate, and degraded-mode accuracy.
-Performance must be stratified by layout and revision-change type.
-Failure analysis should identify identity collision, missed revision, parse order, boundary, caption, and invalidation errors.
-
-\begin{table}[htbp]
-\centering
-\caption{E1 result schema. Values must be inserted from frozen fixtures and logs.}
-\begin{tabular}{P{4.6cm}P{2.2cm}P{2.2cm}P{3.8cm}}
-\toprule
-Measure & Baseline & MNEME & Evidence artifact \\
-\midrule
-Logical/revision identity accuracy & \pending & \pending & Fixture manifest + test log \\
-Stale-artifact invalidation precision/recall & \pending & \pending & Dependency trace \\
-Section boundary F1 & \pending & \pending & Gold section annotations \\
-Degraded-mode accuracy & \pending & \pending & Parser status log \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{E2: Retrieval, Answer, and Citation Evaluation}
-
-\subsection{Evaluation Questions}
-
-E2 asks whether the implemented section-aware, evidence-bounded pipeline finds the evidence a question needs, whether generated claims remain matched to their cited sources, and whether the system refuses when evidence is absent.
-It also asks what each pipeline stage contributes, and at what latency and cost.
-
-\subsection{Evaluated Pipeline}
-
-The evaluated configuration is the implemented pipeline at \texttt{b945d3c}, not an idealized design.
-Retrieval embeds the question and performs dense approximate-nearest-neighbor search over one revision's chunks in \texttt{pgvector}, returning the top \(k=8\) by cosine similarity plus up to two early-document \emph{context anchors} that preserve overview context.
-Reranking is an honest lexical blend rather than a learned cross-encoder: the final score is \(0.7\) times vector similarity plus \(0.3\) times the fraction of the question's content words present in the chunk, with stopwords removed.
-Ties break on original retrieval order, so reranking is deterministic for identical inputs; the top \(n=4\) chunks become evidence, and anchors outside the top \(n\) are appended rather than displacing question-specific evidence.
-
-Generation is refused before any model call when no evidence reaches a minimum score of \(0.25\); the model may also decline by emitting a designated insufficient-evidence marker, and both paths return the same fixed refusal answer.
-After generation, citation verification checks every bracketed marker against the evidence list: markers outside the list are dropped rather than repaired, and each cited chunk is compared with the local claim sentences that carry its marker.
-A citation is \emph{source-matched} when at least \(30\%\) of the claim's content words appear in the cited chunk; answers are then labeled matched, partial, or insufficient.
-This is retrieved-source matching, not semantic entailment, and the thesis does not claim otherwise; the distinction follows the citation-quality framing of ALCE~\cite{gao2023alce} and the hallucination evidence in RAGTruth~\cite{niu2024ragtruth}.
-
-Completions are cached in Redis (24-hour TTL for Q\&A, 7-day for summaries) with the prompt version in the cache key, so template changes invalidate cleanly.
-A shared daily budget guard in Redis refuses provider calls once the configured daily cap (default \$5) is spent; the check-then-spend sequence can overshoot by at most the in-flight completions, which is acceptable for a daily stop.
-
-\subsection{Frozen Question Set}
-
-The current frozen set is \texttt{qa-seed-v2} on \texttt{feat/ai-m4-eval}: 15 manually curated cases over seven arXiv papers, comprising 12 answerable questions and 3 out-of-scope cases whose correct behavior is refusal.
-Each case records the target paper, a section hint, the question, a reference answer, expected keywords, and whether refusal is expected; duplicate identifiers are rejected at load time.
-The set is a seed, not a benchmark: it is large enough to exercise every pipeline path and grading rule, and too small to support significance claims.
-A final evaluation should extend it with multi-section, comparison, follow-up, and distractor-heavy strata, keeping questions and evidence split by paper to reduce leakage; multi-turn strata follow the motivation of mtRAG~\cite{katsis2025mtrag}.
-
-\subsection{Run Procedure}
-
-The live evaluation command (\texttt{python -m mneme.cli.run\_qa\_eval}) grades the full retrieval and grounded-answer pipeline against ingested, parsed, and embedded fixture papers, using the same code paths as the production route.
-Fixtures whose paper is missing or unembedded are reported as skipped, never silently dropped, and skips are recorded in the output report.
-Each run must record the repository revision, model routes, prompt versions, fixture version, and the full per-case JSON report as its raw artifact.
-
-\subsection{Metrics}
-
-The graded report computes:
-\begin{itemize}
-  \item \textbf{retrieval hit rate at \(k\)}: whether any retrieved section title matches the fixture's section hint, checked by bidirectional containment after case folding; this is a section-level proxy, not span-level gold annotation;
-  \item \textbf{source-match rate}: the fraction of answered cases whose every citation is source-matched; partially matched answers are reported separately and never folded into the headline rate;
-  \item \textbf{citation rate}: answered cases carrying at least one verified citation;
-  \item \textbf{refusal accuracy} on out-of-scope cases and \textbf{false-refusal rate} on answerable cases;
-  \item \textbf{keyword coverage} of expected keywords, a lexical proxy for answer content;
-  \item token counts, estimated cost, and latency per case and in aggregate.
-\end{itemize}
-Lexical proxies are acknowledged as such.
-Before any headline quality claim, automatic grades must be calibrated against a human-reviewed subset, because reference-free evaluation is not itself ground truth~\cite{es2024ragas,saadfalcon2024ares}.
-
-\subsection{Baselines and Ablations}
-
-The planned comparisons isolate what each stage contributes:
-\begin{enumerate}
-  \item long-context generation without retrieval, motivated by position-sensitivity findings~\cite{liu2024lost};
-  \item fixed-size chunk retrieval versus the implemented section-aware chunking;
-  \item dense retrieval only versus the vector-plus-lexical rerank;
-  \item the pipeline without context anchors;
-  \item the pipeline without citation verification;
-  \item varied refusal thresholds around the deployed \(0.25\).
-\end{enumerate}
-The comparisons guard against assuming that every additional stage improves quality or latency~\cite{wang2024bestpractices}.
-Naming a cross-encoder or another learned reranker as part of MNEME is gated on implementing it and passing this ablation; until then, vector-plus-lexical remains the accurate description.
-
-\begin{table}[htbp]
-\centering
-\caption{E2 result schema. Component metrics prevent a fluent answer from hiding retrieval or citation failure.}
-\begin{tabular}{P{4.0cm}P{2.1cm}P{2.1cm}P{2.1cm}P{2.1cm}}
-\toprule
-Configuration & Retrieval & Source match / refusal & Keyword coverage & Latency / cost \\
-\midrule
-Long context & \pending & \pending & \pending & \pending \\
-Fixed chunks & \pending & \pending & \pending & \pending \\
-Dense only & \pending & \pending & \pending & \pending \\
-Full pipeline (deployed) & \pending & \pending & \pending & \pending \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{E3: Interest-Memory Evaluation}
-
-\subsection{Evaluation Questions}
-
-E3 tests whether adaptive interest state improves future paper ranking under a temporal split, whether short- and long-term state serve distinct roles, and whether users can correct the model consistently.
-The evaluation does not treat historical clicks as perfect preference labels.
-
-\subsection{Implemented Scoring Basis}
-
-The implemented recommendation scorer at \texttt{b945d3c} blends three signals: explicit topic match (weight 0.45), cosine similarity between the user's learned behavior embedding and the paper's mean chunk embedding (weight 0.35), and publication recency with a one-week half-life (weight 0.2).
-Missing signals redistribute their weight over the available ones, so a cold-start user still receives a meaningful score; ranking is deterministic with a stable tie-break.
-Each entry carries human-readable reasons derived from its dominant signals, not free-form post-hoc text, consistent with the scrutability requirement of Chapter~3~\cite{ramos2024scrutable}.
-The behavior embedding itself is produced by behavior-v1, owned and signed off by the backend/data owner; this chapter evaluates the composition, not the internals of the behavior model.
-
-\subsection{Data and Baselines}
-
-The final evaluation freezes event sequences with exposure records, event semantics, timestamps, and paper candidates.
-Where real longitudinal data are unavailable, synthetic sequences may test deterministic update invariants but cannot establish user benefit.
-Baselines include explicit interests only, recency only, behavior-v1 with the deployed weights, and any frozen v2 candidate; a v2 comparison is reportable only after its definition and migration are frozen.
-
-\subsection{Metrics and Tests}
-
-Ranking metrics include Recall@\(k\) and nDCG@\(k\) on future eligible positive events.
-Diversity and novelty are reported to detect narrowing or repetition.
-Adaptation delay measures how quickly a confirmed new interest affects ranking.
-Negative-feedback sensitivity tests whether a bounded skip signal has an appropriate rather than overwhelming effect, respecting the exposure-eligibility rule of Chapter~3~\cite{zhang2025unpaired}.
-Correction consistency tests whether editing or deleting a visible interest produces predictable ranking and explanation changes.
-
-\begin{table}[htbp]
-\centering
-\caption{E3 result schema. Metrics must be reported on a temporal split with exposure-aware labels.}
-\begin{tabular}{P{4.0cm}P{2.1cm}P{2.1cm}P{2.1cm}P{2.1cm}}
-\toprule
-Model & Ranking & Diversity & Adaptation & Correction \\
-\midrule
-Explicit only & \pending & \pending & \pending & \pending \\
-Recency only & \pending & \pending & \pending & \pending \\
-behavior-v1 (deployed weights) & \pending & \pending & \pending & \pending \\
-Frozen v2 candidate (if any) & \pending & \pending & \pending & \pending \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\section{E4: Systems and Usability Evaluation}
-
-\subsection{Systems Measurements}
-
-The systems evaluation requires an immutable build, backend revision, model and provider configuration, device matrix, network conditions, and corpus snapshot.
-It reports digest-load latency, paper-detail latency, Q\&A first-token and completion latency, graph expansion latency, event-upload success, synchronization conflicts, background-task completion, notification delivery, cache hit rate, and daily model cost.
-Each distribution includes sample count and percentile statistics.
-The AI-side instrumentation for this evaluation is already implemented: every completion persists token counts, estimated cost, and latency, and budget exhaustion surfaces to the client as an explicit rate-limit response rather than a silent failure.
-Failure injection covers offline operation, provider timeout, budget exhaustion, malformed document, empty retrieval, verification failure, and duplicate event upload.
-Client and device measurements are supplied and signed off by the client owners.
-
-\subsection{Usability Protocol}
-
-The supplied task design is retained because it covers the core research loop:
-\begin{enumerate}
-  \item identify why a paper was recommended and open it;
-  \item identify the main contribution and verify a source;
-  \item ask a dataset question and inspect cited evidence;
-  \item open the graph and inspect a related paper;
-  \item change a digest preference or interest topic.
-\end{enumerate}
-The final dataset must contain one row per participant and task with completion, time, taps, error path, confusion code, and observation.
-The study report must describe recruitment, consent, moderator instructions, prototype or build version, analysis procedure, and missing data.
-
-The moderator introduction states that the interface, not the participant, is being tested and asks the participant to think aloud.
-The facilitator does not teach where to click.
-The prototype protocol defines expected performance targets: T1 within 20 seconds and at most two taps; T2 within 45 seconds with a source opened; T3 within 60 seconds with an answer and citation found; T4 within 45 seconds and at most three taps; and T5 within 60 seconds with a saved preference.
-These targets are design criteria.
-Because the supplied aggregate report does not include per-participant time and tap records, the present thesis reports completion counts only.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=10,width=0.94\textwidth]{figures/source_materials/uiux_mockups.pdf}
-  \caption{Prototype tasks, expected actions, and success signals. Timing and tap targets remain criteria until participant-level records are supplied.}
-  \label{fig:usability-protocol}
-\end{figure}
-
-\subsection{Available Formative Observation}
-
-As stated in Chapter 2, the final presentation reports task-success counts of 5, 5, 5, 2, and 4 out of five.
-Within that report, the graph task is the only major drop-off.
-This observation supports the decision to make graph actions explicit.
-It does not show that the subsequent redesign improves completion because no retest is supplied.
-
-\subsection{Android Evaluation Scope}
-\label{sec:e4-android}
-
-The executed Android subset of E4 measured one Android 14/API 34 Google emulator with four virtual processors and a 192~MiB application heap.
-Three startup pairs were discarded as warm-up.
-The retained startup set contains 20 cold process starts and 20 task foreground/resume operations.
-Controlled state, graph, and event tests used their own discarded warm-up iterations.
-Medians are sample medians and p95 values use the nearest-rank definition.
-Appendix~\ref{app:android-e4} gives the complete sample inventory and success conditions.
-
-The repeated trials cover process and task activation, five content-state conditions, one polling path, four graph sizes, three graph disclosures, and four controlled event stages.
-All samples met the success condition defined for their group; their audit total is 810.
-The groups remain separate in the results below.
-The live-backend trace contains five repetitions with five recorded stages per repetition; it is not pooled with the controlled results.
-Together, the subsections map the acceptance conditions in Table~\ref{tab:mobile-acceptance} to observed client behavior.
-State and polling results address content and asynchronous-work conditions, graph results address selected-state and navigation conditions, and event results address retry and duplicate acknowledgement.
-Because no participant retest was run, this mapping establishes software acceptance only.
-
-\subsection{Mobile State and Reliability Results}
-
-Figure~\ref{fig:mobile-reliability} and Table~\ref{tab:mobile-reliability} report startup, resume, controlled state, and polling latency.
-All 20 cold starts and all 20 task foreground/resume operations returned a wait-time record for the requested Android activity.
-The startup runner does not inspect rendered UI content.
-Cold process start had a median of 2,773~ms and p95 of 4,444~ms.
-The task foreground/resume operation had a median of 133.5~ms and p95 of 445~ms.
-Android classified nine operations as hot starts and returned \texttt{UNKNOWN (0)} for eleven.
-The distribution uses the retained wait-time field and is limited to the foreground/resume operation.
-The records do not constitute 20 independently confirmed hot starts.
+This chapter reports what the MNEME front end and back end actually implement and what the retained test evidence shows. Implementation claims are bounded by two inspected repository revisions: the integrated repository state \texttt{b945d3c}, which contains the backend service, the AI service layer, the behavior baseline, the citation-graph platform, the integrated Android client, and their test suites; and the AI evaluation branch tip \texttt{e11e385}, which adds the graded evaluation harness, the pinned fixture corpus, and the live evaluation command. A capability that appears in neither revision is a design statement and belongs to Chapter~3, not here.
+
+Throughout the chapter, software tests are interpreted narrowly: a passing test establishes the specified behavior it checks, in the environment in which it ran, and nothing more. Measured latency distributions are reported with their sample sizes and collection conditions, estimated costs are labeled as estimates, and quality properties that would require a live graded run against a deployed model provider are stated as limitations rather than anticipated results. This discipline connects the chapter to the technical challenges of Chapter~1: the mechanisms below are the implemented responses to representation continuity, evidence continuity, interest continuity, and interaction continuity, and the testing sections report which of those responses currently carry executable or measured evidence.
+
+\section{Front-end Development}
+
+The Android client is a Kotlin application built on Jetpack Compose with Material~3 components. Its role in the system is deliberately narrow: it renders server-produced research artifacts --- briefings, paper records, summaries, grounded answers, and a bounded citation graph --- while keeping the user's reading state recoverable when the network, the backend, or the device lifecycle interrupts the session. That narrowness is the client-side response to the interaction-continuity challenge: continuity is achieved not by making the client smart, but by making every visible state explicit about where its content came from and what the user can do next.
+
+\subsection{Design Pattern}
+
+The client follows the Model--View--ViewModel pattern with a repository layer between ViewModels and data sources. Compose screens are pure functions of observable UI state; ViewModels own that state and reduce it from repository results; repositories mediate between Retrofit/OkHttp network services, Room persistence, and WorkManager background execution. The pattern was chosen for two reasons that matter to this thesis rather than for framework fashion. First, it makes state transitions unit-testable without an emulator: the controlled state measurements reported under Testing Results drive ViewModel reducers directly with deterministic fixture inputs. Second, it gives the offline and degraded paths a single home --- the repository decides whether a screen receives live content, cached content, or an error, and the decision is visible in the state object rather than buried in view code.
+
+A distinctive element of the state model is its disclosure vocabulary. Every content-bearing state distinguishes loading, live, cached, controlled fixture, empty, fallback, and retryable error paths where applicable, and the distinction is rendered to the user rather than kept internal. A briefing restored from the local cache is labeled as cached with its freshness; a citation graph degraded to its bounded local fallback says so; controlled fixture content used in development builds is marked as such. This design choice follows directly from the evidence discipline of the thesis: if the manuscript must never promote cached or fixture content into live evidence, the running application should not do so either.
+
+The repository layer also carries the client's consistency obligations. Briefings and paper records are retained locally with retention metadata; behavioral events are queued durably with client-generated UUID identity and retry bookkeeping, so that a process death between capture and upload loses nothing and a repeated upload can be recognized by the server as a duplicate rather than a new signal. These mechanisms are exercised by the event-synchronization results reported later in this chapter.
+
+\subsection{UI Controls}
+
+The home surface is the briefing list, rendered as Compose cards that pair each recommended paper with the match information and human-readable reason produced by the backend scorer, and one dominant open action. The paper detail screen presents the structured summary with its source-linked elements, and the question-answering surface accepts a free-form question and renders the grounded answer together with its citation markers, so that a reader can move from a claim to the evidence chunk that supports it. Verification labels sit adjacent to the claims they qualify rather than in a separate legend; this placement was a direct consequence of the formative usability observations reported in Chapter~3.
+
+The citation graph is the one control that leaves the Compose world. It is rendered by a local D3 bundle inside a WebView, with no network fetch of the visualization library, while node selection is mirrored back into native state through a JavaScript bridge. The native side therefore remains the single source of truth for which paper is selected, which allows the persistent ``open paper'' action, the unambiguous selected-node style, and the selection restoration behavior verified under UI Testing. Graph size is bounded by the client request contract at fifty nodes, which keeps both the rendering cost and the user's orientation manageable on a phone screen.
+
+Interest management uses standard Material list and edit controls, reachable from the briefing surface, through which explicit topics can be added, edited, and removed. Status and error surfaces reuse a small set of shared components so that the disclosure vocabulary described above looks identical wherever it appears.
+
+\subsection{Navigation Controllers}
+
+Navigation uses Compose Navigation with type-safe routes. The primary flow follows the research loop the system is designed around: briefing to paper detail, paper detail to question answering, paper detail or search to the citation graph, and briefing to interest and preference settings. Each route carries typed arguments such as paper identity and briefing identity rather than parsed strings, so a navigation regression is a compile-time failure rather than a runtime surprise.
+
+Two navigation behaviors carry evidence in this chapter. First, returning from a paper opened out of the graph restores the previous graph selection rather than resetting the view; this is part of the implemented graph and app-flow test suite. Second, the back stack is arranged so that background refresh and notification entry points land on the briefing surface with state restored from the local cache when the process was killed, which is what makes the cold-start and resume measurements reported under Performance Testing meaningful user-visible quantities rather than synthetic numbers.
+
+\subsection{Other Aspects}
+
+Persistence is provided by Room with explicit migrations through schema version~3; briefing and paper caches carry offline metadata and retention policies. Background work is scheduled through WorkManager, which owns periodic refresh and recovers interrupted work after process death; the durable event queue described above is drained by this machinery, and a reserved event returns to the pending state when its worker is interrupted. Local notification primitives for new-briefing delivery are implemented, and first-run onboarding derives an initial arXiv category from a seed paper and prepares an initial set of papers through the live backend pipeline before the first briefing is shown.
+
+The client's scope boundary is stated here once so that the testing sections do not have to hedge repeatedly. Cache-backed content states, event queueing and recovery, graph interaction, and the live client-to-backend event loop are present in code at the stated revisions and carry the evidence reported in this chapter. The complete notification permission and delivery flow across Android versions, and broader device coverage beyond the measured emulator configuration, remain outside the retained evidence and are treated as limitations rather than claims.
+
+\section{Back-end Development}
+
+The backend is a Python/FastAPI service with PostgreSQL for durable storage, \texttt{pgvector} for vector search, Redis for caching, budget accounting, and job queues, and ARQ workers for background processing. Its data model separates a paper's logical identity from its observed arXiv revisions: metadata ingestion registers papers, while long-running preparation --- parsing, section-aware chunking, summarization, and embedding --- runs in workers whose job state survives process restart. Every derived artifact binds to a specific paper revision, which is the structural foundation for the representation-continuity mechanisms described next.
+
+Representation continuity is enforced by determinism and identity rather than by convention. Chunking is deterministic: the same parsed sections always produce the same chunk contents and content hashes, which makes the embedding stage idempotent and re-chunking comparable across runs. The frozen schema stores each embedding in a 1536-dimension vector column paired with the identity of the model that produced it, under a check constraint that either both or neither are set, so a model swap cannot leave orphan vectors that silently poison similarity search. Retrieval is revision-scoped by construction, and an API test asserts that question answering over one revision cannot return chunks of another; a new arXiv revision therefore produces new artifacts rather than contaminating old ones.
+
+Evidence continuity is implemented as a pipeline that is honest about each of its stages. Retrieval embeds the question and performs dense approximate-nearest-neighbor search over one revision's chunks, returning the top eight by cosine similarity plus up to two early-document context anchors that preserve overview context; dense membership and anchor membership are tracked independently, because an early section can legitimately be both. Reranking is a transparent lexical blend rather than a learned cross-encoder: the final score weights vector similarity at 0.7 and the fraction of the question's content words present in the chunk at 0.3, ties break on original retrieval order, and the top four chunks become evidence, with anchors outside that set appended rather than displacing question-specific evidence. Generation is refused before any model call when no evidence reaches a minimum score of 0.25, the model may itself decline through a designated insufficient-evidence marker, and both refusal paths return the same fixed refusal answer, so the client never has to distinguish them. After generation, citation verification checks every bracketed marker against the evidence list --- markers outside the list are dropped rather than repaired --- and compares each cited chunk with the local claim sentences that carry its marker; a citation is source-matched when at least 30\% of the claim's content words appear in the cited chunk, and answers are labeled matched, partially matched, or insufficient. This is retrieved-source matching, a lexical construct, and the thesis does not present it as semantic entailment or scientific truth.
+
+Interest continuity is served by a recommendation scorer that composes three signals: explicit topic match with weight 0.45, cosine similarity between the user's learned behavior embedding and a paper's mean chunk embedding with weight 0.35, and publication recency with a one-week half-life at weight 0.2. Missing signals redistribute their weight over the available ones, so a cold-start user still receives a meaningful ranking, and the ranking is deterministic with a stable tie-break. Each recommendation carries human-readable reasons derived from its dominant signals rather than free-form generated text, which is what the client renders beside each briefing entry. The behavior embedding itself is produced by the behavior model owned by the data platform; this chapter's claims concern the composition, not the internals of that model.
+
+Cross-cutting the pipeline are provider routing, caching, and cost control. Each AI task routes to a configured provider; Anthropic, OpenAI, and DeepSeek adapters are implemented, providers are inferred from model identifiers, and a misconfigured route fails at service startup rather than on the first user request. Completions are cached in Redis with a 24-hour time-to-live for question answering and seven days for summaries, with the prompt version participating in every cache key so that a template change invalidates cleanly. A shared daily budget guard refuses provider calls once the configured daily cap (five US dollars by default) is spent, and exhaustion surfaces to the client as an explicit rate-limit response rather than a silent failure. Every completion persists provider, model snapshot, prompt version, input hash, token counts, estimated cost, and latency, so any live run is auditable from the database without additional instrumentation.
+
+Because evidence continuity is a headline challenge, the backend also implements the instrumentation needed to measure it, not only to provide it. A graded evaluation harness drives the full retrieval and grounded-answer pipeline over a frozen fixture corpus: fifteen manually curated cases across seven arXiv papers, twelve answerable and three whose correct behavior is refusal. Each fixture pins the exact arXiv revision it was authored against, and the live evaluation command resolves that exact revision --- never ``latest'' --- and requires every chunk of it to carry an embedding produced by the configured embedding model before a case may run; anything else is reported as a skip with explicit counts. Retrieval quality is graded on dense results only, so an appended context anchor cannot convert a retrieval miss into a hit. Every report embeds a run-configuration block recording the provider, model, prompt version, embedding backend and model, retrieval and reranking settings, evidence threshold, and cache posture, and separates the served completion's generation metadata from the cost and latency the run actually incurred, so a cached run cannot masquerade as live spend. A run that evaluates zero fixtures exits with a nonzero status so that automation cannot mistake an empty evaluation for a healthy one. This infrastructure exists at revision \texttt{e11e385}; the graded quality numbers it will produce require a live run against ingested fixture papers and are therefore not reported in this thesis.
+
+Taken together, these mechanisms are the implemented answers to the Chapter~1 challenges: revision-bound artifacts and idempotent preparation for representation continuity; bounded retrieval, refusal, and citation verification for evidence continuity; the composed, explainable scorer for interest continuity; and the job, event, and briefing boundaries that the mobile client's recoverable loop depends on for interaction continuity. The remainder of the chapter reports the evidence that currently backs them.
+
+\section{Testing Results}
+
+The project distinguishes four evidence layers, and the distinction governs what each result below is allowed to mean. Unit tests check deterministic transformations and boundary validation; repository and API tests check transactions, identity, idempotency, and controlled responses; integration and device tests check that client and server agree and that visible state follows backend outcomes; and research evaluations measure quality or usefulness on frozen data or with participants. Passing a lower layer is necessary but never substituted for a higher one. The results reported here occupy the first three layers, together with bounded device measurements; the graded answer-quality evaluation belongs to the fourth layer and, as stated above, its execution remains outstanding.
+
+\subsection{Testing Tool}
+
+The backend test suite runs under \texttt{pytest} in a \texttt{uv}-managed Python environment, with \texttt{ruff} for lint and formatting and \texttt{pyrefly} for type checking as static gates. Provider-dependent code is tested against deterministic fake LLM and embedding providers and an in-memory Redis stand-in, so no software test in this thesis depends on, or is presented as evidence about, a live model. At the evaluation branch tip \texttt{e11e385} the suite reports 463 passed and 7 skipped, the skips being PostgreSQL-only integration tests that require a configured database; the integrated revision \texttt{b945d3c} carries its own passing suite under the same tooling in continuous integration.
+
+The Android suite uses JUnit-based unit tests for ViewModel and repository logic, Compose UI tests for screen behavior, and Gradle-orchestrated static analysis with ktlint, detekt, and Android lint. Device measurements were collected on one Android~14 (API~34) Google emulator with four virtual processors and a 192~MiB application heap. For every measured group, warm-up iterations were run and discarded before retained samples were collected; reported medians are sample medians and 95th percentiles use the nearest-rank definition. This single-configuration environment is a stated boundary of every device number below: it supports controlled comparison across conditions, not an estimate of physical-device variability.
+
+\subsection{UI Testing}
+
+The client's visible-state machinery was exercised in controlled trials that deliver deterministic fixture results to the ViewModel layer and verify the resulting state. Five content-state conditions --- a live seed transition, a cached warm start, a cached offline disclosure, a cached server-failure disclosure, and an invalid-cache error --- each completed 30 of 30 trials with the expected state and disclosure label. The three citation-graph disclosure states (ready, fallback, and empty) likewise each completed 30 of 30 trials. These results establish that the disclosure vocabulary described under Design Pattern is actually reachable and correctly labeled under its specified conditions; because the transitions are driven by fixtures, they say nothing about network behavior or rendering performance, which are treated separately below.
+
+Interactive graph behavior was verified by the graph and app-flow suite, which passed 11 of 11 tests, including node selection through the WebView bridge, navigation to a selected paper through the persistent open action, and restoration of the previous selection after returning from paper detail. Together with the state trials, this establishes the specified presentation and navigation behavior of the graph surface. It does not measure graph usefulness, discoverability, or layout quality; the formative five-participant observations that motivated the graph's redesign, and the redesign itself, are reported in Chapter~3 as design evidence rather than repeated here.
+
+\subsection{Acceptance Testing for Features}
+
+The feature-level acceptance evidence maps the acceptance criteria of Chapter~3 to executable checks at the stated revisions. For the literature-representation features, the decisive check is revision isolation: an API test asserts that question answering scoped to one paper revision cannot retrieve chunks belonging to another, which is the executable form of the promise that a revision update cannot silently change what the user is reading. Idempotent re-preparation is covered by the deterministic chunking and content-hash tests in the backend suite.
+
+For the assistance features, acceptance rests on the refusal and verification behavior. Tests cover refusal both below the evidence threshold and through the model-side insufficient-evidence marker, citation-marker validation against the evidence list, and the source-match labeling of answers. The budget boundary is covered on the public question route: integration tests assert that exhaustion of the daily budget surfaces as the specified rate-limit response for both the completion guard and the embedding guard, rather than as a generic failure. The evaluation command itself carries contract tests for its fixture pinning, its readiness checks with explicit skip reasons, its provenance snapshot, and its nonzero exit on an empty run.
+
+For the interaction loop, the acceptance evidence is the event-synchronization behavior measured end to end. In controlled trials isolating the client queue from network variability, 30 of 30 trials each succeeded for the durable queue write, the injected retryable failure, the subsequent retry success, and the duplicate replay. A live trace then exercised the same client coordinator against a running backend in five repetitions: each repetition queued three new events, recovered from an injected retryable failure, uploaded the batch, replayed the same identifiers, and read a briefing back through the standard client data path. Every live upload accepted three new identifiers, every replay was acknowledged as duplicate rather than re-ingested, and every readback carried a live-backend origin. The returned digest contained zero papers in all five repetitions because the evaluation database held no paper inside the active fourteen-day briefing window, and the preference-model version remained~1 throughout; the live loop therefore demonstrates reachability and duplicate-aware ingestion of the cross-layer path, and deliberately does not demonstrate recommendation content or adaptation. Asynchronous job visibility was verified by the three-stage paper-preparation polling flow, which completed in 10 of 10 trials.
+
+\subsection{Performance Testing}
+
+Client-side performance was measured on the emulator configuration described under Testing Tool. Figure~\ref{fig:mobile-reliability} and Table~\ref{tab:mobile-reliability} report the retained distributions. All 20 cold process starts and all 20 task foreground/resume operations returned a wait-time record: cold start had a median of 2{,}773~ms with a 95th percentile of 4{,}444~ms, and foreground/resume had a median of 133.5~ms with a 95th percentile of 445~ms. The startup runner records activity wait time and does not inspect rendered content; Android classified nine resume operations as hot starts and returned an unknown classification for eleven, so the resume row is reported as one distribution rather than as twenty confirmed hot starts. The five controlled content-state conditions completed with sub-millisecond medians, which is expected --- they time the ViewModel transition after a deterministic fixture result is delivered, and must not be read as network or display latency. The three-stage job polling flow's median of 3{,}008~ms is consistent with its one-second client polling interval across three processing stages.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{mneme_mobile_reliability}
-\caption{Android client latency and reliability. Separate panels prevent process/task timing, controlled content-state transitions, and event operations from being treated as one timing family. Controlled state timings begin after fixture input; they are not network or display-frame latency.}
+\includegraphics[width=0.92\textwidth]{figures/mneme_mobile_reliability.pdf}
+\caption{Android client latency and reliability measurements on the single emulator configuration. Separate panels keep process/task timing, controlled content-state transitions, and event operations distinct, because the three groups measure different quantities and cannot be pooled into one timing family.}
 \label{fig:mobile-reliability}
 \end{figure}
 
 \begin{table}[htbp]
 \centering
-\caption{Android startup, controlled state, and polling results. Latencies are in milliseconds.}
+\caption{Android startup, controlled state, and polling results. Latencies are in milliseconds; p95 uses the nearest-rank definition.}
 \label{tab:mobile-reliability}
-\begin{tabular}{P{5.1cm}P{1.5cm}P{2.2cm}P{2.2cm}P{2.2cm}}
+\begin{tabular}{p{5.1cm}rrrr}
 \toprule
-Condition & \(n\) & Successful & Median & p95 \\
+Condition & $n$ & Successful & Median & p95 \\
 \midrule
-Cold process start & 20 & 20 & 2,773 & 4,444 \\
+Cold process start & 20 & 20 & 2{,}773 & 4{,}444 \\
 Task foreground/resume & 20 & 20 & 133.5 & 445 \\
 \addlinespace
 Live seed transition (controlled) & 30 & 30 & 0.124 & 0.293 \\
@@ -414,35 +106,25 @@ Cached offline disclosure (controlled) & 30 & 30 & 0.227 & 0.439 \\
 Cached server-failure disclosure (controlled) & 30 & 30 & 0.231 & 0.362 \\
 Invalid-cache error (controlled) & 30 & 30 & 0.203 & 0.635 \\
 \addlinespace
-Three-stage job polling (controlled) & 10 & 10 & 3,008.418 & 3,064.345 \\
+Three-stage job polling (controlled) & 10 & 10 & 3{,}008.418 & 3{,}064.345 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The five controlled content-state conditions each completed 30 of 30 trials.
-Their sub-millisecond values measure the ViewModel transition after a deterministic fixture result is delivered.
-The values cannot be interpreted as live service latency or UI frame time.
-The three-stage paper job completed in all ten trials with a median of 3,008.418~ms, consistent with the one-second client polling interval across three processing stages.
-
-\subsection{Bounded Graph Results}
-
-The graph experiment exercised 1, 12, 25, and 50 nodes.
-The upper bound matches the client request contract.
-Each size was measured in a newly created WebView and as an update to an existing WebView.
-Figure~\ref{fig:graph-latency} shows the resulting distributions; Table~\ref{tab:graph-latency} reports their medians and p95 values.
+Graph presentation cost was measured at 1, 12, 25, and 50 nodes --- the upper bound matching the client request contract --- in both a newly created WebView and an update to an existing WebView. Figure~\ref{fig:graph-latency} shows the distributions and Table~\ref{tab:graph-latency} their summary statistics. Every ready and selection sample succeeded at every size. Median DOM-ready latency ranged from 139.749 to 454.149~ms in a new WebView and from 83.001 to 111.814~ms in an existing one, and median selection-callback latency stayed between 32.279 and 49.098~ms across all sizes, which supports the design decision to keep one WebView alive and update it rather than recreate it per navigation. The medians are not monotone in node count and several 95th percentiles are wide; this reflects emulator scheduling and WebView initialization variability, and the experiment accordingly supports no linear scaling model. Render timing ends at the local graph page's DOM-readiness report, while the force-directed layout may still be converging, so these numbers bound presentation readiness, not visual settlement.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{mneme_graph_latency}
-\caption{Citation-graph presentation and selection latency by node count. Render timing ends when the local graph page reports DOM readiness. It does not measure convergence of the force-directed layout.}
+\includegraphics[width=0.92\textwidth]{figures/mneme_graph_latency.pdf}
+\caption{Citation-graph presentation and selection latency by node count. Render timing ends when the local graph page reports DOM readiness; it does not measure convergence of the force-directed layout.}
 \label{fig:graph-latency}
 \end{figure}
 
 \begin{table}[htbp]
 \centering
-\caption{Graph DOM-ready and native selection-callback latency. Each cell is median / p95 in milliseconds.}
+\caption{Graph DOM-ready and native selection-callback latency. Each cell is median~/~p95 in milliseconds.}
 \label{tab:graph-latency}
-\begin{tabular}{P{1.3cm}P{3.0cm}P{3.0cm}P{3.0cm}P{3.0cm}}
+\begin{tabular}{p{1.1cm}p{3.0cm}p{3.0cm}p{3.0cm}p{3.0cm}}
 \toprule
 Nodes & New WebView ready & Existing WebView ready & New WebView selection & Existing WebView selection \\
 \midrule
@@ -454,206 +136,30 @@ Nodes & New WebView ready & Existing WebView ready & New WebView selection & Exi
 \end{tabular}
 \end{table}
 
-Every ready and selection sample succeeded at each evaluated size.
-Median DOM-ready latency ranged from 139.749 to 454.149~ms for a new WebView and from 83.001 to 111.814~ms for an existing WebView.
-Median selection-callback latency ranged from 32.279 to 49.098~ms.
-The non-monotonic medians and wider p95 values at several sizes show emulator scheduling and WebView initialization variability; the experiment does not support a linear scaling model.
-
-Ready, fallback, and empty graph states each completed 30 of 30 controlled disclosure trials.
-The existing graph and app-flow suite passed 11 of 11 tests, including node selection, Open Paper navigation, and selection restoration after returning from paper detail.
-These results establish the specified presentation and navigation behavior.
-They do not measure graph usefulness, discoverability, ranking, clustering, or layout quality.
-
-\subsection{Event Synchronization and Live Readback}
-
-The controlled event experiment isolated local queue and acknowledgement behavior from network variability.
-Table~\ref{tab:event-controlled} reports 30 trials for each stage.
-All queue writes, retryable failures, subsequent retries, and duplicate replays met their success conditions.
+Event-loop performance completes the client-side picture. Table~\ref{tab:event-sync} reports the controlled stages over 30 trials each and the live-backend stages over five repetitions; the two groups are kept separate because only the latter includes network and server time. Controlled queue writes carried a median cost of about 10~ms, and the live upload-after-retry stage a median of 33~ms with a 95th percentile of 188~ms, so the durability and duplicate-safety mechanisms described earlier operate at costs well below user-perceptible thresholds in the measured environment.
 
 \begin{table}[htbp]
 \centering
-\caption{Controlled client event-synchronization results. Latencies are in milliseconds.}
-\label{tab:event-controlled}
-\begin{tabular}{P{5.0cm}P{1.3cm}P{2.0cm}P{2.0cm}P{2.0cm}}
+\caption{Client event-synchronization latency, controlled stages ($n=30$) and live-backend stages ($n=5$). Latencies are in milliseconds; all trials in every stage succeeded.}
+\label{tab:event-sync}
+\begin{tabular}{p{6.2cm}rrr}
 \toprule
-Stage & \(n\) & Successful & Median & p95 \\
+Stage & $n$ & Median & p95 \\
 \midrule
-Durable queue write & 30 & 30 & 10.287 & 32.261 \\
-Retryable HTTP failure & 30 & 30 & 15.613 & 80.332 \\
-Retry success & 30 & 30 & 54.999 & 91.794 \\
-Duplicate replay & 30 & 30 & 18.950 & 50.222 \\
+Durable queue write (controlled) & 30 & 10.287 & 32.261 \\
+Retryable HTTP failure (controlled) & 30 & 15.613 & 80.332 \\
+Retry success (controlled) & 30 & 54.999 & 91.794 \\
+Duplicate replay (controlled) & 30 & 18.950 & 50.222 \\
+\addlinespace
+Queue three client events (live) & 5 & 13.850 & 19.061 \\
+Injected failure before retry (live) & 5 & 8.028 & 8.616 \\
+Upload after retry (live) & 5 & 33.049 & 188.478 \\
+Replay the same identifiers (live) & 5 & 24.210 & 125.869 \\
+Read back a live briefing (live) & 5 & 26.776 & 135.906 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The live trace then exercised the same client coordinator against a running backend.
-In each of five repetitions, the client queued three new events, recovered from an injected retryable failure, uploaded the batch, replayed the same identifiers, and requested a briefing through the standard client data path.
-Table~\ref{tab:event-live} keeps these network-dependent stages separate from the controlled results.
+On the backend side, model cost is treated as a first-class performance dimension because the assistant runs continuously against paid providers. A static audit inventoried every provider call site --- the summarization worker, grounded question answering, query embedding, and batched chunk embedding; recommendation scoring makes no provider call because it reuses stored vectors --- and estimated unit economics from provider list prices and the deployed input and output caps. Under those caps, one paper summary on the default flagship route costs an estimated \$0.10, one grounded answer roughly \$0.028, and embedding a full paper roughly \$0.0003; against the default \$5 daily budget, a single bulk-ingestion day of about fifty summaries can exhaust the cap on the flagship tier, while a lighter tier fits roughly 250 summaries per day, and a full fifteen-case evaluation run is estimated at \$0.34 versus \$0.07 across the two tiers. These figures are estimates, not billed spend: the underlying price rows were re-verified against provider pricing pages and retained, with the cap assumptions, in the repository artifact \texttt{docs/evaluation/ai-cost-price-snapshot-2026-07-26.md}, whose companion script recomputes every figure and fails if prose and calculation diverge. The audit's actionable finding --- that default routing sends bulk summarization, the dominant and least quality-sensitive spend, to the most expensive model --- was recorded as a recommendation and deliberately not applied, because the rerouting decision is gated on a summary-quality comparison that has not yet been run.
 
-\begin{table}[htbp]
-\centering
-\caption{Live-backend event-loop results over five repetitions. Latencies are in milliseconds.}
-\label{tab:event-live}
-\begin{tabular}{P{5.0cm}P{1.3cm}P{2.0cm}P{2.0cm}P{2.0cm}}
-\toprule
-Stage & \(n\) & Successful & Median & p95 \\
-\midrule
-Queue three client events & 5 & 5 & 13.850 & 19.061 \\
-Injected failure before retry & 5 & 5 & 8.028 & 8.616 \\
-Upload after retry & 5 & 5 & 33.049 & 188.478 \\
-Replay the same identifiers & 5 & 5 & 24.210 & 125.869 \\
-Read back a live briefing & 5 & 5 & 26.776 & 135.906 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Each live upload accepted three new identifiers, and each replay recognized the same three identifiers as duplicates.
-Every readback carried a live-backend origin.
-The returned digest contained zero papers in all five repetitions, and the preference-model version remained 1.
-The local evaluation database had no paper inside the active 14-day digest window.
-The live result therefore supports client-loop reachability and duplicate-aware ingestion.
-It supplies no evidence of preference change, recommendation adaptation, or recommendation quality.
-
-\subsection{E4 Claim Boundary}
-
-The device measurements come from one emulator and do not estimate physical-device variability.
-Graph render timing ends at a DOM-ready callback, while the force simulation may continue.
-Controlled state and event success conditions establish the specified software transitions; no participant data show whether readers understand the labels or recovery actions.
-The live trace uses one local backend configuration and returns an empty digest.
-Within these limits, E4 provides measured evidence for the bounded Android interaction path.
-\begin{table}[htbp]
-\centering
-\caption{Reported formative prototype outcomes and bounded interpretations.}
-\label{tab:formative-usability}
-\begin{tabular}{P{0.8cm}P{5.0cm}P{1.5cm}P{5.7cm}}
-\toprule
-Task & Expected outcome & Reported & Bounded interpretation \\
-\midrule
-T1 & open the top recommended paper from the digest & 5/5 & digest-to-paper navigation was discoverable in this prototype sample \\
-T2 & identify the main contribution and inspect one source & 5/5 & source-linked summary path was usable in the reported sessions \\
-T3 & ask a paper question and inspect cited evidence & 5/5 & cited Q\&A supported the assigned task; answer correctness was not independently evaluated \\
-T4 & select and open a related/citing paper in the graph & 2/5 & the graph lacked a clear next action and required redesign \\
-T5 & change a digest preference or interest topic & 4/5 & the control worked for most participants, but its entry point required greater visibility \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=11,width=0.94\textwidth]{figures/source_materials/thesis_uiux.pdf}
-  \caption{Qualitative and quantitative synthesis reported in the UI/UX study. The thesis retains the task distribution and avoids treating the aggregate percentage as population-level evidence.}
-  \label{fig:uiux-result-synthesis}
-\end{figure}
-
-\subsection{Design Changes and Retest Criteria}
-
-The digest remains the home surface, with match information, a reason, and one dominant open action.
-Verification labels and citation chips move closer to the claim they qualify.
-The graph adds a concise tap instruction, an unambiguous selected-node style, a relation explanation, and a persistent ``Open paper'' button.
-Interest tuning remains reachable from the digest and gains a more explicit settings entry.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=8,width=0.94\textwidth]{figures/source_materials/usability_tests.pdf}
-  \caption{Evidence-to-design trace retained from the usability pack: preserve the digest, strengthen verification cues, turn graph nodes into explicit actions, and keep preference tuning near the briefing.}
-  \label{fig:design-change-trace}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=12,width=0.94\textwidth]{figures/source_materials/thesis_uiux.pdf}
-  \caption{Detailed rationale for strengthening claim-adjacent verification and converting graph nodes into explicit, interpretable actions.}
-  \label{fig:uiux-final-decisions}
-\end{figure}
-
-The retest should hold the assigned graph task constant and compare the revised connected build with the recorded prototype baseline.
-Success requires not only task completion but also correct identification of the selected paper and relation.
-The study should record false starts, taps, time, and whether the participant can explain the graph's incompleteness and fallback state.
-If completion rises but participants misunderstand which paper will open, the redesign has improved discoverability without establishing semantic clarity.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=10,width=0.94\textwidth]{figures/source_materials/usability_tests.pdf}
-  \caption{Graph-specific failure analysis and the required instruction, selected state, relation explanation, and primary action for the next design iteration.}
-  \label{fig:graph-redesign}
-\end{figure}
-
-\subsection{Mobile Reliability Matrix}
-
-The final device evaluation should exercise each visible state under controlled conditions.
-It includes first launch with no cache, live load, cache restoration, stale cache, offline operation, backend timeout, provider-budget exhaustion, empty retrieval, graph fallback, duplicate event upload, process death during upload, application restart, notification permission denial, and repeated briefing refresh.
-For each case the raw artifact should contain device/OS, build revision, network condition, timestamp, expected state, observed state, event/job identity, screenshot or screen recording, and pass/fail explanation.
-
-\begin{longtable}{P{3.2cm}P{4.2cm}P{4.1cm}P{2.0cm}}
-\caption{E4 mobile reliability result schema.}
-\label{tab:e4-reliability}\\
-\toprule
-Scenario & Expected user-visible behavior & Required raw evidence & Result \\
-\midrule
-\endfirsthead
-\toprule
-Scenario & Expected user-visible behavior & Required raw evidence & Result \\
-\midrule
-\endhead
-Offline with cache & cached label and freshness remain visible; no new Q\&A implied & screenshot, Room snapshot, network trace & \pending \\
-Offline without cache & actionable connectivity error; no fixture substitution & screenshot and state log & \pending \\
-Duplicate event retry & one durable event effect and duplicate acknowledgement & queue/database trace & \pending \\
-Worker interruption & reserved events return to pending or recover after timeout & WorkManager and queue log & \pending \\
-Graph enrichment failure & deterministic bounded citation fallback with status label & API response and device capture & \pending \\
-Notification denied & briefing remains accessible without repeated permission loop & permission and notification log & \pending \\
-Repeated refresh & one notification per new briefing identity & briefing IDs and notification history & \pending \\
-\bottomrule
-\end{longtable}
-
-\section{AI Cost and Latency Audit}
-
-\subsection{Method and Scope}
-
-Model cost is a first-class evaluation dimension because the assistant runs continuously against a paid provider.
-A static audit at revision \texttt{1a604b3} inventoried every provider call site, its trigger, default model route, cache behavior, and budget check.
-All dollar figures in this section are estimates from provider list prices and token approximations, classified \observed{}; measured spend comes from the persisted cost telemetry once the deployed pipeline has run, and remains \pending.
-The price rows behind these figures were re-verified against the official provider pricing pages on 2026-07-26 and retained, with source links and the deployed cap assumptions, in the repository artifact \texttt{docs/evaluation/ai-cost-price-snapshot-2026-07-26.md}; the companion script \texttt{ai\_cost\_recompute.py} recomputes every dollar figure in this section from that snapshot and fails if prose and calculation diverge.
-
-There are four provider call sites: the summarization worker (background job per paper version), grounded Q\&A (per request), query embedding, and batched chunk embedding; recommendation scoring makes no provider calls because it reuses stored vectors.
-All completion sites check the shared daily budget and persist full cost telemetry.
-
-\subsection{Estimated Unit Economics}
-
-Under the deployed caps (summary input 60{,}000 characters, summary output 1024 tokens, Q\&A context of roughly six 450-token chunks, Q\&A output 512 tokens), one paper summary on the default flagship route costs an estimated \$0.10, one grounded answer roughly \$0.028, and embedding a full paper roughly \$0.0003.
-Against the default \$5 daily cap, a single bulk ingestion day of about 50 summaries can exhaust the budget on the flagship tier, while a cheaper tier fits roughly 250 summaries per day.
-A full 15-case evaluation run is estimated at \$0.34 on the flagship tier versus \$0.07 on a light tier.
-
-\subsection{Findings}
-
-The audit's headline finding is that the default routing sends bulk summarization --- schema-constrained background work, and the dominant spend at roughly five times Q\&A cost per unit --- to the most expensive configured model, while the flagship tier is better reserved for user-visible grounded answers.
-Rerouting summarization to a cheaper tier is recommended but deliberately deferred: the decision is gated on a summary-quality comparison over the summarization fixture set, because structured-output fidelity, not only cost, decides the route.
-Secondary findings: the single shared daily cap can let a heavy ingestion day starve interactive Q\&A (acceptable for the demo deployment; split per-task caps if observed); the embedding batch size is three orders of magnitude below LLM cost and needs no change; and the caching posture is sound because prompt versions key every cache entry and unknown models price at the most expensive tier, so budget accounting never undercounts.
-No default was changed by the audit; the routing decision remains open with its owner recorded.
-
-\section{Threats to Validity}
-
-\subsection{Construct Validity}
-
-Source matching is lexical overlap with cited evidence, not semantic entailment and not scientific truth; a span can support a claim in one paper while the broader literature disagrees~\cite{wadden2020scifact}.
-Keyword coverage is a lexical proxy for answer content, and the section-hint retrieval grade is a section-level proxy for span-level relevance.
-Likewise, a click or long reading duration is not identical to research interest.
-The evaluation therefore reports operational constructs and avoids treating them as complete measures of understanding or intent.
-
-\subsection{Internal Validity}
-
-Generator, embedding, and judge models can change over time, and unrecorded provider updates may alter results.
-The implemented telemetry mitigates but does not remove this risk: every persisted completion records provider, model snapshot, prompt version, and input hash, and evaluation runs must additionally freeze fixture versions and configuration.
-Estimated costs derive from the retained list-price snapshot and token approximations and may diverge from billed spend.
-Any LLM-as-judge measurement requires calibration against human annotations before it supports a claim.
-
-\subsection{External Validity}
-
-The 15-case seed set covers seven machine-learning papers from arXiv; conclusions from it do not transfer to other disciplines, layouts, or revision practices without a larger stratified corpus.
-A five-participant formative prototype study cannot establish broad usability.
-Results must be stratified and conclusions restricted to the evaluated documents, questions, devices, and participants.
-
-\subsection{Reproducibility}
-
-The source repository, revisions, fixture sets, and evaluation tooling are supplied and inspectable, which closes the largest gap of the earlier draft.
-The remaining gaps are execution artifacts: no live graded run, no measured cost or latency distributions, no E1/E3 fixture corpora, and no raw usability records exist yet.
-Each such gap is marked \pending{} with an owner, and the thesis becomes empirically complete only when those artifacts are produced, linked, and audited at a frozen revision.
+The boundaries of this section's evidence are stated plainly. All device numbers come from one emulator configuration and do not estimate physical-device variability. Controlled state and event timings measure client-internal transitions, not network or frame latency, and graph timing ends at DOM readiness. Cost figures are estimates derived from a retained price snapshot. Finally, the graded answer-quality run --- retrieval hit rate, source-match rate, refusal accuracy, and measured per-answer latency and cost on the pinned fixture corpus --- has not been executed against a live provider, so this thesis reports the evaluation instrumentation as implemented and verified, and reports no answer-quality numbers; completing that run is future work discussed in Chapter~5.
