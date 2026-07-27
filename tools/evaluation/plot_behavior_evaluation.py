@@ -15,9 +15,7 @@ import os
 import tempfile
 from pathlib import Path
 
-os.environ.setdefault(
-    "MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "mneme-matplotlib")
-)
+os.environ.setdefault("MPLCONFIGDIR", str(Path(tempfile.gettempdir()) / "mneme-matplotlib"))
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -64,9 +62,7 @@ MODEL_HATCHES = {
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Plot recorded behavior evaluation summaries."
-    )
+    parser = argparse.ArgumentParser(description="Plot recorded behavior evaluation summaries.")
     parser.add_argument(
         "--evaluation-dir",
         type=Path,
@@ -82,9 +78,7 @@ def load_artifacts(
     summary_path = evaluation_dir / "summary.json"
     cases_path = evaluation_dir / "raw/case_results.jsonl"
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
-    cases = [
-        json.loads(line) for line in cases_path.read_text(encoding="utf-8").splitlines()
-    ]
+    cases = [json.loads(line) for line in cases_path.read_text(encoding="utf-8").splitlines()]
     if summary.get("schema_version") != "behavior-evaluation-summary-v1":
         raise ValueError("Unsupported behavior summary schema.")
     if summary.get("controlled_synthetic") is not True:
@@ -180,9 +174,7 @@ def plot_mechanism_deltas(summary: dict[str, object], figure_dir: Path) -> None:
         "v2-no-negative-channel",
         "v2-no-confidence-gate",
     )
-    lookup = {
-        (row["pair_id"], row["model_id"]): row["target_score_delta"] for row in rows
-    }
+    lookup = {(row["pair_id"], row["model_id"]): row["target_score_delta"] for row in rows}
     figure, axes = plt.subplots(2, 1, figsize=(7.2, 7.4), sharex=False)
     colors = (BLUE, TEAL, GOLD, CORAL, PURPLE)
     desired_directions = (
