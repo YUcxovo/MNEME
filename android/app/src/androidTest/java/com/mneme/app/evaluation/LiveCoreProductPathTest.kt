@@ -5,6 +5,7 @@ package com.mneme.app.evaluation
 import android.content.Context
 import android.os.SystemClock
 import android.util.Base64
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -126,7 +127,7 @@ class LiveCoreProductPathTest {
             LiveCoreMeasurementFiles.captureScreenshot("live_ui_briefing.png")
 
             val paperStartedAt = now()
-            composeRule.onNodeWithTag("briefing-screen").performScrollToNode(
+            composeRule.onAllNodes(hasScrollAction()).onFirst().performScrollToNode(
                 hasTestTag("paper-card-$selectedPaperId"),
             )
             composeRule.onNodeWithTag("paper-card-$selectedPaperId").performClick()
