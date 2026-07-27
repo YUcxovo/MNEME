@@ -1,0 +1,198 @@
+{
+  "command": [
+    "python3",
+    "-m",
+    "mneme.cli.evaluate_behavior",
+    "--recorded"
+  ],
+  "controlled_synthetic": true,
+  "evaluation_settings": {
+    "bootstrap_replicates": 10000,
+    "bootstrap_seed": 20260727,
+    "confidence_interval": 0.95,
+    "metric_k": 5,
+    "round_digits": 6
+  },
+  "fixture_path": "docs/evaluation/behavior/fixtures/behavior_controlled_v1.json",
+  "fixture_sha256": "d74908149f944fe72b6824c5952660bb3da8dbeb9b7a4b8c1db23b4c2819ff37",
+  "fixture_version": "behavior-controlled-v1",
+  "lockfile_path": "backend/uv.lock",
+  "lockfile_sha256": "a317daa8f0eee2910aee4b21408ec1618fc9f044b82025898ff29c338a42c0f8",
+  "measured_at_utc": "2026-07-27T11:00:42.304664Z",
+  "model_configurations": [
+    {
+      "behavior_config": null,
+      "behavior_kind": "none",
+      "headline": true,
+      "include_explicit_topics": false,
+      "model_id": "recency-only",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": null,
+      "behavior_kind": "none",
+      "headline": true,
+      "include_explicit_topics": true,
+      "model_id": "explicit-recency",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": null,
+      "behavior_kind": "v1",
+      "headline": true,
+      "include_explicit_topics": true,
+      "model_id": "behavior-v1",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": 1.0,
+        "positive_saturation_scale": 3.0,
+        "require_negative_exposure": true,
+        "short_half_life_days": 14.0,
+        "short_term_mix": 0.7,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": true,
+      "include_explicit_topics": true,
+      "model_id": "behavior-v2",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": 1.0,
+        "positive_saturation_scale": 3.0,
+        "require_negative_exposure": true,
+        "short_half_life_days": 30.0,
+        "short_term_mix": 1.0,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": false,
+      "include_explicit_topics": true,
+      "model_id": "v2-single-timescale",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": null,
+        "positive_saturation_scale": null,
+        "require_negative_exposure": true,
+        "short_half_life_days": 14.0,
+        "short_term_mix": 0.7,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": false,
+      "include_explicit_topics": true,
+      "model_id": "v2-no-saturation",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": 1.0,
+        "positive_saturation_scale": 3.0,
+        "require_negative_exposure": false,
+        "short_half_life_days": 14.0,
+        "short_term_mix": 0.7,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": false,
+      "include_explicit_topics": true,
+      "model_id": "v2-no-exposure-gate",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": 1.0,
+        "positive_saturation_scale": 3.0,
+        "require_negative_exposure": true,
+        "short_half_life_days": 14.0,
+        "short_term_mix": 0.7,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": false,
+      "include_explicit_topics": true,
+      "model_id": "v2-no-negative-channel",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": false
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": 1.0,
+        "positive_saturation_scale": 3.0,
+        "require_negative_exposure": true,
+        "short_half_life_days": 14.0,
+        "short_term_mix": 0.7,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": false,
+      "include_explicit_topics": true,
+      "model_id": "v2-no-confidence-gate",
+      "scoring_config": {
+        "use_confidence_gate": false,
+        "use_negative_channel": true
+      }
+    }
+  ],
+  "recorded": true,
+  "reference_time_utc": "2026-07-27T12:00:00Z",
+  "schema_version": "behavior-evaluation-run-v1",
+  "score_rounding": "production scores rounded to 6 decimals; summaries rounded to 6 decimals",
+  "source": {
+    "branch": "feat/ruiyu-behavior-v2",
+    "dirty": false,
+    "revision": "9abbd2a89fda9791e8d397e4b15af497e632a3bb"
+  }
+}

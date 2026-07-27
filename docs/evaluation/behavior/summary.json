@@ -1,0 +1,2586 @@
+{
+  "aggregates": [
+    {
+      "applicable_n": 11,
+      "mean": 0.916158,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "recency-only",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "recency-only",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.878788,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "recency-only",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "recency-only",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.538867,
+      "median": 0.538867,
+      "metric": "ndcg_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.333333,
+      "median": 0.333333,
+      "metric": "reciprocal_rank",
+      "model_id": "recency-only",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "recency-only",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "recency-only",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "recency-only",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "recency-only",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "recency-only",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "recency-only",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "recency-only",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.916158,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.878788,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "explicit-recency",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "explicit-recency",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.538867,
+      "median": 0.538867,
+      "metric": "ndcg_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.333333,
+      "median": 0.333333,
+      "metric": "reciprocal_rank",
+      "model_id": "explicit-recency",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "explicit-recency",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "explicit-recency",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "explicit-recency",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "explicit-recency",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "explicit-recency",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "explicit-recency",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "explicit-recency",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.895396,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.878788,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v1",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v1",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.670838,
+      "median": 0.670838,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.666667,
+      "median": 0.666667,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v1",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v1",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v1",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 0.507685,
+      "median": 0.507685,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 0.333333,
+      "median": 0.333333,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v1",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v1",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v1",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v1",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v1",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.915691,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.939394,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v2",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v2",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.670838,
+      "median": 0.670838,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.666667,
+      "median": 0.666667,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v2",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v2",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v2",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 0.730929,
+      "median": 0.730929,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v2",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v2",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v2",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "behavior-v2",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "behavior-v2",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.915691,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.939394,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-single-timescale",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.670838,
+      "median": 0.670838,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.666667,
+      "median": 0.666667,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 0.730929,
+      "median": 0.730929,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-single-timescale",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.895396,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.878788,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-saturation",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.670838,
+      "median": 0.670838,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.666667,
+      "median": 0.666667,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 0.507685,
+      "median": 0.507685,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 0.333333,
+      "median": 0.333333,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-saturation",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.915691,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.939394,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.670838,
+      "median": 0.670838,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.666667,
+      "median": 0.666667,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 0.730929,
+      "median": 0.730929,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-exposure-gate",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.915691,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.939394,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.670838,
+      "median": 0.670838,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.666667,
+      "median": 0.666667,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 0.730929,
+      "median": 0.730929,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-negative-channel",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.915691,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 11,
+      "mean": 0.939394,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": null
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "stable_positive"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.670838,
+      "median": 0.670838,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 0.666667,
+      "median": 0.666667,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "recent_interest_shift"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "exposed_negative"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "unexposed_skip"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 0.730929,
+      "median": 0.730929,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "repeated_same_paper"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "contradictory_feedback"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 1,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "missing_embedding"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "ndcg_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "recall_at_k",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "duplicate_replay"
+    },
+    {
+      "applicable_n": 2,
+      "mean": 1.0,
+      "median": 1.0,
+      "metric": "reciprocal_rank",
+      "model_id": "v2-no-confidence-gate",
+      "scenario_family": "duplicate_replay"
+    }
+  ],
+  "controlled_synthetic": true,
+  "evaluation_settings": {
+    "bootstrap_replicates": 10000,
+    "bootstrap_seed": 20260727,
+    "confidence_interval": 0.95,
+    "metric_k": 5,
+    "round_digits": 6
+  },
+  "fixture_version": "behavior-controlled-v1",
+  "invariant_failures": [],
+  "mechanism_deltas": [
+    {
+      "duplicate_max_abs_score_delta": 0.0,
+      "model_id": "behavior-v1",
+      "pair_id": "duplicate-replay-01",
+      "scenario_family": "duplicate_replay",
+      "target_rank_delta": null,
+      "target_score_delta": null
+    },
+    {
+      "duplicate_max_abs_score_delta": 0.0,
+      "model_id": "behavior-v2",
+      "pair_id": "duplicate-replay-01",
+      "scenario_family": "duplicate_replay",
+      "target_rank_delta": null,
+      "target_score_delta": null
+    },
+    {
+      "duplicate_max_abs_score_delta": 0.0,
+      "model_id": "explicit-recency",
+      "pair_id": "duplicate-replay-01",
+      "scenario_family": "duplicate_replay",
+      "target_rank_delta": null,
+      "target_score_delta": null
+    },
+    {
+      "duplicate_max_abs_score_delta": 0.0,
+      "model_id": "recency-only",
+      "pair_id": "duplicate-replay-01",
+      "scenario_family": "duplicate_replay",
+      "target_rank_delta": null,
+      "target_score_delta": null
+    },
+    {
+      "duplicate_max_abs_score_delta": 0.0,
+      "model_id": "v2-no-confidence-gate",
+      "pair_id": "duplicate-replay-01",
+      "scenario_family": "duplicate_replay",
+      "target_rank_delta": null,
+      "target_score_delta": null
+    },
+    {
+      "duplicate_max_abs_score_delta": 0.0,
+      "model_id": "v2-no-exposure-gate",
+      "pair_id": "duplicate-replay-01",
+      "scenario_family": "duplicate_replay",
+      "target_rank_delta": null,
+      "target_score_delta": null
+    },
+    {
+      "duplicate_max_abs_score_delta": 0.0,
+      "model_id": "v2-no-negative-channel",
+      "pair_id": "duplicate-replay-01",
+      "scenario_family": "duplicate_replay",
+      "target_rank_delta": null,
+      "target_score_delta": null
+    },
+    {
+      "duplicate_max_abs_score_delta": 0.0,
+      "model_id": "v2-no-saturation",
+      "pair_id": "duplicate-replay-01",
+      "scenario_family": "duplicate_replay",
+      "target_rank_delta": null,
+      "target_score_delta": null
+    },
+    {
+      "duplicate_max_abs_score_delta": 0.0,
+      "model_id": "v2-single-timescale",
+      "pair_id": "duplicate-replay-01",
+      "scenario_family": "duplicate_replay",
+      "target_rank_delta": null,
+      "target_score_delta": null
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "behavior-v1",
+      "pair_id": "exposed-negative-01",
+      "scenario_family": "exposed_negative",
+      "target_rank_delta": -1,
+      "target_score_delta": -0.034668
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "behavior-v2",
+      "pair_id": "exposed-negative-01",
+      "scenario_family": "exposed_negative",
+      "target_rank_delta": 2,
+      "target_score_delta": -0.258853
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "explicit-recency",
+      "pair_id": "exposed-negative-01",
+      "scenario_family": "exposed_negative",
+      "target_rank_delta": 0,
+      "target_score_delta": 0.0
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "recency-only",
+      "pair_id": "exposed-negative-01",
+      "scenario_family": "exposed_negative",
+      "target_rank_delta": 0,
+      "target_score_delta": 0.0
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "v2-no-confidence-gate",
+      "pair_id": "exposed-negative-01",
+      "scenario_family": "exposed_negative",
+      "target_rank_delta": 2,
+      "target_score_delta": -0.318116
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "v2-no-exposure-gate",
+      "pair_id": "exposed-negative-01",
+      "scenario_family": "exposed_negative",
+      "target_rank_delta": 2,
+      "target_score_delta": -0.258853
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "v2-no-negative-channel",
+      "pair_id": "exposed-negative-01",
+      "scenario_family": "exposed_negative",
+      "target_rank_delta": 0,
+      "target_score_delta": -0.051479
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "v2-no-saturation",
+      "pair_id": "exposed-negative-01",
+      "scenario_family": "exposed_negative",
+      "target_rank_delta": 2,
+      "target_score_delta": -0.288802
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "v2-single-timescale",
+      "pair_id": "exposed-negative-01",
+      "scenario_family": "exposed_negative",
+      "target_rank_delta": 2,
+      "target_score_delta": -0.259038
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "behavior-v1",
+      "pair_id": "interest-shift-01",
+      "scenario_family": "recent_interest_shift",
+      "target_rank_delta": -2,
+      "target_score_delta": 0.605001
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "behavior-v2",
+      "pair_id": "interest-shift-01",
+      "scenario_family": "recent_interest_shift",
+      "target_rank_delta": -2,
+      "target_score_delta": 0.119396
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "explicit-recency",
+      "pair_id": "interest-shift-01",
+      "scenario_family": "recent_interest_shift",
+      "target_rank_delta": 0,
+      "target_score_delta": 0.0
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "recency-only",
+      "pair_id": "interest-shift-01",
+      "scenario_family": "recent_interest_shift",
+      "target_rank_delta": 0,
+      "target_score_delta": 0.0
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "v2-no-confidence-gate",
+      "pair_id": "interest-shift-01",
+      "scenario_family": "recent_interest_shift",
+      "target_rank_delta": -2,
+      "target_score_delta": 0.303509
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "v2-no-exposure-gate",
+      "pair_id": "interest-shift-01",
+      "scenario_family": "recent_interest_shift",
+      "target_rank_delta": -2,
+      "target_score_delta": 0.119396
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "v2-no-negative-channel",
+      "pair_id": "interest-shift-01",
+      "scenario_family": "recent_interest_shift",
+      "target_rank_delta": -2,
+      "target_score_delta": 0.119396
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "v2-no-saturation",
+      "pair_id": "interest-shift-01",
+      "scenario_family": "recent_interest_shift",
+      "target_rank_delta": -2,
+      "target_score_delta": 0.174035
+    },
+    {
+      "duplicate_max_abs_score_delta": null,
+      "model_id": "v2-single-timescale",
+      "pair_id": "interest-shift-01",
+      "scenario_family": "recent_interest_shift",
+      "target_rank_delta": -2,
+      "target_score_delta": 0.124877
+    }
+  ],
+  "model_configurations": [
+    {
+      "behavior_config": null,
+      "behavior_kind": "none",
+      "headline": true,
+      "include_explicit_topics": false,
+      "model_id": "recency-only",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": null,
+      "behavior_kind": "none",
+      "headline": true,
+      "include_explicit_topics": true,
+      "model_id": "explicit-recency",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": null,
+      "behavior_kind": "v1",
+      "headline": true,
+      "include_explicit_topics": true,
+      "model_id": "behavior-v1",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": 1.0,
+        "positive_saturation_scale": 3.0,
+        "require_negative_exposure": true,
+        "short_half_life_days": 14.0,
+        "short_term_mix": 0.7,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": true,
+      "include_explicit_topics": true,
+      "model_id": "behavior-v2",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": 1.0,
+        "positive_saturation_scale": 3.0,
+        "require_negative_exposure": true,
+        "short_half_life_days": 30.0,
+        "short_term_mix": 1.0,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": false,
+      "include_explicit_topics": true,
+      "model_id": "v2-single-timescale",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": null,
+        "positive_saturation_scale": null,
+        "require_negative_exposure": true,
+        "short_half_life_days": 14.0,
+        "short_term_mix": 0.7,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": false,
+      "include_explicit_topics": true,
+      "model_id": "v2-no-saturation",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": 1.0,
+        "positive_saturation_scale": 3.0,
+        "require_negative_exposure": false,
+        "short_half_life_days": 14.0,
+        "short_term_mix": 0.7,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": false,
+      "include_explicit_topics": true,
+      "model_id": "v2-no-exposure-gate",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": true
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": 1.0,
+        "positive_saturation_scale": 3.0,
+        "require_negative_exposure": true,
+        "short_half_life_days": 14.0,
+        "short_term_mix": 0.7,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": false,
+      "include_explicit_topics": true,
+      "model_id": "v2-no-negative-channel",
+      "scoring_config": {
+        "use_confidence_gate": true,
+        "use_negative_channel": false
+      }
+    },
+    {
+      "behavior_config": {
+        "confidence_diversity_scale": 3.0,
+        "confidence_mass_scale": 3.0,
+        "exposure_lookback_days": 7.0,
+        "long_half_life_days": 60.0,
+        "negative_saturation_scale": 1.0,
+        "positive_saturation_scale": 3.0,
+        "require_negative_exposure": true,
+        "short_half_life_days": 14.0,
+        "short_term_mix": 0.7,
+        "window_days": 180.0
+      },
+      "behavior_kind": "v2",
+      "headline": false,
+      "include_explicit_topics": true,
+      "model_id": "v2-no-confidence-gate",
+      "scoring_config": {
+        "use_confidence_gate": false,
+        "use_negative_channel": true
+      }
+    }
+  ],
+  "paired_comparisons": [
+    {
+      "applicable_n": 11,
+      "comparator_model": "recency-only",
+      "interval_lower": -0.073383,
+      "interval_upper": 0.077654,
+      "mean_delta": -0.000466,
+      "median_delta": 0.0,
+      "metric": "ndcg_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "recency-only",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "recall_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "recency-only",
+      "interval_lower": 0.0,
+      "interval_upper": 0.181818,
+      "mean_delta": 0.060606,
+      "median_delta": 0.0,
+      "metric": "reciprocal_rank",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "explicit-recency",
+      "interval_lower": -0.073383,
+      "interval_upper": 0.077654,
+      "mean_delta": -0.000466,
+      "median_delta": 0.0,
+      "metric": "ndcg_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "explicit-recency",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "recall_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "explicit-recency",
+      "interval_lower": 0.0,
+      "interval_upper": 0.181818,
+      "mean_delta": 0.060606,
+      "median_delta": 0.0,
+      "metric": "reciprocal_rank",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "behavior-v1",
+      "interval_lower": 0.0,
+      "interval_upper": 0.060885,
+      "mean_delta": 0.020295,
+      "median_delta": 0.0,
+      "metric": "ndcg_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "behavior-v1",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "recall_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "behavior-v1",
+      "interval_lower": 0.0,
+      "interval_upper": 0.181818,
+      "mean_delta": 0.060606,
+      "median_delta": 0.0,
+      "metric": "reciprocal_rank",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-single-timescale",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "ndcg_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-single-timescale",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "recall_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-single-timescale",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "reciprocal_rank",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-saturation",
+      "interval_lower": 0.0,
+      "interval_upper": 0.060885,
+      "mean_delta": 0.020295,
+      "median_delta": 0.0,
+      "metric": "ndcg_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-saturation",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "recall_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-saturation",
+      "interval_lower": 0.0,
+      "interval_upper": 0.181818,
+      "mean_delta": 0.060606,
+      "median_delta": 0.0,
+      "metric": "reciprocal_rank",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-exposure-gate",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "ndcg_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-exposure-gate",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "recall_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-exposure-gate",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "reciprocal_rank",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-negative-channel",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "ndcg_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-negative-channel",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "recall_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-negative-channel",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "reciprocal_rank",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-confidence-gate",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "ndcg_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-confidence-gate",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "recall_at_k",
+      "reference_model": "behavior-v2"
+    },
+    {
+      "applicable_n": 11,
+      "comparator_model": "v2-no-confidence-gate",
+      "interval_lower": 0.0,
+      "interval_upper": 0.0,
+      "mean_delta": 0.0,
+      "median_delta": 0.0,
+      "metric": "reciprocal_rank",
+      "reference_model": "behavior-v2"
+    }
+  ],
+  "schema_version": "behavior-evaluation-summary-v1"
+}
