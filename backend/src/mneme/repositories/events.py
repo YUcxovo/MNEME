@@ -13,6 +13,7 @@ from mneme.models.artifact import PaperChunk
 from mneme.models.paper import Paper, PaperVersion
 from mneme.models.user import EMBEDDING_DIMENSIONS, User, UserEvent, UserEventType, UserPreference
 from mneme.services.behavior import BehaviorSignal
+from mneme.services.behavior_v2 import BehaviorProfile
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,29 +180,45 @@ class EventRepository:
             await self._session.flush()
         return preference
 
-    async def store_behavior_embedding(
+    async def store_behavior_profile(
         self,
         user_id: UUID,
         *,
-        embedding: tuple[float, ...] | None,
+        profile: BehaviorProfile,
         embedding_model: str,
-        model_version: int,
     ) -> None:
-        """Persist a derived vector while preserving explicit preferences."""
+        """Persist a derived contrastive profile while preserving explicit preferences."""
         preference = await self.lock_preferences(user_id)
-        stored_embedding = list(embedding) if embedding is not None else None
-        stored_model = embedding_model if embedding is not None else None
-        current_embedding = (
-            tuple(float(value) for value in preference.behavior_embedding)
-            if preference.behavior_embedding is not None
-            else None
-        )
+        positive = profile.positive_embedding
+        negative = profile.negative_embedding
+        stored_model = embedding_model if positive is not None or negative is not None else None
+        current_positive = _as_float_tuple(preference.behavior_embedding)
+        current_negative = _as_float_tuple(preference.negative_behavior_embedding)
+        evidence: dict[str, object] = {
+            "model_name": profile.model_name,
+            "model_version": profile.model_version,
+            **profile.evidence.as_json(),
+        }
         if (
-            current_embedding != embedding
+            current_positive != positive
+            or current_negative != negative
             or preference.behavior_embedding_model != stored_model
-            or preference.model_version != model_version
+            or preference.behavior_confidence != profile.confidence
+            or preference.behavior_evidence != evidence
+            or preference.model_version != profile.model_version
         ):
-            preference.behavior_embedding = stored_embedding
+            preference.behavior_embedding = list(positive) if positive is not None else None
+            preference.negative_behavior_embedding = (
+                list(negative) if negative is not None else None
+            )
             preference.behavior_embedding_model = stored_model
-            preference.model_version = model_version
+            preference.behavior_confidence = profile.confidence
+            preference.behavior_evidence = evidence
+            preference.model_version = profile.model_version
             await self._session.flush()
+
+
+def _as_float_tuple(value: list[float] | None) -> tuple[float, ...] | None:
+    if value is None:
+        return None
+    return tuple(float(item) for item in value)

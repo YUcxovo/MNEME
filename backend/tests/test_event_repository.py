@@ -14,6 +14,8 @@ from sqlalchemy.sql import ClauseElement
 
 from mneme.models.user import UserEventType, UserPreference
 from mneme.repositories.events import EventRecord, EventRepository
+from mneme.services.behavior import BehaviorSignal
+from mneme.services.behavior_v2_profile import aggregate_behavior_profile
 
 USER_ID = UUID("00000000-0000-0000-0000-000000000111")
 PAPER_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -116,22 +118,34 @@ def test_embedding_query_uses_latest_revision_and_exact_model() -> None:
 
 @pytest.mark.base
 @pytest.mark.db
-def test_storing_identical_behavior_vector_does_not_touch_preference_row() -> None:
+def test_storing_identical_behavior_profile_does_not_touch_preference_row() -> None:
     async def exercise() -> AsyncMock:
+        profile = aggregate_behavior_profile(
+            [BehaviorSignal(UserEventType.PAPER_SAVED, PAPER_ID, NOW)],
+            {PAPER_ID: (1.0, 0.0)},
+            now=NOW,
+        )
+        evidence = {
+            "model_name": profile.model_name,
+            "model_version": profile.model_version,
+            **profile.evidence.as_json(),
+        }
         session = AsyncMock(spec=AsyncSession)
         session.scalar.return_value = UserPreference(
             user_id=USER_ID,
             behavior_embedding=[1.0, 0.0],
+            negative_behavior_embedding=None,
             behavior_embedding_model="embedding-test-v1",
-            model_version=1,
+            behavior_confidence=profile.confidence,
+            behavior_evidence=evidence,
+            model_version=profile.model_version,
         )
         repository = EventRepository(cast(AsyncSession, session))
 
-        await repository.store_behavior_embedding(
+        await repository.store_behavior_profile(
             USER_ID,
-            embedding=(1.0, 0.0),
+            profile=profile,
             embedding_model="embedding-test-v1",
-            model_version=1,
         )
         return session
 
