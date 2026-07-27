@@ -171,18 +171,12 @@ are requeued on the next client retry. AI failures map to stable codes:
   the frozen `Answer` schema. Papers without embedded chunks get the stable
   refusal with `insufficient_evidence`, not an error.
 
-## Recommendations (Milestone 3)
+## Recommendations
 
-- `mneme.ai.recommendation` scores candidates against the frozen
-  `user_preferences` interface: explicit topic match (0.45), cosine between
-  Ruiyu's behavior embedding and the paper's mean chunk embedding (0.35),
-  and recency with a one-week half-life (0.2). Missing signals redistribute
-  their weight, so cold-start users still get ranked results. Reasons are
-  derived from the dominant components and persisted per entry.
-- `POST /v1/digests/recommended` reuses a digest generated in the last 24
-  hours or scores synchronously (no LLM call) and stores an immutable
-  `manual` digest snapshot. The contract's 202 branch stays reserved for a
-  future slow path.
+- `mneme.ai.recommendation` scores candidates against the frozen `user_preferences` interface. Explicit topic match has nominal weight 0.45, recency with a one-week half-life has weight 0.20, and behavior has weight 0.35. For model version 2, positive and negative cosine similarities form the bounded affinity `0.5 + 0.5 * (positive - negative)`, and the behavior weight is multiplied by profile confidence before available weights are normalized. Zero-confidence profiles therefore follow the cold-start path. Version 1 retains its original positive-vector cosine semantics for replay.
+- Recommendation reasons include behavior only when positive similarity exceeds negative similarity; avoidance evidence cannot be presented as a reason to read a paper. Scores remain in `[0, 1]`, and equal scores retain the UUID tie-break.
+- `POST /v1/digests/recommended` reuses a digest generated in the last 24 hours only when its preference-model version and `recommender-v2` generator identity match the active state. Otherwise it scores synchronously without an LLM call and stores an immutable `manual` digest snapshot. The contract's 202 branch stays reserved for a future slow path.
+- The controlled comparison, ablations, metrics, and evidence limits are defined in `docs/evaluation/behavior/README.md`. The evaluation calls the production profile and scorer rather than duplicating their formulas.
 
 ## Knowledge-graph algorithms (Milestone 3)
 

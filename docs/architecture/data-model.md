@@ -2,7 +2,7 @@
 
 Ruiyu is the DRI for the ER model, SQLAlchemy models, and Alembic migrations. Yifan reviews
 fields used by summarization, embeddings, retrieval, recommendation, and evaluation. Hanyang
-reviews fields exposed through Android DTOs. This document is the v0.1 persistence contract, including the Milestone 1 baseline, Milestone 2 provenance/dispatch migrations, and Milestone 3 bidirectional citation identities; changes require the review process in `CONTRIBUTING.md`.
+reviews fields exposed through Android DTOs. This document is the v0.1 persistence contract, including revision-safe artifacts, durable dispatch, bidirectional citation identities, and the active contrastive behavior profile through migration `0007`; changes require the review process in `CONTRIBUTING.md`.
 
 ```mermaid
 erDiagram
@@ -34,7 +34,10 @@ erDiagram
       jsonb explicit_topics
       jsonb followed_authors
       vector_1536 behavior_embedding
+      vector_1536 negative_behavior_embedding
       string behavior_embedding_model
+      float behavior_confidence
+      jsonb behavior_evidence
       int model_version
       timestamptz updated_at
     }
@@ -255,9 +258,8 @@ erDiagram
   credentials or a separate authentication table. An idempotent bootstrap command creates the
   configured demo user and initial preferences.
 
-## Behavior Model Baseline
+## Behavior Profiles
 
-Milestone 3 freezes the simple deterministic `behavior-v1` baseline in ADR 0002. It combines
-versioned event weights, a 30-day half-life, a 90-day aggregation window, and latest-revision paper
-embeddings. Later tuning must publish a new model version rather than silently changing stored
-vector semantics.
+ADR 0002 freezes `behavior-v1` as a replayable signed-centroid baseline. ADR 0003 defines the active `behavior-v2` profile: independently normalized positive and negative channels, bounded confidence, and inspectable evidence metadata derived from up to 180 days of raw events. Both channels use latest-revision paper embeddings from one exact embedding-model identity. A profile with either channel must retain that identity; an empty profile stores neither channel nor an embedding-model identifier.
+
+The JSON evidence record contains the behavior model name and version, the complete parameter hash, signal and paper counts, positive and negative support, ignored unexposed skips, and embedding coverage. `model_version` remains the public compatibility field. Existing v1 rows retain version 1 and are never relabeled without replay. The dedicated replay command and event ingestion both acquire the user lock and write the derived profile without modifying explicit topics or followed authors.

@@ -13,6 +13,8 @@ Engineering sources of truth:
 - [`docs/architecture/privacy-and-data.md`](docs/architecture/privacy-and-data.md) -- licensing, privacy, reproducibility
 - [`docs/adr/0001-mvp-auth.md`](docs/adr/0001-mvp-auth.md) -- MVP authentication decision
 - [`docs/adr/0002-m3-behavior-baseline.md`](docs/adr/0002-m3-behavior-baseline.md) -- deterministic behavior-v1 decision
+- [`docs/adr/0003-behavior-v2.md`](docs/adr/0003-behavior-v2.md) -- confidence-calibrated contrastive behavior model
+- [`docs/evaluation/behavior/README.md`](docs/evaluation/behavior/README.md) -- controlled behavior evaluation and claim boundary
 
 Current implementation status (2026-07-24): `dev` contains the merged backend/data and
 AI platform through Milestone 3, plus the live skeletal Android path. The backend
@@ -31,7 +33,7 @@ are queued locally and uploaded through the frozen event contract, and paper det
 the bounded citation graph. Background digest refresh and production authentication remain
 outside the Android integration. The backend provides Semantic Scholar graph
 synchronization, bounded graph persistence/API, transactional behavior events, and
-behavior-v1 preference updates.
+confidence-calibrated contrastive behavior profiles while retaining behavior-v1 replay.
 
 ---
 
@@ -341,8 +343,8 @@ flowchart TD
     E4 --> QUEUE
 
     QUEUE --> INGEST["POST /events (dedup by event_id)"]
-    INGEST --> UPDATE["Same transaction: rebuild behavior-v1 from <=90d raw events"]
-    UPDATE --> PREFS["Persist model-labelled preference vector in PostgreSQL"]
+    INGEST --> UPDATE["Same transaction: rebuild contrastive profile from <=180d raw events"]
+    UPDATE --> PREFS["Persist positive/negative channels, confidence, and evidence"]
 
     subgraph Digest["Digest Assembly"]
         CANDIDATES["Recent papers with current-revision artifacts"]
@@ -488,7 +490,7 @@ sequenceDiagram
     Note over A,B: 5. Background: behavioral events
     A->>A: Collect events in local buffer
     A->>B: POST /v1/events (batch)
-    B->>D: Dedup events and rebuild behavior-v1 atomically
+    B->>D: Dedup events and rebuild behavior profile atomically
     D-->>B: {accepted: N, duplicates: M}
 
     Note over A,B: 6. Background: push notification
