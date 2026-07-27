@@ -227,23 +227,17 @@ def plot_mechanism_deltas(summary: dict[str, object], figure_dir: Path) -> None:
         minimum = min(0.0, *values)
         maximum = max(0.0, *values)
         span = max(maximum - minimum, 0.1)
-        axis.set_xlim(minimum - 0.14 * span, maximum + 0.14 * span)
+        axis.set_xlim(minimum - 0.25 * span, maximum + 0.14 * span)
         for bar, value in zip(bars, values, strict=True):
-            if value < 0 and abs(value) >= 0.08:
-                label_x = value + 0.012 * span
-                label_alignment = "left"
-                label_color = "white"
-            else:
-                label_x = value + (0.012 * span if value >= 0 else -0.012 * span)
-                label_alignment = "left" if value >= 0 else "right"
-                label_color = INK
+            label_x = value + (0.012 * span if value >= 0 else -0.02 * span)
+            label_alignment = "left" if value >= 0 else "right"
             axis.text(
                 label_x,
                 bar.get_y() + bar.get_height() / 2,
                 f"{value:+.3f}",
                 va="center",
                 ha=label_alignment,
-                color=label_color,
+                color=INK,
                 fontsize=8,
             )
     figure.suptitle(
