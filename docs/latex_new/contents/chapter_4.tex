@@ -84,6 +84,45 @@ Generation is refused before any model call when no evidence reaches a minimum s
 After generation, citation verification checks every bracketed marker against the evidence list --- markers outside the list are dropped rather than repaired --- and compares each cited excerpt with the claim sentences that carry its marker.
 A citation counts as source-matched when at least 30\% of the claim's content words appear in the cited chunk, and answers are labeled matched, partially matched, or insufficient.
 Following the distinction drawn in citation-quality research~\cite{gao2023alce}, this is retrieved-source matching rather than semantic entailment: it verifies that generated claims are anchored in retrieved text, not that the text is scientifically correct.
+Figure~\ref{fig:qa-pipeline} assembles these stages into one view; the property the figure is meant to convey is that every arrow either narrows the evidence or checks it, and both exits --- a labeled grounded answer and the fixed refusal --- are explicit, deliberate outcomes rather than error states.
+
+\begin{figure}[htbp]
+\centering
+\definecolor{MnemeNavy}{HTML}{17324D}
+\definecolor{MnemeBlue}{HTML}{2F6F8F}
+\definecolor{MnemeGold}{HTML}{C89445}
+\definecolor{MnemeGreen}{HTML}{4F8A5B}
+\definecolor{MnemeRed}{HTML}{B5544F}
+\resizebox{0.98\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  stage/.style={draw=MnemeBlue, fill=MnemeBlue!8, rounded corners=4pt, align=center, minimum height=1.05cm, inner sep=5pt},
+  gate/.style={draw=MnemeGold, fill=MnemeGold!14, diamond, aspect=2.2, align=center, inner sep=1.5pt},
+  stop/.style={draw=MnemeRed, fill=MnemeRed!8, rounded corners=4pt, align=center, minimum height=1.05cm, inner sep=5pt},
+  good/.style={draw=MnemeGreen, fill=MnemeGreen!10, rounded corners=4pt, align=center, minimum height=1.05cm, inner sep=5pt},
+  flow/.style={-{Stealth[length=2.6mm]}, thick, draw=MnemeNavy}
+]
+\node[stage] (embed) at (0,0) {Query embedding\\(local model)};
+\node[stage] (search) at (4.0,0) {Exact cosine search\\top-8 dense + 2 anchors};
+\node[stage] (rerank) at (8.6,0) {Lexical rerank\\$0.7\cdot\text{sim}+0.3\cdot\text{overlap}$, top-4};
+\node[gate] (gatenode) at (8.6,-2.1) {evidence\\score $\geq 0.25$?};
+\node[stop] (refuse) at (12.6,-2.1) {Fixed refusal\\answer};
+\node[stage] (gen) at (4.2,-2.1) {Grounded generation\\(routed provider)};
+\node[stage] (verify) at (0,-2.1) {Citation verification\\markers, 30\% word match};
+\node[good] (answer) at (0,-4.0) {Answer labeled matched~/\\partially matched~/~insufficient};
+\draw[flow] (embed) -- (search);
+\draw[flow] (search) -- (rerank);
+\draw[flow] (rerank) -- (gatenode);
+\draw[flow] (gatenode) -- node[above]{\footnotesize no} (refuse);
+\draw[flow] (gatenode) -- node[above]{\footnotesize yes} (gen);
+\draw[flow] (gen) -- (verify);
+\draw[flow] (verify) -- (answer);
+\draw[flow, dashed] (gen.south east) .. controls +(1.6,-1.0) and +(-1.6,-1.0) .. node[below]{\footnotesize insufficient-evidence marker} (refuse.south west);
+\end{tikzpicture}%
+}
+\caption{The evidence-continuity pipeline as implemented. Retrieval and reranking narrow one revision's chunks to four evidence excerpts; generation is refused before any model call when no evidence reaches the threshold, and the model can still decline through a designated marker; citation verification then anchors every surviving claim to retrieved text. Both exits are explicit outcomes.}
+\label{fig:qa-pipeline}
+\end{figure}
 
 Interest continuity is served by a recommendation scorer that composes three signals: explicit topic match with nominal weight 0.45, a contrastive behavioral affinity --- comparing a candidate's mean chunk embedding against the profile's positive and negative interest centroids --- whose nominal weight of 0.35 is scaled by the profile's evidence confidence, and publication recency with a one-week half-life at weight 0.2.
 The behavior embedding itself is produced by a deterministic, confidence-calibrated contrastive aggregation that responds to four properties of implicit reading evidence: such events are sparse, temporally non-stationary, negative only after verified exposure, and vulnerable to domination by repeated activity on a single paper.
@@ -331,6 +370,33 @@ Measured run cost & \$0.326 & \$0.054 \\
 \end{tabular}
 \end{table}
 
+The complementary tier question --- whether bulk summarization can move to the cheaper route --- was answered with the same discipline.
+The production summarization service was run live over all seven corpus papers once per tier with caching disabled, and each summary was scored on deterministic structural criteria only: whether the response parsed into the required schema without the degraded fallback, whether the methodology and limitations fields were populated, and how much of each key claim's content-word set appears in the exact summarized input, computed with the same content-word implementation that citation verification uses.
+Table~\ref{tab:summary-tiers} reports the outcome, and it is unambiguous in the opposite direction from question answering: the mid tier parsed all seven summaries into the full schema, populated every field, and its per-claim word support (mean 0.95, minimum 0.85) matches the flagship tier (0.94, 0.82) --- at 6.6 times lower cost and roughly two-thirds the latency.
+By the structural-fidelity criteria the audit asked for, nothing measurable is lost.
+These criteria deliberately stop short of semantic quality: they verify schema adherence and source anchoring, not that one summary explains the paper better than another, and a reader-facing judgment would require a human comparison this evaluation does not claim.
+
+\begin{table}[htbp]
+\centering
+\caption{Structural-fidelity comparison of live summarization runs over the seven corpus papers, one run per tier with caching disabled. Claim support is content-word overlap with the exact summarized input; no human quality judgment is claimed.}
+\label{tab:summary-tiers}
+\begin{tabular}{p{6.2cm}rr}
+\toprule
+Metric & Flagship tier & Mid tier \\
+\midrule
+Structurally parsed summaries & 7 of 7 & 7 of 7 \\
+Methodology and limitations populated & 7 of 7 & 7 of 7 \\
+Key claims produced (total) & 35 & 33 \\
+Claim word-support (mean~/~minimum) & 0.94~/~0.82 & 0.95~/~0.85 \\
+Mean summary latency & 11{,}230~ms & 7{,}142~ms \\
+Measured cost, seven papers & \$0.921 & \$0.140 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Together the two tier studies resolve the routing question the cost audit left open, and they resolve it asymmetrically: summarization --- the dominant, structurally-checkable spend --- can move to the mid tier with no measured fidelity loss, while user-facing grounded answering must stay on the flagship route until the refusal contract survives the cheaper model.
+The asymmetry itself is the finding: which tier a task tolerates is a property of the task's failure mode, not of the model alone.
+
 \subsection{Performance Testing}
 \label{sec:e4-android}
 
@@ -483,8 +549,10 @@ Summaries per \$5 day & $\sim$50 & $\sim$250 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
-The audit's principal consequence is a routing insight: bulk summarization is the dominant and least quality-sensitive spend, so moving it to a lighter tier while reserving the flagship tier for user-visible grounded answers would extend the same budget several-fold; the switch awaits a summary-quality comparison so that cost is not saved at the price of structured-output fidelity.
-All dollar figures are estimates derived from a retained price snapshot with a companion script that recomputes them, and the graded evaluation supplies the audit's first measured data points: the flagship run's spend of \$0.326 sits within seven percent of the \$0.34 estimate, and the mid-tier run's \$0.054 falls below the \$0.07 estimate because real questions consumed fewer tokens than the audit's capped assumptions, so the estimates behave as intended upper bounds while measured spend at scale remains available from the per-completion cost telemetry.
+The audit's principal consequence is a routing insight: bulk summarization is the dominant spend, so moving it to a lighter tier while reserving the flagship tier for user-visible grounded answers would extend the same budget several-fold.
+The structural-fidelity comparison reported under Acceptance Testing for Features supplies the quality evidence this switch was waiting for, so the routing recommendation now stands on measured data rather than on the audit's assumption alone.
+All dollar figures are estimates derived from a retained price snapshot with a companion script that recomputes them, and the live evaluations supply the audit's first measured data points: the flagship question-answering run's \$0.326 sits within seven percent of the \$0.34 estimate, the mid-tier run's \$0.054 falls below its \$0.07 estimate, and per-paper summarization measured \$0.132 on the flagship tier against the \$0.100 estimate --- the one underestimate, because real paper bodies tokenize more densely than the character-based cap assumed --- while the mid tier's \$0.020 matched its estimate exactly.
+Measured spend at scale remains available from the per-completion cost telemetry.
 
 Four boundaries qualify these results.
 Device measurements come from one emulator configuration; controlled timings measure client-internal transitions rather than network or frame latency; the behavior-model evaluation demonstrates implemented mechanisms on designed traces and does not establish that the model infers real preferences, improves satisfaction, or meets an end-to-end latency target; and the graded answer-quality evaluation reflects one live run on each of two provider routes over a fifteen-case corpus, so its rates are exact for the declared fixtures but are not distributional estimates and do not certify answer quality under other models, prompts, or question populations.

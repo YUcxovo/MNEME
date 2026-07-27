@@ -1,0 +1,339 @@
+{
+ "_provenance": {
+  "backend_revision": "2624df7",
+  "measured_at_utc": "2026-07-28T01:02:00Z",
+  "note": "Structural-fidelity tier comparison over the seven pinned corpus papers; live generations, cache disabled; claim support uses the same content-word implementation as citation verification. Deterministic measures only; no human quality judgment claimed."
+ },
+ "tiers": {
+  "flagship": {
+   "model": "claude-opus-4-8",
+   "papers": [
+    {
+     "arxiv_id": "1706.03762",
+     "claim_support": [
+      0.9444,
+      0.9167,
+      0.9565,
+      0.95,
+      0.9474
+     ],
+     "cost_usd": "0.09003",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 14881,
+     "key_claims": 5,
+     "latency_ms": 11218,
+     "min_claim_support": 0.9167,
+     "model": "claude-opus-4-8",
+     "output_tokens": 625,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 355,
+     "version_number": 7
+    },
+    {
+     "arxiv_id": "1810.04805",
+     "claim_support": [
+      0.9655,
+      0.9,
+      0.9231,
+      0.8667,
+      0.8889
+     ],
+     "cost_usd": "0.135825",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 23660,
+     "key_claims": 5,
+     "latency_ms": 9820,
+     "min_claim_support": 0.8667,
+     "model": "claude-opus-4-8",
+     "output_tokens": 701,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 394,
+     "version_number": 2
+    },
+    {
+     "arxiv_id": "2005.11401",
+     "claim_support": [
+      1.0,
+      0.9167,
+      0.875,
+      0.9583,
+      0.8947
+     ],
+     "cost_usd": "0.14068",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 24696,
+     "key_claims": 5,
+     "latency_ms": 9883,
+     "min_claim_support": 0.875,
+     "model": "claude-opus-4-8",
+     "output_tokens": 688,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 434,
+     "version_number": 4
+    },
+    {
+     "arxiv_id": "2006.11239",
+     "claim_support": [
+      1.0,
+      0.9444,
+      0.9231,
+      0.9333,
+      0.9474
+     ],
+     "cost_usd": "0.129415",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 22938,
+     "key_claims": 5,
+     "latency_ms": 16872,
+     "min_claim_support": 0.9231,
+     "model": "claude-opus-4-8",
+     "output_tokens": 589,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 335,
+     "version_number": 2
+    },
+    {
+     "arxiv_id": "2010.11929",
+     "claim_support": [
+      0.9,
+      0.9286,
+      0.8235,
+      0.9,
+      0.9545
+     ],
+     "cost_usd": "0.142895",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 25044,
+     "key_claims": 5,
+     "latency_ms": 10659,
+     "min_claim_support": 0.8235,
+     "model": "claude-opus-4-8",
+     "output_tokens": 707,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 442,
+     "version_number": 2
+    },
+    {
+     "arxiv_id": "2106.09685",
+     "claim_support": [
+      0.8824,
+      1.0,
+      1.0,
+      1.0,
+      0.9412
+     ],
+     "cost_usd": "0.146075",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 25870,
+     "key_claims": 5,
+     "latency_ms": 9677,
+     "min_claim_support": 0.8824,
+     "model": "claude-opus-4-8",
+     "output_tokens": 669,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 436,
+     "version_number": 2
+    },
+    {
+     "arxiv_id": "2305.18290",
+     "claim_support": [
+      1.0,
+      0.9412,
+      1.0,
+      0.9545,
+      0.8571
+     ],
+     "cost_usd": "0.13621",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 23607,
+     "key_claims": 5,
+     "latency_ms": 10479,
+     "min_claim_support": 0.8571,
+     "model": "claude-opus-4-8",
+     "output_tokens": 727,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 457,
+     "version_number": 3
+    }
+   ]
+  },
+  "mid": {
+   "model": "claude-haiku-4-5",
+   "papers": [
+    {
+     "arxiv_id": "1706.03762",
+     "claim_support": [
+      1.0,
+      0.9444,
+      0.9286,
+      1.0,
+      0.8462
+     ],
+     "cost_usd": "0.013131",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 11071,
+     "key_claims": 5,
+     "latency_ms": 6078,
+     "min_claim_support": 0.8462,
+     "model": "claude-haiku-4-5-20251001",
+     "output_tokens": 412,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 355,
+     "version_number": 7
+    },
+    {
+     "arxiv_id": "1810.04805",
+     "claim_support": [
+      1.0,
+      1.0,
+      0.8667,
+      1.0
+     ],
+     "cost_usd": "0.020387",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 17802,
+     "key_claims": 4,
+     "latency_ms": 6071,
+     "min_claim_support": 0.8667,
+     "model": "claude-haiku-4-5-20251001",
+     "output_tokens": 517,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 378,
+     "version_number": 2
+    },
+    {
+     "arxiv_id": "2005.11401",
+     "claim_support": [
+      1.0,
+      0.9524,
+      0.9474,
+      0.8947
+     ],
+     "cost_usd": "0.020899",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 18329,
+     "key_claims": 4,
+     "latency_ms": 6743,
+     "min_claim_support": 0.8947,
+     "model": "claude-haiku-4-5-20251001",
+     "output_tokens": 514,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 446,
+     "version_number": 4
+    },
+    {
+     "arxiv_id": "2006.11239",
+     "claim_support": [
+      0.8462,
+      0.9231,
+      0.9375,
+      1.0,
+      1.0
+     ],
+     "cost_usd": "0.020196",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 17926,
+     "key_claims": 5,
+     "latency_ms": 6280,
+     "min_claim_support": 0.8462,
+     "model": "claude-haiku-4-5-20251001",
+     "output_tokens": 454,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 435,
+     "version_number": 2
+    },
+    {
+     "arxiv_id": "2010.11929",
+     "claim_support": [
+      0.9474,
+      1.0,
+      0.9474,
+      0.9333,
+      1.0
+     ],
+     "cost_usd": "0.021779",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 19199,
+     "key_claims": 5,
+     "latency_ms": 6809,
+     "min_claim_support": 0.9333,
+     "model": "claude-haiku-4-5-20251001",
+     "output_tokens": 516,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 430,
+     "version_number": 2
+    },
+    {
+     "arxiv_id": "2106.09685",
+     "claim_support": [
+      1.0,
+      1.0,
+      0.8462,
+      1.0,
+      0.9375
+     ],
+     "cost_usd": "0.022702",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 19937,
+     "key_claims": 5,
+     "latency_ms": 10243,
+     "min_claim_support": 0.8462,
+     "model": "claude-haiku-4-5-20251001",
+     "output_tokens": 553,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 419,
+     "version_number": 2
+    },
+    {
+     "arxiv_id": "2305.18290",
+     "claim_support": [
+      1.0,
+      0.9444,
+      0.9231,
+      1.0,
+      0.8824
+     ],
+     "cost_usd": "0.020498",
+     "has_limitations": true,
+     "has_methodology": true,
+     "input_tokens": 17853,
+     "key_claims": 5,
+     "latency_ms": 7767,
+     "min_claim_support": 0.8824,
+     "model": "claude-haiku-4-5-20251001",
+     "output_tokens": 529,
+     "parsed_structurally": true,
+     "status": "ready",
+     "tldr_chars": 447,
+     "version_number": 3
+    }
+   ]
+  }
+ }
+}
