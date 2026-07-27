@@ -1,7 +1,7 @@
 {
   "schema_version": "live-core-run-manifest-v1",
-  "measured_at_utc": "2026-07-27T12:13:44Z",
-  "repository_revision": "542589c3c328c79e9eae525ae0f4c967f1524e59",
+  "measured_at_utc": "2026-07-27T15:35:44Z",
+  "repository_revision": "5f701e505e8d2fa93cb07fd9a9d2bcceea4d4852",
   "branch": "feat/automatic-citation-graph-preparation",
   "live_backend_url": "http://10.0.2.2:8000/v1/",
   "fixed_seed_arxiv_id": "1706.03762",
@@ -15,7 +15,7 @@
     "summary_model": "deepseek-v4-flash",
     "qa_model": "deepseek-v4-flash",
     "embedding_backend": "fastembed",
-    "embedding_model": "BAAI/bge-small-en-v1.5"
+    "embedding_model": "BAAI/bge-small-en-v1.5+fastembed-pad1536-v1"
   },
   "live_token_retained": false,
   "interpretation": "Acceptance and repeated-path evidence; timings are descriptive and mix cold preparation with durable/cache reuse."
