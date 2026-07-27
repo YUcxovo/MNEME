@@ -5,12 +5,16 @@ package com.mneme.app.evaluation
 import android.content.Context
 import android.os.SystemClock
 import android.util.Base64
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
@@ -110,6 +114,7 @@ class LiveCoreProductPathTest {
             }
             val briefing = (viewModel.homeState.value as HomeUiState.Content).briefing
             val selectedPaperId = briefing.papers.first().id
+            waitForTag("content-source-notice")
             record(
                 track = LIVE_UI_TRACK,
                 scenario = "seed_to_five_paper_briefing",
@@ -124,7 +129,7 @@ class LiveCoreProductPathTest {
                 paperCount = briefing.papers.size,
                 contentOrigin = briefing.disclosure.origin.name,
             )
-            LiveCoreMeasurementFiles.captureScreenshot("live_ui_briefing.png")
+            captureComposeScreenshot("live_ui_briefing.png")
 
             val paperStartedAt = now()
             composeRule.onAllNodes(hasScrollAction()).onFirst().performScrollToNode(
@@ -135,6 +140,7 @@ class LiveCoreProductPathTest {
                 viewModel.paperState.value is PaperDetailUiState.Content
             }
             val paper = (viewModel.paperState.value as PaperDetailUiState.Content).paper
+            waitForTag("basic-summary")
             recordPaper(
                 track = LIVE_UI_TRACK,
                 scenario = "paper_and_summary",
@@ -143,7 +149,7 @@ class LiveCoreProductPathTest {
                 seed = seed,
                 paper = paper,
             )
-            LiveCoreMeasurementFiles.captureScreenshot("live_ui_paper.png")
+            captureComposeScreenshot("live_ui_paper.png")
 
             val paperSourceStartedAt = now()
             composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
@@ -185,12 +191,13 @@ class LiveCoreProductPathTest {
                 selectedPaperId = selectedPaperId,
                 qa = qa,
             )
-            LiveCoreMeasurementFiles.captureScreenshot("live_ui_qa.png")
             if (!qa?.sources.isNullOrEmpty()) {
                 val qaSourceStartedAt = now()
                 composeRule.onNodeWithTag("qa-screen").performScrollToNode(
                     hasTestTag("qa-source-card"),
                 )
+                waitForTag("qa-source-card")
+                captureComposeScreenshot("live_ui_qa.png")
                 composeRule.onAllNodesWithText(OPEN_SOURCE_LABEL).onFirst().performClick()
                 record(
                     track = LIVE_UI_TRACK,
@@ -207,6 +214,8 @@ class LiveCoreProductPathTest {
                     contentOrigin = qa.disclosure.origin.name,
                 )
             } else {
+                waitForTag("qa-screen")
+                captureComposeScreenshot("live_ui_qa.png")
                 record(
                     track = LIVE_UI_TRACK,
                     scenario = "open_qa_source",
@@ -234,6 +243,7 @@ class LiveCoreProductPathTest {
                     viewModel.graphState.value is GraphUiState.Error
             }
             val graph = (viewModel.graphState.value as? GraphUiState.Content)?.graph
+            waitForTag("graph-screen")
             recordGraph(
                 track = LIVE_UI_TRACK,
                 scenario = "citation_graph",
@@ -243,7 +253,10 @@ class LiveCoreProductPathTest {
                 selectedPaperId = selectedPaperId,
                 graph = graph,
             )
-            LiveCoreMeasurementFiles.captureScreenshot("live_ui_graph.png")
+            composeRule.onNodeWithTag("graph-screen").performScrollToNode(
+                hasTestTag("citation-graph-webview"),
+            )
+            captureComposeScreenshot("live_ui_graph.png")
 
             val openGraphPaperStartedAt = now()
             if (!graph?.nodes.isNullOrEmpty()) {
@@ -292,6 +305,21 @@ class LiveCoreProductPathTest {
         } finally {
             database.close()
         }
+    }
+
+    private fun waitForTag(tag: String) {
+        composeRule.waitUntil(UI_STATE_TIMEOUT_MILLIS) {
+            composeRule.onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.waitForIdle()
+    }
+
+    private fun captureComposeScreenshot(fileName: String) {
+        composeRule.waitForIdle()
+        LiveCoreMeasurementFiles.captureScreenshot(
+            fileName,
+            composeRule.onRoot().captureToImage().asAndroidBitmap(),
+        )
     }
 
     private suspend fun runRepositoryPath(
