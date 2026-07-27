@@ -100,9 +100,10 @@ keyword-coverage placeholder.
 
 ## Expanded set (qa-seed-v2, Milestone 4)
 
-`backend/tests/fixtures/eval/qa_seed_v2.json` grows the set to 15 cases. The
-five v1 cases keep their `fixture_id` values so per-fixture metric history
-stays comparable across versions. Ten new cases split into:
+`backend/tests/fixtures/eval/qa_seed_v2.json` grows the set to 15 cases over
+seven unique papers. The five v1 cases keep their `fixture_id` values so
+per-fixture metric history stays comparable across versions. Ten new cases
+split into:
 
 - Seven answerable cases covering two additional papers (BERT 1810.04805,
   ViT 2010.11929) plus second questions against the v1 papers, so recall@k
@@ -111,8 +112,19 @@ stays comparable across versions. Ten new cases split into:
   `must_cite: false` and no keywords): the correct behavior is the stable
   refusal answer. These grade calibrated refusal instead of answer quality.
 
-The format change adding `expect_refusal` bumped the fixture version per the
-rules above; v1 files remain valid because the field defaults to `false`.
+Every v2 fixture also pins `arxiv_version`, the exact arXiv revision the
+question was authored against. Live evaluation resolves that exact
+`paper_versions` row (never "latest") and requires every chunk of that
+revision to carry an embedding produced by the configured embedding model;
+anything else -- missing paper, missing pinned revision, partial or
+model-mismatched embedding set -- is reported as a skip with explicit counts.
+Ingesting a newer revision therefore cannot silently change the corpus a
+fixture version grades.
+
+The format changes adding `expect_refusal` and `arxiv_version` bumped the
+fixture version per the rules above; v1 files remain valid because
+`expect_refusal` defaults to `false` and `arxiv_version` to `null`
+(unpinned fixtures are skipped by the live CLI, not guessed at).
 
 ## RAG-graded metrics (Milestone 4)
 
@@ -121,14 +133,45 @@ rules above; v1 files remain valid because the field defaults to `false`.
 
 | Metric | Definition |
 |---|---|
-| `recall_at_k` | Answerable fixtures with a `section_hint` whose retrieved chunks include a section matching the hint (containment either direction, casefolded) |
+| `recall_at_k` | Answerable fixtures with a `section_hint` whose **dense top-k** retrieved chunks include a section matching the hint (containment either direction, casefolded). Context anchors never count as hits; they are reported separately per case as `anchor_sections` |
 | `source_match_rate` | Answered cases whose `source_match_status` is fully MATCHED; PARTIAL is reported separately as `partial_match_rate`, never folded in |
 | `citation_rate` | Answered cases carrying at least one verified citation |
 | `refusal_accuracy` | `expect_refusal` fixtures that were actually refused |
 | `false_refusal_rate` | Answerable fixtures wrongly refused |
 | `mean_keyword_coverage` | Keyword coverage over answered answerable cases (helpfulness placeholder; real helpfulness needs human judgment) |
-| tokens / cost / latency | Summed from `CompletionResult` telemetry; refusals that never reach the provider contribute zero |
 
 Rates are `null` when no fixture in the set applies to them. Keyword coverage
 remains a lexical placeholder: it measures term presence, not semantic
 correctness, and is never reported as helpfulness without human review.
+
+Cost and latency are split into two explicitly named groups so cached runs
+cannot masquerade as live spend:
+
+- `generation_*` per-case fields (tokens, `generation_cost`,
+  `generation_latency_ms`, `cached`) are metadata of the served completion.
+  On a cache hit they describe the **original** generation, not this run.
+- `query_embedding_cost`, `incremental_cost`, and `pipeline_latency_ms` are
+  what this run actually incurred: `incremental_cost` counts the query
+  embedding plus the generation only when it was not served from cache, and
+  `pipeline_latency_ms` is end-to-end wall clock (embed, retrieve, rerank,
+  generate, verify). Aggregates mirror the split: `total_generation_cost`
+  vs `total_incremental_cost`, `mean_generation_latency_ms` vs
+  `mean_pipeline_latency_ms`.
+
+## Run provenance and the eval CLI (Milestone 4)
+
+`python -m mneme.cli.run_qa_eval` grades the live stack and embeds a
+`run_config` provenance block in every report: LLM provider, model, and
+prompt version; embedding backend and model; effective retrieval `top_k` and
+context-anchor count; rerank `top_n`, minimum evidence score, and output
+token cap; cache enablement and QA cache TTL. Two reports are comparable
+only when their `run_config` blocks match. The payload also carries a
+`corpus` map recording the exact resolved `paper_versions` row (arXiv
+revision and row id) per paper.
+
+Skipped fixtures are printed to stderr and recorded in the payload with a
+reason and detail (including embedded/total chunk counts on readiness
+failures). A run that evaluates zero fixtures exits with status 2 so
+automation cannot mistake an empty run for a healthy one. Completions from
+the CLI go through the shared cache but are **not** persisted to
+`qa_messages`; the JSON report is the run's only durable output.
