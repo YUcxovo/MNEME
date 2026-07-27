@@ -61,6 +61,16 @@ LABELS = {
 }
 
 
+def display_label(scenario: str, rows: list[dict[str, str]]) -> str:
+    if scenario == "citation_graph":
+        graph_outcomes = {
+            row["outcome"] for row in rows if row["scenario"] == "citation_graph"
+        }
+        if graph_outcomes == {"center_only_graph"}:
+            return "Graph response (center only)"
+    return LABELS[scenario]
+
+
 @dataclass(frozen=True)
 class StageSummary:
     track: str
@@ -109,10 +119,7 @@ def validate_protocol(rows: list[dict[str, str]]) -> None:
 
     expected = {
         **{("live_ui", scenario): 1 for scenario in UI_SCENARIOS},
-        **{
-            ("live_repository", scenario): 5
-            for scenario in REPOSITORY_SCENARIOS
-        },
+        **{("live_repository", scenario): 5 for scenario in REPOSITORY_SCENARIOS},
     }
     observed = {
         key: len(value)
@@ -164,9 +171,7 @@ def write_results(
     environment: dict[str, object],
     manifest: dict[str, object],
 ) -> None:
-    qa_rows = [
-        row for row in rows if row["scenario"] == "free_question_and_sources"
-    ]
+    qa_rows = [row for row in rows if row["scenario"] == "free_question_and_sources"]
     graph_rows = [row for row in rows if row["scenario"] == "citation_graph"]
     payload = {
         "schema_version": "live-core-android-summary-v1",
@@ -183,9 +188,7 @@ def write_results(
         "environment": environment,
         "run_manifest": manifest,
         "observed_outputs": {
-            "qa_source_counts": sorted(
-                {int(row["source_count"]) for row in qa_rows}
-            ),
+            "qa_source_counts": sorted({int(row["source_count"]) for row in qa_rows}),
             "qa_source_match_statuses": sorted(
                 {row["source_match_status"] for row in qa_rows}
             ),
@@ -197,11 +200,7 @@ def write_results(
             ),
             "graph_statuses": sorted({row["graph_status"] for row in graph_rows}),
             "selected_arxiv_ids": sorted(
-                {
-                    row["selected_arxiv_id"]
-                    for row in rows
-                    if row["selected_arxiv_id"]
-                }
+                {row["selected_arxiv_id"] for row in rows if row["selected_arxiv_id"]}
             ),
         },
         "results": [asdict(summary) for summary in summaries],
@@ -254,12 +253,9 @@ def plot_results(
     figure, axes = plt.subplots(1, 2, figsize=(10.2, 4.8))
 
     repository = [lookup[("live_repository", stage)] for stage in REPOSITORY_SCENARIOS]
-    labels = [LABELS[item.scenario] for item in repository]
+    labels = [display_label(item.scenario, rows) for item in repository]
     positions = list(range(len(repository)))
-    colors = [
-        TEAL if item.success_rate == 1.0 else CORAL
-        for item in repository
-    ]
+    colors = [TEAL if item.success_rate == 1.0 else CORAL for item in repository]
     axes[0].barh(
         positions,
         [item.success_rate * 100 for item in repository],
@@ -269,7 +265,9 @@ def plot_results(
     axes[0].invert_yaxis()
     axes[0].set_xlim(0, 105)
     axes[0].set_xlabel("Successful repetitions (%)")
-    axes[0].set_title("Repeated production-repository path", loc="left", fontweight="bold")
+    axes[0].set_title(
+        "Repeated production-repository path", loc="left", fontweight="bold"
+    )
     axes[0].grid(axis="x")
     for position, item in zip(positions, repository, strict=True):
         axes[0].text(
@@ -297,12 +295,14 @@ def plot_results(
     )
     axes[1].set_yticks(
         list(range(len(ui_rows))),
-        [LABELS[row["scenario"]] for row in ui_rows],
+        [display_label(row["scenario"], rows) for row in ui_rows],
     )
     axes[1].invert_yaxis()
     axes[1].set_xscale("log")
     axes[1].set_xlabel("Observed stage duration (s, log scale)")
-    axes[1].set_title("Single live Compose acceptance trace", loc="left", fontweight="bold")
+    axes[1].set_title(
+        "Single live Compose acceptance trace", loc="left", fontweight="bold"
+    )
     axes[1].grid(axis="x")
     axes[1].text(
         0.01,
