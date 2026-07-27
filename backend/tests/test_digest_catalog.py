@@ -239,6 +239,7 @@ def test_fresh_digest_query_rejects_snapshots_older_than_preferences() -> None:
         repository.get_fresh_recommended_digest(
             user_id=uuid4(),
             max_age=timedelta(hours=24),
+            expected_generator_version="recommender-v2",
         )
     )
 
@@ -248,4 +249,8 @@ def test_fresh_digest_query_rejects_snapshots_older_than_preferences() -> None:
     statement = await_args.args[0]
     sql = str(statement.compile(dialect=postgresql.dialect()))
     assert "LEFT OUTER JOIN user_preferences" in sql
+    assert "digests.generator_version =" in sql
+    assert "digests.preference_model_version = user_preferences.model_version" in sql
+    assert "digests.preference_model_version =" in sql
     assert "digests.generated_at >= user_preferences.updated_at" in sql
+    assert "recommender-v2" in statement.compile(dialect=postgresql.dialect()).params.values()

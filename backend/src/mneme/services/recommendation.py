@@ -28,7 +28,7 @@ class DigestBundle:
     papers_by_id: dict[UUID, Paper]
 
 
-GENERATOR_VERSION = "recommender-v1"
+GENERATOR_VERSION = "recommender-v2"
 
 # Bound the scoring pool: enough recent papers to rank meaningfully without
 # unbounded scans at demo scale.
@@ -59,7 +59,9 @@ class RecommendedDigestService:
         """
         await self._repository.lock_user(user_id)
         fresh = await self._repository.get_fresh_recommended_digest(
-            user_id=user_id, max_age=_FRESHNESS
+            user_id=user_id,
+            max_age=_FRESHNESS,
+            expected_generator_version=GENERATOR_VERSION,
         )
         if fresh is not None:
             fresh_entries = list(fresh.entries)
@@ -104,6 +106,12 @@ class RecommendedDigestService:
             behavior_embedding=tuple(preference_row.behavior_embedding)
             if preference_row is not None and preference_row.behavior_embedding is not None
             else None,
+            negative_behavior_embedding=tuple(preference_row.negative_behavior_embedding)
+            if preference_row is not None and preference_row.negative_behavior_embedding is not None
+            else None,
+            behavior_confidence=float(preference_row.behavior_confidence or 0.0)
+            if preference_row is not None
+            else 0.0,
             model_version=preference_row.model_version if preference_row is not None else 1,
         )
 
@@ -118,7 +126,10 @@ class RecommendedDigestService:
                 embedding_model=preference_row.behavior_embedding_model,
             )
             if preference_row is not None
-            and preference_row.behavior_embedding is not None
+            and (
+                preference_row.behavior_embedding is not None
+                or preference_row.negative_behavior_embedding is not None
+            )
             and preference_row.behavior_embedding_model is not None
             else {}
         )
