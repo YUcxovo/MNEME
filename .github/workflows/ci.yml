@@ -41,13 +41,13 @@ jobs:
 
             - name: Check non-ASCII
               run: |
-                  # Preserve the supervisor-adjusted multilingual LaTeX template verbatim.
+                  # Preserve the supervisor-adjusted multilingual LaTeX sources verbatim.
                   if grep -rPn '[^\x00-\x7F]' --include='*.py' --include='*.kt' \
                       --include='*.kts' --include='*.yaml' --include='*.yml' \
                       --include='*.toml' --include='*.md' --include='*.sh' \
                       --include='Makefile' --include='Dockerfile' \
                       android/ backend/ docs/ .github/ 2>/dev/null \
-                      | grep -v '^docs/latex_template/'; then
+                      | grep -v -E '^docs/(latex_template|latex_new)/'; then
                     echo "ERROR: Non-ASCII characters found. Repo must be ASCII-only."
                     exit 1
                   fi
