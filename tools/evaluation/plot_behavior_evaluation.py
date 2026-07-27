@@ -52,6 +52,15 @@ MODEL_COLORS = {
     "behavior-v1": BLUE,
     "behavior-v2": TEAL,
 }
+MODEL_HATCHES = {
+    "recency-only": "",
+    "explicit-recency": "//",
+    "behavior-v1": "xx",
+    "behavior-v2": "..",
+    "v2-no-exposure-gate": "//",
+    "v2-no-negative-channel": "\\\\",
+    "v2-no-confidence-gate": "++",
+}
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -120,7 +129,7 @@ def plot_ranking_comparison(summary: dict[str, object], figure_dir: Path) -> Non
     )
     x_positions = range(len(metrics))
     width = 0.18
-    figure, axis = plt.subplots(figsize=(9.4, 4.8))
+    figure, axis = plt.subplots(figsize=(7.2, 4.6))
     for model_index, model_id in enumerate(HEADLINE_MODELS):
         offset = (model_index - 1.5) * width
         values = [float(lookup[(model_id, metric)]) for metric, _ in metrics]
@@ -129,12 +138,15 @@ def plot_ranking_comparison(summary: dict[str, object], figure_dir: Path) -> Non
             values,
             width=width,
             color=MODEL_COLORS[model_id],
+            edgecolor="white",
+            hatch=MODEL_HATCHES[model_id],
+            linewidth=0.7,
             label=MODEL_LABELS[model_id],
         )
         axis.bar_label(bars, fmt="%.3f", fontsize=7.5, padding=2, rotation=90)
     axis.set_xticks(list(x_positions), [label for _, label in metrics])
     axis.set_ylim(0, 1.12)
-    axis.set_ylabel("Macro mean across applicable controlled cases")
+    axis.set_ylabel("Macro mean (applicable controlled cases)")
     figure.suptitle(
         "Controlled ranking comparison",
         x=0.1,
@@ -171,17 +183,29 @@ def plot_mechanism_deltas(summary: dict[str, object], figure_dir: Path) -> None:
     lookup = {
         (row["pair_id"], row["model_id"]): row["target_score_delta"] for row in rows
     }
-    figure, axes = plt.subplots(1, 2, figsize=(11.2, 4.8), sharex=False)
+    figure, axes = plt.subplots(2, 1, figsize=(7.2, 7.4), sharex=False)
     colors = (BLUE, TEAL, GOLD, CORAL, PURPLE)
-    for axis, pair_id, title in zip(
+    desired_directions = (
+        "Higher is the expected response",
+        "Lower is the expected response",
+    )
+    for axis, pair_id, title, desired_direction in zip(
         axes,
         pair_ids,
         ("Recent interest shift", "Exposed negative feedback"),
+        desired_directions,
         strict=True,
     ):
         values = [float(lookup[(pair_id, model)]) for model in models]
         positions = list(range(len(models)))
-        bars = axis.barh(positions, values, color=colors)
+        bars = axis.barh(
+            positions,
+            values,
+            color=colors,
+            edgecolor="white",
+            hatch=[MODEL_HATCHES.get(model, "") for model in models],
+            linewidth=0.7,
+        )
         axis.axvline(0, color=INK, linewidth=0.9)
         axis.set_yticks(
             positions,
@@ -191,6 +215,15 @@ def plot_mechanism_deltas(summary: dict[str, object], figure_dir: Path) -> None:
         axis.invert_yaxis()
         axis.set_xlabel("Target score after minus before")
         axis.set_title(title, loc="left", fontweight="bold")
+        axis.text(
+            1,
+            1.03,
+            desired_direction,
+            transform=axis.transAxes,
+            ha="right",
+            color=MUTED,
+            fontsize=8,
+        )
         axis.grid(axis="x")
         minimum = min(0.0, *values)
         maximum = max(0.0, *values)
@@ -223,7 +256,7 @@ def plot_mechanism_deltas(summary: dict[str, object], figure_dir: Path) -> None:
         fontweight="bold",
         color=INK,
     )
-    figure.subplots_adjust(top=0.82, bottom=0.15, left=0.2, right=0.98, wspace=0.55)
+    figure.subplots_adjust(top=0.9, bottom=0.08, left=0.28, right=0.98, hspace=0.55)
     save_figure(figure, figure_dir, "mechanism_deltas")
 
 
