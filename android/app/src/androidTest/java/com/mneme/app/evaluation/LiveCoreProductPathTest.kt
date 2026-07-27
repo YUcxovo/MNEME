@@ -4,6 +4,7 @@ package com.mneme.app.evaluation
 
 import android.content.Context
 import android.os.SystemClock
+import android.util.Base64
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -56,7 +57,11 @@ class LiveCoreProductPathTest {
         val baseUrl = arguments.getString(BASE_URL_ARGUMENT)
         val token = arguments.getString(TOKEN_ARGUMENT)
         val seed = arguments.getString(SEED_ARGUMENT) ?: DEFAULT_SEED
-        val question = arguments.getString(QUESTION_ARGUMENT) ?: DEFAULT_QUESTION
+        val encodedQuestion = arguments.getString(QUESTION_BASE64_ARGUMENT)
+        val question =
+            encodedQuestion?.let {
+                String(Base64.decode(it, Base64.DEFAULT), Charsets.UTF_8)
+            } ?: DEFAULT_QUESTION
         assumeTrue(
             "Live-core evaluation requires explicit backend URL and token arguments.",
             !baseUrl.isNullOrBlank() && !token.isNullOrBlank(),
@@ -626,7 +631,7 @@ class LiveCoreProductPathTest {
         const val BASE_URL_ARGUMENT = "liveCoreBaseUrl"
         const val TOKEN_ARGUMENT = "liveCoreToken"
         const val SEED_ARGUMENT = "liveCoreSeed"
-        const val QUESTION_ARGUMENT = "liveCoreQuestion"
+        const val QUESTION_BASE64_ARGUMENT = "liveCoreQuestionBase64"
         const val DEFAULT_SEED = "1706.03762"
         const val DEFAULT_QUESTION =
             "What problem does this paper address, and what method does it propose?"
