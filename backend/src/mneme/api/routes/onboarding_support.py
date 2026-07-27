@@ -123,7 +123,7 @@ async def wait_for_seed_papers(session: AsyncSession, paper_ids: tuple[UUID, ...
             raise ApiError(
                 status.HTTP_502_BAD_GATEWAY,
                 "seed_initialization_failed",
-                "The backend could not prepare all five related papers.",
+                "The backend could not prepare the papers required for initialization.",
             )
         if loop.time() >= deadline:
             raise ApiError(
