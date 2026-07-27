@@ -27,7 +27,8 @@ The generated document is authoritative for what the running checkout serves. Th
 - Async AI work returns `202 Accepted` with a job resource when a result is not ready
 - The demo-only seed onboarding coordinator is an explicit exception: it waits for five
   papers and returns one complete `200` response so the Android first-run flow has a single
-  loading state
+  loading state. It prefers five arXiv-resolvable citation neighbors, prepares the seed and
+  returned papers, and retains same-category selection as the provider-unavailable fallback.
 - Errors use the shared `ErrorResponse` schema with a stable machine-readable code
 - Paper lists use descending `(published_at, id)` keyset pagination encoded as an opaque cursor
 - `PUT /users/me/preferences` is a complete replacement of both explicit preference lists

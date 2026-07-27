@@ -27,8 +27,9 @@ The configured debug app now exercises the README's skeletal tier across Android
 FastAPI backend:
 
 1. Accept one arXiv abstract/PDF URL or identifier as the first-run seed paper.
-2. Wait while the backend derives its primary category and fully prepares five recent
-   papers from that category, then display the returned briefing as one complete result.
+2. Wait while the backend resolves and prepares five arXiv papers connected to the seed by
+   real citation edges, then display the returned briefing as one complete result. If graph
+   provider data is unavailable, the backend returns five recent same-category papers.
 3. Open a paper and request its stored summary.
 4. If later summary work is still running, poll the public job resource and reload the
    summary after the job succeeds.

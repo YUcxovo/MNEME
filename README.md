@@ -30,10 +30,14 @@ Retrofit/OkHttp, frozen-contract DTOs, a production ViewModel, summary-job polli
 Room-backed fallback with explicit data source labels. A blank Android demo token
 deliberately selects the existing controlled fixture instead. Supported live interactions
 are queued locally and uploaded through the frozen event contract, and paper details expose
-the bounded citation graph. Background digest refresh and production authentication remain
-outside the Android integration. The backend provides Semantic Scholar graph
-synchronization, bounded graph persistence/API, transactional behavior events, and
-confidence-calibrated contrastive behavior profiles while retaining behavior-v1 replay.
+the bounded citation graph. Seed onboarding now prefers five arXiv-resolvable citation
+neighbors and persists their real edges before returning the briefing, so a selected
+briefing paper can open the prepared multi-node neighborhood. The original same-category
+selection remains the fallback when provider graph data is unavailable. Background digest
+refresh and production authentication remain outside the Android integration. The backend
+also provides explicit Semantic Scholar graph synchronization for other local papers,
+bounded graph persistence/API, transactional behavior events, and confidence-calibrated
+contrastive behavior profiles while retaining behavior-v1 replay.
 
 ---
 
@@ -443,9 +447,10 @@ sequenceDiagram
     Note over U,D: 1. User initializes from one seed paper
     U->>A: Submit arXiv URL or ID
     A->>B: POST /v1/onboarding/seed
-    B->>E: Fetch seed category and five recent peers
-    E->>D: Persist papers and dispatch the document/AI pipeline
-    loop Until all five papers are ready or partial
+    B->>E: Resolve five arXiv citation neighbors
+    E->>D: Persist the seed, neighbors, and real citation edges
+    E->>D: Dispatch the document/AI pipeline
+    loop Until the seed and five papers are ready or partial
         B->>D: Read durable processing status
         D-->>B: Current paper states
     end
