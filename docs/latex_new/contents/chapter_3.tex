@@ -11,6 +11,7 @@
 \definecolor{MnemeRed}{HTML}{B5544F}
 \definecolor{MnemeGray}{HTML}{EFF2F5}
 \definecolor{MnemeInk}{HTML}{252A31}
+\newcommand{\MnemeRowRule}{\specialrule{0.25pt}{0.35em}{0.35em}}
 
 The design of Mneme begins with a continuous research activity rather than with a catalogue of screens. A researcher repeatedly encounters new literature, decides what deserves attention, reconstructs what has already been read, checks evidence, and revises an evolving account of personal interests. Chapter~2 establishes the customer evidence behind this activity. The present chapter translates that evidence into the application's story map, acceptance boundaries, engine architecture, interface contract, and interaction design. It also reports the formative usability study that tested whether the principal workflow was legible in an interactive prototype.
 
@@ -89,37 +90,37 @@ Acceptance criteria translate the story map into observable contracts. They are 
   \bottomrule
   \endlastfoot
   Paper ingestion and preparation & At least one scholarly category or seed reference is valid & Metadata synchronization observes a paper & The catalogue records its stable work identity, title, authors, abstract, categories, publication time, and canonical source links. \\
-  \addlinespace
+  \MnemeRowRule
   Paper ingestion and preparation & A known logical paper is observed at a previously unseen provider revision & The observation is persisted & A new immutable revision record is created; existing revision-derived artifacts are neither overwritten nor silently reused. \\
-  \addlinespace
+  \MnemeRowRule
   Paper ingestion and preparation & A revision has an accessible PDF & Document preparation runs & The bounded download is signature-checked and atomically stored, and the parser records its provenance and quality tier. \\
-  \addlinespace
+  \MnemeRowRule
   Paper ingestion and preparation & Full-text extraction is not sufficiently reliable & Downstream preparation continues & The system exposes an abstract-only representation and a partial quality state rather than inventing section-level evidence or dropping the paper. \\
-  \addlinespace
+  \MnemeRowRule
   Personalized research briefing & A user supplies topics or a seed paper & The preference profile is initialized & The stored explicit preference can be inspected and used as an input to candidate ranking. \\
-  \addlinespace
+  \MnemeRowRule
   Personalized research briefing & A valid profile and recent candidate papers exist & A briefing is requested or scheduled & The response is a bounded ranked snapshot with a paper, relevance score, and deterministic recommendation reason for each entry. \\
-  \addlinespace
+  \MnemeRowRule
   Personalized research briefing & The client repeats a previously acknowledged behavioral event & The event batch is uploaded again & The event is counted as a duplicate and does not update the derived preference twice. \\
-  \addlinespace
+  \MnemeRowRule
   Personalized research briefing & One scoring signal is unavailable, such as a behavior vector during cold start & Candidates are ranked & The available components are renormalized, and the reason refers only to components that participated in the score. \\
-  \addlinespace
+  \MnemeRowRule
   Structured paper understanding & A paper has a stored summary for its selected revision & The paper detail is opened & The user receives a concise account of the paper together with method, claims, limitations, and the recorded source-quality state. \\
-  \addlinespace
+  \MnemeRowRule
   Structured paper understanding & A summary is requested before its artifact is ready & The API accepts processing & The client receives a durable job identity, can poll a safe public state, and never interprets queue acceptance as a completed summary. \\
-  \addlinespace
+  \MnemeRowRule
   Evidence-grounded paper Q\&A & Embedded chunks exist for the selected paper revision & The user asks a paper-specific question & Retrieval is restricted to that paper and revision; any returned citation marker identifies an excerpt supplied to the generator. \\
-  \addlinespace
+  \MnemeRowRule
   Evidence-grounded paper Q\&A & No retrieved candidate satisfies the evidence threshold & An answer is requested & The interface displays a stable insufficient-evidence response without presenting an unsupported answer. \\
-  \addlinespace
+  \MnemeRowRule
   Evidence-grounded paper Q\&A & A generated marker refers outside the supplied evidence, or the cited excerpt has inadequate local lexical support & The post-generation check runs & The unsupported marker is not treated as source-matched, and the response status communicates the bounded outcome. \\
-  \addlinespace
+  \MnemeRowRule
   Citation-graph exploration & Resolved local citation relations exist for a selected paper & A graph neighborhood is requested & The server returns a directed paper graph within the requested depth and node limits, with an explicit graph version and algorithm status. \\
-  \addlinespace
+  \MnemeRowRule
   Citation-graph exploration & The enrichment algorithm fails or citation coverage is incomplete & The graph is assembled & A deterministic citation-only neighborhood remains available, while the response avoids implying that absent external neighbors do not exist. \\
-  \addlinespace
+  \MnemeRowRule
   Citation-graph exploration & A node is selected on the mobile graph & The reader inspects the selection & The selected identity is reflected in a native, accessible preview and an explicit action opens the corresponding paper detail. \\
-  \addlinespace
+  \MnemeRowRule
   Cross-cutting mobile state & A previously live briefing is stored locally and a refresh fails & The application is reopened & The cached origin is disclosed and preserved; a controlled fixture is not silently substituted for live content. \\
 \end{longtable}
 \normalsize
@@ -307,11 +308,17 @@ Equation~\ref{eq:event-weight} makes recency attenuation independent of event ty
     \textbf{Observed event} & \textbf{Base weight \(b_i\)} \\
     \midrule
     Paper impression & 0.1 \\
+    \MnemeRowRule
     Paper opened & 1.0 \\
+    \MnemeRowRule
     Paper saved & 3.0 \\
+    \MnemeRowRule
     Paper skipped & -1.0 \\
+    \MnemeRowRule
     Paper shared & 4.0 \\
+    \MnemeRowRule
     Paper-scoped question asked & 2.0 \\
+    \MnemeRowRule
     Briefing dismissed & 0.0 \\
     \bottomrule
   \end{tabular}
@@ -370,7 +377,7 @@ The API is the boundary at which the mobile experience, durable domain model, an
 Table~\ref{tab:api-surface} groups the operations by responsibility. The unauthenticated health operation establishes only that the application process can answer an HTTP request; it does not certify PostgreSQL, Redis, or external-provider availability. Protected operations use a pre-provisioned principal so that user-scoped resources retain explicit ownership even in a single-user demonstration. Collection endpoints use opaque keyset cursors and a default page size of 20, bounded between 1 and 50. The client consequently cannot derive ordering assumptions from the cursor representation, and insertion of a newer paper or briefing does not make an offset silently refer to a different record.
 
 \small
-\begin{longtable}{@{}p{0.21\textwidth}p{0.34\textwidth}p{0.37\textwidth}@{}}
+\begin{longtable}{@{}p{0.20\textwidth}p{0.30\textwidth}p{0.42\textwidth}@{}}
   \caption{Public API surface and the principal semantic boundary of each resource group.}\label{tab:api-surface}\\
   \toprule
   \textbf{Resource group} & \textbf{Operation} & \textbf{Contract role} \\
@@ -386,23 +393,23 @@ Table~\ref{tab:api-surface} groups the operations by responsibility. The unauthe
   \endfoot
   \bottomrule
   \endlastfoot
-  Availability & \texttt{GET /health} & Reports process liveness without requiring authentication or implying dependency health. \\
-  \addlinespace
-  Paper catalogue & \texttt{GET /papers}\\\texttt{GET /papers/\{paper\_id\}} & Returns cursor-paginated public metadata or one paper identified by the system UUID. \\
-  \addlinespace
-  Paper preparation & \texttt{GET /papers/\{paper\_id\}/}\allowbreak\texttt{summary} & Returns a revision-derived summary with HTTP~200, or a durable job representation with HTTP~202 when preparation has been accepted. \\
-  \addlinespace
-  Interest memory & \texttt{GET, PUT /users/me/preferences}\\\texttt{POST /onboarding/seed} & Reads or replaces explicit topics and followed authors; seed initialization creates an inspectable category-based starting briefing rather than claiming behavior-derived personalization. \\
-  \addlinespace
-  Behavioral evidence & \texttt{POST /events} & Accepts at most 500 typed, client-identified events and returns separate accepted and duplicate counts. \\
-  \addlinespace
-  Research briefing & \texttt{GET /digests}\\\texttt{POST /digests/}\allowbreak\texttt{recommended} & Reads immutable briefing snapshots or requests a bounded recommendation snapshot for the authenticated principal. \\
-  \addlinespace
-  Paper understanding & \texttt{POST /qa/ask} & Accepts a 1--500 character question tied to one paper and returns an answer, source records, conversation identity, and bounded source-match state. \\
-  \addlinespace
-  Citation exploration & \texttt{GET /graph/\{paper\_id\}} & Returns a paper-only directed neighborhood with depth 1--2, at most 200 nodes, an algorithm state, and a graph version when available. \\
-  \addlinespace
-  Asynchronous state & \texttt{GET /jobs/\{job\_id\}} & Exposes queued, running, succeeded, or failed state and a safe error code for a durable pipeline job. \\
+  Availability & \textsc{Get}: health status & Reports process liveness without requiring authentication or implying dependency health. \\
+  \MnemeRowRule
+  Paper catalogue & \textsc{Get}: paper collection\newline\textsc{Get}: paper by identifier & Returns cursor-paginated public metadata or one paper identified by the system UUID. \\
+  \MnemeRowRule
+  Paper preparation & \textsc{Get}: paper summary by identifier & Returns a revision-derived summary with HTTP~200, or a durable job representation with HTTP~202 when preparation has been accepted. \\
+  \MnemeRowRule
+  Interest memory & \textsc{Get} or \textsc{Put}: current-user preferences\newline\textsc{Post}: onboarding seed & Reads or replaces explicit topics and followed authors; seed initialization creates an inspectable category-based starting briefing rather than claiming behavior-derived personalization. \\
+  \MnemeRowRule
+  Behavioral evidence & \textsc{Post}: behavioral-event batch & Accepts at most 500 typed, client-identified events and returns separate accepted and duplicate counts. \\
+  \MnemeRowRule
+  Research briefing & \textsc{Get}: briefing collection\newline\textsc{Post}: recommended briefing & Reads immutable briefing snapshots or requests a bounded recommendation snapshot for the authenticated principal. \\
+  \MnemeRowRule
+  Paper understanding & \textsc{Post}: paper question & Accepts a 1--500 character question tied to one paper and returns an answer, source records, conversation identity, and bounded source-match state. \\
+  \MnemeRowRule
+  Citation exploration & \textsc{Get}: graph by paper identifier & Returns a paper-only directed neighborhood with depth 1--2, at most 200 nodes, an algorithm state, and a graph version when available. \\
+  \MnemeRowRule
+  Asynchronous state & \textsc{Get}: job status by identifier & Exposes queued, running, succeeded, or failed state and a safe error code for a durable pipeline job. \\
 \end{longtable}
 \normalsize
 
@@ -564,13 +571,13 @@ Table~\ref{tab:usability-script} defines the five tasks and the observable succe
   \bottomrule
   \endlastfoot
   T1 & Find why the top paper was recommended and open it. & Paper detail reached from the briefing. & \(\leq 20\) s; \(\leq 2\) taps \\
-  \addlinespace
+  \MnemeRowRule
   T2 & Find the paper's main contribution and verify one source. & Contribution located and one evidence source identified. & \(\leq 45\) s \\
-  \addlinespace
+  \MnemeRowRule
   T3 & Ask which dataset the paper used and inspect the cited evidence. & Answer region and its cited evidence located. & \(\leq 60\) s \\
-  \addlinespace
+  \MnemeRowRule
   T4 & Open the graph and inspect one related or citing paper. & A related paper opened through graph interaction. & \(\leq 45\) s; \(\leq 3\) taps \\
-  \addlinespace
+  \MnemeRowRule
   T5 & Change briefing preferences by adding or removing an interest topic. & Preference change saved. & \(\leq 60\) s \\
 \end{longtable}
 \normalsize
