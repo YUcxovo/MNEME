@@ -34,6 +34,13 @@ query the external citation provider. The repetitions use the same paper and
 question by design. They measure path reliability under durable artifact and
 provider-cache reuse; they are not independent answer-quality samples.
 
+An optional multi-seed matrix runs additional arXiv seeds through the production
+Android repository. Each row independently requests a five-paper briefing, loads
+the first paper's depth-two graph, selects a non-centre node, and loads that
+neighbour through the ordinary paper path. This matrix checks that the client
+contract is not tied to the preregistered Transformer seed. It does not score
+paper relevance or graph quality.
+
 ## Fixed inputs and success criteria
 
 The default seed is `1706.03762`. The fixed question is:
@@ -69,6 +76,7 @@ Start a backend and worker that are visible to one Android emulator. Then set:
 export MNEME_LIVE_CORE_BASE_URL=http://10.0.2.2:8000/v1/
 export MNEME_LIVE_CORE_TOKEN='<ephemeral raw token>'
 export MNEME_LIVE_CORE_SEED=1706.03762
+export MNEME_LIVE_CORE_MATRIX_SEEDS='2010.11929,2106.09685'
 export MNEME_LIVE_CORE_QUESTION='What problem does this paper address, and what method does it propose?'
 tools/evaluation/run_android_live_core_acceptance.sh
 uv run tools/evaluation/analyze_android_live_core.py
@@ -86,6 +94,8 @@ inside the test.
 ## Evidence and interpretation
 
 `raw/live_core_path.csv` is the direct stage log.
+`raw/live_seed_matrix.csv` contains one independently initialized client path per
+additional seed.
 `raw/environment.json` and `raw/run_manifest.json` bind it to the device,
 revision, input, and model configuration. The retained screenshots show the
 live briefing, paper, Q&A result, graph, and selected-neighbour state. `summary.csv`,

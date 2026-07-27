@@ -60,6 +60,14 @@ class LiveCoreProductPathTest {
         val baseUrl = arguments.getString(BASE_URL_ARGUMENT)
         val token = arguments.getString(TOKEN_ARGUMENT)
         val seed = arguments.getString(SEED_ARGUMENT) ?: DEFAULT_SEED
+        val matrixSeeds =
+            arguments
+                .getString(MATRIX_SEEDS_ARGUMENT)
+                .orEmpty()
+                .split(",")
+                .map(String::trim)
+                .filter(String::isNotEmpty)
+                .distinct()
         val encodedQuestion = arguments.getString(QUESTION_BASE64_ARGUMENT)
         val question =
             encodedQuestion?.let {
@@ -71,11 +79,15 @@ class LiveCoreProductPathTest {
         )
 
         LiveCoreMeasurementFiles.resetCsv(RESULT_FILE, RESULT_HEADER)
+        LiveCoreMeasurementFiles.createCsv(MATRIX_RESULT_FILE, MATRIX_RESULT_HEADER)
         val remote = MnemeApiClient.create(requireNotNull(baseUrl), requireNotNull(token))
         runLiveUiPath(remote, seed, question)
         runBlocking {
             repeat(REPOSITORY_ITERATIONS) { index ->
                 runRepositoryPath(remote, seed, question, index + 1)
+            }
+            matrixSeeds.forEachIndexed { index, matrixSeed ->
+                runSeedMatrixPath(remote, matrixSeed, index + 1)
             }
         }
         assertEquals("Every retained live-core stage must meet its criterion.", 0, failures)
@@ -479,6 +491,89 @@ class LiveCoreProductPathTest {
         }
     }
 
+    private suspend fun runSeedMatrixPath(
+        remote: com.mneme.app.data.network.MnemeRemoteDataSource,
+        seed: String,
+        iteration: Int,
+    ) {
+        val database = createDatabase()
+        val totalStartedAt = now()
+        try {
+            val repository = repository(remote, database)
+            val seedStartedAt = now()
+            val briefing = repository.initializeFromSeed(seed)
+            val seedDurationMs = elapsedMillis(seedStartedAt)
+            val selectedPaper = briefing.papers.first()
+
+            val graphStartedAt = now()
+            val graph = repository.loadGraph(selectedPaper.id)
+            val graphDurationMs = elapsedMillis(graphStartedAt)
+            val neighbor = graph.nodes.firstOrNull { node -> node.id != graph.centerId }
+
+            val openStartedAt = now()
+            val openedPaper = neighbor?.let { awaitPaper(repository, it.id) }
+            val openDurationMs = elapsedMillis(openStartedAt)
+            val success =
+                briefing.papers.size == EXPECTED_PAPER_COUNT &&
+                    briefing.disclosure.origin == ContentOrigin.LIVE_BACKEND &&
+                    graph.centerId == selectedPaper.id &&
+                    graph.nodes.size >= MIN_GRAPH_NODES &&
+                    graph.edges.size >= MIN_GRAPH_EDGES &&
+                    graph.nodes.size <= GRAPH_NODE_LIMIT &&
+                    graph.disclosure.origin == ContentOrigin.LIVE_BACKEND &&
+                    neighbor != null &&
+                    openedPaper?.paper?.paper?.id == neighbor.id &&
+                    openedPaper.paper.disclosure.origin == ContentOrigin.LIVE_BACKEND
+            LiveCoreMeasurementFiles.appendCsv(
+                MATRIX_RESULT_FILE,
+                listOf(
+                    iteration,
+                    seed,
+                    elapsedMillis(totalStartedAt),
+                    seedDurationMs,
+                    graphDurationMs,
+                    openDurationMs,
+                    success,
+                    if (success) "seed_to_graph_neighbor_completed" else "criterion_not_met",
+                    briefing.papers.size,
+                    selectedPaper.id,
+                    graph.nodes.size,
+                    graph.edges.size,
+                    graph.algorithmStatus.name,
+                    neighbor?.id,
+                    openedPaper
+                        ?.paper
+                        ?.source
+                        ?.url
+                        ?.arxivId(),
+                    openedPaper?.pollCount,
+                    briefing.disclosure.origin.name,
+                    graph.disclosure.origin.name,
+                ),
+            )
+            if (!success) {
+                failures += 1
+            }
+        } catch (error: Exception) {
+            LiveCoreMeasurementFiles.appendCsv(
+                MATRIX_RESULT_FILE,
+                listOf(
+                    iteration,
+                    seed,
+                    elapsedMillis(totalStartedAt),
+                    null,
+                    null,
+                    null,
+                    false,
+                    error::class.java.simpleName,
+                ),
+            )
+            failures += 1
+        } finally {
+            database.close()
+        }
+    }
+
     private fun recordBriefing(
         scenario: String,
         iteration: Int,
@@ -705,12 +800,14 @@ class LiveCoreProductPathTest {
         const val BASE_URL_ARGUMENT = "liveCoreBaseUrl"
         const val TOKEN_ARGUMENT = "liveCoreToken"
         const val SEED_ARGUMENT = "liveCoreSeed"
+        const val MATRIX_SEEDS_ARGUMENT = "liveCoreMatrixSeeds"
         const val QUESTION_BASE64_ARGUMENT = "liveCoreQuestionBase64"
         const val DEFAULT_SEED = "1706.03762"
         const val DEFAULT_QUESTION =
             "What problem does this paper address, and what method does it propose?"
         const val OPEN_SOURCE_LABEL = "Open source paper"
         const val RESULT_FILE = "live_core_path.csv"
+        const val MATRIX_RESULT_FILE = "live_seed_matrix.csv"
         const val LIVE_UI_TRACK = "live_ui"
         const val LIVE_REPOSITORY_TRACK = "live_repository"
         const val EXPECTED_PAPER_COUNT = 5
@@ -744,6 +841,27 @@ class LiveCoreProductPathTest {
                 "graph_status",
                 "content_origin",
                 "poll_count",
+            )
+        val MATRIX_RESULT_HEADER =
+            listOf(
+                "iteration",
+                "seed_arxiv_id",
+                "total_duration_ms",
+                "seed_duration_ms",
+                "graph_duration_ms",
+                "open_neighbor_duration_ms",
+                "success",
+                "outcome",
+                "paper_count",
+                "selected_paper_id",
+                "graph_nodes",
+                "graph_edges",
+                "graph_status",
+                "neighbor_paper_id",
+                "neighbor_arxiv_id",
+                "poll_count",
+                "briefing_origin",
+                "graph_origin",
             )
     }
 }
