@@ -13,6 +13,7 @@ ADB="$ANDROID_SDK_ROOT/platform-tools/adb"
 LIVE_BASE_URL="${MNEME_LIVE_CORE_BASE_URL:-}"
 LIVE_TOKEN="${MNEME_LIVE_CORE_TOKEN:-}"
 LIVE_SEED="${MNEME_LIVE_CORE_SEED:-1706.03762}"
+LIVE_MATRIX_SEEDS="${MNEME_LIVE_CORE_MATRIX_SEEDS:-}"
 LIVE_QUESTION="${MNEME_LIVE_CORE_QUESTION:-What problem does this paper address, and what method does it propose?}"
 LIVE_QUESTION_BASE64="$(printf '%s' "$LIVE_QUESTION" | base64 | tr -d '\n')"
 DEVICE_OUTPUT="/sdcard/Android/data/com.mneme.app/files/live-core-evaluation"
@@ -57,6 +58,7 @@ jq -n \
     --arg branch "$(git -C "$REPO_ROOT" branch --show-current)" \
     --arg backend_url "$LIVE_BASE_URL" \
     --arg seed_arxiv_id "$LIVE_SEED" \
+    --arg matrix_seeds "$LIVE_MATRIX_SEEDS" \
     --arg question "$LIVE_QUESTION" \
     --arg summary_model "${MNEME_LLM_SUMMARY_MODEL:-not-recorded}" \
     --arg qa_model "${MNEME_LLM_QA_MODEL:-not-recorded}" \
@@ -69,6 +71,13 @@ jq -n \
         branch: $branch,
         live_backend_url: $backend_url,
         fixed_seed_arxiv_id: $seed_arxiv_id,
+        additional_seed_arxiv_ids: (
+            $matrix_seeds
+            | split(",")
+            | map(gsub("^\\s+|\\s+$"; ""))
+            | map(select(length > 0))
+            | unique
+        ),
         fixed_free_form_question: $question,
         ui_iterations: 1,
         repository_iterations: 5,
@@ -122,6 +131,8 @@ set +e
     "$LIVE_TOKEN" \
     -e liveCoreSeed \
     "$LIVE_SEED" \
+    -e liveCoreMatrixSeeds \
+    "$LIVE_MATRIX_SEEDS" \
     -e liveCoreQuestionBase64 \
     "$LIVE_QUESTION_BASE64" \
     com.mneme.app.test/androidx.test.runner.AndroidJUnitRunner \
@@ -136,6 +147,10 @@ grep -q '^OK (1 test)' "$instrument_output" ||
     fail "Android instrumentation did not report one passing live-core test."
 [[ -s "$RAW_DIR/live_core_path.csv" ]] ||
     fail "Android instrumentation did not produce live_core_path.csv."
+if [[ -n "$LIVE_MATRIX_SEEDS" ]]; then
+    [[ -s "$RAW_DIR/live_seed_matrix.csv" ]] ||
+        fail "Android instrumentation did not produce live_seed_matrix.csv."
+fi
 
 trap - EXIT
 "$ADB" shell am force-stop com.mneme.app
