@@ -5,9 +5,7 @@ package com.mneme.app.evaluation
 import android.content.Context
 import android.os.SystemClock
 import android.util.Base64
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.assertTextContains
-import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -15,7 +13,6 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
@@ -362,7 +359,7 @@ class LiveCoreProductPathTest {
         composeRule.waitForIdle()
         LiveCoreMeasurementFiles.captureScreenshot(
             fileName,
-            composeRule.onRoot().captureToImage().asAndroidBitmap(),
+            InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot(),
         )
     }
 
