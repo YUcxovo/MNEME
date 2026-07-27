@@ -7,7 +7,17 @@ from enum import StrEnum
 from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey, Index, Integer, String
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -52,9 +62,15 @@ class UserPreference(Base):
     __table_args__ = (
         CheckConstraint("model_version > 0", name="ck_user_preferences_model_version_positive"),
         CheckConstraint(
-            "(behavior_embedding IS NULL AND behavior_embedding_model IS NULL) OR "
-            "(behavior_embedding IS NOT NULL AND behavior_embedding_model IS NOT NULL)",
+            "(behavior_embedding IS NULL AND negative_behavior_embedding IS NULL AND "
+            "behavior_embedding_model IS NULL) OR "
+            "((behavior_embedding IS NOT NULL OR negative_behavior_embedding IS NOT NULL) AND "
+            "behavior_embedding_model IS NOT NULL)",
             name="ck_user_preferences_behavior_embedding_has_model",
+        ),
+        CheckConstraint(
+            "behavior_confidence >= 0 AND behavior_confidence <= 1",
+            name="ck_user_preferences_behavior_confidence_range",
         ),
     )
 
@@ -66,7 +82,16 @@ class UserPreference(Base):
     behavior_embedding: Mapped[list[float] | None] = mapped_column(
         Vector(EMBEDDING_DIMENSIONS), nullable=True
     )
+    negative_behavior_embedding: Mapped[list[float] | None] = mapped_column(
+        Vector(EMBEDDING_DIMENSIONS), nullable=True
+    )
     behavior_embedding_model: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    behavior_confidence: Mapped[float] = mapped_column(
+        Float, default=0.0, server_default=text("0"), nullable=False
+    )
+    behavior_evidence: Mapped[dict[str, object]] = mapped_column(
+        JSONB, default=dict, server_default=text("'{}'::jsonb"), nullable=False
+    )
     model_version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
