@@ -12,6 +12,7 @@ The implementation and final measurements are separate commits. This protocol, f
 2. Does confidence gating reduce overreaction to sparse or single-paper history?
 3. Do exposure gating and per-paper saturation prevent unexposed negative events and repeated same-paper events from dominating the profile?
 4. Are profile construction, ranking, replay, and result serialization deterministic?
+5. What aggregation and ranking latency does the production Python implementation exhibit at bounded small, medium, and large histories when using the schema's 1536-dimensional vectors?
 
 ## Compared systems
 
@@ -46,6 +47,12 @@ Mechanism-specific metrics are target rank and score deltas for interest shifts 
 
 Model comparisons use paired per-scenario differences. The recorded analysis reports the number of applicable scenarios, mean and median differences, and a fixed-seed percentile bootstrap 95 percent interval. It does not infer population-level user effects from synthetic cases and does not use a p-value threshold as a success gate.
 
+## Performance benchmark
+
+The performance benchmark is descriptive and environment-sensitive. It uses deterministic synthetic inputs generated before timing, production aggregation and ranking functions, 1536-dimensional vectors, five untimed warm-up repetitions, and 30 measured repetitions per scale. The frozen scales are 64 events over 16 history papers with 50 candidates, 512 events over 128 papers with 200 candidates, and 4096 events over 512 papers with 1000 candidates. Candidate ranking returns the top 20 entries.
+
+Aggregation and ranking are timed separately with a monotonic high-resolution clock. The retained artifact contains every measured duration plus the median, 95th percentile, minimum, maximum, and median-derived throughput. Timing results are interpreted only for the recorded machine and software environment. The benchmark has no post-hoc pass threshold and does not claim mobile, database, network, or provider latency.
+
 ## Reproducibility artifacts
 
 The recorded run produces:
@@ -59,9 +66,11 @@ docs/evaluation/behavior/
 |   |-- case_results.jsonl
 |   |-- environment.json
 |   `-- run_manifest.json
+|-- performance.json
 |-- summary.csv
 |-- summary.json
 `-- figures/
+    |-- performance_scaling.png
     |-- ranking_comparison.png
     `-- mechanism_deltas.png
 ```

@@ -14,6 +14,8 @@ The four headline systems are `recency-only`, `explicit-recency`, the frozen `be
 
 The controlled fixture covers nine scenario families: cold start, stable positive interest, recent interest shift, exposed negative feedback, unexposed skip, repeated same-paper evidence, contradictory feedback, incomplete embedding coverage, and duplicate replay. History papers and ranking candidates have stable UUIDs and artificial four-dimensional vectors. No raw personal behavior, external API call, database, provider model, or production credential is involved.
 
+A separate environment-sensitive benchmark exercises the same production aggregation and ranking functions with 1536-dimensional vectors. It freezes three scales from 64 events and 50 candidates through 4096 events and 1000 candidates, performs five warm-ups and 30 measured repetitions, and retains raw timing samples with descriptive median and p95 summaries. It measures in-process Python computation only, not database, network, provider, or Android latency.
+
 The current Android producer emits impressions, opens, and paper-scoped questions. Save, skip, share, and dwell-time cases therefore validate backend contract semantics and stress mechanisms; they are not evidence that those signals have already been observed from the current mobile client.
 
 ## Metrics and direction conventions
@@ -77,11 +79,14 @@ docs/evaluation/behavior/
 |   |-- case_results.jsonl
 |   |-- environment.json
 |   `-- run_manifest.json
+|-- performance.json
 |-- summary.csv
 |-- summary.json
 `-- figures/
     |-- mechanism_deltas.pdf
     |-- mechanism_deltas.png
+    |-- performance_scaling.pdf
+    |-- performance_scaling.png
     |-- ranking_comparison.pdf
     `-- ranking_comparison.png
 ```
@@ -90,4 +95,4 @@ The manifest records the exact source revision, branch, clean-tree state, fixtur
 
 ## Interpretation boundary
 
-Unit and integration tests support claims about deterministic implementation, transaction boundaries, idempotency, and bounded scores. Controlled replay can support claims about the declared synthetic ranking, adaptation, saturation, exposure, contrastive, confidence, and reproducibility properties. Neither evidence class establishes preference-inference accuracy for real researchers, longitudinal usefulness, engagement improvement, causal benefit, fairness, or superiority to trained industrial recommender systems. Stronger claims require a separately designed and approved user study.
+Unit and integration tests support claims about deterministic implementation, transaction boundaries, idempotency, and bounded scores. Controlled replay can support claims about the declared synthetic ranking, adaptation, saturation, exposure, contrastive, confidence, and reproducibility properties. The performance benchmark supports only environment-specific statements about in-process aggregation and ranking latency at its declared scales. None of these evidence classes establishes preference-inference accuracy for real researchers, longitudinal usefulness, engagement improvement, causal benefit, fairness, or superiority to trained industrial recommender systems. Stronger claims require a separately designed and approved user study.
