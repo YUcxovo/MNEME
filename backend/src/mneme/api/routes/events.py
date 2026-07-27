@@ -29,7 +29,7 @@ async def ingest_events(
     principal: Annotated[Principal, Depends(require_principal)],
     service: Annotated[BehaviorEventService, Depends(get_behavior_event_service)],
 ) -> EventIngestionResult:
-    """Idempotently store a raw event batch and refresh behavior-v1."""
+    """Idempotently store a raw event batch and refresh the active behavior profile."""
     try:
         result = await service.ingest(
             principal.user_id,

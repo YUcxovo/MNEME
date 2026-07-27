@@ -10,11 +10,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.models.base import utc_now
 from mneme.repositories.events import EventRecord, EventRepository
-from mneme.services.behavior import (
-    BEHAVIOR_MODEL_VERSION,
-    BEHAVIOR_WINDOW_DAYS,
-    aggregate_behavior_embedding,
+from mneme.services.behavior_v2 import (
+    BEHAVIOR_MODEL_NAME,
+    DEFAULT_BEHAVIOR_CONFIG,
+    BehaviorProfile,
 )
+from mneme.services.behavior_v2_profile import aggregate_behavior_profile
 
 logger = structlog.get_logger(__name__)
 
@@ -42,7 +43,7 @@ class EventIngestionStats:
 
 
 class BehaviorEventService:
-    """Persist one batch and rebuild behavior-v1 in a single transaction."""
+    """Persist one batch and rebuild behavior-v2 in a single transaction."""
 
     def __init__(
         self,
@@ -92,27 +93,7 @@ class BehaviorEventService:
                 raise EventPaperNotFoundError
 
             accepted = await self._repository.insert_events(user_id, new_events)
-            signals = await self._repository.list_recent_signals(
-                user_id,
-                since=now - timedelta(days=BEHAVIOR_WINDOW_DAYS),
-                until=latest_allowed,
-            )
-            signal_papers = {signal.paper_id for signal in signals if signal.paper_id is not None}
-            embeddings = await self._repository.mean_latest_embeddings(
-                signal_papers,
-                embedding_model=self._embedding_model,
-            )
-            behavior_embedding = aggregate_behavior_embedding(
-                signals,
-                embeddings,
-                now=now,
-            )
-            await self._repository.store_behavior_embedding(
-                user_id,
-                embedding=behavior_embedding,
-                embedding_model=self._embedding_model,
-                model_version=BEHAVIOR_MODEL_VERSION,
-            )
+            profile = await self._recompute_locked(user_id, now=now, latest_allowed=latest_allowed)
 
         result = EventIngestionStats(
             accepted=accepted,
@@ -123,6 +104,54 @@ class BehaviorEventService:
             user_id=str(user_id),
             accepted=result.accepted,
             duplicates=result.duplicates,
-            behavior_vector=behavior_embedding is not None,
+            behavior_model=BEHAVIOR_MODEL_NAME,
+            behavior_profile=(
+                profile.positive_embedding is not None or profile.negative_embedding is not None
+            ),
+            behavior_confidence=profile.confidence,
         )
         return result
+
+    async def recompute(self, user_id: UUID) -> BehaviorProfile:
+        """Rebuild one active profile from raw events without inserting an event batch."""
+        now = self._clock()
+        if now.tzinfo is None:
+            raise ValueError("Event ingestion clock must be timezone-aware.")
+        latest_allowed = now + EVENT_MAX_FUTURE_SKEW
+        async with self._repository.transaction():
+            if not await self._repository.lock_user(user_id):
+                raise EventUserNotFoundError
+            profile = await self._recompute_locked(user_id, now=now, latest_allowed=latest_allowed)
+        logger.info(
+            "behavior_profile_recomputed",
+            user_id=str(user_id),
+            behavior_model=BEHAVIOR_MODEL_NAME,
+            behavior_confidence=profile.confidence,
+            eligible_signals=profile.evidence.eligible_signal_count,
+        )
+        return profile
+
+    async def _recompute_locked(
+        self,
+        user_id: UUID,
+        *,
+        now: datetime,
+        latest_allowed: datetime,
+    ) -> BehaviorProfile:
+        signals = await self._repository.list_recent_signals(
+            user_id,
+            since=now - timedelta(days=DEFAULT_BEHAVIOR_CONFIG.window_days),
+            until=latest_allowed,
+        )
+        signal_papers = {signal.paper_id for signal in signals if signal.paper_id is not None}
+        embeddings = await self._repository.mean_latest_embeddings(
+            signal_papers,
+            embedding_model=self._embedding_model,
+        )
+        profile = aggregate_behavior_profile(signals, embeddings, now=now)
+        await self._repository.store_behavior_profile(
+            user_id,
+            profile=profile,
+            embedding_model=self._embedding_model,
+        )
+        return profile
