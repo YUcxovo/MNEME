@@ -99,8 +99,9 @@ jq -n \
         assembleDebugAndroidTest
 )
 
-"$ADB" install -r "$ANDROID_DIR/app/build/outputs/apk/debug/app-debug.apk" >/dev/null
-"$ADB" install -r \
+"$ADB" install --no-streaming -r \
+    "$ANDROID_DIR/app/build/outputs/apk/debug/app-debug.apk" >/dev/null
+"$ADB" install --no-streaming -r \
     "$ANDROID_DIR/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" >/dev/null
 "$ADB" shell pm clear --user 0 com.mneme.app >/dev/null
 
