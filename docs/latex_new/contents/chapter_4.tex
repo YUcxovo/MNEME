@@ -85,9 +85,18 @@ After generation, citation verification checks every bracketed marker against th
 A citation counts as source-matched when at least 30\% of the claim's content words appear in the cited chunk, and answers are labeled matched, partially matched, or insufficient.
 Following the distinction drawn in citation-quality research~\cite{gao2023alce}, this is retrieved-source matching rather than semantic entailment: it verifies that generated claims are anchored in retrieved text, not that the text is scientifically correct.
 
-Interest continuity is served by a recommendation scorer that composes three signals: explicit topic match with weight 0.45, cosine similarity between the user's learned behavior embedding and a paper's mean chunk embedding with weight 0.35, and publication recency with a one-week half-life at weight 0.2.
+Interest continuity is served by a recommendation scorer that composes three signals: explicit topic match with nominal weight 0.45, a contrastive behavioral affinity --- comparing a candidate's mean chunk embedding against the profile's positive and negative interest centroids --- whose nominal weight of 0.35 is scaled by the profile's evidence confidence, and publication recency with a one-week half-life at weight 0.2.
+The behavior embedding itself is produced by a deterministic, confidence-calibrated contrastive aggregation that responds to four properties of implicit reading evidence: such events are sparse, temporally non-stationary, negative only after verified exposure, and vulnerable to domination by repeated activity on a single paper.
+The aggregation therefore maintains separate positive and negative evidence channels, applies dual-timescale temporal decay so that recent shifts and stable interests are weighted on different horizons, saturates the contribution of any single paper, admits a skip as negative evidence only when exposure to the item has been recorded, and carries a confidence weight into the final recommendation score, implementing the design specified in Chapter~3.
+The signed single-timescale profile that preceded this design is kept available as a frozen baseline for the evaluation reported later in this chapter.
 Missing signals redistribute their weight over the available ones, so a cold-start user still receives a meaningful ranking, and the ranking is deterministic with a stable tie-break.
 Each recommendation carries human-readable reasons derived from its dominant signals rather than free-form generated text; these reasons are what the client renders beside each briefing entry, satisfying the scrutability requirement established in Chapter~3.
+
+The citation graph that the client renders is produced by a deterministic algorithm layer operating on the graph framework's persisted citation and keyword data; the algorithms are side-effect free, so each is unit-testable in isolation and identical inputs always yield the identical view.
+Citation edges are damped by the inverse logarithm of the target's citation in-degree, which prevents ubiquitously cited papers from dominating layout and ranking, while keyword co-occurrence edges --- Jaccard similarity over stopword-filtered title words and arXiv categories, retained only above a minimum weight --- add topical connections between papers that do not cite each other.
+A bounded best-first expansion from the requested center paper then selects the neighborhood, preferring paths whose cumulative edge weight is strongest, so that when the node cap truncates the graph it keeps the most relevant vicinity rather than an arbitrary prefix.
+Surviving nodes receive cluster identities from a deterministic weighted label propagation with a bounded number of rounds and rank scores from weighted degree centrality normalized to the unit interval.
+The public route bounds traversal depth at two and the node limit at 200, and the client's request contract asks for at most fifty nodes, so rendering cost on the device is bounded by construction rather than by convention.
 
 Provider routing, caching, and cost control cut across the whole AI layer.
 Each task routes to a configured provider; Anthropic, OpenAI, and DeepSeek adapters are implemented, providers are inferred from model identifiers, and a misconfigured route fails at service startup rather than on the first user request.
@@ -101,7 +110,7 @@ Each fixture pins the exact arXiv revision it was authored against; the evaluati
 Retrieval quality is graded on dense results only, so a context anchor cannot convert a retrieval miss into a hit, and every report embeds the full run configuration --- provider, model, prompt version, embedding backend and model, retrieval and reranking settings, evidence threshold, and cache posture --- so that two runs are comparable exactly when their configurations match.
 The harness further separates a served completion's original generation cost from the cost a run actually incurs, so cached completions cannot masquerade as live spend.
 
-In summary, the four continuity challenges of Chapter~1 map onto concrete mechanisms: revision-bound artifacts and idempotent preparation provide representation continuity; bounded retrieval, refusal, and citation verification provide evidence continuity; the composed, explainable scorer provides interest continuity; and the job, event, and briefing boundaries provide the recoverable loop that interaction continuity requires.
+In summary, the four continuity challenges of Chapter~1 map onto concrete mechanisms: revision-bound artifacts and idempotent preparation provide representation continuity; bounded retrieval, refusal, and citation verification provide evidence continuity; the composed, explainable scorer provides interest continuity; and the job, event, and briefing boundaries, together with the bounded deterministic graph views, provide the recoverable loop that interaction continuity requires.
 The remainder of the chapter reports the evidence collected for these mechanisms.
 
 \section{Testing Results}
@@ -114,17 +123,20 @@ The subsections below report the tools and environments first, then the interfac
 
 The backend test suite runs under \texttt{pytest} in a \texttt{uv}-managed Python environment, with \texttt{ruff} for lint and formatting and \texttt{pyrefly} for type checking as static gates.
 Provider-dependent code is tested against deterministic fake LLM and embedding providers and an in-memory Redis stand-in, so the software suite is fully reproducible without network access or provider credentials.
-The suite comprises 470 tests, of which 463 pass in the standard environment and seven --- the PostgreSQL integration tests --- run only where a database is configured; the same suite gates every change in continuous integration.
+At the evaluation freeze the suite comprised 533 tests, all of which pass against PostgreSQL~16 with \texttt{pgvector} with no failure or skip; the same suite gates every change in continuous integration.
+Full-suite line coverage was 89.05\% and branch coverage 76.15\%, with the algorithmic paths covered most densely --- recommendation scoring at 97.87\% and the evaluation harness at 97.85\% line coverage --- although coverage remains supporting evidence rather than proof of semantic correctness.
+The behavior-model database migration was additionally exercised in both directions, upgrading to its target revision, downgrading one revision, and upgrading again without error.
 
 The Android suite uses JUnit-based unit tests for ViewModel and repository logic, Compose UI tests for screen behavior, and Gradle-orchestrated static analysis with ktlint, detekt, and Android lint.
 All device measurements were collected on an Android~14 (API~34) Google emulator with four virtual processors and a 192~MiB application heap.
 For every measured group, warm-up iterations were run and discarded before retained samples were collected; reported medians are sample medians, and 95th percentiles use the nearest-rank definition.
+Instrumentation tests wrote one record per measured operation, and a separate analysis program validated the expected sample counts and success fields before computing any summary statistic; across the recorded experiment, all 810 controlled measurement samples and all 25 live-backend stages met their stated success conditions.
 Because a single emulator configuration was measured, the numbers support controlled comparison across conditions rather than estimates of physical-device variability.
 
 \subsection{UI Testing}
 
 The client's visible-state machinery was exercised in controlled trials that deliver deterministic results to the ViewModel layer and verify the resulting state and disclosure label.
-Five content-state conditions --- a live seed transition, a cached warm start, a cached offline disclosure, a cached server-failure disclosure, and an invalid-cache error --- each completed 30 of 30 trials with the expected outcome, and the three citation-graph disclosure states (ready, fallback, and empty) likewise each completed 30 of 30 trials.
+Five content-state conditions --- a live seed transition, a cached warm start, a cached offline disclosure, a cached server-failure disclosure, and an invalid-cache error --- each completed 30 of 30 trials with the expected outcome, and the three citation-graph disclosure states (ready, fallback, and empty) likewise each completed 30 of 30 trials, with median transition latencies of 97.114, 103.375, and 66.281~ms respectively.
 The disclosure vocabulary described under Design Pattern is therefore not merely available but reliably reached under each of its specified conditions.
 
 Interactive graph behavior was verified by the graph and app-flow suite, which passed 11 of 11 tests, including node selection through the WebView bridge, navigation to a selected paper through the persistent open action, and restoration of the previous selection after returning from paper detail.
@@ -145,9 +157,91 @@ The evaluation harness carries its own contract tests for fixture pinning, readi
 For the interaction loop, acceptance was measured end to end.
 In controlled trials isolating the client queue from network variability, 30 of 30 trials each succeeded for the durable queue write, the injected retryable failure, the subsequent retry, and the duplicate replay.
 A live trace then exercised the same client coordinator against a running backend in five repetitions: each queued three new events, recovered from an injected retryable failure, uploaded the batch, replayed the same identifiers, and read a briefing back through the standard client data path.
-Every upload accepted three new identifiers, every replay was acknowledged as duplicate rather than re-ingested, and every readback returned live-backend content.
+Every upload accepted three new identifiers, every replay was acknowledged as duplicate rather than re-ingested, and every readback returned live-backend content carrying preference-model version~1, the profile version deployed when the trace was recorded.
 The digest returned during this trace was empty because the evaluation database held no paper inside the active fourteen-day briefing window; the trace therefore demonstrates the reachability and duplicate safety of the full cross-layer path, while recommendation content itself is exercised by the scorer tests described above.
 Asynchronous job visibility was verified by the three-stage paper-preparation polling flow, which completed in 10 of 10 trials.
+
+Because the event-loop trace above exercises transport rather than content, a separate live-core acceptance evaluation carried one preregistered seed paper and one fixed free-form question through the complete seed-to-reading path against a running backend configured with its recorded production AI stack --- summarization and question answering on a live provider model with local \texttt{fastembed} embeddings --- with the exact inputs, repository revision, and non-secret model configuration bound into a retained run manifest.
+A single instrumented UI trace completed all eight required stages: the seed produced a briefing of exactly five papers labeled live, the same briefing was restored from the client cache labeled cached, an opened paper presented its stored summary, the free-form question returned a live-origin answer carrying four sources with a partial source-match label, the answer's source callback and the paper's arXiv source both opened, a citation graph bounded at fifty nodes rendered live around the briefing paper, and a selected neighbor was reached through the ordinary paper-detail path.
+Five further repetitions drove the same path through the production repository, network mapping, and cache layers, succeeding at every stage with medians between 4.1 and 177.3~ms; because later iterations reuse durable artifacts and cached completions, these timings describe warm-path reliability rather than cold first-run latency.
+This trace is the bounded cross-layer demonstration for the system claim of this thesis: it establishes that the implemented client, contracts, and AI pipeline interoperate live with disclosed provenance, while the relevance of the recommended papers, the scientific correctness of the answer, and the usefulness of the graph neighborhood remain outside its scope.
+
+\subsection{Controlled Evaluation of the Behavior Model}
+\label{sec:behavior-eval}
+
+The behavior model was evaluated with twelve deterministic synthetic traces spanning cold start, stable interest, recent interest shift, exposed and unexposed negative feedback, repeated interactions with one paper, contradictory feedback, incomplete embedding coverage, and duplicate replay.
+Four headline systems were compared: recency only, explicit-topic matching with recency, the earlier signed single-timescale profile that preceded the current design, and the confidence-calibrated contrastive model of Chapter~3 as deployed in production.
+Five ablations independently removed the dual timescale, per-paper saturation, exposure gate, negative channel, or confidence gate, and every configuration invoked the production aggregation and recommendation functions rather than a reimplementation of the scoring formula.
+Ranking quality was measured with graded nDCG@5, Recall@5, and reciprocal rank; the cold-start trace defines no relevance judgments and was excluded rather than scored as zero, leaving eleven applicable traces.
+Paired differences were summarized with a fixed-seed percentile bootstrap over 10{,}000 resamples, and the resulting intervals are interpreted descriptively because the scenarios were designed for mechanism coverage rather than sampled from a user population.
+Tables~\ref{tab:behavior-ranking} and~\ref{tab:behavior-paired} report the headline results and the paired comparisons.
+
+\begin{table}[htbp]
+\centering
+\caption{Macro ranking metrics over the eleven applicable controlled traces. Undefined cold-start metrics are excluded rather than treated as zero; the fixture characterizes behavior on declared scenarios and does not estimate real-user preference accuracy.}
+\label{tab:behavior-ranking}
+\begin{tabular}{p{5.4cm}rrr}
+\toprule
+Headline system & nDCG@5 & Recall@5 & Reciprocal rank \\
+\midrule
+Recency only & 0.9162 & 1.0000 & 0.8788 \\
+Explicit topics + recency & 0.9162 & 1.0000 & 0.8788 \\
+Signed single-timescale profile & 0.8954 & 1.0000 & 0.8788 \\
+Contrastive model (proposed) & 0.9157 & 1.0000 & 0.9394 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Paired mean differences, proposed model minus comparator, with descriptive 95\% bootstrap intervals over the applicable traces.}
+\label{tab:behavior-paired}
+\begin{tabular}{p{3.4cm}p{2.9cm}rr}
+\toprule
+Comparator & Metric & Difference & 95\% interval \\
+\midrule
+Recency only & nDCG@5 & $-0.0005$ & $[-0.0734,\ 0.0777]$ \\
+Recency only & Reciprocal rank & $+0.0606$ & $[0.0000,\ 0.1818]$ \\
+Single-timescale & nDCG@5 & $+0.0203$ & $[0.0000,\ 0.0609]$ \\
+Single-timescale & Reciprocal rank & $+0.0606$ & $[0.0000,\ 0.1818]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+These results do not establish uniform ranking superiority, and the near-saturated Recall@5 shows that the small controlled candidate lists are not discriminative for top-five set inclusion.
+The proposed model did not exceed the recency baselines in macro nDCG@5 --- its mean was lower by 0.0005 --- while it recovered the nDCG loss of the earlier behavioral baseline and improved the placement of the first relevant item on these traces; every bootstrap interval touches or contains zero.
+The stronger evidence for the design is mechanism-specific, and Figure~\ref{fig:behavior-mechanisms} summarizes the controlled responses.
+When recent positive evidence shifted toward a new topic, the proposed model raised the target score by 0.1194 and moved it upward by two ranks.
+After exposed negative feedback it reduced the target score by 0.2589 and moved it down two ranks, whereas the earlier profile changed the score by only 0.0347, and removing the negative channel cut the suppression to 0.0515 with no rank change.
+Exposure gating behaved as specified: the complete model kept an unexposed skipped paper at rank~4, while disabling the gate let the skip act as negative evidence and pushed the target to rank~6.
+Per-paper saturation raised nDCG@5 in the repeated-paper trace from 0.5077 to 0.7309, and duplicate replay produced an exact zero score change in every configuration, confirming idempotent aggregation end to end.
+The fixture did not isolate an independent aggregate ranking gain for the dual-timescale or confidence-gating mechanisms; this null result is retained rather than omitted.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/mneme_behavior_mechanisms.pdf}
+\caption{Target-score changes on paired recent-interest and exposed-negative traces. Positive values are expected after recent positive evidence and negative values after exposed negative feedback; ablations identify the mechanisms responsible for each response. Magnitudes are fixture-specific and should not be read as calibrated user utility.}
+\label{fig:behavior-mechanisms}
+\end{figure}
+
+In-process cost was measured with 1{,}536-dimensional vectors, five warm-up executions, and thirty recorded repetitions per scale, with inputs generated outside the timed region and output checksums verified on every repetition; Table~\ref{tab:behavior-performance} reports the distributions.
+At the largest scale --- 4{,}096 events and 1{,}000 candidates --- median aggregation and ranking latencies were 115.966~ms and 197.230~ms.
+These measurements characterize local Python computation on one machine and exclude persistence, network transfer, provider inference, and Android rendering, so they bound the algorithmic contribution to briefing latency rather than an end-to-end service time.
+
+\begin{table}[htbp]
+\centering
+\caption{In-process behavior-model latency by scale. Each cell is median~/~p95 in milliseconds over thirty repetitions after five warm-ups.}
+\label{tab:behavior-performance}
+\begin{tabular}{p{1.6cm}rrp{3.3cm}p{3.3cm}}
+\toprule
+Scale & Events & Candidates & Aggregation (ms) & Ranking (ms) \\
+\midrule
+Small & 64 & 50 & 1.619 / 1.723 & 4.991 / 5.089 \\
+Medium & 512 & 200 & 12.227 / 12.489 & 20.104 / 20.329 \\
+Large & 4{,}096 & 1{,}000 & 115.966 / 118.054 & 197.230 / 201.842 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Performance Testing}
 \label{sec:e4-android}
@@ -155,6 +249,7 @@ Asynchronous job visibility was verified by the three-stage paper-preparation po
 Client-side performance was measured on the emulator configuration described under Testing Tool.
 Figure~\ref{fig:mobile-reliability} and Table~\ref{tab:mobile-reliability} report the resulting distributions.
 All 20 cold process starts and all 20 task foreground/resume operations completed: cold start had a median of 2{,}773~ms with a 95th percentile of 4{,}444~ms, and foreground/resume had a median of 133.5~ms with a 95th percentile of 445~ms.
+Android confirmed a hot-launch classification for only nine of the twenty resume operations and returned an unknown classification for the remainder, so the latter figure describes the measured foreground/resume operation rather than a verified hot-start benchmark.
 Cold start is dominated by process creation and initial composition, while the sub-second resume path reflects the cache-backed state restoration described under Navigation Controllers.
 The five controlled content-state conditions completed with sub-millisecond medians, as expected for ViewModel transitions measured after a deterministic result is delivered; they quantify the cost of the state machinery itself rather than network latency.
 The three-stage job polling flow's median of 3{,}008~ms matches its one-second client polling interval across three processing stages.
@@ -253,6 +348,6 @@ Against the default \$5 daily budget, a bulk-ingestion day of about fifty summar
 The audit's principal consequence is a routing insight: bulk summarization is the dominant and least quality-sensitive spend, so moving it to a lighter tier while reserving the flagship tier for user-visible grounded answers would extend the same budget several-fold; the switch awaits a summary-quality comparison so that cost is not saved at the price of structured-output fidelity.
 All dollar figures are estimates derived from a retained price snapshot with a companion script that recomputes them, and measured spend is available from the per-completion cost telemetry once the deployed pipeline runs at scale.
 
-Three boundaries qualify these results.
-Device measurements come from one emulator configuration; controlled timings measure client-internal transitions rather than network or frame latency; and the graded answer-quality evaluation --- retrieval hit rate, source-match rate, and refusal accuracy on the pinned fixture corpus --- awaits its live run against a deployed provider, with the harness, corpus, and configuration snapshotting already in place.
+Four boundaries qualify these results.
+Device measurements come from one emulator configuration; controlled timings measure client-internal transitions rather than network or frame latency; the behavior-model evaluation demonstrates implemented mechanisms on designed traces and does not establish that the model infers real preferences, improves satisfaction, or meets an end-to-end latency target; and the graded answer-quality evaluation --- retrieval hit rate, source-match rate, and refusal accuracy on the pinned fixture corpus --- awaits its live run against a deployed provider, with the harness, corpus, and configuration snapshotting already in place.
 Chapter~5 discusses the corresponding outlook items.
