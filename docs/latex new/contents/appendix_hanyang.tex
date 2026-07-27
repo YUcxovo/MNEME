@@ -1,0 +1,98 @@
+% !TEX root = ../main.tex
+
+\chapter{Android E4 Reproducibility}
+\label{app:android-e4}
+
+\section{Environment and Protocol}
+
+The Android E4 measurements used an Android 14/API 34 \texttt{sdk\_gphone64\_x86\_64} emulator with four virtual processors and a 192~MiB application heap.
+The live-backend trace used the emulator's host-network route to a local backend.
+The authentication token was supplied to the instrumentation process at run time and was not retained in an artifact.
+The retained manifest binds these measurements to the evaluated Android source snapshot.
+This snapshot bounds the client results in Section~\ref{sec:e4-android}; it does not change the evidence status of the other evaluation tracks.
+
+Startup measurement discarded three cold/foreground launch pairs, then retained 20 cold process starts and 20 task foreground/resume operations.
+All retained operations returned a non-empty \texttt{WaitTime} field for the requested activity; the startup runner did not inspect rendered UI content.
+Android classified nine as hot starts and returned \texttt{UNKNOWN (0)} for eleven, so their latency distribution uses the retained wait-time field and is not treated as a 20-sample confirmed hot-start distribution.
+Controlled state, graph, and event tests used separate warm-up iterations that were not included in the reported samples.
+The graph experiment used deterministic payloads with 1, 12, 25, and 50 nodes.
+The live event loop performed five repetitions.
+
+\section{Metric Definitions}
+
+\begin{longtable}{P{3.7cm}P{10.4cm}}
+\caption{Android E4 metric definitions.}
+\label{tab:e4-metric-definitions}\\
+\toprule
+Metric & Definition \\
+\midrule
+Cold process start &
+Elapsed time from a forced process start to the expected first Android screen. \\
+\addlinespace
+Task foreground/resume &
+Elapsed wait time from requesting the existing task in the foreground.
+Success requires a non-empty activity wait-time record; Android's hot-start classifier is recorded separately. \\
+\addlinespace
+Controlled state transition &
+Elapsed time from delivering a deterministic fixture result to the expected ViewModel state.
+This excludes live network time and display-frame latency. \\
+\addlinespace
+Three-stage polling &
+Elapsed time until a controlled asynchronous job advances through three client-visible stages and reaches ready state under the production one-second polling schedule. \\
+\addlinespace
+Graph DOM-ready &
+Elapsed time from loading or updating the local graph page to its JavaScript readiness callback.
+The metric does not wait for force-layout convergence. \\
+\addlinespace
+Selection callback &
+Elapsed time from selecting a graph node to receipt of the validated identifier in the native Android layer. \\
+\addlinespace
+Event stage latency &
+Elapsed time for the named queue, retry, replay, upload, or readback operation.
+Controlled and live stages are summarized separately. \\
+\addlinespace
+Median and p95 &
+The median is the sample median.
+The p95 is the nearest-rank 95th percentile, so the maximum is reported for a five-sample live stage. \\
+\bottomrule
+\end{longtable}
+
+\section{Sample Inventory}
+
+\begin{longtable}{P{4.2cm}P{1.8cm}P{2.7cm}P{3.7cm}}
+\caption{Retained sample inventory for the Android E4 evaluation.}
+\label{tab:e4-sample-inventory}\\
+\toprule
+Group & Samples & Conditions met & Included conditions \\
+\midrule
+Startup and resume & 40 & 40 & 20 cold starts; 20 foreground/resume operations \\
+State and polling & 160 & 160 & five state conditions at 30 trials; ten polling trials \\
+Graph timing & 400 & 400 & ready and selection; four sizes; new and existing WebView \\
+Graph-state disclosure & 90 & 90 & ready, fallback, and empty; 30 trials each \\
+Controlled event sync & 120 & 120 & queue, failure, retry, and replay; 30 trials each \\
+\midrule
+Controlled total & 810 & 810 & five result groups reported separately in Chapter~4 \\
+\addlinespace
+Live-backend stages & 25 & 25 & five stages in each of five repetitions \\
+Existing graph/app-flow tests & 11 & 11 & includes Open Paper and restored selection \\
+\bottomrule
+\end{longtable}
+
+\section{Success Conditions and Retained Artifacts}
+
+A cold or foreground/resume launch succeeds when \texttt{am start -W} returns a non-empty wait-time record for the requested activity.
+This condition does not inspect rendered UI content.
+A content-state trial succeeds when the ViewModel exposes the expected content origin or retryable error.
+A polling trial succeeds when all three processing stages are observed in order and the paper reaches ready state.
+A graph trial succeeds when the page reports ready and the selected identifier reaches the native client.
+Ready, fallback, and empty tests additionally require the corresponding reader-visible disclosure.
+
+An event trial succeeds when the local queue and reservation state match the expected stage.
+After a retryable failure, the batch must return to pending state.
+After success, accepted and duplicate counts must account for the full batch.
+For the live trace, each repetition must queue three events, recover from the injected failure, upload three new identifiers, recognize all three on replay, and return a live-origin briefing to the client.
+Digest entry count and preference-model version are recorded as outcomes rather than success conditions.
+
+The retained evaluation package contains direct comma-separated measurements, an environment record, a run manifest without the authentication token, connected Android test XML, machine-readable summaries, and the vector figures used in Chapter~4.
+The five live digests contain zero entries and retain preference-model version 1.
+Those values remain part of the reproducibility record because they bound the event-loop conclusion.

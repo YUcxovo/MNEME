@@ -1,0 +1,77 @@
+% !TEX root = ./main.tex
+
+\sjtusetup{
+  info = {
+    zh / title = {MNEME：面向持续文献理解的移动原生人工智能研究助手},
+    en / title = {MNEME: A Mobile-Native AI Research Agent for Continuous Literature Understanding},
+    zh / display-title = {MNEME：面向持续文献理解的\\移动原生人工智能研究助手},
+    en / display-title = {MNEME: A Mobile-Native AI Research Agent\\for Continuous Literature Understanding},
+    zh / keywords = {移动学术助手，检索增强生成，证据归因，兴趣建模，文献理解},
+    en / keywords = {mobile scholarly assistant, retrieval-augmented generation, evidence attribution, interest modeling, literature understanding},
+    zh / author = {
+      \begin{tabular}[t]{@{}l}
+        Heng Zhao; Hanyang Wang\\[-1ex]
+        Ruiyu Jiang; Yifan Zhang
+      \end{tabular}
+    },
+    en / author = {
+      \begin{tabular}[t]{@{}c}
+        \textbf{Heng Zhao; Hanyang Wang}\\[-1ex]
+        \textbf{Ruiyu Jiang; Yifan Zhang}
+      \end{tabular}
+    },
+    zh / supervisor = {待补充},
+    en / supervisor = {\textbf{To be supplied}},
+    id = {To be supplied},
+    zh / major = {待补充},
+    en / major = {To be supplied},
+    zh / department = {待补充},
+    en / department = {To be supplied},
+    date = {2026-07},
+    zh / display-date = {2026 年 7 月}
+  },
+  style = {
+    title-logo-color = black
+  },
+  name = {
+    digest = {}
+  }
+}
+
+\usepackage[backend=bibtex,style=gb7714-2015]{biblatex}
+\addbibresource{refs.bib}
+\setlength{\bibitemsep}{0pt}
+
+\usepackage[perpage,bottom,hang]{footmisc}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{url}
+
+\graphicspath{{figures/}}
+\DeclareGraphicsExtensions{.pdf,.eps,.png,.jpg,.jpeg}
+
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\implemented}{\textsc{Implemented}}
+\newcommand{\measured}{\textsc{Measured}}
+\newcommand{\observed}{\textsc{Observed}}
+\newcommand{\planned}{\textsc{Planned}}
+\newcommand{\limited}{\textsc{Limited}}
+\newcommand{\pending}{\textbf{RESULT PENDING}}
+\setlength{\emergencystretch}{1.5em}
+
+\hypersetup{
+  hidelinks,
+  pdfauthor={Heng Zhao; Hanyang Wang; Ruiyu Jiang; Yifan Zhang},
+  pdftitle={MNEME: A Mobile-Native AI Research Agent for Continuous Literature Understanding}
+}
+
+% Keep the tabular author layout on the title page, while overriding the
+% class-generated PDF metadata with a plain text value after the preamble.
+\AtBeginDocument{
+  \hypersetup{pdfauthor={Heng Zhao; Hanyang Wang; Ruiyu Jiang; Yifan Zhang}}
+}

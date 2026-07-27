@@ -1,0 +1,151 @@
+% !TEX root = ../main.tex
+
+\chapter{Customer Interview Instrument}
+\label{app:interview}
+
+\section{Purpose and Administration}
+
+The instrument was used before describing MNEME to participants.
+Its purpose was to elicit recent behavior, current tools, breakdowns, and verification expectations without prompting agreement with the proposed product.
+Interviewers followed the core questions in order while using neutral follow-up prompts such as ``Can you give a specific example?'', ``What happened next?'', ``What made it difficult?'', and ``How did that affect your work?''.
+
+\section{Core Questions}
+
+\begin{enumerate}
+  \item Can you briefly describe your current research or study area?
+  \item How often do you need to look for or read new academic papers?
+  \item What tools or platforms do you currently use to find and manage papers?
+  \item Can you walk me through how you usually decide whether a paper is worth reading?
+  \item Tell me about the last time you found an important paper for your research.
+  \item Can you describe a recent time when you felt there were too many papers to follow?
+  \item How did you decide which papers to read and which ones to ignore?
+  \item After reading a paper, how do you usually save or organize it?
+  \item Tell me about a recent time when you wanted to recall a paper or idea but could not find it quickly.
+  \item How do you currently connect papers, concepts, authors, or research directions together?
+  \item What makes an AI-generated paper summary or answer trustworthy to you?
+\end{enumerate}
+
+\section{Question-to-Design Trace}
+
+\begin{longtable}{P{1.0cm}P{5.0cm}P{6.8cm}}
+\toprule
+Question & Evidence objective & Design decision informed \\
+\midrule
+\endfirsthead
+\toprule
+Question & Evidence objective & Design decision informed \\
+\midrule
+\endhead
+Q1--Q2 & participant context and literature frequency & segmentation and limits on generalization \\
+Q3 & current search and organization tools & compatibility, original-source links, competitor categories \\
+Q4--Q5 & triage criteria and concrete discovery episode & digest card content and recommendation reasons \\
+Q6--Q7 & overload and prioritization behavior & bounded briefing size and ranking requirements \\
+Q8--Q9 & retention, storage decay, and recall failure & persistent paper identity, cache, and searchable history \\
+Q10 & existing conceptual and citation-link practices & bounded citation-graph scope \\
+Q11 & trust and verification expectations & source-linked summaries, cited Q\&A, refusal, and status labels \\
+\bottomrule
+\end{longtable}
+
+\chapter{Product-Level Acceptance Criteria}
+\label{app:acceptance}
+
+\section{Paper Ingestion and Preparation}
+
+\begin{itemize}
+  \item Given at least one configured research category, when ingestion runs, the system records title, authors, abstract, category, publication date, provider identity, revision identity, and original link for each retrieved paper.
+  \item Given an available PDF, when preparation runs, the content is stored under the observed revision and becomes eligible for parsing, summarization, chunking, embedding, and later retrieval.
+  \item Given a successfully prepared paper, when it appears in the product, it has title, authors, an abstract or TLDR, preparation status, and an original-source action.
+  \item Given the same logical paper in a later run, the system updates its observed metadata and creates a new revision only when the revision or content is new; it does not create an unrelated duplicate.
+  \item Given incomplete parsing, the system records degraded quality and preserves an abstract-level representation instead of silently dropping the paper or presenting false section precision.
+\end{itemize}
+
+\section{Personalized Paper Digest}
+
+\begin{itemize}
+  \item Given a first-time user, selected research areas or seed papers create an explicit initial interest profile.
+  \item Given an interest profile, a generated briefing contains a ranked, bounded list rather than an unfiltered recent-paper feed.
+  \item Every entry retains a generation snapshot, score components, and a human-readable reason derived from the same components used for ranking.
+  \item Accepted behavioral events are versioned, deduplicated, and bounded by declared semantics before they affect later ranking.
+  \item When push delivery is enabled, one newly available briefing identity produces at most one notification inside the configured window, and permission denial does not block in-app access.
+\end{itemize}
+
+\section{Source-Linked Summaries}
+
+\begin{itemize}
+  \item A prepared paper receives a concise TLDR and structured purpose, method, result, and contribution fields where supported.
+  \item A key generated claim carries a source identifier that resolves to the same revision and stored passage used during generation.
+  \item If source structure is incomplete, the system limits source-link precision and exposes the degraded state.
+  \item A source action opens evidence without silently changing the paper or revision context.
+  \item Regeneration after preparation changes produces a new version whose source identifiers remain consistent with the current representation.
+\end{itemize}
+
+\section{Citation-Bounded Paper Q\&A}
+
+\begin{itemize}
+  \item A question is answered only from the declared paper scope and retrieved revision-scoped chunks.
+  \item Returned evidence labels identify actual retrieved sources and resolve to stored passages.
+  \item An evidence marker outside the retrieved set is rejected rather than displayed as verified.
+  \item When evidence is absent or below threshold, the system refuses or reports insufficient evidence.
+  \item A follow-up retains the visible paper scope; any later scope expansion must be explicit and separately evaluated.
+\end{itemize}
+
+\section{Knowledge-Graph Exploration}
+
+\begin{itemize}
+  \item A paper with citation data appears as the root of a directed, bounded neighborhood containing resolved cited or citing papers.
+  \item Selecting a node exposes title, relation, algorithm/fallback status, and a persistent action to open the related paper.
+  \item Depth and node count are capped by server policy; unsupported concept or author layers are not implied.
+  \item Pan, zoom, selection, and navigation remain usable without blocking the paper-reading path.
+  \item Incomplete provider data or enrichment failure is reported as incomplete or fallback rather than presented as a complete scholarly network.
+\end{itemize}
+
+\chapter{API, State, and Evaluation Record Templates}
+
+\section{Required Reproducibility Manifest}
+
+Every final evaluation run should retain:
+\begin{itemize}
+  \item repository commit, branch, dirty-state check, build identifier, and timestamp;
+  \item database migration, parser, chunker, embedding, behavior, ranking, graph, prompt, and verifier versions;
+  \item provider and model snapshots, temperature and token caps, retrieval and refusal thresholds, cache state, and budget policy;
+  \item corpus/fixture version, participant/task script version, device/OS, and network condition;
+  \item raw per-case output, structured metrics, warnings, skips, negative cases, and analysis code;
+  \item the owner who produced the artifact and the independent reviewer who approved its use.
+\end{itemize}
+
+\section{Participant-by-Task Usability Record}
+
+\begin{longtable}{P{1.1cm}P{0.8cm}P{1.3cm}P{1.4cm}P{1.0cm}P{2.0cm}P{4.6cm}}
+\toprule
+Participant & Task & Complete & Time (s) & Taps & Confusion code & Observation / evidence inspected \\
+\midrule
+\endfirsthead
+\toprule
+Participant & Task & Complete & Time (s) & Taps & Confusion code & Observation / evidence inspected \\
+\midrule
+\endhead
+P\_\_ & T1 & \pending & \pending & \pending & \pending & \pending \\
+P\_\_ & T2 & \pending & \pending & \pending & \pending & \pending \\
+P\_\_ & T3 & \pending & \pending & \pending & \pending & \pending \\
+P\_\_ & T4 & \pending & \pending & \pending & \pending & \pending \\
+P\_\_ & T5 & \pending & \pending & \pending & \pending & \pending \\
+\bottomrule
+\end{longtable}
+
+\section{Claim-to-Artifact Closure Checklist}
+
+\begin{longtable}{P{1.2cm}P{4.8cm}P{4.2cm}P{2.6cm}}
+\toprule
+Trace & Claim requiring closure & Required final artifact & Status \\
+\midrule
+\endfirsthead
+\toprule
+Trace & Claim requiring closure & Required final artifact & Status \\
+\midrule
+\endhead
+RQ1/E1 & revision-safe representation works across selected layouts and updates & frozen corpus, identity/invalidation/parse results, failure cases & \pending \\
+RQ2/E2 & evidence-bounded assistance improves inspectable answer quality & question set, retrieval and human support labels, ablations, refusal/latency/cost & \pending \\
+RQ3/E3 & bounded behavior improves ranking without unstable drift & exposure-aware replay set, baselines, diversity/stability/correction results & \pending \\
+RQ4/E4 & mobile loop remains understandable and reliable under constraints & release build, device matrix, reliability logs, participant-level retest & \pending \\
+\bottomrule
+\end{longtable}

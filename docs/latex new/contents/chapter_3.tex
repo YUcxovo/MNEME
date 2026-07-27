@@ -1,0 +1,422 @@
+﻿% !TEX root = ../main.tex
+
+\chapter{System Design and Technical Mechanisms}
+
+\section{Design Method and Implementation Cutoff}
+
+This chapter translates the four technical challenges introduced in Chapter~1 into mechanisms that can be inspected and evaluated. The design follows one dependency chain rather than four isolated feature lists. Revision-safe representation (C1) supplies the identifiers and provenance required by evidence-bounded assistance (C2). The same revision-scoped representations provide inputs to the interest model (C3), while the mobile integration and citation graph (C4) expose evidence, feedback, and failure state to the reader. Each section therefore states a problem, the implemented mechanism, a considered alternative, and the evaluation hook that Chapter~4 must exercise.
+
+Unless a subsection is explicitly marked \planned{}, implementation claims in this chapter refer to the integrated repository snapshot \texttt{b945d3c}. This cutoff contains the backend pipeline, behavior baseline, citation-graph platform, Android graph flow, and durable behavioral-event upload path. A passing test is treated as evidence that the checked-out software satisfies a specified invariant; it is not treated as a measurement of research quality, user benefit, latency, or robustness in an uncontrolled environment. Those outcomes remain \pending{} until the corresponding E1--E4 protocols are executed.
+
+MNEME has four operational trust regions. The Android client owns presentation, cached reader state, background synchronization, and local interaction capture. The FastAPI application owns authentication, request validation, domain services, and public state transitions. PostgreSQL is authoritative for papers, revisions, artifacts, jobs, preferences, events, digests, and resolved citation relations; Redis and ARQ execute attempts but do not define durable truth. External scholarly and model providers remain outside the trusted boundary. Identifiers, configuration versions, quality state, and failures must remain explicit whenever data cross one of these regions.
+
+\begin{figure}[htbp]
+\centering
+\fbox{\parbox{0.88\textwidth}{
+\textbf{FIGURE PLACEHOLDER --- Evidence-first mobile literature loop.}\\
+The final vector figure will show: scholarly source $\rightarrow$ exact-revision ingestion $\rightarrow$ versioned artifacts and chunks $\rightarrow$ grounded answer and briefing $\rightarrow$ mobile inspection and behavioral events $\rightarrow$ versioned interest update. Trust boundaries will separate Android, FastAPI workers, PostgreSQL/Redis, and external providers.\\
+\textbf{Owner:} Hanyang (visual integration), with Ruiyu and Yifan validating technical labels. \textbf{Dependency:} final API and worker state diagrams. \textbf{Expected artifact:} editable vector figure plus print-safe PDF. \textbf{Finalization trigger:} implementation freeze for E1--E4.
+}}
+\caption{Evidence-first dependency loop and trust boundaries. The final figure will distinguish implemented paths from planned final-version extensions.}
+\label{fig:loop}
+\end{figure}
+
+Figure~\ref{fig:loop} will serve as the chapter's visual index. Three invariants connect its components. First, a paper-derived output must identify the exact source revision. Second, a state-changing request must carry a stable identity so that retry does not duplicate its effect. Third, degraded results and failures must remain visible instead of being converted into apparently complete output. These invariants turn the central problem of continuous literature understanding into testable system properties.
+
+\section{System Boundary and Responsibility Layers}
+
+\subsection{Client, Service, Engine, and Data Planes}
+
+The architecture separates four responsibility layers.
+The Android client owns navigation, device-visible state, local persistence, background scheduling, notifications, and the graph rendering boundary.
+The FastAPI service layer owns authenticated contracts, validation, orchestration, and controlled error responses.
+Engine workers own paper ingestion, document preparation, embedding, summarization, retrieval, generation, behavioral aggregation, digest assembly, and citation synchronization.
+PostgreSQL with pgvector owns durable domain records and vector search, while Redis supports queues, transient coordination, and bounded cache reuse.
+External arXiv, Semantic Scholar, storage, and model providers are outside the trust boundary and are always treated as fallible.
+
+This separation is deliberately based on responsibility rather than deployment process.
+A request may cross several processes, yet its durable meaning is determined by the paper revision, job, event, or completion record stored in the data plane.
+Conversely, a successful HTTP response does not imply that an external provider result is complete or that a generated statement is supported.
+The public contract therefore carries content-origin, quality, algorithm, and evidence status where those distinctions affect interpretation.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[page=3,width=0.94\textwidth]{figures/source_materials/storymap_architecture.pdf}
+  \caption{Architecture responsibility map from the supplied engineering pack. The thesis text refines this design using revision identity, durable job state, and explicit degraded modes.}
+  \label{fig:architecture-source}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[page=7,width=0.94\textwidth]{figures/source_materials/storymap_architecture.pdf}
+  \caption{Component-and-flow view of the Android, FastAPI, core-engine, and data/AI boundaries. Durable identity and status fields in the thesis refine this high-level architecture.}
+  \label{fig:component-flow}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[page=1,width=0.94\textwidth]{figures/source_materials/thesis_uiux.pdf}
+  \caption{Detailed engine-architecture description retained from the UI/UX and API design report, including the Android, service, ingestion, and storage responsibilities.}
+  \label{fig:detailed-engine-architecture}
+\end{figure}
+
+\subsection{Dependency Loop among TC1--TC4}
+
+The four challenges form a dependency loop rather than a pipeline with a single terminal output.
+TC1 produces revision-scoped sections and chunks.
+TC2 consumes those objects to generate source-linked explanations and questions; source inspection and question events then become high-value behavioral signals.
+TC3 combines those signals with explicit interests to rank a later briefing.
+TC4 presents the briefing and evidence on the phone, records bounded interactions, and returns them through an idempotent event queue.
+A citation-graph action can re-enter the loop by opening another paper, while a corrected interest can alter future ranking.
+
+Failure also propagates around the loop.
+A poor parse can reduce retrieval recall, which can force refusal or weaken a citation.
+An unclear mobile evidence action can prevent the user from detecting that weakness.
+An ambiguous event can then distort later recommendations.
+For this reason, Chapter~4 evaluates each track locally and also records cross-track failure propagation.
+
+\section{API and State Contracts}
+
+\subsection{Paper, Briefing, and Evidence Contracts}
+
+The public API is organized around domain resources rather than screens.
+Catalog endpoints return stable paper identifiers, provider metadata, revision and preparation status, and pagination information.
+Briefing endpoints return an immutable generated snapshot containing its generation time, ordered entries, relevance scores, recommendation reasons, and generator version.
+Paper-summary endpoints return structured fields and source references whose identifiers resolve to stored sections or chunks.
+The Q\&A endpoint accepts one paper and one question at the present scope and returns an answer, evidence items, verification state, and completion identity.
+
+Contract stability is important because the client may display a cached representation after the backend has moved to a newer paper revision.
+The client therefore retains the server identity and freshness metadata instead of treating a title as a sufficient key.
+When a source action is requested, the server resolves the stored evidence identifier rather than searching again by display text.
+This design avoids a class of errors in which the explanation and the later opened passage were produced by different retrieval runs.
+
+\subsection{Job, Event, and Error Contracts}
+
+Long-running operations return a durable job identity.
+Polling exposes queued, running, succeeded, partial, or failed state and a controlled error category.
+The server may retry internal work, but an idempotency key prevents duplicate durable effects.
+Client behavioral events similarly carry client-generated UUIDs so that network retry cannot count the same open or question twice.
+Batch acknowledgements distinguish accepted, duplicate, and rejected records.
+
+Errors are mapped into user-relevant classes.
+A connectivity failure permits retry or cached display; an unavailable provider may permit a controlled fixture only in demo mode; an empty retrieval leads to insufficient-evidence behavior; and a graph-enrichment failure permits the deterministic citation fallback.
+Raw worker exceptions remain in operator logs rather than being exposed in public responses.
+This contract makes failure visible without binding the Android client to backend implementation details.
+
+\begin{table}[htbp]
+\centering
+\caption{Representative cross-layer contracts and the invariant each protects.}
+\label{tab:api-contracts}
+\begin{tabular}{P{3.2cm}P{5.2cm}P{5.2cm}}
+\toprule
+Contract & Required identity/status & Protected invariant \\
+\midrule
+Paper and revision & logical paper, observed revision, preparation quality & displayed artifacts remain attributable to exact source content \\
+Summary/source & summary version, source span, parser and prompt identity & source action resolves to the evidence used at generation time \\
+Question/answer & paper scope, completion identity, retrieved chunks, verification state & conversation cannot silently widen scope or invent evidence identifiers \\
+Briefing & snapshot time, ordered entries, scoring version, reasons & a displayed digest does not change retroactively with later preferences \\
+Event batch & event UUID, type, timestamp, paper, acknowledgement & retry is idempotent and observation semantics remain inspectable \\
+Graph & root paper, depth, node bound, graph version, algorithm status & mobile visualization is bounded and fallback is distinguishable \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[page=9,width=0.94\textwidth]{figures/source_materials/storymap_architecture.pdf}
+  \caption{Shared data-plane design for papers, users, embeddings, events, graph relations, and cached work. Keeping vector search with transactional records reduces premature infrastructure fragmentation at the project scale.}
+  \label{fig:data-plane}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[page=3,width=0.94\textwidth]{figures/source_materials/thesis_uiux.pdf}
+  \caption{Module responsibility and API entry points from the supplied design report. The contracts in Table~\ref{tab:api-contracts} state the identities and statuses a caller may rely on.}
+  \label{fig:module-api-map}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[page=4,width=0.94\textwidth]{figures/source_materials/thesis_uiux.pdf}
+  \caption{Digest, paper-summary, Q\&A, graph, interest, and event endpoints used to align the mobile workflow with server resources.}
+  \label{fig:api-design-source}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[page=5,width=0.94\textwidth]{figures/source_materials/thesis_uiux.pdf}
+  \caption{Behavioral feedback and UI-flow contracts connecting the recommendation loop to mobile interaction.}
+  \label{fig:feedback-api-source}
+\end{figure}
+
+\section{C1: Revision-Safe Literature Representation}
+\label{sec:c1-revision}
+
+\subsection{Logical Works, Observed Revisions, and Artifact Lineage}
+
+The first technical challenge is continuity under change: a paper identifier remains useful across updates, but an answer or embedding is valid only for the content from which it was derived. MNEME therefore separates a logical paper identifier \(p\) from an observed revision identifier \(r\). A \texttt{papers} row represents the work and maintains discovery metadata; a \texttt{paper\_versions} row records an exact provider revision, content checksum, storage location, parser quality, and processing state. Downstream chunks, embeddings, summaries, jobs, and graph synchronization inputs bind to the revision row rather than only to the logical work.
+
+The lineage of a derived artifact \(a\) is modeled as
+\[
+  a = f(p,r,h,\theta),
+\]
+where \(h\) is the source-content checksum and \(\theta\) includes the stage, parser, prompt, model, or embedding version relevant to transformation \(f\). Reuse is safe only when all material inputs for that artifact class match. In particular, equality of \(p\) does not imply equality of \(a\). The database constraints and repositories enforce this distinction by using internal UUIDs for relationships and uniqueness constraints for provider identifiers and revision labels.
+
+The arXiv synchronizer applies this identity model in two steps. It normalizes a provider identifier to locate or create the logical paper, then inserts only previously unseen revisions. A newer metadata observation may refresh the logical paper snapshot without mutating an existing revision. The transaction also normalizes author identities and returns exact revision identifiers for subsequent work. This design avoids an in-place-update alternative in which the latest PDF silently replaces its predecessor; that alternative is simpler to query but makes prior summaries and citations impossible to interpret after an update.
+
+\subsection{Durable Stage Identity and Recovery}
+
+Processing is decomposed into metadata fetch, PDF download, parsing, summarization, chunking, embedding, and digest assembly. Paper-scoped stages carry both \texttt{paper\_id} and \texttt{paper\_version\_id}. A canonical serialization of the stage, scope, pipeline version, and material inputs is hashed into an idempotency key. A unique database constraint then maps logically equivalent submissions to one durable job row even when an API request, scheduler, or worker retries.
+
+PostgreSQL records the job state \texttt{queued}, \texttt{running}, \texttt{succeeded}, or \texttt{failed}, along with attempt counts, timestamps, leases, and the latest internal error. Redis/ARQ receives a stable attempt identifier only after the durable row exists. Dispatch leases allow interrupted enqueue operations to be reclaimed, and a recovery service periodically re-enqueues revision-scoped work that is eligible for retry. The public \texttt{GET /jobs/\{job\_id\}} endpoint exposes durable progress while withholding internal exception text. This database-first design was chosen over treating the queue as the source of truth because queue retention and worker availability should not determine whether processing history can be reconstructed.
+
+The download and artifact stores extend idempotency to the file system. Downloads enforce size, media signature, retry policy, and an expected checksum when available. New bytes are written to a temporary file, synchronized, and atomically installed with \texttt{os.replace}. Structured parse artifacts and their sidecars follow the same installation pattern. Consequently, a process failure can leave either the previous complete artifact or a recoverable temporary file, rather than a partially overwritten file that appears valid.
+
+\subsection{Parsing, Quality Tiers, and Degraded Operation}
+
+The parser combines PyMuPDF text blocks with pdfplumber layout hints. It removes repeated headers and footers, estimates column structure, orders blocks within each column, and detects headings before assembling sections. This approach retains more source structure than flat text extraction while remaining deterministic and inspectable. Scientific PDFs nevertheless vary in embedded text, reading order, typography, and page layout. The parser therefore records one of three implemented quality tiers:
+\begin{itemize}
+  \item \texttt{structured}: section structure and ordered text pass the parser's checks;
+  \item \texttt{text\_only}: useful full text is available but structural confidence is insufficient;
+  \item \texttt{abstract\_only}: full-text processing cannot be trusted, so downstream services use provider metadata rather than pretending that section-level evidence exists.
+\end{itemize}
+The processing status is reconciled from artifacts belonging to the latest observed revision. A revision can become \texttt{ready} only when a non-abstract summary exists, chunks exist, and those chunks have compatible embeddings; otherwise the paper remains partial or failed. Quality is therefore a control input to downstream behavior, not a decorative label.
+
+\subsection{Revision Isolation and the E1 Contract}
+
+Section-aware chunking runs only after the parser has produced a revision-scoped document. Each chunk stores the exact \texttt{paper\_version\_id}, section title, stable local order, content hash, token count, and embedding provenance. Sentence-aware splitting and bounded overlap avoid crossing section boundaries when the source structure permits it. Chunking research indicates that retrieval performance depends on the interaction between segmentation, context expansion, and later retrieval stages rather than on a universally optimal chunk size~\cite{wang2024bestpractices}. MNEME therefore treats its current section-aware policy as an implemented configuration to be compared in E2, not as an already proven improvement.
+
+E1 closes the C1 argument by testing the properties that implementation tests alone cannot establish across a representative corpus. Its fixtures will include multiple revisions, malformed or layout-diverse PDFs, interrupted stages, duplicate submissions, and stale-artifact scenarios. The primary outcomes are cross-revision contamination, idempotent recovery, parse-quality distribution, provenance completeness, and processing latency. The current repository already tests key software invariants, including revision-scoped retrieval and job idempotency; corpus-level rates and performance values remain \pending{}. This bounded conclusion is important: C1 establishes an inspectable mechanism for continuity, while E1 must determine how reliably that mechanism operates on the selected evidence set.
+
+\section{C2: Evidence-Bounded Assistance}
+\label{sec:c2-evidence}
+
+\subsection{Current Scope and Retrieval Boundary}
+
+The second technical challenge is evidence continuity: generated assistance must remain resolvable to the source revision that conditioned it. The current Q\&A endpoint deliberately accepts one logical paper, resolves its latest observed revision, and retrieves only chunks whose \texttt{paper\_id}, \texttt{paper\_version\_id}, and embedding model match that request. Cross-paper synthesis, library-wide questions, and multi-turn scope expansion are not implemented claims. This narrow boundary makes the source set explicit and prevents conversation history from silently widening it.
+
+Dense pgvector retrieval supplies question-specific candidates, while early chunks from the introduction or document overview may be retained as stable context anchors. A deterministic reranker combines normalized vector similarity and lexical question overlap as
+\[
+  R(q,c)=0.7D(q,c)+0.3L(q,c).
+\]
+The implementation describes this exactly as a lexical blend rather than a cross-encoder. Context anchors add orientation without displacing the highest-ranked evidence. This choice preserves a lightweight, reproducible baseline; it does not establish that the coefficients or anchor policy are optimal. E2 must compare the implemented section-aware configuration with fixed-size and context-expanded alternatives.
+
+\subsection{Generation, Refusal, and Source Matching}
+
+Retrieved chunks are rendered with section and page metadata before model generation, and the prompt requires numbered evidence markers. If no candidate reaches the configured evidence threshold, or if the provider returns an insufficient-evidence marker, the service emits a fixed refusal rather than calling absence of retrieved evidence a negative factual answer. A returned marker is accepted only when it indexes a chunk actually supplied to the model. Each public citation then carries the stored chunk identity and its revision-scoped metadata.
+
+The post-generation verifier separates identifier validity from a limited lexical source-match check. It splits the answer into local claims, removes the marker, and measures content-word overlap with the cited chunk. A threshold of 0.3 yields \texttt{matched}, \texttt{partial}, or \texttt{insufficient\_evidence}. This check can detect missing markers and severe lexical mismatch, but it is not semantic entailment and cannot establish that every material proposition is supported. That limitation matters because retrieved context does not prevent unsupported or contradictory generation~\cite{niu2024ragtruth}. ALCE likewise treats citation correctness and completeness as separate evaluation dimensions~\cite{gao2023alce}. Chapter~4 therefore combines automated retrieval and citation measures with human annotation instead of promoting \texttt{matched} to ``factually correct.''
+
+\subsection{Replaceable Interface and the E2 Contract}
+
+The retrieval, reranking, generation, and verification stages communicate through typed objects rather than provider-specific payloads. Model identifiers, prompt versions, token usage, latency, cost estimate, input hash, and cache state are persisted with completions. This boundary permits a later reranker or semantic verifier to replace one stage without changing paper and revision identity. It also gives E2 a reproducible configuration record.
+
+E2 evaluates the complete boundary rather than only the final prose. It will measure evidence retrieval, citation correctness and completeness, refusal behavior on unanswerable questions, and answer utility on a frozen question set. Tests at the implementation cutoff establish revision filtering and marker validation, while the quality metrics remain \pending{}. Yifan owns the AI-method and result sign-off for this section; Ruiyu owns the revision and persistence claims on which it depends.
+
+\section{C3: Adaptive and Inspectable Interest Memory}
+\label{sec:c3-behavior}
+
+\subsection{A Versioned Behavioral Contract}
+
+The third technical challenge is preference continuity: MNEME must adapt to interaction history without presenting noisy behavior as certain intent. The public \texttt{POST /events} contract accepts batches of client-generated UUIDs with an event type, timezone-aware timestamp, optional paper, and duration only for an open event. The backend rejects unknown papers, invalid event combinations, and timestamps more than five minutes in the future. Duplicate UUIDs are acknowledged without repeating their effect.
+
+Event insertion and preference recomputation occur in one database transaction while the user row is locked. A failure therefore commits neither the new observations nor a profile derived from only part of the batch. The Android client uses the same UUID as its durable queue identity and reserves, retries, and marks batches as synchronized. This end-to-end identity is preferable to server-generated event identifiers because a client retry after an ambiguous network failure remains idempotent.
+
+The contract records observations rather than inferred intent. An impression, a short open, and a save have distinct semantics, but none proves why the user acted. For this reason the current model is named and versioned as \texttt{behavior-v1}; its output is an inspectable deterministic baseline rather than a learned claim about cognition.
+
+\subsection{Behavior-v1 Aggregation}
+
+Let event \(i\) have base weight \(b_i\), opened-duration multiplier \(m_i\), age \(\Delta_i\) in days, and a paper representation \(v_i\). Only events within a 90-day window whose paper has a model-compatible representation are eligible. The effective signed weight is
+\[
+  \widetilde{w}_i=b_i m_i 2^{-\Delta_i/30}.
+\]
+The duration multiplier is 0.5 below 30 seconds, 1.0 from 30 through 180 seconds or when duration is absent, and 1.5 above 180 seconds; it applies only to \texttt{paper\_opened}. Slightly future timestamps within the accepted skew are assigned age zero. The base weights are shown in Table~\ref{tab:behavior-weights}.
+
+\begin{table}[htbp]
+\centering
+\caption{Frozen event semantics in \texttt{behavior-v1}. A zero weight retains the observation without moving the vector.}
+\label{tab:behavior-weights}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Event & Base weight \(b_i\) \\
+\midrule
+\texttt{paper\_impression} & 0.1 \\
+\texttt{paper\_opened} & 1.0 \\
+\texttt{paper\_saved} & 3.0 \\
+\texttt{paper\_skipped} & -1.0 \\
+\texttt{paper\_shared} & 4.0 \\
+\texttt{question\_asked} & 2.0 \\
+\texttt{digest\_dismissed} & 0.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For each paper, \(v_i\) is the mean of chunk embeddings from its latest observed revision, filtered to the embedding model configured for recommendation. The unnormalized profile and stored unit vector are
+\[
+  z=\frac{\sum_i \widetilde{w}_i v_i}{\sum_i |\widetilde{w}_i|},
+  \qquad
+  u=\frac{z}{\lVert z\rVert_2}.
+\]
+Absolute-weight normalization prevents positive and negative signals from making a near-zero denominator. If no compatible signal remains or \(z\) is degenerate, the behavior vector is absent rather than fabricated. The preference row stores the vector together with its embedding model and behavior-model version, so a recommendation service cannot silently compare incompatible spaces.
+
+\subsection{Recommendation Composition and Inspectable Reasons}
+
+The current recommendation baseline connects explicit and observed preferences without merging their provenance. For candidate \(p\), it computes explicit-topic match \(T\), behavior-vector cosine similarity \(B\), and a recency score \(F=2^{-d/7}\), where \(d\) is paper age in days. When all signals are available,
+\[
+  S(p)=0.45T(p)+0.35B(p)+0.20F(p).
+\]
+If explicit topics or compatible embeddings are absent, the missing weights are removed and the remaining weighted sum is divided by the available total. Scores therefore remain comparable within \([0,1]\) for a cold-start user. Stable UUID ordering breaks score ties, and a generated digest freezes its generator version and candidate snapshot rather than changing as preferences update.
+
+Displayed reasons are selected from the contributing signals whose strength crosses a fixed threshold, such as matched explicit topics, similarity to recently engaged papers, or recency. They are not model-generated rationalizations. Prior work on scrutable recommendation profiles motivates keeping recommendation state visible and editable~\cite{ramos2024scrutable}; MNEME implements the narrower property that reasons derive from the same components that produced the score. Whether users understand or trust these reasons remains an E3/E4 question.
+
+\subsection{Limitations, Planned Iteration, and the E3 Contract}
+
+Behavior-v1 intentionally has strong limitations. It compresses distinct interests into one vector; uses fixed, hand-specified event weights; represents a paper by the latest compatible revision even when the event concerned an earlier one; and recomputes when event batches arrive rather than continuously as time decay changes. A skip is treated as negative only when the client has recorded the supported interaction, but exposure and intent can still be ambiguous. The current implementation also lacks diversity, author-follow, and repetition terms that appeared in earlier design notes. This chapter does not claim those terms exist.
+
+\textbf{PLANNED FINAL ITERATION --- behavior-v2.} The name records an intended research iteration, not a frozen algorithm. Ruiyu owns the behavioral contract and Yifan owns recommendation integration. The dependency is a literature-backed mathematical definition plus pilot event distributions. The expected artifacts are an ADR, versioned implementation and migration, frozen coefficients, and an E3 comparison against static, recent-only, and behavior-v1 baselines. The finalization trigger is completion of those artifacts before the final E3 run; if the trigger is not met, the thesis will report behavior-v1 as the evaluated baseline rather than retrofitting an unimplemented method into the narrative.
+
+E3 will measure ranking quality on a frozen replay set, sensitivity to event types and time decay, stability under sparse or contradictory feedback, cold-start behavior, and the fidelity of displayed reasons. Current tests establish deterministic aggregation, idempotent transactional ingestion, model compatibility, and stable ranking. No ranking-quality or user-benefit result is claimed in this initial draft.
+
+\section{C4: Bounded Mobile Integration}
+\label{sec:c4-mobile}
+
+\subsection{Citation Identity and Bounded Graph Assembly}
+
+The fourth technical challenge is interaction continuity: the mobile interface must expose the sources, state changes, and failures produced by C1--C3 without hiding them behind a visually plausible screen. The citation graph provides the clearest cross-layer case. Its internal model is a directed paper graph, not an entity-level knowledge graph. An edge \(p_s\rightarrow p_t\) means that source paper \(p_s\) cites target paper \(p_t\); categories and keywords remain attributes rather than graph nodes.
+
+Semantic Scholar synchronization retrieves references and citations outside the database transaction, then persists both directions atomically. Either endpoint may initially be represented by an external Semantic Scholar identifier, but at least one endpoint must be a local paper. Partial uniqueness constraints cover the valid internal/internal and internal/external endpoint combinations. When a later synchronization observes a matching local provider identity, the repository resolves external endpoints, removes self-edges, and merges duplicates. Unresolved observations remain internal rather than being exposed as fake local papers.
+
+The public \texttt{GET /graph/\{paper\_id\}} query performs a bounded bidirectional traversal over resolved local UUIDs. Depth defaults to one and cannot exceed two; response size defaults to 50 nodes and cannot exceed 200. The pure enrichment algorithm ranks and clusters the bounded snapshot per request. If enrichment raises an exception, the service returns the deterministic citation baseline with \texttt{algorithm\_status=fallback} instead of failing the entire endpoint. Responses carry \texttt{graph\_version=citation-graph-v1}, so a future change in weighting, ranking, or clustering cannot silently change public semantics.
+
+Persisting provider observations before resolution was chosen over discarding unknown neighbors because later catalog growth can repair the graph without repeating every historical query. Persisting enriched layouts was rejected for the current version because it would create hidden mutable state and invalidation rules before the graph interaction is validated. The trade-off is that enrichment cost is paid per request and the public graph intentionally excludes unresolved scholarly neighbors.
+
+\subsection{Mobile Rendering, Cache State, and Event Delivery}
+
+The Android paper-detail screen requests a depth-two, 50-node graph and renders it with a repository-vendored D3 bundle in a local WebView. A Kotlin--JavaScript bridge mirrors selected-node identity into a native Compose card and accessible selector, and the selection survives navigation to another paper and back. The UI displays whether the backend returned the enriched or fallback algorithm. Graphs are not cached at the implementation cutoff; a network failure therefore becomes a retryable graph error rather than a stale visualization presented as current.
+
+Briefings and paper metadata use a different state policy. Room stores live backend snapshots and labels restored content as cached. If a configured live request fails and no prior live snapshot exists, the client shows an error instead of substituting controlled fixture data. Fixtures remain available only through an explicitly labeled demonstration path. Generated Q\&A is not persisted locally, so an offline reader can inspect cached papers and briefings but cannot receive an apparently verified new answer.
+
+Behavioral interactions close the C3 feedback loop. The client records only UI actions that actually exist at the cutoff: impressions, paper opens, and paper-scoped questions. Room schema version 4 stores pending event UUIDs and retry state. The synchronization coordinator reserves batches of at most 50, reclaims attempts stale for 15 minutes, validates the server's accepted-plus-duplicate count, and returns failed attempts to pending state. A unique WorkManager job requires connectivity and uses exponential backoff; application startup also schedules recovery. Save, skip, share, and digest-dismiss events are supported by the backend vocabulary but are not fabricated by a client that lacks those controls.
+
+\subsection{Offline State, Background Work, and Notifications}
+
+MNEME separates data that remain useful offline from actions that require live evidence.
+Paper metadata and briefing snapshots may be read from Room with a visible cached label and a freshness timestamp.
+Previously opened papers remain available under a retention policy.
+Generated Q\&A is not presented as an offline capability because producing a new answer requires a live retrieval and model path; retaining an old answer without its generation and evidence context could mislead the reader.
+The graph also remains live-only at the interim cutoff because no versioned local graph cache has been established.
+
+WorkManager is used for network-constrained, deferrable work such as event upload and future briefing refresh.
+Each unique job has explicit retry behavior and exponential backoff.
+The scheduler does not promise execution at an exact wall-clock time, which is consistent with Android background limits.
+Notification delivery is designed as the terminal signal of a completed, newly available briefing, not as a substitute for server scheduling.
+The device should compare briefing identity and last-notified state so that retry or application restart cannot repeatedly alert the user about the same content.
+Permission denial, disabled channels, expired content, and stale cache each require a non-crashing path.
+
+At the interim cutoff, the event-upload worker and recovery scheduling are implemented, while live briefing refresh and the complete notification permission/delivery experience remain \planned{}.
+This boundary is especially important for Heng's contribution: Room state, WorkManager recovery, notification triggers, and evidence-visible screens form one reliability problem, but only the portions backed by the current revision are described as implemented.
+
+\subsection{Graph Interaction and Mobile Affordances}
+
+The graph view intentionally constrains both data and interaction.
+The server bounds traversal depth and node count; the client highlights the selected node, mirrors its identity into native state, explains the relation to the root paper, and keeps an ``Open paper'' action visible.
+The first formative test found that the earlier graph concept did not make the next action self-evident.
+The redesign therefore treats selection as a state transition rather than a purely visual change.
+An instruction introduces the gesture, the selected style confirms the target, the relation explanation supplies meaning, and the persistent action closes the path back into reading.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[page=6,width=0.94\textwidth]{figures/source_materials/uiux_mockups.pdf}
+  \caption{Core mobile-screen mockups used to define digest, summary, Q\&A, graph, and interest states. They are prototype evidence rather than screenshots of the evaluated final build.}
+  \label{fig:core-mobile-mockups}
+\end{figure}
+
+\subsection{Visible Failure and Degraded Operation}
+
+The current integration distinguishes live, cached, fixture, fallback, retryable failure, and insufficient-evidence states at their relevant boundaries. This vocabulary prevents a successful rendering from being confused with fresh or model-produced content. It is incomplete: live background digest refresh remains a no-op, notification permission and delivery UX are not integrated, saved-paper behavior is absent, and the graph has no offline cache. These items are \planned{} final-version work rather than current capabilities.
+
+The native client represents onboarding, briefing, paper-detail, paper-scoped question, and graph operations with explicit loading, content, and error states.
+For asynchronous paper preparation, it polls the returned job once per second until the paper becomes ready or the job reports a terminal failure.
+This client orchestration exposes progress without making a claim about parser or summarization quality.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.94\textwidth]{mneme_android_loop}
+\caption{Implemented Android state and event loop. The upper path restores or refreshes reader-visible content with an explicit origin. The lower path returns visible interactions through durable, duplicate-aware synchronization. The figure describes client orchestration and does not imply recommendation adaptation.}
+\label{fig:android-loop}
+\end{figure}
+
+E4 currently measures client startup, visible origin and failure states, graph interaction correctness, and event-delivery recovery on one Android emulator, including a separate live-backend event loop. Chapter~4 reports these results independently from controlled ViewModel and WebView measurements. The measurements do not establish physical-device reliability, usability, notification benefit, graph quality, or recommendation adaptation. Participant evaluation and notification delivery remain planned.
+
+\section{Alternatives Considered and Selection Rationale}
+
+Several simpler alternatives were rejected because they weaken the controlling invariants.
+Overwriting a paper with its newest PDF simplifies queries but destroys the ability to interpret earlier summaries and citations.
+Using a vector database as a separate service could scale independently, but PostgreSQL with pgvector was selected for the current scale so that vector rows, revision identity, and transactionally related metadata remain in one data plane.
+Sending an entire paper to a long-context model avoids explicit chunk retrieval, but increases cost and still does not guarantee that centrally located evidence will be used consistently~\cite{liu2024lost}.
+Section-aware retrieval with recorded chunks therefore remains the inspectable baseline.
+
+For personalization, a learned end-to-end ranker could optimize offline relevance but would add an opaque model before an adequate behavior dataset exists.
+The deterministic behavior-v1 aggregation and weighted scorer were selected as auditable baselines whose event semantics, decay, and reasons can be inspected.
+For graph presentation, an unconstrained scholarly network was rejected in favor of a bounded citation neighborhood because mobile rendering, provider completeness, and next-action clarity are part of the evaluated problem.
+For background delivery, exact alarms were not selected because the research need is dependable eventual refresh rather than second-level scheduling precision; WorkManager better matches the operating-system contract.
+
+These choices are not claims that the selected configuration is globally optimal.
+They create a reproducible and falsifiable configuration against which more complex retrieval, ranking, verification, graph, and scheduling alternatives can be compared.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[page=6,width=0.94\textwidth]{figures/source_materials/storymap_architecture.pdf}
+  \caption{Examples of implementation-level Given--When--Then contracts for ingestion and cited Q\&A. Appendix~\ref{app:acceptance} retains the full product-level acceptance set.}
+  \label{fig:acceptance-examples}
+\end{figure}
+
+\section{UI/UX Rationale and Revised Prototype Flow}
+
+The user interface follows the same evidence path as the backend.
+The digest answers ``why should I open this?'', the paper screen answers ``what does this paper claim?'', the evidence action answers ``where is the support?'', Q\&A answers a bounded question, and the graph answers ``what related paper can I inspect next?''.
+Interest controls expose the state that will influence the next digest.
+This sequence avoids placing model-oriented controls in front of the research task.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[page=3,width=0.94\textwidth]{figures/source_materials/uiux_mockups.pdf}
+  \caption{Prototype flow from onboarding and digest triage to source-linked reading, cited Q\&A, graph exploration, recovery states, and interest tuning.}
+  \label{fig:uiux-flow}
+\end{figure}
+
+The revised prototype preserves the digest because all five formative participants reached a paper detail from it.
+It moves verification labels and citation chips closer to the generated content because evidence was useful but not always visually salient.
+It adds explicit graph instruction, selection, relation explanation, and a persistent action because the earlier graph task succeeded for only two of five participants.
+It keeps interest tuning near the digest because one participant missed the preference path.
+These are evidence-linked design decisions; whether they improve the final connected build remains an E4 retest question.
+
+\section{Cross-Cutting Reliability, Privacy, and Evolvability}
+
+The four contributions share one reliability rule: durable domain state precedes replaceable execution or presentation state. PostgreSQL owns revision, job, event, preference, digest, completion, and citation records. Redis accelerates queueing and cache reuse, while Android Room preserves explicitly labeled local snapshots and pending events. Stable identifiers make retries idempotent at each boundary. Public APIs return controlled error categories and do not expose stored worker exceptions.
+
+Model-facing operations persist provider, model snapshot, prompt version, token counts, latency, estimated cost, and input hashes. BudgetGuard constrains configured daily spending, and deterministic input identities permit cache reuse. These mechanisms make a run auditable but do not by themselves demonstrate affordable or low-latency operation; Chapter~4 retains those results as \pending{}. Raw behavioral history and the learned preference vector remain server-side and are not added to external model prompts merely because they are available. Secrets are environment configuration rather than repository data. User-facing deletion and a complete privacy audit remain final-version obligations.
+
+The design keeps change explicit through versioned parser, behavior, graph, embedding, prompt, and generator identities. This is deliberately more verbose than overwriting ``current'' state, but it localizes future upgrades: behavior-v2 can coexist with behavior-v1, a graph-v2 can alter public semantics without relabeling old responses, and a replacement verifier can be evaluated against the same revision-scoped chunks. Versioning is therefore part of the technical method rather than administrative metadata.
+
+\section{Initial-to-Final Iteration Ledger}
+
+The initial draft is argument-complete but not evidence-complete. Table~\ref{tab:chapter3-ledger} records the unresolved transitions that must not be silently converted into claims when the final thesis is assembled.
+
+\begin{table}[htbp]
+\centering
+\caption{Chapter~3 iteration ledger. ``Done'' requires the named artifact and domain-owner sign-off, not prose completion alone.}
+\label{tab:chapter3-ledger}
+\begin{tabular}{@{}P{0.13\textwidth}P{0.27\textwidth}P{0.25\textwidth}P{0.22\textwidth}@{}}
+\toprule
+Trace & Initial-draft state & Finalization artifact & Owner and trigger \\
+\midrule
+C1/E1 & Mechanism and invariants inspected at \texttt{b945d3c}; metrics \pending{} & Frozen corpus, revision/recovery report, provenance and latency plots & Ruiyu; E1 protocol executed on frozen code/configuration \\
+C2/E2 & Single-paper interface and limitations documented; quality \pending{} & Question set, human labels, retrieval/citation/refusal results & Yifan; AI revision and annotation guide frozen \\
+C3/E3 & behavior-v1 and scorer frozen; behavior-v2 remains \planned{} & Replay set, baselines/ablation, versioned ADR and result plots & Ruiyu with Yifan; evaluate v2 only if implemented before E3 freeze \\
+C4/E4 & Client reliability, graph interaction, and event recovery measured on one emulator; participant and notification evaluation \planned{} & Additional physical-device and participant evidence, if completed & Heng and Hanyang; E4 evidence reviewed against the frozen protocol \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Cross-domain prose requires the evidence owner rather than the chapter integrator to approve technical claims. Ruiyu signs the C1 and C3 mechanisms and the persistence side of C2/C4; Yifan signs the AI and graph-enrichment mechanisms; Heng and Hanyang sign the Android behavior, screenshots, and E4 observations. Unresolved items remain labeled \planned{} or \pending{} in the final manuscript if their trigger is not met. This rule preserves room for genuine iteration without allowing anticipated work to be narrated as completed evidence.
