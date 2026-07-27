@@ -109,7 +109,18 @@ silently replacing the graph-backed selection. If Semantic Scholar is unavailabl
 than five neighbors can be identified, onboarding uses the existing five-paper same-category
 fallback without creating citation edges. Graph reads remain free of external provider calls.
 
-`POST /v1/events` stores raw client UUIDs once and recomputes `behavior-v1` in the same PostgreSQL transaction. Event timestamps must be timezone-aware ISO 8601 values and cannot be more than five minutes ahead of the server clock; the recomputation query uses the same upper bound. The frozen baseline uses signed event weights, opened-paper duration tiers, a 30-day half-life, a 90-day window, and the latest paper revision from the configured embedding model. Algorithm tuning is intentionally deferred; changing semantics requires a new model version and ADR update.
+`POST /v1/events` stores raw client UUIDs once and recomputes the active `behavior-v2` profile in the same PostgreSQL transaction. Event timestamps must be timezone-aware ISO 8601 values and cannot be more than five minutes ahead of the server clock; the recomputation query uses the same upper bound. The active model uses positive and negative channels, continuous opened-paper duration weighting, 14/60-day decay, per-paper saturation, exposure-gated skips, bounded confidence, a 180-day window, and latest-revision paper embeddings from the configured model. ADR 0003 freezes the parameters, while `behavior-v1` remains callable as the replay baseline.
+
+Existing raw history can be replayed without inserting a synthetic event:
+
+```bash
+uv run python -m mneme.cli.recompute_behavior
+uv run python -m mneme.cli.recompute_behavior --user-id <user-uuid>
+```
+
+The command stores no raw vector in its output; it reports safe model identity, confidence, channel availability, and aggregate evidence counts. A missing configured or stored user returns a stable exit status, and infrastructure errors do not expose database details.
+
+Controlled behavior evaluation is offline and requires no PostgreSQL, Redis, provider, or user data. From `backend/`, use `uv run python -m mneme.cli.evaluate_behavior --output /tmp/mneme-behavior-evaluation` for an exploratory run. The retained clean-tree workflow, fixture, metrics, plots, and claim boundaries are documented in `docs/evaluation/behavior/README.md`.
 
 ## Pipeline and artifacts
 
@@ -204,7 +215,7 @@ Database integration and end-to-end pipeline tests run when `MNEME_DATABASE_URL`
 - Seed onboarding prepares its bounded citation neighborhood automatically. Synchronization
   for papers entering through other paths remains an explicit single-paper CLI; fleet-wide
   scheduling is deferred.
-- Behavior preferences recompute when `/events` is called. Scheduled recomputation after embeddings arrive or events age out is deferred, and behavior-v1 tuning requires a new model version.
+- Behavior profiles recompute on `/events` or through the explicit replay command. Automatic replay after embeddings arrive or solely because events age is not scheduled; production operations must invoke replay when that refresh is required. Any semantic tuning requires a new model identity and a separately frozen evaluation.
 - Public graphs include only locally resolved citation endpoints; unresolved provider observations remain server-side until their papers are ingested and a later graph synchronization sees the matching provider identity.
 
 ## Layout
@@ -215,11 +226,12 @@ backend/
 |-- src/mneme/
 |   |-- ai/             # Providers, RAG services, routing, budget, cache, evaluation
 |   |-- api/            # Routers, dependencies, schemas, middleware, shared errors
-|   |-- cli/            # Demo identity and manual arXiv tools
+|   |-- cli/            # Demo identity, replay, evaluation, and manual arXiv tools
 |   |-- core/           # Settings, logging, and security helpers
 |   |-- db/             # Async engine, sessions, and FastAPI dependencies
 |   |-- models/         # SQLAlchemy persistence model
 |   |-- repositories/   # Transactions, artifacts, jobs, catalog, and digest queries
+|   |-- evaluation/     # Controlled behavior fixtures, metrics, replay, and reporting
 |   |-- services/       # External clients, documents, recommendation, and orchestration
 |   |-- redis/          # Shared Redis and ARQ configuration
 |   |-- tasks/          # Workers, durable stages, recovery, and cron-friendly CLIs
