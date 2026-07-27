@@ -12,7 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.models.user import UserEventType
 from mneme.repositories.events import EventRecord, EventRepository
-from mneme.services.behavior import BEHAVIOR_MODEL_VERSION, BehaviorSignal
+from mneme.services.behavior import BehaviorSignal
+from mneme.services.behavior_v2 import (
+    BEHAVIOR_MODEL_VERSION,
+    DEFAULT_BEHAVIOR_CONFIG,
+    BehaviorProfile,
+)
 from mneme.services.events import (
     BehaviorEventService,
     EventPaperNotFoundError,
@@ -55,7 +60,7 @@ class FakeEventRepository:
         self.signal_since: datetime | None = None
         self.signal_until: datetime | None = None
         self.embedding_model: str | None = None
-        self.stored: tuple[UUID, tuple[float, ...] | None, str, int] | None = None
+        self.stored: tuple[UUID, BehaviorProfile, str] | None = None
 
     def transaction(self) -> FakeTransaction:
         return self.transaction_state
@@ -89,15 +94,14 @@ class FakeEventRepository:
         self.embedding_model = embedding_model
         return self.embeddings
 
-    async def store_behavior_embedding(
+    async def store_behavior_profile(
         self,
         user_id: UUID,
         *,
-        embedding: tuple[float, ...] | None,
+        profile: BehaviorProfile,
         embedding_model: str,
-        model_version: int,
     ) -> None:
-        self.stored = (user_id, embedding, embedding_model, model_version)
+        self.stored = (user_id, profile, embedding_model)
 
 
 def _event(event_id: UUID, *, paper_id: UUID = PAPER_ID) -> EventRecord:
@@ -144,15 +148,17 @@ def test_event_service_deduplicates_and_recomputes_in_one_transaction() -> None:
     assert [event.event_id for event in repository.inserted] == [new_id]
     assert repository.transaction_state.entered
     assert repository.transaction_state.exception_type is None
-    assert repository.signal_since == NOW - timedelta(days=90)
+    assert repository.signal_since == NOW - timedelta(days=DEFAULT_BEHAVIOR_CONFIG.window_days)
     assert repository.signal_until == NOW + timedelta(minutes=5)
     assert repository.embedding_model == "embedding-test-v1"
-    assert repository.stored == (
-        USER_ID,
-        (1.0, 0.0),
-        "embedding-test-v1",
-        BEHAVIOR_MODEL_VERSION,
-    )
+    assert repository.stored is not None
+    stored_user, profile, stored_model = repository.stored
+    assert stored_user == USER_ID
+    assert profile.positive_embedding == pytest.approx((1.0, 0.0))
+    assert profile.negative_embedding is None
+    assert profile.model_version == BEHAVIOR_MODEL_VERSION
+    assert 0 < profile.confidence < 1
+    assert stored_model == "embedding-test-v1"
 
 
 @pytest.mark.base
@@ -191,12 +197,32 @@ def test_empty_batch_can_deterministically_clear_stale_behavior() -> None:
 
     assert result.accepted == 0
     assert result.duplicates == 0
-    assert repository.stored == (
-        USER_ID,
-        None,
-        "embedding-test-v1",
-        BEHAVIOR_MODEL_VERSION,
-    )
+    assert repository.stored is not None
+    stored_user, profile, stored_model = repository.stored
+    assert stored_user == USER_ID
+    assert profile.positive_embedding is None
+    assert profile.negative_embedding is None
+    assert profile.model_version == BEHAVIOR_MODEL_VERSION
+    assert profile.confidence == 0
+    assert stored_model == "embedding-test-v1"
+
+
+@pytest.mark.base
+@pytest.mark.db
+def test_recompute_replays_raw_history_without_inserting_events() -> None:
+    repository = FakeEventRepository()
+    repository.signals = [
+        BehaviorSignal(UserEventType.PAPER_SAVED, PAPER_ID, NOW),
+    ]
+    repository.embeddings = {PAPER_ID: (0.0, 1.0)}
+
+    profile = asyncio.run(_service(repository).recompute(USER_ID))
+
+    assert repository.inserted == []
+    assert repository.transaction_state.entered
+    assert repository.transaction_state.exception_type is None
+    assert profile.positive_embedding == pytest.approx((0.0, 1.0))
+    assert repository.stored == (USER_ID, profile, "embedding-test-v1")
 
 
 @pytest.mark.base

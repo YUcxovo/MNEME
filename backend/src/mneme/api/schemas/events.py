@@ -36,7 +36,7 @@ class UserEvent(BaseModel):
 
     @model_validator(mode="after")
     def validate_event_scope(self) -> Self:
-        """Enforce the paper and duration semantics frozen for behavior-v1."""
+        """Enforce the paper and duration semantics frozen in the v0.1 contract."""
         if self.event_type == UserEventType.DIGEST_DISMISSED:
             if self.paper_id is not None:
                 raise ValueError("digest_dismissed must not include paper_id")
