@@ -27,8 +27,16 @@ internal object LiveCoreMeasurementFiles {
     ) {
         outputDirectory.deleteRecursively()
         outputDirectory.mkdirs()
-        file(fileName).writeText(header.joinToString(",") + "\n")
+        createCsv(fileName, header)
         writeEnvironment()
+    }
+
+    fun createCsv(
+        fileName: String,
+        header: List<String>,
+    ) {
+        outputDirectory.mkdirs()
+        file(fileName).writeText(header.joinToString(",") + "\n")
     }
 
     @Synchronized
