@@ -37,8 +37,8 @@ UI_SCENARIOS = (
     "paper_and_summary",
     "open_paper_source",
     "free_question_and_sources",
-    "open_qa_source",
     "citation_graph",
+    "select_graph_neighbor",
     "open_selected_graph_paper",
 )
 REPOSITORY_SCENARIOS = (
@@ -57,6 +57,7 @@ LABELS = {
     "free_question_and_sources": "Free question and sources",
     "open_qa_source": "Open cited source",
     "citation_graph": "Citation graph",
+    "select_graph_neighbor": "Select graph neighbor",
     "open_selected_graph_paper": "Open graph paper",
 }
 
@@ -121,16 +122,19 @@ def validate_protocol(rows: list[dict[str, str]]) -> None:
         **{("live_ui", scenario): 1 for scenario in UI_SCENARIOS},
         **{("live_repository", scenario): 5 for scenario in REPOSITORY_SCENARIOS},
     }
-    observed = {
+    required_observed = {
         key: len(value)
         for key, value in grouped.items()
-        if key[1] != "iteration_completion"
+        if key[1] not in {"iteration_completion", "open_qa_source"}
     }
-    if observed != expected:
+    if required_observed != expected:
         raise ValueError(
             "Live-core protocol is incomplete.\n"
-            f"Expected: {expected}\nObserved: {observed}",
+            f"Expected: {expected}\nObserved: {required_observed}",
         )
+    optional_qa_source_rows = grouped.get(("live_ui", "open_qa_source"), [])
+    if len(optional_qa_source_rows) > 1:
+        raise ValueError("The optional Q&A source callback was recorded more than once.")
 
     for row in rows:
         if row["scenario"] == "seed_to_five_paper_briefing":
@@ -138,6 +142,9 @@ def validate_protocol(rows: list[dict[str, str]]) -> None:
                 raise ValueError("A retained seed stage did not return five papers.")
         if row["scenario"] == "citation_graph" and int(row["graph_nodes"]) > 50:
             raise ValueError("A retained graph exceeded the Android request limit.")
+        if row["scenario"] == "citation_graph":
+            if int(row["graph_nodes"]) < 2 or int(row["graph_edges"]) < 1:
+                raise ValueError("The retained product path did not reach a multi-node graph.")
 
 
 def summarize(rows: list[dict[str, str]]) -> list[StageSummary]:
