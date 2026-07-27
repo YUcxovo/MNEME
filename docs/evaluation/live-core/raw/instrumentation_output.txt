@@ -15,7 +15,7 @@ INSTRUMENTATION_STATUS: test=fixedSeedAndQuestion_completeLiveUiAndRepeatedRepos
 INSTRUMENTATION_STATUS_CODE: 0
 INSTRUMENTATION_RESULT: stream=
 
-Time: 39.98
+Time: 106.285
 
 OK (1 test)
 

@@ -1,0 +1,3 @@
+iteration,seed_arxiv_id,total_duration_ms,seed_duration_ms,graph_duration_ms,open_neighbor_duration_ms,success,outcome,paper_count,selected_paper_id,graph_nodes,graph_edges,graph_status,neighbor_paper_id,neighbor_arxiv_id,poll_count,briefing_origin,graph_origin
+1,2010.11929,48058.055,48021.956,12.671,23.407,true,seed_to_graph_neighbor_completed,5,91081e46-bd4d-4b1e-b3eb-baa0667b5731,6,5,READY,16690c88-a171-41f9-bcb6-e544b5ea0b18,2010.11929,0,LIVE_BACKEND,LIVE_BACKEND
+2,2106.09685,46597.527,46560.569,10.656,26.281,true,seed_to_graph_neighbor_completed,5,f9d66203-b811-48aa-8704-e468b7d65e0a,7,6,READY,08b1c2c1-48bc-409d-afdd-253b42b9262d,2104.08691,0,LIVE_BACKEND,LIVE_BACKEND
