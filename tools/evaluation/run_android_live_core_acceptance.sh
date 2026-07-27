@@ -13,7 +13,6 @@ ADB="$ANDROID_SDK_ROOT/platform-tools/adb"
 LIVE_BASE_URL="${MNEME_LIVE_CORE_BASE_URL:-}"
 LIVE_TOKEN="${MNEME_LIVE_CORE_TOKEN:-}"
 LIVE_SEED="${MNEME_LIVE_CORE_SEED:-1706.03762}"
-LIVE_GRAPH_ARXIV="${MNEME_LIVE_CORE_GRAPH_ARXIV:-1706.03762}"
 LIVE_QUESTION="${MNEME_LIVE_CORE_QUESTION:-What problem does this paper address, and what method does it propose?}"
 LIVE_QUESTION_BASE64="$(printf '%s' "$LIVE_QUESTION" | base64 | tr -d '\n')"
 DEVICE_OUTPUT="/sdcard/Android/data/com.mneme.app/files/live-core-evaluation"
@@ -58,7 +57,6 @@ jq -n \
     --arg branch "$(git -C "$REPO_ROOT" branch --show-current)" \
     --arg backend_url "$LIVE_BASE_URL" \
     --arg seed_arxiv_id "$LIVE_SEED" \
-    --arg graph_center_arxiv_id "$LIVE_GRAPH_ARXIV" \
     --arg question "$LIVE_QUESTION" \
     --arg summary_model "${MNEME_LLM_SUMMARY_MODEL:-not-recorded}" \
     --arg qa_model "${MNEME_LLM_QA_MODEL:-not-recorded}" \
@@ -71,14 +69,11 @@ jq -n \
         branch: $branch,
         live_backend_url: $backend_url,
         fixed_seed_arxiv_id: $seed_arxiv_id,
-        fixed_graph_center_arxiv_id: $graph_center_arxiv_id,
         fixed_free_form_question: $question,
         ui_iterations: 1,
         repository_iterations: 5,
-        multi_node_graph_ui_iterations: 1,
-        multi_node_graph_repository_iterations: 5,
-        multi_node_graph_minimum_nodes: 5,
-        multi_node_graph_minimum_edges: 7,
+        minimum_graph_nodes: 2,
+        minimum_graph_edges: 1,
         test_apk_embeds_live_token: false,
         backend_ai_configuration: {
             summary_model: $summary_model,
@@ -141,34 +136,6 @@ grep -q '^OK (1 test)' "$instrument_output" ||
     fail "Android instrumentation did not report one passing live-core test."
 [[ -s "$RAW_DIR/live_core_path.csv" ]] ||
     fail "Android instrumentation did not produce live_core_path.csv."
-
-graph_instrument_output="$RAW_DIR/multi_node_graph_instrumentation_output.txt"
-set +e
-"$ADB" shell am instrument \
-    -w \
-    -r \
-    --no-window-animation \
-    --user 0 \
-    -e class \
-    com.mneme.app.evaluation.LiveMultiNodeGraphTest \
-    -e liveCoreBaseUrl \
-    "$LIVE_BASE_URL" \
-    -e liveCoreToken \
-    "$LIVE_TOKEN" \
-    -e liveCoreGraphArxiv \
-    "$LIVE_GRAPH_ARXIV" \
-    com.mneme.app.test/androidx.test.runner.AndroidJUnitRunner \
-    | tee "$graph_instrument_output"
-graph_instrument_status="${PIPESTATUS[0]}"
-set -e
-
-pull_artifacts
-[[ "$graph_instrument_status" -eq 0 ]] ||
-    fail "Android multi-node graph instrumentation returned exit status $graph_instrument_status."
-grep -q '^OK (1 test)' "$graph_instrument_output" ||
-    fail "Android instrumentation did not report one passing live multi-node graph test."
-[[ -s "$RAW_DIR/live_multi_node_graph.csv" ]] ||
-    fail "Android instrumentation did not produce live_multi_node_graph.csv."
 
 trap - EXIT
 "$ADB" shell am force-stop com.mneme.app

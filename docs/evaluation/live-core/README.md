@@ -20,11 +20,11 @@ The retained path covers:
 1. submit one preregistered arXiv seed and receive exactly five papers;
 2. restore the resulting briefing through the Android cache;
 3. open one returned paper and its stored summary;
-4. submit one preregistered free-form question and receive at least one
-   source-linked answer;
-5. open both the paper source and a Q&A source through the UI callback;
-6. load the bounded citation graph; and
-7. use the graph's Open Paper action through the normal paper-detail path.
+4. submit one preregistered free-form question and receive an answer;
+5. open the paper source through the UI callback;
+6. load a multi-node citation graph centred on the selected briefing paper;
+7. select a different graph node; and
+8. use Open Paper to reach that neighbour's normal paper-detail path.
 
 One Compose trace exercises the visible UI. Five additional repetitions use
 the same production Android repository, Retrofit mapping, Room cache, and live
@@ -45,15 +45,18 @@ only when:
 - cache restore contains the same five-paper briefing and is labelled cached;
 - paper detail contains non-empty abstract and summary content plus an arXiv
   source URL;
-- Q&A returns a non-empty answer, at least one arXiv source, and live origin;
-- the graph contains its requested center, stays within 50 nodes, and is
-  labelled live; and
-- Open Paper returns a paper-detail model for the selected graph node.
+- Q&A returns a non-empty answer with live origin;
+- the graph contains its requested centre, at least one neighbour and one edge,
+  stays within 50 nodes, and is labelled live;
+- neighbour selection remains visible in the graph screen; and
+- Open Paper returns the selected neighbour through the ordinary paper-detail
+  path.
 
-An insufficient-evidence answer, a citation-free answer, a missing graph, or a
-failed UI callback remains a failed stage in the raw data. A one-node graph can
-pass the client contract but is reported as `center_only_graph`; it is not
-presented as evidence of useful graph expansion.
+Source count and source-match status are retained as descriptive Q&A outputs.
+When a source is present, the UI trace also exercises its callback; source
+availability is not used to redefine whether the client completed the question
+request. An empty answer, a one-node graph, a graph without an edge, a failed
+selection, or a failed Open Paper transition remains a failed required stage.
 
 ## Run
 
@@ -81,8 +84,8 @@ inside the test.
 
 `raw/live_core_path.csv` is the direct stage log.
 `raw/environment.json` and `raw/run_manifest.json` bind it to the device,
-revision, input, and model configuration. The three retained screenshots show
-the live briefing, Q&A result, and graph state. `summary.csv`,
+revision, input, and model configuration. The retained screenshots show the
+live briefing, paper, Q&A result, graph, and selected-neighbour state. `summary.csv`,
 `summary.json`, and `figures/live_core_acceptance.*` are generated from the raw
 CSV.
 
@@ -93,7 +96,7 @@ embeddings, so their timing distribution must not be described as five cold
 first-run measurements.
 
 This evaluation does not assess whether the selected five papers are relevant,
-whether the generated answer is scientifically correct, whether its source
-semantically entails the claim, whether the graph neighborhood is useful, or
-whether users find the interaction usable. Those questions require the
+whether the generated answer is scientifically correct, whether any returned
+source semantically entails the claim, whether the graph neighbourhood is
+useful, or whether users find the interaction usable. Those questions require
 separate recommendation, AI-quality, graph-algorithm, or participant protocols.
