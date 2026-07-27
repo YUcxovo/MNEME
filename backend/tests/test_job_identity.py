@@ -156,6 +156,11 @@ def test_weekly_digest_key_is_scoped_by_user_period_and_generator() -> None:
         week_start=monday,
         generator_version="recommender-v1",
     )
+    assert original != weekly_digest_idempotency_key(
+        user_id=PAPER_ID,
+        week_start=monday,
+        generator_version="recommender-v2",
+    )
     with pytest.raises(ValueError, match="Monday"):
         weekly_digest_idempotency_key(
             user_id=PAPER_ID,

@@ -26,7 +26,7 @@ from mneme.repositories.digests import (
     DigestRepository,
     encode_digest_cursor,
 )
-from mneme.services.recommendation import RecommendedDigestService
+from mneme.services.recommendation import GENERATOR_VERSION, RecommendedDigestService
 
 USER_ID = UUID("00000000-0000-0000-0000-000000000111")
 NOW = datetime(2026, 7, 17, 12, 0, tzinfo=UTC)
@@ -90,7 +90,16 @@ class FakeDigestRepository:
         self.list_calls.append((user_id, limit, cursor))
         return DigestPageResult(items=self.digests, next_cursor=self.next_cursor)
 
-    async def get_fresh_recommended_digest(self, *, user_id: UUID, max_age) -> Digest | None:
+    async def get_fresh_recommended_digest(
+        self,
+        *,
+        user_id: UUID,
+        max_age,
+        expected_generator_version: str,
+    ) -> Digest | None:
+        assert user_id == USER_ID
+        assert max_age == timedelta(hours=24)
+        assert expected_generator_version == GENERATOR_VERSION
         self.operation_calls.append("fresh")
         return self.fresh
 
@@ -493,6 +502,41 @@ def test_behavior_recommendations_request_only_the_matching_embedding_model() ->
 
     assert repository.embedding_calls == [([paper.id], "embedding-test-v1")]
     assert bundle.entries[0].relevance_score > 0
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_negative_only_v2_profile_still_requests_candidate_embeddings() -> None:
+    paper = _paper("Contrastive behavior", age_days=1)
+    preferences = UserPreference(
+        user_id=USER_ID,
+        explicit_topics=[],
+        followed_authors=[],
+        behavior_embedding=None,
+        negative_behavior_embedding=[1.0, 0.0],
+        behavior_embedding_model="embedding-test-v1",
+        behavior_confidence=0.8,
+        model_version=2,
+    )
+    repository = FakeDigestRepository(
+        papers=[paper],
+        preferences=preferences,
+        embeddings={paper.id: (1.0, 0.0)},
+    )
+    service = RecommendedDigestService(
+        cast(DigestRepository, repository), candidate_days=14, max_entries=10
+    )
+
+    bundle = asyncio.run(
+        service.generate(
+            USER_ID,
+            digest_type=DigestType.MANUAL,
+            as_of=NOW,
+        )
+    )
+
+    assert repository.embedding_calls == [([paper.id], "embedding-test-v1")]
+    assert bundle.digest.preference_model_version == 2
 
 
 @pytest.mark.base

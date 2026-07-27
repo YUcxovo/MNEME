@@ -235,16 +235,28 @@ class DigestRepository:
         return {row[0]: tuple(row[1]) for row in rows if row[1] is not None}
 
     async def get_fresh_recommended_digest(
-        self, *, user_id: UUID, max_age: timedelta
+        self,
+        *,
+        user_id: UUID,
+        max_age: timedelta,
+        expected_generator_version: str,
     ) -> Digest | None:
-        """Return the newest manual digest if it is still fresh."""
+        """Return the newest manual digest with the active scoring identity."""
         statement = (
             select(Digest)
             .outerjoin(UserPreference, UserPreference.user_id == Digest.user_id)
             .where(
                 Digest.user_id == user_id,
                 Digest.digest_type == DigestType.MANUAL,
+                Digest.generator_version == expected_generator_version,
                 Digest.generated_at >= utc_now() - max_age,
+                or_(
+                    and_(
+                        UserPreference.user_id.is_(None),
+                        Digest.preference_model_version == 1,
+                    ),
+                    Digest.preference_model_version == UserPreference.model_version,
+                ),
                 or_(
                     UserPreference.updated_at.is_(None),
                     Digest.generated_at >= UserPreference.updated_at,
