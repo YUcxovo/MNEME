@@ -96,11 +96,15 @@ def aggregate_behavior_profile(
     eligible_paper_count = len(supported)
     embedded_paper_count = len(embedded_papers)
     coverage = embedded_paper_count / eligible_paper_count if eligible_paper_count else 0.0
-    confidence = _confidence(
-        support=positive_support + negative_support,
-        diversity=embedded_paper_count,
-        coverage=coverage,
-        config=config,
+    confidence = (
+        _confidence(
+            support=positive_support + negative_support,
+            diversity=embedded_paper_count,
+            coverage=coverage,
+            config=config,
+        )
+        if positive_embedding is not None or negative_embedding is not None
+        else 0.0
     )
     return BehaviorProfile(
         positive_embedding=positive_embedding,
