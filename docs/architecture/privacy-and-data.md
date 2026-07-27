@@ -19,8 +19,7 @@ public release.
 - Do not send unnecessary profile fields, raw behavioral history, secrets, or identifiers.
 - Never log API keys, authorization headers, full prompts, full answers, or paper text.
 - Development uses synthetic users; demo behavior history contains no real personal data.
-- `behavior-v1` reads at most 90 days of events when deriving a preference vector. Raw MVP events
-  remain server-side and are never sent to an LLM or embedding provider.
+- The active behavior model reads at most 180 days of server-side events when deriving a profile. Raw MVP events are never sent to an LLM or embedding provider; only already-persisted paper embeddings are used by the deterministic aggregation.
 - OpenAI API data is not used for training by default unless the organization opts in;
   default abuse-monitoring retention may be up to 30 days. See
   <https://platform.openai.com/docs/models/default-usage-policies-by-endpoint>.
@@ -37,7 +36,9 @@ Metadata is recorded according to the artifact type rather than pretending every
 - generated summaries and assistant Q&A messages retain provider/model/prompt identity, input hash, generation parameters as applicable, timestamp, latency, token counts, and estimated cost;
 - chunks and embeddings retain the exact paper revision, content hash, and embedding model;
 - digests retain generation time, preference-model version, generator version, ranked scores, and recommendation reasons;
-- a derived behavior vector retains only its embedding model, behavior model version, and update time; raw `user_events` remain its authoritative inputs.
+- a derived behavior profile retains positive and negative vectors as available, embedding-model identity, behavior-model version, bounded confidence, parameter hash, aggregate evidence counts, and update time; raw `user_events` remain its authoritative inputs.
+
+The controlled behavior-evaluation fixture contains artificial vectors, UUIDs, timestamps, and relevance labels. Its run manifest retains source and configuration identity but no real user ID, personal path, token, environment value, or provider payload. Controlled replay results cannot be interpreted as observed user preference or longitudinal benefit.
 
 The public graph response carries `graph_version` and `algorithm_status`; M3 graph enrichment is computed from persisted citation edges per request and is not stored as a generated artifact.
 
