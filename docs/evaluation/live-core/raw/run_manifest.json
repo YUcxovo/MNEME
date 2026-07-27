@@ -1,10 +1,14 @@
 {
   "schema_version": "live-core-run-manifest-v1",
-  "measured_at_utc": "2026-07-27T15:35:44Z",
-  "repository_revision": "5f701e505e8d2fa93cb07fd9a9d2bcceea4d4852",
+  "measured_at_utc": "2026-07-27T15:42:53Z",
+  "repository_revision": "c4b11256bf21f1511d54fad7d19bbcde244aca4c",
   "branch": "feat/automatic-citation-graph-preparation",
   "live_backend_url": "http://10.0.2.2:8000/v1/",
   "fixed_seed_arxiv_id": "1706.03762",
+  "additional_seed_arxiv_ids": [
+    "2010.11929",
+    "2106.09685"
+  ],
   "fixed_free_form_question": "What problem does this paper address, and what method does it propose?",
   "ui_iterations": 1,
   "repository_iterations": 5,
