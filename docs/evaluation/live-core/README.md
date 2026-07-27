@@ -28,9 +28,11 @@ The retained path covers:
 
 One Compose trace exercises the visible UI. Five additional repetitions use
 the same production Android repository, Retrofit mapping, Room cache, and live
-backend. The repetitions use the same seed and question by design. They measure
-path reliability under durable artifact and provider-cache reuse; they are not
-independent answer-quality samples.
+backend, starting from the live briefing created by the UI trace. Seed
+initialisation is performed once so the repeated client path does not repeatedly
+query the external citation provider. The repetitions use the same paper and
+question by design. They measure path reliability under durable artifact and
+provider-cache reuse; they are not independent answer-quality samples.
 
 ## Fixed inputs and success criteria
 
@@ -42,6 +44,7 @@ The runner records the exact values in `raw/run_manifest.json`. A stage passes
 only when:
 
 - the seed response contains exactly five papers and is labelled live;
+- each repeated live briefing contains the same five-paper result;
 - cache restore contains the same five-paper briefing and is labelled cached;
 - paper detail contains non-empty abstract and summary content plus an arXiv
   source URL;

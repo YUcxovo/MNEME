@@ -42,7 +42,7 @@ UI_SCENARIOS = (
     "open_selected_graph_paper",
 )
 REPOSITORY_SCENARIOS = (
-    "seed_to_five_paper_briefing",
+    "live_five_paper_briefing",
     "cached_briefing_restore",
     "paper_and_summary",
     "free_question_and_sources",
@@ -51,6 +51,7 @@ REPOSITORY_SCENARIOS = (
 )
 LABELS = {
     "seed_to_five_paper_briefing": "Seed to five-paper briefing",
+    "live_five_paper_briefing": "Live five-paper briefing",
     "cached_briefing_restore": "Cached briefing restore",
     "paper_and_summary": "Paper and summary",
     "open_paper_source": "Open paper source",
@@ -137,7 +138,10 @@ def validate_protocol(rows: list[dict[str, str]]) -> None:
         raise ValueError("The optional Q&A source callback was recorded more than once.")
 
     for row in rows:
-        if row["scenario"] == "seed_to_five_paper_briefing":
+        if row["scenario"] in {
+            "seed_to_five_paper_briefing",
+            "live_five_paper_briefing",
+        }:
             if int(row["paper_count"]) != 5:
                 raise ValueError("A retained seed stage did not return five papers.")
         if row["scenario"] == "citation_graph" and int(row["graph_nodes"]) > 50:

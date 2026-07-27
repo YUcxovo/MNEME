@@ -375,13 +375,13 @@ class LiveCoreProductPathTest {
         val database = createDatabase()
         try {
             val repository = repository(remote, database)
-            val seedStartedAt = now()
-            val briefing = repository.initializeFromSeed(seed)
+            val briefingStartedAt = now()
+            val briefing = repository.loadBriefing()
             val selectedPaperId = briefing.papers.first().id
             recordBriefing(
-                scenario = "seed_to_five_paper_briefing",
+                scenario = "live_five_paper_briefing",
                 iteration = iteration,
-                startedAt = seedStartedAt,
+                startedAt = briefingStartedAt,
                 seed = seed,
                 briefing = briefing,
                 selectedPaperId = selectedPaperId,
