@@ -13,12 +13,19 @@ class QAFixture(BaseModel):
     ``expect_refusal`` marks deliberately out-of-scope questions: the correct
     behavior is the stable refusal answer, so keyword and citation grading do
     not apply and ``must_cite`` must be false.
+
+    ``arxiv_version`` pins the exact arXiv revision the case was authored
+    against, so ingesting a newer revision cannot silently change the corpus
+    a fixture version grades. Live evaluation resolves that exact revision
+    and skips the case when it is absent; ``None`` is tolerated only for
+    legacy v1 files that predate pinning.
     """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     fixture_id: str = Field(min_length=1)
     arxiv_id: str = Field(min_length=1)
+    arxiv_version: int | None = Field(default=None, ge=1)
     section_hint: str | None = None
     question: str = Field(min_length=1)
     reference_answer: str = Field(min_length=1)
