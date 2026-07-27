@@ -3,7 +3,7 @@
 import asyncio
 import re
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from types import TracebackType
@@ -152,10 +152,26 @@ class ArxivClient:
 
     async def fetch_by_id(self, arxiv_id: str) -> ArxivFeed:
         """Fetch the latest metadata for one validated arXiv identifier."""
-        normalized = arxiv_id.strip()
-        if len(normalized) > 64 or ARXIV_ID_PATTERN.fullmatch(normalized) is None:
+        return await self.fetch_by_ids([arxiv_id])
+
+    async def fetch_by_ids(self, arxiv_ids: Sequence[str]) -> ArxivFeed:
+        """Fetch latest metadata for a bounded collection of arXiv identifiers."""
+        normalized_ids = tuple(dict.fromkeys(item.strip() for item in arxiv_ids))
+        if not normalized_ids:
+            raise ValueError("At least one arXiv identifier is required")
+        if len(normalized_ids) > self._settings.arxiv_max_results:
+            raise ValueError("arXiv identifier count exceeds the configured page size")
+        if any(
+            len(arxiv_id) > 64 or ARXIV_ID_PATTERN.fullmatch(arxiv_id) is None
+            for arxiv_id in normalized_ids
+        ):
             raise ValueError("Invalid arXiv identifier")
-        response = await self._request_with_retries({"id_list": normalized})
+        response = await self._request_with_retries(
+            {
+                "id_list": ",".join(normalized_ids),
+                "max_results": len(normalized_ids),
+            }
+        )
         if response.status_code != 200:
             raise ArxivHTTPError(response.status_code)
         return parse_arxiv_feed(response.content)

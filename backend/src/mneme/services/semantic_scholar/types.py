@@ -28,7 +28,7 @@ class SemanticPaper(BaseModel):
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
     paper_id: str = Field(alias="paperId", min_length=1, max_length=200)
-    external_ids: dict[str, str] | None = Field(default=None, alias="externalIds")
+    external_ids: dict[str, str | int] | None = Field(default=None, alias="externalIds")
 
     @property
     def arxiv_id(self) -> str | None:
@@ -37,6 +37,8 @@ class SemanticPaper(BaseModel):
             return None
         value = self.external_ids.get("ArXiv")
         if value is None:
+            return None
+        if not isinstance(value, str):
             return None
         normalized = value.strip()
         if normalized.casefold().startswith("arxiv:"):

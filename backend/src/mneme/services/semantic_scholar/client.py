@@ -26,6 +26,10 @@ class _NeighborPage(BaseModel):
     next: int | None = None
 
 
+class _PaperWithReferences(SemanticPaper):
+    references: list[dict[str, object] | None]
+
+
 class SemanticScholarClientError(RuntimeError):
     """A safe description of an upstream transport or payload failure."""
 
@@ -183,6 +187,47 @@ class SemanticScholarClient:
                 ) from exc
             papers.extend(paper for paper in batch if paper is not None)
         return tuple(papers)
+
+    async def fetch_paper_references(
+        self,
+        paper_id: str,
+        *,
+        limit: int,
+    ) -> tuple[SemanticPaper, tuple[SemanticPaper, ...]]:
+        """Fetch one paper and a bounded prefix of its references in one request."""
+        if not paper_id or len(paper_id) > 200:
+            raise ValueError("Semantic Scholar paper ID must contain 1 to 200 characters")
+        if not 1 <= limit <= self._settings.semantic_scholar_max_neighbors:
+            raise ValueError("Neighbor limit exceeds the configured maximum")
+
+        encoded_id = quote(paper_id, safe="")
+        response = await self._request_with_retries(
+            "GET",
+            f"paper/{encoded_id}",
+            params={"fields": "externalIds,references.externalIds"},
+        )
+        self._require_success(response)
+        try:
+            payload = _PaperWithReferences.model_validate(response.json())
+        except (ValueError, ValidationError) as exc:
+            raise SemanticScholarClientError(
+                "Semantic Scholar returned invalid paper references"
+            ) from exc
+        center = SemanticPaper(
+            paperId=payload.paper_id,
+            externalIds=payload.external_ids,
+        )
+        references: list[SemanticPaper] = []
+        for item in payload.references:
+            if item is None or item.get("paperId") is None:
+                continue
+            try:
+                references.append(SemanticPaper.model_validate(item))
+            except ValidationError:
+                continue
+            if len(references) == limit:
+                break
+        return center, tuple(references)
 
     async def fetch_neighbors(
         self,
