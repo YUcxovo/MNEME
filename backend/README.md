@@ -98,6 +98,14 @@ uv run python -m mneme.tasks.sync_semantic_graph --paper-id <paper-uuid>
 
 The client serializes requests, applies configured throttling and bounded retries, and paginates within the configured neighbor limit. A Semantic Scholar API key is optional but recommended for a stable individual limit. Observations with one unknown endpoint remain stored under the provider paper ID. After that paper enters the local catalog, a later graph-sync invocation that sees its provider identity resolves the stored observation. The public endpoint exposes only locally resolved nodes and never performs external synchronization during a GET request.
 
+Seed onboarding uses the same provider and persistence boundaries automatically. It resolves
+a bounded citation neighborhood for the supplied seed, validates the related arXiv records,
+persists five neighbors and their real edges, and prepares the seed together with the five
+briefing papers. A depth-two graph opened from any returned paper can therefore recover the
+shared seed neighborhood. If Semantic Scholar is unavailable or fewer than five neighbors
+can be resolved through arXiv, onboarding uses the existing five-paper same-category
+fallback. Graph reads remain free of external provider calls.
+
 `POST /v1/events` stores raw client UUIDs once and recomputes `behavior-v1` in the same PostgreSQL transaction. Event timestamps must be timezone-aware ISO 8601 values and cannot be more than five minutes ahead of the server clock; the recomputation query uses the same upper bound. The frozen baseline uses signed event weights, opened-paper duration tiers, a 30-day half-life, a 90-day window, and the latest paper revision from the configured embedding model. Algorithm tuning is intentionally deferred; changing semantics requires a new model version and ADR update.
 
 ## Pipeline and artifacts
@@ -190,7 +198,9 @@ Database integration and end-to-end pipeline tests run when `MNEME_DATABASE_URL`
 - The worker's automatic recovery scan can reconstruct revision-scoped jobs. Collection-level daily and weekly jobs are recovered by repeatable CLI invocations because their hashed durable identities do not contain reconstructable arguments.
 - The Android skeletal path can call the backend through Retrofit/OkHttp when its demo
   token is configured; real WorkManager background sync remains unfinished.
-- Semantic Scholar synchronization is an explicit single-paper CLI; fleet-wide selection and scheduling are deferred until integration needs justify them.
+- Seed onboarding prepares its bounded citation neighborhood automatically. Synchronization
+  for papers entering through other paths remains an explicit single-paper CLI; fleet-wide
+  scheduling is deferred.
 - Behavior preferences recompute when `/events` is called. Scheduled recomputation after embeddings arrive or events age out is deferred, and behavior-v1 tuning requires a new model version.
 - Public graphs include only locally resolved citation endpoints; unresolved provider observations remain server-side until their papers are ingested and a later graph synchronization sees the matching provider identity.
 
