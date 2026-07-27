@@ -17,8 +17,11 @@ deployed pipeline has run.
 | Chunk embeddings | ARQ embed job per paper version | text-embedding-3-small, batch 64 | idempotent via `content_hash` | yes |
 | Recommendation scoring | digest jobs | none (cosine over stored vectors) | n/a | n/a |
 
-Every completion persists `estimated_cost`, token counts, and latency, so
-live spend is auditable from the database without extra instrumentation.
+The summarization worker and `/qa/ask` persist `estimated_cost`, token
+counts, and latency on their `paper_summaries` / `qa_messages` rows, so
+their live spend is auditable from the database. Eval-CLI completions are
+**not** persisted (they share the cache only); their spend is recorded in
+the run's JSON report and in the shared daily budget counter.
 
 ## Unit economics (estimated)
 
