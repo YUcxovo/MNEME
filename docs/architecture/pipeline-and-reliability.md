@@ -72,6 +72,13 @@ Collection identities are deliberately hashed and do not contain reconstructable
 
 Both commands emit sorted JSON and return nonzero on validation, database, or queue failure. Run the daily command once per day and run the weekly command once per day as an idempotent recovery policy, even though only one weekly identity is created.
 
+Seed onboarding adds one bounded synchronous preparation path for the first reading
+session. It resolves five arXiv citation neighbors for the supplied seed, persists the real
+provider edges, and dispatches the seed plus those five papers through the existing
+revision-scoped jobs. The endpoint waits for usable terminal paper states before returning
+the five-entry briefing. Provider graph failure selects the existing same-category
+fallback; it does not create inferred citation edges.
+
 ## Failure Semantics
 
 - Transport validation, parsing, provider, persistence, and orchestration failures are stored with stable stage-specific codes.

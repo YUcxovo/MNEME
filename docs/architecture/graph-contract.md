@@ -46,3 +46,11 @@ Semantic Scholar writes use a separate `CitationGraphRepository.persist_neighbor
 - The first public graph version is `citation-graph-v1`. Any weighting, ranking, clustering, or parameter change that alters public graph semantics must bump `graph_version`; `algorithm_status` reports whether enrichment succeeded or the deterministic fallback was used.
 
 The current operational command synchronizes one center paper at a time. A fleet-wide or parallel graph scheduler, including its cross-paper lock ordering, is deferred until integration demand justifies it.
+
+Seed onboarding is the bounded automatic integration path. It queries one seed
+neighborhood, selects five neighbors that Semantic Scholar identifies with arXiv works,
+persists those papers through the existing arXiv ingestion boundary, and resolves their
+edges through `CitationGraphRepository`. The seed and five returned papers then enter the
+normal document pipeline. The graph read endpoint still performs no provider access. If the
+provider cannot supply five resolvable neighbors, onboarding falls back to the existing
+same-category five-paper briefing without creating synthetic edges.
