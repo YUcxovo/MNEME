@@ -125,7 +125,40 @@ def test_retrieve_appends_overview_anchors_without_displacing_dense_hits(
     )
 
     assert [result.chunk_index for result in results] == [8, 9, 0, 1]
+    assert [result.is_dense_result for result in results] == [True, True, False, False]
     assert [result.is_context_anchor for result in results] == [False, False, True, True]
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_retrieve_keeps_dense_membership_when_a_chunk_is_also_an_anchor(
+    fake_redis: FakeRedis,
+) -> None:
+    """Regression: a chunk in both result sets stayed marked anchor-only,
+    turning a genuine dense hit into a false recall@k miss downstream."""
+    shared = (FakeChunk(0, "overview that also matches the query"), 0.9)
+    dense = [shared, (FakeChunk(7, "specific method"), 0.8)]
+    anchors = [shared, (FakeChunk(1, "introduction"), 0.3)]
+    service = RetrievalService(
+        embedder=_embedder(fake_redis),
+        artifacts=FakeArtifactRepository(dense, anchors=anchors),
+        top_k=2,
+    )
+
+    results = asyncio.run(
+        service.retrieve(
+            paper_id=PAPER_ID,
+            paper_version_id=PAPER_VERSION_ID,
+            question="what does the paper do?",
+        )
+    )
+
+    assert [result.chunk_index for result in results] == [0, 7, 1]
+    dual = results[0]
+    assert dual.is_dense_result is True
+    assert dual.is_context_anchor is True
+    assert results[2].is_dense_result is False
+    assert results[2].is_context_anchor is True
 
 
 @pytest.mark.base
