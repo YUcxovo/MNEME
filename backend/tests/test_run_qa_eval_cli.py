@@ -153,7 +153,7 @@ def test_resolve_requires_a_complete_embedding_set_for_the_configured_model() ->
     assert resolved == (paper, version)
 
 
-def _chunk(section: str, *, anchor: bool) -> RetrievedChunk:
+def _chunk(section: str, *, dense: bool = True, anchor: bool = False) -> RetrievedChunk:
     return RetrievedChunk(
         chunk_id=uuid4(),
         paper_id=uuid4(),
@@ -161,6 +161,7 @@ def _chunk(section: str, *, anchor: bool) -> RetrievedChunk:
         section_title=section,
         content="c",
         score=0.9,
+        is_dense_result=dense,
         is_context_anchor=anchor,
     )
 
@@ -169,7 +170,12 @@ def _chunk(section: str, *, anchor: bool) -> RetrievedChunk:
 @pytest.mark.rag
 def test_evaluate_case_splits_dense_and_anchor_sections_and_meters_the_run() -> None:
     fixture = _fixture()
-    chunks = [_chunk("Method", anchor=False), _chunk("Introduction", anchor=True)]
+    chunks = [
+        _chunk("Method"),
+        # A dense hit that is also an overview anchor must still count as dense.
+        _chunk("Background", dense=True, anchor=True),
+        _chunk("Introduction", dense=False, anchor=True),
+    ]
     embedding_spend: list[Decimal] = [Decimal("999")]  # stale spend from a previous case
 
     class FakeRetrieval:
@@ -196,7 +202,7 @@ def test_evaluate_case_splits_dense_and_anchor_sections_and_meters_the_run() -> 
         )
     )
 
-    assert outcome.dense_sections == ("Method",)
+    assert outcome.dense_sections == ("Method", "Background")
     assert outcome.anchor_sections == ("Introduction",)
     assert outcome.refused is False
     # Stale spend was cleared; only this case's embedding call is attributed.

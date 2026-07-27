@@ -181,14 +181,12 @@ async def evaluate_case(
         answer=grounded.answer,
         refused=grounded.answer == REFUSAL_ANSWER,
         dense_sections=tuple(
-            chunk.section_title
-            for chunk in chunks
-            if chunk.section_title and not chunk.is_context_anchor
+            chunk.section_title for chunk in chunks if chunk.section_title and chunk.is_dense_result
         ),
         anchor_sections=tuple(
             chunk.section_title
             for chunk in chunks
-            if chunk.section_title and chunk.is_context_anchor
+            if chunk.section_title and not chunk.is_dense_result
         ),
         source_match_status=grounded.source_match_status,
         verified_citations=len(grounded.citations),

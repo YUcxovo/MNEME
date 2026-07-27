@@ -40,7 +40,13 @@ class SupportsChunkSearch(Protocol):
 
 
 class RetrievedChunk(BaseModel):
-    """One evidence chunk with provenance and its similarity score."""
+    """One evidence chunk with provenance and its similarity score.
+
+    ``is_dense_result`` and ``is_context_anchor`` are independent: an early
+    document chunk can be both a dense top-k hit and an overview anchor.
+    Retrieval-quality metrics must grade on ``is_dense_result``; treating
+    "anchor" as "not dense" turns such dual hits into false misses.
+    """
 
     model_config = ConfigDict(frozen=True)
 
@@ -52,6 +58,7 @@ class RetrievedChunk(BaseModel):
     page_start: int | None = None
     page_end: int | None = None
     score: float = Field(ge=0, le=1)
+    is_dense_result: bool = True
     is_context_anchor: bool = False
 
 
@@ -95,8 +102,8 @@ class RetrievalService:
             else []
         )
         anchor_ids = {chunk.id for chunk, _score in anchor_rows}
-        seen_ids = {chunk.id for chunk, _score in rows}
-        combined_rows = [*rows, *(row for row in anchor_rows if row[0].id not in seen_ids)]
+        dense_ids = {chunk.id for chunk, _score in rows}
+        combined_rows = [*rows, *(row for row in anchor_rows if row[0].id not in dense_ids)]
         results = [
             RetrievedChunk(
                 chunk_id=chunk.id,
@@ -107,6 +114,7 @@ class RetrievalService:
                 page_start=chunk.page_start,
                 page_end=chunk.page_end,
                 score=score,
+                is_dense_result=chunk.id in dense_ids,
                 is_context_anchor=chunk.id in anchor_ids,
             )
             for chunk, score in combined_rows
