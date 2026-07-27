@@ -11,6 +11,7 @@ import pytest
 from mneme.core.config import Settings
 from mneme.services.semantic_scholar import (
     CitationDirection,
+    SemanticPaper,
     SemanticScholarClient,
     SemanticScholarClientError,
     SemanticScholarHTTPError,
@@ -57,7 +58,10 @@ def test_paper_batch_chunking_key_and_arxiv_normalization() -> None:
             json=[
                 {
                     "paperId": f"s2-{paper_id}",
-                    "externalIds": {"ArXiv": paper_id.removeprefix("ARXIV:") + "v2"},
+                    "externalIds": {
+                        "ArXiv": paper_id.removeprefix("ARXIV:") + "v2",
+                        "CorpusId": 123,
+                    },
                 }
                 for paper_id in ids
             ],
@@ -128,6 +132,48 @@ def test_neighbor_pagination_uses_direction_and_server_next(
 
     assert asyncio.run(exercise()) == ("one", "two")
     assert offsets == [0, 7]
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
+def test_paper_references_are_fetched_in_one_bounded_request() -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "paperId": "s2-center",
+                "externalIds": {"ArXiv": "1706.03762", "CorpusId": 13756489},
+                "references": [
+                    {
+                        "paperId": f"s2-reference-{index}",
+                        "externalIds": {"ArXiv": f"1705.0000{index}"},
+                    }
+                    for index in range(1, 5)
+                ]
+                + [{"paperId": None, "externalIds": {"ArXiv": "invalid"}}],
+            },
+        )
+
+    async def exercise() -> tuple[SemanticPaper, tuple[SemanticPaper, ...]]:
+        async with SemanticScholarClient(
+            _settings(),
+            transport=httpx.MockTransport(handler),
+        ) as client:
+            return await client.fetch_paper_references("ARXIV:1706.03762", limit=3)
+
+    center, references = asyncio.run(exercise())
+    assert center.arxiv_id == "1706.03762"
+    assert [paper.arxiv_id for paper in references] == [
+        "1705.00001",
+        "1705.00002",
+        "1705.00003",
+    ]
+    assert len(requests) == 1
+    assert requests[0].url.path.endswith("/paper/ARXIV:1706.03762")
+    assert requests[0].url.params["fields"] == "externalIds,references.externalIds"
 
 
 @pytest.mark.base
