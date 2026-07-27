@@ -69,7 +69,29 @@ def test_id_query_uses_arxiv_id_list() -> None:
     asyncio.run(exercise())
     request = requests[0]
     assert request.url.params["id_list"] == "2607.01234"
+    assert request.url.params["max_results"] == "1"
     assert "search_query" not in request.url.params
+
+
+@pytest.mark.pipeline
+def test_id_query_batches_unique_identifiers() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, content=FEED)
+
+    async def exercise() -> None:
+        settings = Settings(_env_file=None)
+        async with ArxivClient(settings, transport=httpx.MockTransport(handler)) as client:
+            await client.fetch_by_ids(
+                ["2607.01234", "2607.01235", "2607.01234"],
+            )
+
+    asyncio.run(exercise())
+    request = requests[0]
+    assert request.url.params["id_list"] == "2607.01234,2607.01235"
+    assert request.url.params["max_results"] == "2"
 
 
 @pytest.mark.pipeline
@@ -82,6 +104,8 @@ def test_invalid_arxiv_id_is_rejected_before_request() -> None:
         try:
             with pytest.raises(ValueError, match="Invalid arXiv identifier"):
                 await client.fetch_by_id("not an arxiv id")
+            with pytest.raises(ValueError, match="At least one"):
+                await client.fetch_by_ids([])
         finally:
             await client.aclose()
 
