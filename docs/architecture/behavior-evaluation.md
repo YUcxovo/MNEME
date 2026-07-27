@@ -71,4 +71,3 @@ The manifest records the fixture and lockfile SHA-256 values, exact source ident
 ## Claim gate
 
 Unit and integration tests establish deterministic implementation and transaction invariants. Controlled replay establishes behavior on declared artificial traces. Neither evidence class proves that users prefer the recommendations. Thesis claims must remain within the measured ranking, adaptation, exposure, saturation, confidence, and reproducibility properties unless a separately approved longitudinal study supplies stronger evidence.
-
