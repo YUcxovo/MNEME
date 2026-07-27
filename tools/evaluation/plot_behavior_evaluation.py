@@ -74,18 +74,25 @@ def build_parser() -> argparse.ArgumentParser:
 
 def load_artifacts(
     evaluation_dir: Path,
-) -> tuple[dict[str, object], list[dict[str, object]]]:
+) -> tuple[dict[str, object], list[dict[str, object]], dict[str, object]]:
     summary_path = evaluation_dir / "summary.json"
     cases_path = evaluation_dir / "raw/case_results.jsonl"
+    performance_path = evaluation_dir / "performance.json"
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     cases = [json.loads(line) for line in cases_path.read_text(encoding="utf-8").splitlines()]
+    performance = json.loads(performance_path.read_text(encoding="utf-8"))
     if summary.get("schema_version") != "behavior-evaluation-summary-v1":
         raise ValueError("Unsupported behavior summary schema.")
     if summary.get("controlled_synthetic") is not True:
         raise ValueError("Behavior figures require a controlled synthetic run.")
     if summary.get("invariant_failures"):
         raise ValueError("Behavior figures refuse runs with invariant failures.")
-    return summary, cases
+    if performance.get("schema_version") != "behavior-performance-artifact-v1":
+        raise ValueError("Unsupported behavior performance schema.")
+    benchmark = performance.get("benchmark")
+    if not isinstance(benchmark, dict) or benchmark.get("environment_sensitive") is not True:
+        raise ValueError("Behavior performance figures require environment-sensitive metadata.")
+    return summary, cases, performance
 
 
 def configure_plots() -> None:
@@ -252,6 +259,74 @@ def plot_mechanism_deltas(summary: dict[str, object], figure_dir: Path) -> None:
     save_figure(figure, figure_dir, "mechanism_deltas")
 
 
+def plot_performance_scaling(performance: dict[str, object], figure_dir: Path) -> None:
+    benchmark = performance["benchmark"]
+    assert isinstance(benchmark, dict)
+    rows = benchmark["cases"]
+    assert isinstance(rows, list)
+    repetitions = int(benchmark["measured_repetitions"])
+    figure, axes = plt.subplots(2, 1, figsize=(7.2, 6.8))
+    operations = (
+        ("aggregation", "Profile aggregation", "signal_count", "Events"),
+        ("ranking", "Candidate ranking", "candidate_count", "Candidates"),
+    )
+    for axis, (operation, title, count_key, count_label) in zip(axes, operations, strict=True):
+        labels = [f"{row['scale_id']}\n{count_label}: {row[count_key]}" for row in rows]
+        median = [float(row[operation]["median_ms"]) for row in rows]
+        p95 = [float(row[operation]["p95_ms"]) for row in rows]
+        positions = list(range(len(rows)))
+        axis.plot(
+            positions,
+            median,
+            color=TEAL,
+            marker="o",
+            linewidth=2,
+            label="Median",
+        )
+        axis.plot(
+            positions,
+            p95,
+            color=BLUE,
+            marker="s",
+            linestyle="--",
+            linewidth=1.6,
+            label="p95",
+        )
+        axis.set_xticks(positions, labels)
+        axis.set_yscale("log")
+        axis.set_ylabel("Latency (ms, log scale)")
+        axis.set_title(title, loc="left", fontweight="bold")
+        axis.grid(axis="y", which="both")
+        axis.legend(frameon=False, loc="upper left")
+        for position, value in zip(positions, median, strict=True):
+            axis.annotate(
+                f"{value:.2f} ms",
+                (position, value),
+                xytext=(7, -2),
+                textcoords="offset points",
+                fontsize=8,
+                color=INK,
+            )
+    figure.suptitle(
+        "Behavior-v2 in-process performance",
+        x=0.11,
+        y=0.98,
+        ha="left",
+        fontsize=12,
+        fontweight="bold",
+        color=INK,
+    )
+    figure.text(
+        0.11,
+        0.935,
+        f"1536-dimensional vectors; {repetitions} measured repetitions after warm-up.",
+        color=MUTED,
+        fontsize=8.5,
+    )
+    figure.subplots_adjust(top=0.88, bottom=0.09, left=0.12, right=0.98, hspace=0.45)
+    save_figure(figure, figure_dir, "performance_scaling")
+
+
 def save_figure(figure: Figure, figure_dir: Path, stem: str) -> None:
     figure_dir.mkdir(parents=True, exist_ok=True)
     figure.savefig(figure_dir / f"{stem}.png", dpi=220, bbox_inches="tight")
@@ -261,13 +336,14 @@ def save_figure(figure: Figure, figure_dir: Path, stem: str) -> None:
 
 def main() -> None:
     arguments = build_parser().parse_args()
-    summary, cases = load_artifacts(arguments.evaluation_dir)
+    summary, cases, performance = load_artifacts(arguments.evaluation_dir)
     if not cases:
         raise ValueError("Behavior case results cannot be empty.")
     configure_plots()
     figure_dir = arguments.evaluation_dir / "figures"
     plot_ranking_comparison(summary, figure_dir)
     plot_mechanism_deltas(summary, figure_dir)
+    plot_performance_scaling(performance, figure_dir)
     print(f"Behavior figures written to {figure_dir}")
 
 
