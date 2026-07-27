@@ -1,5 +1,6 @@
 """Static per-model pricing used for cost estimation and budget accounting."""
 
+import re
 from decimal import Decimal
 
 import structlog
@@ -70,10 +71,17 @@ _FALLBACK_PRICING = ModelPricing(
     input_usd_per_mtok=Decimal("5.00"), output_usd_per_mtok=Decimal("25.00")
 )
 
+# Providers may resolve a requested model to a dated release id
+# ("claude-haiku-4-5" -> "claude-haiku-4-5-20251001"); price such ids by
+# their base entry instead of the never-undercount fallback.
+_RELEASE_SUFFIX = re.compile(r"-\d{8}$")
+
 
 def estimate_cost(model: str, usage: TokenUsage) -> Decimal:
     """Return the estimated USD cost of one completion."""
     pricing = MODEL_PRICING.get(model)
+    if pricing is None:
+        pricing = MODEL_PRICING.get(_RELEASE_SUFFIX.sub("", model))
     if pricing is None:
         logger.warning("unknown_model_pricing", model=model)
         pricing = _FALLBACK_PRICING
