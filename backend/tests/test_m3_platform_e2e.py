@@ -18,9 +18,11 @@ from mneme.core.security import token_sha256
 from mneme.db.session import Database
 from mneme.main import create_app
 from mneme.models.artifact import PaperChunk
+from mneme.models.digest import Digest, DigestType
 from mneme.models.graph import Citation
 from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
 from mneme.models.user import User, UserEvent, UserPreference
+from mneme.services.recommendation import GENERATOR_VERSION
 
 DATABASE_URL = os.getenv("MNEME_DATABASE_URL", "")
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
@@ -100,7 +102,7 @@ async def _seed(database: Database) -> FixtureIds:
         outgoing=ids.outgoing,
         papers=(ids.center, ids.incoming, ids.outgoing),
     )
-    old_version, latest_version = uuid4(), uuid4()
+    old_version, latest_version, outgoing_version = uuid4(), uuid4(), uuid4()
     x_axis = [1.0, 0.0, *([0.0] * 1534)]
     y_axis = [0.0, 1.0, *([0.0] * 1534)]
     async with database.session_factory() as session, session.begin():
@@ -113,11 +115,18 @@ async def _seed(database: Database) -> FixtureIds:
             ]
         )
         await session.flush()
-        session.add(UserPreference(user_id=ids.user, explicit_topics=[], followed_authors=[]))
+        session.add(
+            UserPreference(
+                user_id=ids.user,
+                explicit_topics=["attention"],
+                followed_authors=["Ada Researcher"],
+            )
+        )
         session.add_all(
             [
                 PaperVersion(id=old_version, paper_id=ids.center, version_number=1),
                 PaperVersion(id=latest_version, paper_id=ids.center, version_number=2),
+                PaperVersion(id=outgoing_version, paper_id=ids.outgoing, version_number=1),
             ]
         )
         await session.flush()
@@ -136,8 +145,20 @@ async def _seed(database: Database) -> FixtureIds:
                     embedding=y_axis,
                     model="other-model",
                 ),
+                _chunk(
+                    paper_id=ids.outgoing,
+                    version_id=outgoing_version,
+                    chunk_index=0,
+                    embedding=y_axis,
+                ),
                 Citation(source_paper_id=ids.incoming, target_paper_id=ids.center),
                 Citation(source_paper_id=ids.center, target_paper_id=ids.outgoing),
+                Digest(
+                    user_id=ids.user,
+                    digest_type=DigestType.MANUAL,
+                    preference_model_version=1,
+                    generator_version="recommender-v1",
+                ),
             ]
         )
     return ids
@@ -171,33 +192,52 @@ async def _exercise() -> None:
             _env_file=None,
         )
     )
-    event_id = uuid4()
+    saved_event_id = uuid4()
+    impression_event_id = uuid4()
+    skipped_event_id = uuid4()
     headers = {"Authorization": f"Bearer {token}"}
-    event = {
-        "event_id": str(event_id),
-        "event_type": "paper_saved",
-        "paper_id": str(ids.center),
-        "occurred_at": NOW.isoformat(),
-    }
+    events = [
+        {
+            "event_id": str(saved_event_id),
+            "event_type": "paper_saved",
+            "paper_id": str(ids.center),
+            "occurred_at": NOW.isoformat(),
+        },
+        {
+            "event_id": str(impression_event_id),
+            "event_type": "paper_impression",
+            "paper_id": str(ids.outgoing),
+            "occurred_at": NOW.isoformat(),
+        },
+        {
+            "event_id": str(skipped_event_id),
+            "event_type": "paper_skipped",
+            "paper_id": str(ids.outgoing),
+            "occurred_at": NOW.isoformat(),
+        },
+    ]
     try:
         transport = ASGITransport(app=application)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            accepted = await client.post("/v1/events", json=[event], headers=headers)
-            replay = await client.post("/v1/events", json=[event], headers=headers)
+            accepted = await client.post("/v1/events", json=events, headers=headers)
+            replay = await client.post("/v1/events", json=events, headers=headers)
             unknown = await client.post(
                 "/v1/events",
                 json=[
-                    {**event, "event_id": str(uuid4())},
-                    {**event, "event_id": str(uuid4()), "paper_id": str(uuid4())},
+                    {**events[0], "event_id": str(uuid4())},
+                    {**events[0], "event_id": str(uuid4()), "paper_id": str(uuid4())},
                 ],
                 headers=headers,
             )
+            recommended = await client.post("/v1/digests/recommended", headers=headers)
             graph = await client.get(f"/v1/graph/{ids.center}?depth=1&limit=3", headers=headers)
             bounded = await client.get(f"/v1/graph/{ids.center}?depth=1&limit=1", headers=headers)
 
-        assert accepted.json() == {"accepted": 1, "duplicates": 0}
-        assert replay.json() == {"accepted": 0, "duplicates": 1}
+        assert accepted.json() == {"accepted": 3, "duplicates": 0}
+        assert replay.json() == {"accepted": 0, "duplicates": 3}
         assert unknown.status_code == 404
+        assert recommended.status_code == 200
+        assert recommended.json()["entries"] == []
         assert graph.status_code == 200
         assert {UUID(node["id"]) for node in graph.json()["nodes"]} == set(ids.papers)
         assert len(bounded.json()["nodes"]) == 1
@@ -208,11 +248,32 @@ async def _exercise() -> None:
                 select(func.count(UserEvent.id)).where(UserEvent.user_id == ids.user)
             )
             preference = await session.get(UserPreference, ids.user)
-        assert event_count == 1
+            digests = list(
+                (
+                    await session.scalars(
+                        select(Digest)
+                        .where(Digest.user_id == ids.user)
+                        .order_by(Digest.generated_at)
+                    )
+                ).all()
+            )
+        assert event_count == 3
         assert preference is not None and preference.behavior_embedding is not None
+        assert preference.negative_behavior_embedding is not None
         assert preference.behavior_embedding_model == EMBEDDING_MODEL
+        assert preference.model_version == 2
+        assert 0 < preference.behavior_confidence < 1
         assert preference.behavior_embedding[0] == pytest.approx(1.0)
         assert preference.behavior_embedding[1] == pytest.approx(0.0)
+        assert preference.negative_behavior_embedding[0] == pytest.approx(0.0)
+        assert preference.negative_behavior_embedding[1] == pytest.approx(1.0)
+        assert preference.behavior_evidence["model_name"] == "behavior-v2"
+        assert preference.behavior_evidence["ignored_unexposed_negative_count"] == 0
+        assert preference.explicit_topics == ["attention"]
+        assert preference.followed_authors == ["Ada Researcher"]
+        digests_by_generator = {digest.generator_version: digest for digest in digests}
+        assert set(digests_by_generator) == {"recommender-v1", GENERATOR_VERSION}
+        assert digests_by_generator[GENERATOR_VERSION].preference_model_version == 2
     finally:
         await _cleanup(database, ids)
         await application.state.redis.aclose()
