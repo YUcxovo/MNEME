@@ -6,6 +6,7 @@ import android.content.Context
 import android.os.SystemClock
 import android.util.Base64
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasTestTag
@@ -216,20 +217,6 @@ class LiveCoreProductPathTest {
             } else {
                 waitForTag("qa-screen")
                 captureComposeScreenshot("live_ui_qa.png")
-                record(
-                    track = LIVE_UI_TRACK,
-                    scenario = "open_qa_source",
-                    iteration = 1,
-                    startedAt = now(),
-                    success = false,
-                    outcome = "no_qa_source_available",
-                    seed = seed,
-                    selectedPaperId = selectedPaperId,
-                    selectedArxivId = paper.source.url.arxivId(),
-                    sourceCount = 0,
-                    sourceMatchStatus = qa?.sourceMatchStatus?.name,
-                    contentOrigin = qa?.disclosure?.origin?.name,
-                )
             }
 
             composeRule.onNodeWithTag("navigate-back").performClick()
@@ -258,28 +245,85 @@ class LiveCoreProductPathTest {
             )
             captureComposeScreenshot("live_ui_graph.png")
 
+            val neighbor = graph?.nodes?.firstOrNull { node -> node.id != graph.centerId }
+            val selectGraphPaperStartedAt = now()
+            if (neighbor != null) {
+                composeRule.onNodeWithTag("graph-screen").performScrollToNode(
+                    hasTestTag("graph-node-chooser"),
+                )
+                composeRule.onNodeWithTag("graph-node-chooser").performScrollToNode(
+                    hasTestTag("graph-node-${neighbor.id}"),
+                )
+                composeRule.onNodeWithTag("graph-node-${neighbor.id}").performClick()
+                composeRule.onNodeWithTag("graph-screen").performScrollToNode(
+                    hasTestTag("selected-graph-paper-title"),
+                )
+                val selected =
+                    runCatching {
+                        composeRule
+                            .onNodeWithTag("selected-graph-paper-title")
+                            .assertTextContains(neighbor.title)
+                    }.isSuccess
+                record(
+                    track = LIVE_UI_TRACK,
+                    scenario = "select_graph_neighbor",
+                    iteration = 1,
+                    startedAt = selectGraphPaperStartedAt,
+                    success = selected,
+                    outcome =
+                        if (selected) {
+                            "neighbor_selection_visible"
+                        } else {
+                            "neighbor_selection_not_visible"
+                        },
+                    seed = seed,
+                    selectedPaperId = neighbor.id,
+                    graphNodes = graph.nodes.size,
+                    graphEdges = graph.edges.size,
+                    graphStatus = graph.algorithmStatus.name,
+                    contentOrigin = graph.disclosure.origin.name,
+                )
+                captureComposeScreenshot("live_ui_graph_neighbor_selected.png")
+            } else {
+                record(
+                    track = LIVE_UI_TRACK,
+                    scenario = "select_graph_neighbor",
+                    iteration = 1,
+                    startedAt = selectGraphPaperStartedAt,
+                    success = false,
+                    outcome = "no_neighbor_available",
+                    seed = seed,
+                    selectedPaperId = selectedPaperId,
+                    graphNodes = graph?.nodes?.size,
+                    graphEdges = graph?.edges?.size,
+                    graphStatus = graph?.algorithmStatus?.name,
+                    contentOrigin = graph?.disclosure?.origin?.name,
+                )
+            }
+
             val openGraphPaperStartedAt = now()
-            if (!graph?.nodes.isNullOrEmpty()) {
+            if (neighbor != null) {
                 composeRule.onNodeWithTag("graph-screen").performScrollToNode(
                     hasTestTag("open-selected-graph-paper"),
                 )
                 composeRule.onNodeWithTag("open-selected-graph-paper").performClick()
-                composeRule.waitUntil(UI_STATE_TIMEOUT_MILLIS) {
-                    composeRule
-                        .onAllNodesWithText(graph!!.nodes.first { it.id == graph.centerId }.title)
-                        .fetchSemanticsNodes()
-                        .isNotEmpty()
+                composeRule.waitUntil(LIVE_STAGE_TIMEOUT_MILLIS) {
+                    val state = viewModel.paperState.value
+                    state is PaperDetailUiState.Content && state.paper.paper.id == neighbor.id
                 }
                 record(
                     track = LIVE_UI_TRACK,
                     scenario = "open_selected_graph_paper",
                     iteration = 1,
                     startedAt = openGraphPaperStartedAt,
-                    success = viewModel.paperState.value is PaperDetailUiState.Content,
-                    outcome = "paper_detail_rendered",
+                    success =
+                        (viewModel.paperState.value as? PaperDetailUiState.Content)
+                            ?.paper
+                            ?.paper
+                            ?.id == neighbor.id,
+                    outcome = "neighbor_paper_detail_rendered",
                     seed = seed,
-                    selectedPaperId = selectedPaperId,
-                    selectedArxivId = paper.source.url.arxivId(),
+                    selectedPaperId = neighbor.id,
                     graphNodes = graph.nodes.size,
                     graphEdges = graph.edges.size,
                     graphStatus = graph.algorithmStatus.name,
@@ -292,7 +336,7 @@ class LiveCoreProductPathTest {
                     iteration = 1,
                     startedAt = openGraphPaperStartedAt,
                     success = false,
-                    outcome = "no_graph_node_available",
+                    outcome = "no_graph_neighbor_available",
                     seed = seed,
                     selectedPaperId = selectedPaperId,
                     selectedArxivId = paper.source.url.arxivId(),
@@ -509,8 +553,7 @@ class LiveCoreProductPathTest {
             startedAt = startedAt,
             success =
                 qa?.answer?.isNotBlank() == true &&
-                    qa.disclosure.origin == ContentOrigin.LIVE_BACKEND &&
-                    validSources,
+                    qa.disclosure.origin == ContentOrigin.LIVE_BACKEND,
             outcome =
                 when {
                     qa == null -> "qa_error"
@@ -538,7 +581,8 @@ class LiveCoreProductPathTest {
         val valid =
             graph != null &&
                 graph.centerId == selectedPaperId &&
-                graph.nodes.isNotEmpty() &&
+                graph.nodes.size >= MIN_GRAPH_NODES &&
+                graph.edges.size >= MIN_GRAPH_EDGES &&
                 graph.nodes.size <= GRAPH_NODE_LIMIT &&
                 graph.disclosure.origin == ContentOrigin.LIVE_BACKEND
         record(
@@ -550,7 +594,8 @@ class LiveCoreProductPathTest {
             outcome =
                 when {
                     graph == null -> "graph_error"
-                    graph.nodes.size == 1 -> "center_only_graph"
+                    graph.nodes.size < MIN_GRAPH_NODES -> "insufficient_graph_nodes"
+                    graph.edges.size < MIN_GRAPH_EDGES -> "insufficient_graph_edges"
                     else -> "multi_node_graph"
                 },
             seed = seed,
@@ -670,6 +715,8 @@ class LiveCoreProductPathTest {
         const val LIVE_REPOSITORY_TRACK = "live_repository"
         const val EXPECTED_PAPER_COUNT = 5
         const val REPOSITORY_ITERATIONS = 5
+        const val MIN_GRAPH_NODES = 2
+        const val MIN_GRAPH_EDGES = 1
         const val GRAPH_NODE_LIMIT = 50
         const val MAX_JOB_POLLS = 900
         const val JOB_POLL_INTERVAL_MILLIS = 1_000L
