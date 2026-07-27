@@ -36,6 +36,8 @@ The participants were students and early-stage researchers from machine learning
 The interviews were not designed to estimate population prevalence.
 Instead, they asked participants to recount recent search, triage, storage, recall, and verification episodes without first describing MNEME.
 The resulting observations repeatedly concerned four forms of discontinuity: excessive candidate volume, difficulty relocating previously encountered papers, fragmented personal organization, and uncertainty about unsupported AI summaries.
+Within this ten-person formative sample, eight participants described difficulty retrieving previously encountered papers, seven described excessive paper volume, seven described weak connections between papers and developing ideas, and five raised concerns about trusting AI-generated material without inspectable sources.
+These counts characterize the interviewed group only; they are used to prioritize design attention rather than to estimate the prevalence of each problem in the wider research community.
 These observations are reported as small-sample design evidence in Chapter~2 rather than as universal claims about researchers.
 
 The motivation for a mobile client follows from when these discontinuities occur.
@@ -43,13 +45,6 @@ Triage, saving, sharing, and recalling papers are often interleaved with meeting
 A mobile interface can shorten the path from an alert to an inspectable paper record, but mobility also creates stricter constraints on attention, connectivity, screen area, and background execution.
 The value of a mobile research assistant therefore cannot be established merely by reproducing a desktop chatbot on a smaller display.
 The system must decide what information remains local, what work may be deferred, which evidence must stay one action away, and how stale or seeded content is distinguished from live content.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=1,width=0.94\textwidth]{figures/source_materials/design_specification.pdf}
-  \caption{Original customer-research problem framing and interview-design principles. Chapter~2 reports the method and evidence limitations in detail.}
-  \label{fig:customer-problem-framing}
-\end{figure}
 
 \section{Problem Statement}
 
@@ -91,17 +86,28 @@ Intermittent connectivity, restricted background execution, notification burden,
 The mobile workflow must preserve paper identity, evidence access, and event semantics while visibly distinguishing live, cached, fixture, fallback, and error states.
 These challenges are dependent rather than isolated: revision errors can contaminate retrieval, duplicated mobile events can distort later ranking, and an interface that hides degraded operation can convert a recoverable limitation into a misleading research interaction.
 
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=6,width=0.94\textwidth]{figures/source_materials/design_specification.pdf}
-  \caption{Read--Remember--Plan value proposition and its mapping to the reported customer pains. The ratios shown on the embedded source page describe only the ten formative interviews.}
-  \label{fig:value-proposition-source}
-\end{figure}
+The proposed workflow is organized around three reader-facing actions: read, remember, and plan.
+Reading begins with a paced digest rather than an unbounded result list and retains links from concise explanations to the relevant paper sections or figures.
+Remembering keeps saved and previously read papers retrievable while associating them with explicit topics and inspectable behavioral signals.
+Planning uses this durable state to assemble a limited briefing and to expose related work through a bounded graph instead of requiring the researcher to reconstruct relationships manually.
+These actions translate the interview findings into system behavior without treating the formative counts as effectiveness results.
+
+The storyboard in Figure~\ref{fig:storyboard-source} makes this intended sequence concrete.
+An early-stage researcher first encounters an unmanageable set of candidate papers.
+A mobile notification then presents a deliberately limited weekly digest.
+The researcher opens one item, reads a concise explanation, and follows section- and figure-level links to inspect the evidence.
+After saving the paper, she can see its place in a personal research graph and later retrieve the paper and its supporting evidence during a group discussion.
+This sequence is a design scenario that connects the identified problems to proposed interactions; it is not evidence that the complete longitudinal workflow has already been achieved.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[page=7,width=0.94\textwidth]{figures/source_materials/design_specification.pdf}
-  \caption{Storyboard continuation showing the intended transition from a source-linked mobile briefing to later retrieval and discussion. It is a design scenario, not an observed longitudinal result.}
+  \includegraphics[
+    page=6,
+    width=0.94\textwidth,
+    trim=79bp 178bp 77bp 279bp,
+    clip
+  ]{figures/source_materials/design_specification.pdf}
+  \caption{Five-frame MNEME storyboard: paper overload, a paced mobile digest, source-linked reading, saving into a personal research graph, and later evidence-supported discussion.}
   \label{fig:storyboard-source}
 \end{figure}
 
