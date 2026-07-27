@@ -200,10 +200,10 @@
   ],
   "run_manifest": {
     "backend_ai_configuration": {
-      "embedding_backend": "not-recorded",
-      "embedding_model": "not-recorded",
-      "qa_model": "not-recorded",
-      "summary_model": "not-recorded"
+      "embedding_backend": "fastembed",
+      "embedding_model": "BAAI/bge-small-en-v1.5",
+      "qa_model": "deepseek-v4-flash",
+      "summary_model": "deepseek-v4-flash"
     },
     "branch": "feat/automatic-citation-graph-preparation",
     "fixed_free_form_question": "What problem does this paper address, and what method does it propose?",
