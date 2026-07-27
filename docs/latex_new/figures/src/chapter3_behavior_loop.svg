@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="900" viewBox="0 0 2400 900">
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#17324D"/>
+    </marker>
+    <style>
+      .title { font: 700 34px sans-serif; fill: #252A31; }
+      .body { font: 26px sans-serif; fill: #252A31; }
+      .small { font: 24px sans-serif; fill: #3E4954; }
+      .arrow { fill: none; stroke: #17324D; stroke-width: 7; marker-end: url(#arrow); }
+      .return { fill: none; stroke: #17324D; stroke-width: 6; stroke-dasharray: 18 14; marker-end: url(#arrow); }
+    </style>
+  </defs>
+  <rect width="2400" height="900" fill="#FFFFFF"/>
+
+  <g transform="translate(65 190)">
+    <rect width="330" height="240" rx="24" fill="#EAF2F7" stroke="#2F6F8F" stroke-width="7"/>
+    <text x="165" y="72" text-anchor="middle" class="title">Interaction</text>
+    <text x="165" y="125" text-anchor="middle" class="body">Paper exposure,</text>
+    <text x="165" y="164" text-anchor="middle" class="body">open, or question</text>
+  </g>
+  <path d="M405 310 H455" class="arrow"/>
+
+  <g transform="translate(465 190)">
+    <rect width="330" height="240" rx="24" fill="#E8F4F3" stroke="#2D8C87" stroke-width="7"/>
+    <text x="165" y="72" text-anchor="middle" class="title">Durable retry</text>
+    <text x="165" y="125" text-anchor="middle" class="body">Client UUID and</text>
+    <text x="165" y="164" text-anchor="middle" class="body">bounded event queue</text>
+  </g>
+  <path d="M805 310 H855" class="arrow"/>
+
+  <g transform="translate(865 190)">
+    <rect width="330" height="240" rx="24" fill="#E8F4F3" stroke="#2D8C87" stroke-width="7"/>
+    <text x="165" y="72" text-anchor="middle" class="title">Safe ingestion</text>
+    <text x="165" y="125" text-anchor="middle" class="body">Idempotent batch</text>
+    <text x="165" y="164" text-anchor="middle" class="body">and exposure gate</text>
+  </g>
+  <path d="M1205 310 H1255" class="arrow"/>
+
+  <g transform="translate(1265 190)">
+    <rect width="330" height="240" rx="24" fill="#FBF2E3" stroke="#C89445" stroke-width="7"/>
+    <text x="165" y="72" text-anchor="middle" class="title">Interest state</text>
+    <text x="165" y="125" text-anchor="middle" class="body">Saturated positive</text>
+    <text x="165" y="164" text-anchor="middle" class="body">and negative profiles</text>
+  </g>
+  <path d="M1605 310 H1655" class="arrow"/>
+
+  <g transform="translate(1665 190)">
+    <rect width="330" height="240" rx="24" fill="#EBF4EC" stroke="#4F8A5B" stroke-width="7"/>
+    <text x="165" y="72" text-anchor="middle" class="title">Ranking</text>
+    <text x="165" y="125" text-anchor="middle" class="body">Confidence-scaled</text>
+    <text x="165" y="164" text-anchor="middle" class="body">contrastive affinity</text>
+  </g>
+  <path d="M2005 310 H2055" class="arrow"/>
+
+  <g transform="translate(2065 190)">
+    <rect width="270" height="240" rx="24" fill="#EBF4EC" stroke="#4F8A5B" stroke-width="7"/>
+    <text x="135" y="72" text-anchor="middle" class="title">Briefing</text>
+    <text x="135" y="125" text-anchor="middle" class="body">Frozen score</text>
+    <text x="135" y="164" text-anchor="middle" class="body">and reason</text>
+  </g>
+
+  <path d="M2200 450 C2200 710 230 710 230 450" class="return"/>
+  <rect x="735" y="667" width="930" height="72" rx="20" fill="#FFFFFF"/>
+  <text x="1200" y="714" text-anchor="middle" class="small">New acknowledged observations inform a later snapshot; earlier briefings remain unchanged.</text>
+</svg>

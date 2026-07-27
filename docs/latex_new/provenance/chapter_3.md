@@ -4,7 +4,8 @@ This file is a non-rendered evidence ledger for contents/chapter_3.tex. It recor
 
 ## Source snapshot
 
-- MNEME source identity inspected for the chapter: 947029d6d24232e5bcdc9297f65ada53cdf3aec2.
+- Chapter source baseline inspected for this revision: 7c249f2bca9d8191bfa79bfa98ab3d1563872444.
+- Behavior-model source snapshot inspected for the revised interest-memory design: 0a21abd847a09db172edf680b12dd56b07e1e3a7.
 - Runtime interface baseline: docs/api/openapi-v0.1.yaml plus FastAPI-generated schemas and routes under backend/src/mneme/api/.
 - Architecture and evaluation specifications consulted: docs/architecture/, docs/adr/, backend services and repositories, Android data/network/navigation code, and their tests.
 
@@ -24,21 +25,23 @@ This file is a non-rendered evidence ledger for contents/chapter_3.tex. It recor
 - Bounded download, atomic artifact publication, parsing tiers, and section-aware chunking: backend/src/mneme/services/documents/, backend/src/mneme/ai/chunking.py, and backend/src/mneme/core/config.py.
 - Retrieval, deterministic reranking, evidence threshold, marker validation, and local lexical source matching: backend/src/mneme/ai/retrieval.py, backend/src/mneme/ai/qa.py, backend/src/mneme/api/routes/qa.py, and backend/src/mneme/api/schemas/qa.py.
 - Provider routing, caching, usage metadata, and budget guard: backend/src/mneme/ai/service.py, backend/src/mneme/ai/cache.py, backend/src/mneme/ai/budget.py, and provider adapters under backend/src/mneme/ai/providers/.
-- Behavioral weights, duration multipliers, half-life, 90-day window, transactional ingestion, and duplicate handling: backend/src/mneme/services/behavior.py, backend/src/mneme/services/events.py, backend/src/mneme/repositories/events.py, and backend/src/mneme/api/routes/events.py.
-- Recommendation weights, recency decay, signal renormalization, deterministic reasons, and immutable digest snapshots: backend/src/mneme/ai/recommendation.py, backend/src/mneme/services/recommendation.py, and backend/src/mneme/repositories/digests.py.
+- Contrastive behavioral semantics, exposure gating, continuous duration weighting, dual-timescale decay, per-paper saturation, separate profile channels, and confidence calculation: docs/adr/0003-behavior-v2.md, backend/src/mneme/services/behavior_v2.py, and backend/src/mneme/services/behavior_v2_profile.py at the behavior-model source snapshot above.
+- Transactional event ingestion, duplicate handling, deterministic replay, and profile persistence: backend/src/mneme/services/events.py, backend/src/mneme/repositories/events.py, backend/src/mneme/cli/recompute_behavior.py, backend/src/mneme/api/routes/events.py, and backend/alembic/versions/0007_add_behavior_v2_profile.py at the behavior-model source snapshot above.
+- Confidence-scaled contrastive affinity, component renormalization, recency decay, deterministic reasons, and immutable digest snapshots: backend/src/mneme/ai/recommendation.py, backend/src/mneme/services/recommendation.py, and backend/src/mneme/repositories/digests.py at the behavior-model source snapshot above.
 - Citation observation persistence, deferred identity resolution, bounded traversal, graph algorithms, and fallback: backend/src/mneme/repositories/citation_graph.py, backend/src/mneme/repositories/graph_queries.py, backend/src/mneme/graph/algorithms.py, and backend/src/mneme/services/graph.py.
 - API versioning, authentication, errors, request correlation, and the 13-operation surface: backend/src/mneme/main.py, backend/src/mneme/api/router.py, backend/src/mneme/api/dependencies/auth.py, backend/src/mneme/core/security.py, backend/src/mneme/api/errors.py, and docs/api/openapi-v0.1.yaml.
 - Android data origin, networking, cache restoration, navigation, paper Q&A, graph boundary, and duplicate-safe behavioral-event synchronization: source and tests under android/app/src/, including the Room event store, sync coordinator, and WorkManager worker, checked against the server contract. Chapter 3 uses these components as design evidence rather than as technical-evaluation results. Claims about periodic briefing notifications, full event-vocabulary emission, and heterogeneous public graph nodes are deliberately excluded.
 
 ## Figure provenance
 
-- Figures storymap, system-architecture, document-dag, and ui-flow are original SVG diagrams under figures/src/ and are embedded in the chapter as high-resolution PNGs. Their layout was revised for legibility in the supervisor template; the SVG files remain the editable source of truth.
-- Reproducible diagram-rendering script: figures/src/render_chapter3_diagrams.sh. It uses librsvg to generate the four PNGs at their declared 2400-pixel widths.
+- Figures storymap, system-architecture, document-dag, behavior-loop, and ui-flow are original SVG diagrams under figures/src/ and are embedded in the chapter as high-resolution PNGs. Their layout was revised for legibility in the supervisor template; the SVG files remain the editable source of truth.
+- Reproducible diagram-rendering script: figures/src/render_chapter3_diagrams.sh. It uses librsvg to generate the five PNGs at their declared 2400-pixel widths.
 - chapter3_storymap.png: SHA-256 024a85ce241270e22150f927aa93f54755eb98278257918d80e6a6cc23ceb7f4.
 - chapter3_system_architecture.png: SHA-256 e79e0970912adb387a025c5cdc3f85f0026adf4743560d62501283fdc7af7346.
 - chapter3_document_dag.png: SHA-256 e89f53a19b555ca66e812302c69681fd22f6e09c75d30e38740705de7da50bae.
+- chapter3_behavior_loop.png: SHA-256 79eb489856ef0b46bf77bb588c10ffbb01f79ff5518ba45361de97466b453588.
 - chapter3_ui_flow.png: SHA-256 46793959ae81202499022cf390a81fa780349f4383a8aec2ea945920bf8ed67c.
-- Figures qa-flow, behavior-loop, api-sequence, and usability-results remain original TikZ diagrams embedded in contents/chapter_3.tex, derived from the sources above.
+- Figures qa-flow, api-sequence, and usability-results remain original TikZ diagrams embedded in contents/chapter_3.tex, derived from the sources above.
 - Prototype source: materials/Mneme_demo.html; SHA-256 491799d4812c6118d3a3eff139f640b48e38f17b4b4adad205ca85d7d07a4f5f.
 - Reproducible capture script: figures/src/capture_prototype.cjs.
 - prototype_digest.png: SHA-256 e1adb5e13c61d406f90d09a7cb578282e96c8add37e9c12937d54a7534f0d418.

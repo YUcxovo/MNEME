@@ -15,7 +15,7 @@
 
 The design of Mneme begins with a continuous research activity rather than with a catalogue of screens. A researcher repeatedly encounters new literature, decides what deserves attention, reconstructs what has already been read, checks evidence, and revises an evolving account of personal interests. Chapter~2 establishes the customer evidence behind this activity. The present chapter translates that evidence into the application's story map, acceptance boundaries, engine architecture, interface contract, and interaction design. It also reports the formative usability study that tested whether the principal workflow was legible in an interactive prototype.
 
-The chapter treats traceability as a cross-cutting design property. Paper-derived artifacts are associated with an observed source revision; generated answers are constrained to retrieved excerpts from one paper; behavioral adaptation retains an inspectable, versioned aggregation rule; and mobile states distinguish live, cached, controlled, degraded, and failed outcomes. These choices do not make every model output correct. They make the origin and limitations of an output available to the surrounding software and, where useful, to the reader. This distinction connects the representation, evidence, interest, and interaction challenges introduced in Chapter~1 without replacing the supervisor-defined structure of this chapter.
+The chapter treats traceability as a cross-cutting design property. Paper-derived artifacts are associated with an observed source revision; generated answers are constrained to retrieved excerpts from one paper; behavioral adaptation separates positive and negative evidence and calibrates its influence by evidence confidence; and mobile states distinguish live, cached, controlled, degraded, and failed outcomes. These choices do not make every model output correct. They make the origin and limitations of an output available to the surrounding software and, where useful, to the reader. This distinction connects the representation, evidence, interest, and interaction challenges introduced in Chapter~1 without replacing the supervisor-defined structure of this chapter.
 
 \section{Storymap and Features}
 \label{sec:storymap-features}
@@ -57,7 +57,7 @@ The customer research revealed two complementary requirements. First, participan
 
 The first stage, receiving new papers, is deliberately an engine-facing stage because every later interaction depends on the quality of the source representation. Mneme observes metadata from scholarly providers, associates each observation with a logical work and a specific revision, acquires the corresponding PDF where permitted, and produces a structured or explicitly degraded representation. A paper that cannot be parsed confidently remains available through its metadata and abstract rather than disappearing from the user's information stream. This fallback preserves continuity while preventing an abstract-only representation from being mistaken for full-text evidence.
 
-Learning interests combines direct instruction with observed interaction. A first-use flow asks for research topics and a seed paper, which gives the system a useful starting point without requiring a long preference form. Subsequent paper impressions, opens, and paper-scoped questions can be uploaded as duplicate-safe events. The design keeps explicit topics and the derived behavioral vector distinguishable because a chosen topic and an inferred signal have different epistemic meanings. The user interface can consequently offer recommendation reasons and correction controls without presenting behavioral inference as certain intent.
+Learning interests combines direct instruction with observed interaction. A first-use flow asks for research topics and a seed paper, which gives the system a useful starting point without requiring a long preference form. The mobile client records paper impressions as exposure evidence and records opens and paper-scoped questions as supported positive observations; each event can be uploaded with duplicate-safe identity. The shared event contract further assigns semantics to explicit save, share, and exposed-skip actions without interpreting the absence of an action as preference evidence. The design keeps explicit topics and the contrastive behavioral profile distinguishable because a chosen topic and an inferred signal have different epistemic meanings. The user interface can consequently offer recommendation reasons and correction controls without presenting behavioral inference as certain intent.
 
 Planning what to read turns the candidate stream into a research briefing. The default product rhythm is weekly, while an explicit refresh can request an on-demand recommendation snapshot. Each entry contains the paper identity, a concise description, a bounded relevance score, and a reason derived from the scoring components. The briefing is an immutable snapshot: later preference changes affect a later briefing rather than rewriting the rationale for an earlier recommendation. This property supports reproducibility and also gives the mobile cache a stable object to restore.
 
@@ -99,11 +99,17 @@ Acceptance criteria translate the story map into observable contracts. They are 
   \MnemeRowRule
   Personalized research briefing & A user supplies topics or a seed paper & The preference profile is initialized & The stored explicit preference can be inspected and used as an input to candidate ranking. \\
   \MnemeRowRule
-  Personalized research briefing & A valid profile and recent candidate papers exist & A briefing is requested or scheduled & The response is a bounded ranked snapshot with a paper, relevance score, and deterministic recommendation reason for each entry. \\
+  Personalized research briefing & Explicit interests, behavioral evidence, or both are available with recent candidate papers & A briefing is requested or scheduled & The response is a bounded ranked snapshot with a paper, relevance score, and deterministic recommendation reason for each entry. \\
   \MnemeRowRule
   Personalized research briefing & The client repeats a previously acknowledged behavioral event & The event batch is uploaded again & The event is counted as a duplicate and does not update the derived preference twice. \\
   \MnemeRowRule
-  Personalized research briefing & One scoring signal is unavailable, such as a behavior vector during cold start & Candidates are ranked & The available components are renormalized, and the reason refers only to components that participated in the score. \\
+  Personalized research briefing & A skip has no impression or open for the same paper during the preceding seven days & The behavioral profile is recomputed & The skip is retained in event history but contributes no negative preference evidence. \\
+  \MnemeRowRule
+  Personalized research briefing & Repeated eligible interactions concern the same paper & The behavioral profile is recomputed & Per-paper support approaches a bounded value, preventing one paper from dominating through event frequency alone. \\
+  \MnemeRowRule
+  Personalized research briefing & Behavioral evidence is sparse or compatible embeddings cover only part of the eligible papers & Candidates are ranked & Profile confidence attenuates the behavioral component, and zero confidence reduces ranking to the available cold-start signals. \\
+  \MnemeRowRule
+  Personalized research briefing & One scoring signal is unavailable & Candidates are ranked & The available components are renormalized, and the reason refers only to components that participated in the score. \\
   \MnemeRowRule
   Structured paper understanding & A paper has a stored summary for its selected revision & The paper detail is opened & The user receives a concise account of the paper together with method, claims, limitations, and the recorded source-quality state. \\
   \MnemeRowRule
@@ -290,76 +296,89 @@ Model-facing stages communicate through provider-independent request and result 
 
 \subsection{Interest Memory, Recommendation, and Citation Graph}
 
-The interest model uses an auditable deterministic aggregation rather than a hidden online learner. Every event contains a client-generated UUID, event type, timezone-aware occurrence time, optional paper identity, and duration only for a paper-open event. Event insertion and preference recomputation occur in one transaction while the user row is locked. A repeated UUID is acknowledged as a duplicate, so an ambiguous mobile retry cannot apply the same observation twice. Raw events remain the authoritative input, while the derived vector records the embedding model and behavior-model version that give it meaning.
+The interest model uses auditable deterministic aggregation rather than a hidden online learner. Every event contains a client-generated UUID, event type, timezone-aware occurrence time, optional paper identity, and duration only for a paper-open event. Event insertion and profile recomputation occur in one transaction while the user row is locked. A repeated UUID is acknowledged as a duplicate, so an ambiguous mobile retry cannot apply the same observation twice. Raw events remain the authoritative input, while the derived state records its embedding-model identity, behavior-model identity, parameters, confidence, and evidence summary. Replaying the same event history against the same paper embeddings and reference time therefore reconstructs the same state without rewriting explicit preferences.
 
-For eligible event \(i\), let \(b_i\) denote the base event weight, \(m_i\) the duration multiplier, \(\Delta_i\) the event age in days, and \(v_i\) the mean compatible chunk embedding of its paper. Events older than 90 days do not contribute. The effective weight uses a 30-day half-life:
-\begin{equation}
-  \widetilde{w}_i=b_i m_i 2^{-\Delta_i/30}.
-  \label{eq:event-weight}
-\end{equation}
-Equation~\ref{eq:event-weight} makes recency attenuation independent of event type. Only paper-open events change with duration: a duration below 30 seconds uses \(m_i=0.5\), a duration from 30 through 180 seconds or an absent duration uses \(m_i=1\), and a duration above 180 seconds uses \(m_i=1.5\). Table~\ref{tab:behavior-weights} records the fixed base semantics. A zero-weight dismissal can be retained as an observation without moving the topical vector.
+The model first distinguishes exposure from preference evidence. An impression records that a paper was shown but contributes no positive weight. Opens, saves, shares, and paper-scoped questions provide positive evidence; a skip provides negative evidence only if an impression or open for the same paper occurred during the preceding seven days. This gate prevents an unobserved paper from being interpreted as a rejected topic. Briefing dismissal remains outside the paper-interest profile because it has no paper identity. Table~\ref{tab:behavior-weights} defines these fixed semantics. The magnitudes encode design priorities within this model, not measured certainty about the user's intent.
 
 \begin{table}[htbp]
   \centering
-  \caption{Base weights in the deterministic behavioral aggregation. Signed weights represent directional evidence, not certainty about user intent.}
+  \small
+  \caption{Event semantics in the contrastive behavioral aggregation.}
   \label{tab:behavior-weights}
-  \begin{tabular}{@{}lr@{}}
+  \begin{tabular}{@{}p{0.32\textwidth}p{0.18\textwidth}p{0.40\textwidth}@{}}
     \toprule
-    \textbf{Observed event} & \textbf{Base weight \(b_i\)} \\
+    \textbf{Observed event} & \textbf{Base weight} & \textbf{Interpretation} \\
     \midrule
-    Paper impression & 0.1 \\
+    Paper impression & \(0\) & Exposure record used to qualify a subsequent skip. \\
     \MnemeRowRule
-    Paper opened & 1.0 \\
+    Paper opened & \(+1\) & Positive evidence refined by bounded reading duration. \\
     \MnemeRowRule
-    Paper saved & 3.0 \\
+    Paper saved & \(+3\) & Explicit positive retention signal. \\
     \MnemeRowRule
-    Paper skipped & -1.0 \\
+    Paper skipped & \(-1\) & Negative evidence only after recent exposure to the same paper. \\
     \MnemeRowRule
-    Paper shared & 4.0 \\
+    Paper shared & \(+4\) & Strong explicit positive action. \\
     \MnemeRowRule
-    Paper-scoped question asked & 2.0 \\
+    Paper-scoped question asked & \(+2\) & Positive evidence of engagement with the selected paper. \\
     \MnemeRowRule
-    Briefing dismissed & 0.0 \\
+    Briefing dismissed & \(0\) & Session-level observation excluded from the paper-interest profile. \\
     \bottomrule
   \end{tabular}
+  \normalsize
 \end{table}
 
-The unnormalized aggregate divides by the sum of absolute weights before L2 normalization:
+For eligible event \(i\), let \(b_i\) denote its signed base weight, \(m_i\) its duration multiplier, and \(\Delta_i\) its age in days. Only an open uses duration. If its observed duration is \(d_i\) seconds, clamped to the interval \([0,300]\), the continuous multiplier and dual-timescale temporal decay are
 \begin{equation}
-  z=\frac{\sum_i \widetilde{w}_i v_i}{\sum_i |\widetilde{w}_i|},
+  m_i=0.5+\frac{\log(1+d_i/30)}{\log 11},
   \qquad
-  u=\frac{z}{\lVert z\rVert_2}.
-  \label{eq:behavior-vector}
+  g(\Delta_i)=0.70\,2^{-\Delta_i/14}+0.30\,2^{-\Delta_i/60}.
+  \label{eq:behavior-temporal-weight}
 \end{equation}
-The two stages in Equation~\ref{eq:behavior-vector} first control aggregate magnitude and then project a non-degenerate result to unit length. Absolute-weight normalization avoids an unstable denominator when positive and negative signals nearly cancel. A missing embedding, incompatible embedding model, empty signal set, or degenerate aggregate produces no behavior vector. Recomputing from stored observations rather than applying order-dependent incremental updates makes duplicate, recovery, and sensitivity tests deterministic.
+A missing duration gives \(m_i=1\), and a non-open event also uses unit duration multiplier. The effective signed evidence is \(\widetilde{w}_i=b_i m_i g(\Delta_i)\); observations older than 180 days contribute no profile evidence. The bounded logarithmic transform lets reading time refine an open without allowing passive dwell time to outweigh an explicit save or share. Combining a 14-day and a 60-day half-life preserves sensitivity to recent changes while retaining a smaller persistent component. These values are fixed, replayable parameters rather than claimed optima.
 
-Recommendation keeps explicit preference and observed behavior as separate scoring components. For candidate paper \(p\), \(T(p)\) is explicit-topic match, \(B(p)\) is the non-negative cosine similarity between the behavior vector and the candidate's mean compatible embedding, and \(F(p)=2^{-d/7}\) is a recency term for age \(d\) days. When all components are available,
+A direct signed average has two undesirable properties: repeated actions on one paper can dominate through frequency, and positive and negative vectors can cancel into a near-zero representation that hides conflicting evidence. Mneme addresses the first property by accumulating positive and negative mass separately for each paper \(j\), then applying diminishing returns:
 \begin{equation}
-  S(p)=0.45T(p)+0.35B(p)+0.20F(p).
+  M_j^+=\sum_{i\in j}\max(\widetilde{w}_i,0),
+  \quad M_j^-=\sum_{i\in j}\max(-\widetilde{w}_i,0),
+  \quad a_j^+=1-e^{-M_j^+/3},
+  \quad a_j^-=1-e^{-M_j^-}.
+  \label{eq:behavior-saturation}
+\end{equation}
+The resulting supports \(a_j^+\) and \(a_j^-\) are bounded below one, so another interaction with an already well-supported paper has less influence than evidence from a distinct paper. Let \(v_j\) be the compatible mean chunk embedding of paper \(j\). Positive and negative interest states are then maintained as independently normalized support-weighted centroids:
+\begin{equation}
+  u^+=\operatorname{norm}\!\left(\sum_j a_j^+v_j\right),
+  \qquad
+  u^-=\operatorname{norm}\!\left(\sum_j a_j^-v_j\right).
+  \label{eq:behavior-contrastive-profile}
+\end{equation}
+Here, \(\operatorname{norm}(x)=x/\lVert x\rVert_2\) for a non-degenerate vector; a channel with no compatible evidence is absent. Separate centroids preserve the distinction between attraction and avoidance instead of forcing contradictory observations to erase one another.
+
+The profile also estimates how much influence its behavioral evidence should receive. Let \(M=\sum_j(a_j^++a_j^-)\) be total embedded support, \(D\) the number of distinct embedded papers with non-zero support, and \(Q\) the fraction of eligible evidence papers for which a compatible embedding is available. The bounded confidence is
+\begin{equation}
+  C=Q\sqrt{\left(1-e^{-M/3}\right)\left(1-e^{-D/3}\right)},
+  \qquad 0\leq C\leq 1.
+  \label{eq:behavior-confidence}
+\end{equation}
+This construction requires both evidence mass and diversity, while incomplete embedding coverage reduces confidence directly. Repeated engagement with one paper can strengthen its support but cannot immediately grant the behavioral component its full nominal weight. Missing embeddings do not delete raw observations; they remain available for a later deterministic replay.
+
+Recommendation keeps explicit preference and inferred behavior as separate components. For candidate paper \(p\) with embedding \(v_p\), the contrastive affinity compares alignment with the positive and negative centroids:
+\begin{equation}
+  A(p)=\operatorname{clip}_{[0,1]}\!\left(0.5+0.5\left[\cos(u^+,v_p)-\cos(u^-,v_p)\right]\right).
+  \label{eq:behavior-affinity}
+\end{equation}
+An absent channel contributes zero cosine similarity. If \(T(p)\) is explicit-topic match and \(F(p)=2^{-d/7}\) is recency for publication age \(d\), define component values \((x_T,x_B,x_F)=(T(p),A(p),F(p))\) and nominal weights \((\alpha_T,\alpha_B,\alpha_F)=(0.45,0.35C,0.20)\). For the set \(\mathcal{K}(p)\) of available components, the implemented score is
+\begin{equation}
+  S(p)=\frac{\sum_{k\in\mathcal{K}(p)}\alpha_k x_k}{\sum_{k\in\mathcal{K}(p)}\alpha_k}.
   \label{eq:recommendation-score}
 \end{equation}
-Equation~\ref{eq:recommendation-score} applies only when all three signals exist. Missing components are removed and the remaining weights are renormalized. Stable paper UUID ordering resolves exact score ties. Recommendation reasons are selected from the components that participated in the score, rather than generated after the fact by a language model. Work on scrutable recommendation profiles motivates exposing and correcting the representation behind a recommendation~\cite{ramos2024scrutable}; Mneme implements the narrower property that explicit topics are editable and displayed reasons are faithful to the deterministic scoring components. The fixed weights, one-vector representation, and absence of an author component in the scoring function limit what can be inferred about long-term preference quality.
+A missing topic or behavioral component is omitted from \(\mathcal{K}(p)\). A zero-confidence profile therefore follows the cold-start signals rather than treating one weak observation as a mature interest model. Stable paper UUID ordering resolves exact score ties. Recommendation reasons are selected from components that participated in the score instead of being generated after ranking. Work on scrutable recommendation profiles motivates exposing and correcting the representation behind a recommendation~\cite{ramos2024scrutable}; Mneme implements the narrower property that explicit topics remain editable and displayed reasons remain faithful to the deterministic components.
 
-Figure~\ref{fig:behavior-loop} summarizes how these algebraic choices connect the mobile observation boundary to an immutable briefing. The loop carries stable identities and acknowledged events forward, but it does not retroactively rewrite the score or explanation stored in an earlier briefing snapshot.
+Figure~\ref{fig:behavior-loop} connects these algebraic choices to the mobile observation boundary and the immutable briefing. The proposed model remains a hand-designed content-space representation: its transparency and replayability support controlled mechanism tests, but neither the parameter values nor long-term user benefit follow from the equations alone. Chapter~4 therefore evaluates software invariants and controlled ranking behavior separately from claims that would require longitudinal user evidence.
 
 \begin{figure}[htbp]
   \centering
-  \resizebox{0.96\textwidth}{!}{%
-  \begin{tikzpicture}[font=\sffamily\scriptsize,>=Latex]
-    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=5pt,minimum width=2.2cm,minimum height=0.9cm,align=center] (interaction) at (-7.8,0) {Supported mobile\\interaction};
-    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,minimum width=2.2cm,minimum height=0.9cm,align=center] (queue) at (-4.6,0) {Durable client UUID\\and retry queue};
-    \node[draw=MnemeTeal,fill=white,rounded corners=5pt,minimum width=2.2cm,minimum height=0.9cm,align=center] (transaction) at (-1.4,0) {Idempotent batch\\and user-row lock};
-    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=5pt,minimum width=2.2cm,minimum height=0.9cm,align=center] (aggregate) at (1.8,0) {Signed decay and\\normalized vector};
-    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,minimum width=2.2cm,minimum height=0.9cm,align=center] (score) at (5.0,0) {Topic, behavior,\\and recency score};
-    \node[draw=MnemeGreen,fill=white,rounded corners=5pt,minimum width=2.2cm,minimum height=0.9cm,align=center] (digest) at (8.2,0) {Immutable briefing\\with faithful reason};
-    \draw[MnemeNavy,line width=0.9pt,->] (interaction) -- (queue);
-    \draw[MnemeNavy,line width=0.9pt,->] (queue) -- (transaction);
-    \draw[MnemeNavy,line width=0.9pt,->] (transaction) -- (aggregate);
-    \draw[MnemeNavy,line width=0.9pt,->] (aggregate) -- (score);
-    \draw[MnemeNavy,line width=0.9pt,->] (score) -- (digest);
-    \draw[MnemeNavy,dashed,line width=0.9pt,->] (digest.south) .. controls (7.4,-1.65) and (-7.0,-1.65) .. node[below]{new observations close the loop without rewriting the previous snapshot} (interaction.south);
-  \end{tikzpicture}}
-  \caption{Inspectable behavioral feedback loop. Stable identities preserve duplicate safety across mobile retry and server ingestion; the resulting briefing freezes both score and reason for that generation event.}
+  \includegraphics[width=\textwidth]{chapter3_behavior_loop.png}
+  \caption{Inspectable behavioral feedback loop. Stable event identities preserve duplicate safety; exposure gating, per-paper saturation, contrastive state, and evidence confidence determine how later observations influence a new briefing without rewriting an earlier snapshot.}
   \label{fig:behavior-loop}
 \end{figure}
 
@@ -442,7 +461,7 @@ Figure~\ref{fig:api-sequence} illustrates the corresponding state choreography. 
   \label{fig:api-sequence}
 \end{figure}
 
-Idempotency is expressed differently for the two write patterns. Pipeline creation derives a uniqueness key from canonical stage inputs, so repeated summary requests converge on one logical job. Behavioral ingestion instead accepts client-generated event UUIDs and reports how many items were newly accepted and how many were duplicates. The entire event batch and behavior recomputation execute transactionally for one user. If any referenced paper or timestamp violates the contract, the batch is rejected rather than partially changing the profile. These semantics let the mobile client retain an event until acknowledgement and retry after uncertain connectivity without needing to infer whether the first request reached the server.
+Idempotency is expressed differently for the two write patterns. Pipeline creation derives a uniqueness key from canonical stage inputs, so repeated summary requests converge on one logical job. Behavioral ingestion instead accepts client-generated event UUIDs and reports how many items were newly accepted and how many were duplicates. The entire event batch and behavior recomputation execute transactionally for one user. Recalculation derives the positive and negative profile embeddings, bounded confidence, and evidence summary from the authoritative event history without exposing those persistence fields through the ingestion response. If any referenced paper or timestamp violates the contract, the batch is rejected rather than partially changing the profile. These semantics let the mobile client retain an event until acknowledgement and retry after uncertain connectivity without needing to infer whether the first request reached the server.
 
 The question endpoint is synchronous because its useful response is the bounded answer itself. A request identifies one paper, an optional conversation, and a question of at most 500 characters. The conversation UUID preserves ownership and paper scope, but generation remains grounded in the new question and selected revision rather than treating unbounded chat history as evidence. The response contains public source records at section and chunk identity granularity; it does not claim character-level spans or expose internal prompt context. Similarly, the graph endpoint exposes paper nodes and directed citation edges but not provider-specific observation records. These transformations prevent persistence details from becoming accidental public promises.
 
@@ -535,7 +554,7 @@ The graph requires stronger affordance than a conventional list because spatial 
 
 Network state is treated as interface content rather than as an implementation detail. On opening a briefing, the client can restore the latest local snapshot and then request a live one. The visible origin distinguishes restored cache from a server response, and a refresh failure leaves the last valid snapshot readable. Paper Q\&A and graph exploration have no semantically equivalent local substitute, so loss of connectivity produces a retryable state rather than a controlled answer or graph disguised as live data. Processing is likewise distinct from failure: an HTTP~202 response shows the paper stage and job state, whereas a validation or service error uses the stable message and request identity from the API envelope.
 
-The minimum behavioral capture policy follows the same restraint. Impression, paper-open, and paper-scoped-question events are attached to stable paper identities, stored locally until acknowledgement, and uploaded in bounded batches. The interface neither displays a claim that the system has learned a user's intent nor sends raw reading history to the language-model prompt. Instead, recommendation reasons expose the components that affected the score, and explicit topics remain editable. This makes personalization observable enough to contest without requiring the user to understand embedding vectors.
+The minimum behavioral capture policy follows the same restraint. Impression, paper-open, and paper-scoped-question events are attached to stable paper identities, stored locally until acknowledgement, and uploaded in bounded batches. An impression records exposure rather than interest, while an open or paper-scoped question supplies positive evidence whose eventual influence is moderated by profile confidence. The interface neither displays a claim that the system has learned a user's intent nor sends raw reading history to the language-model prompt. Instead, recommendation reasons expose the components that affected the score, and explicit topics remain editable. This makes personalization observable enough to contest without requiring the user to understand embedding vectors.
 
 The visual system uses a restrained navy, teal, gold, green, and red palette consistent with the diagrams in this chapter, but no state relies on hue alone. Text labels, icons, selected outlines, and action placement carry the operational meaning. Large targets, scalable text, semantic content descriptions, predictable back navigation, and a native selected-node summary are design requirements for touch and screen-reader use. These mechanisms support accessibility but do not by themselves establish conformance or usability; the formative task study below evaluates discoverability of the principal flow, while broader accessibility testing belongs to the empirical assessment in Chapter~4.
 
@@ -554,7 +573,7 @@ The script's research questions matched the story-map transitions. It asked whet
 Table~\ref{tab:usability-script} defines the five tasks and the observable success criterion used in analysis. Target time and action counts were specified before testing as facilitation guides. The study record preserves success counts but not participant-level completion time, tap count, or hesitation duration, so those targets are not reported as measured outcomes. T3 is operationalized as locating an answer and its cited excerpt rather than as ``trusting'' the answer, because trust is not established by task completion alone.
 
 \small
-\begin{longtable}{@{}p{0.07\textwidth}p{0.42\textwidth}p{0.31\textwidth}p{0.12\textwidth}@{}}
+\begin{longtable}{@{}p{0.07\textwidth}p{0.42\textwidth}p{0.31\textwidth}p{0.118\textwidth}@{}}
   \caption{Moderated usability tasks, observable success criteria, and pre-specified facilitation targets.}\label{tab:usability-script}\\
   \toprule
   \textbf{ID} & \textbf{Participant task} & \textbf{Observable success criterion} & \textbf{Target} \\

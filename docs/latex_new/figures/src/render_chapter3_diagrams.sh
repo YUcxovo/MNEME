@@ -20,4 +20,5 @@ render() {
 render chapter3_storymap 2400 1120
 render chapter3_system_architecture 2400 1650
 render chapter3_document_dag 2400 1450
+render chapter3_behavior_loop 2400 900
 render chapter3_ui_flow 2400 1550
