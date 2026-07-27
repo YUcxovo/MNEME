@@ -1,9 +1,14 @@
 % !TEX root = ../main.tex
 
 \begin{abstract}[zh]
-\addcontentsline{toc}{chapter}{摘 \quad 要}
-  学位论文是本科生从事科研工作的成果的主要表现，集中表明了作者在研究工作中获得的新的发明、理论或见解，也是科研领域中的重要文献资料和社会的宝贵财富。
- \par 为了提高本科生学位论文的质量，做到学位论文在内容和格式上的规范化与统一化，特制作本模板。
+\addcontentsline{toc}{chapter}{摘\quad 要}
+科研人员面对的困难并不止于“找到论文”。在论文持续修订、研究兴趣不断变化以及生成式工具逐渐进入阅读流程的背景下，研究者还需要长期保存三个相互关联的连续性：其一，能够确认某条信息来自哪一篇论文的哪一个版本；其二，能够从机器生成的摘要或回答返回到实际支撑该主张的原文证据；其三，能够理解系统为何推荐某篇论文，并在行为信号被误解时修改或删除相应的兴趣状态。现有搜索引擎、文献管理工具、检索增强生成系统、推荐系统和引文网络分别解决了其中一部分问题，但这些能力通常缺少统一的身份、证据和用户状态契约，尤其难以在移动端有限的屏幕、网络和后台执行条件下形成可检查的闭环。
+
+本文设计并实现 MNEME，一个面向持续文献理解的移动原生人工智能研究助手。本文首先通过十名学生和早期研究人员的半结构化访谈、亲和图分析、客户画像和竞品类别分析，将用户需求归纳为信息过载、已读论文难以找回、个人知识组织碎片化以及对无来源人工智能输出缺乏信任等问题。随后，论文把产品流程分解为四项技术挑战：修订版本正确的论文表示、受证据约束的摘要与问答、可检查和可纠正的兴趣记忆，以及具有明确边界的移动端集成。围绕这些挑战，系统采用逻辑论文与观测版本分离的持久化模型、带有来源区段的章节感知检索、分层拒答与引用匹配、版本化行为事件和可解释排序、Room 本地缓存、WorkManager 可恢复任务队列、受限引文图以及可见的实时、缓存、回退和错误状态。
+
+本文严格区分设计、实现和实证结果。在给定代码修订版本上，后端服务、人工智能服务层、修订隔离、行为事件、推荐基线、Android 缓存与事件队列以及图交互均具有可检查的实现或软件测试基础；这些证据证明了相应机制的可执行性，但不能替代科研质量评价。形成性原型测试共报告五名参与者完成五项核心任务，其中推荐论文打开、来源核验和带引用问答均为 5/5，知识图谱任务为 2/5，兴趣设置为 4/5。该结果推动了图节点提示、选中状态、关系解释和持续显示“打开论文”操作的设计修改，但由于缺少参与者级时间、点击和编码记录，本文将其限定为形成性观察。在已保留的 Android 测试中，启动与恢复、受控状态转换、图谱就绪与节点选择以及事件同步样本均在规定配置下满足相应检查条件；一次五轮实时链路追踪还验证了具有重复事件识别能力的服务端写入和客户端读回。上述结果仅适用于所记录的 Android 14 模拟器、代码修订版本和服务配置，不能外推为跨设备可靠性、长期推荐收益或普遍可用性结论。
+
+本文的主要贡献是一套证据边界明确的移动文献系统规范、实现机制与受限实证结果。它把流畅输出与可验证支持、软件正确性与研究效果、短期行为与长期兴趣明确分开。现有证据表明，MNEME 能够在给定配置下维持修订身份、来源可见性、可恢复事件传递和受限图谱交互；但尚不足以证明其能够普遍提高科研效率或理解质量。
 \end{abstract}
 
 {
@@ -11,8 +16,14 @@
 \ctexset{chapter/format+={\arial}}
 \begin{abstract}[en]
 \addcontentsline{toc}{chapter}{ABSTRACT}
-As a primary means of demonstrating research findings for undergraduate students, dissertation is a systematic and standardized record of the new inventions, theories or insights obtained by the author in the research work. It can not only function as an important reference when students pursue further studies, but also contribute to scientific research and social development.
-\par This template is therefore made to improve the quality of undergraduates’ dissertation and to further standardize it both in content and in format.
+The difficulty of scholarly reading does not end when a relevant paper is found. Papers change across revisions, machine-generated explanations depend on selected evidence, and a researcher's interests evolve across courses, projects, and repeated reading sessions. A useful literature assistant must therefore preserve three forms of continuity: document continuity, which identifies the exact revision behind a statement; evidential continuity, which lets a reader move from a generated claim to its supporting passage; and interest continuity, which explains why a paper was recommended and permits an incorrect behavioral inference to be corrected. Search engines, reference managers, retrieval-augmented generation systems, recommender systems, and citation graphs each address part of this workflow, but they do not automatically share paper identity, evidence, and user-state contracts. The gap is more consequential on mobile devices, where limited screen space, intermittent connectivity, background-execution limits, and notification burden can hide provenance or failure.
 
+This thesis presents MNEME, a mobile-native AI research assistant for continuous literature understanding. Ten semi-structured interviews with students and early-stage researchers, followed by affinity mapping, customer-profile synthesis, and category-level competitor analysis, motivated four recurring concerns: excessive candidate volume, difficulty relocating previously encountered papers, fragmented personal organization, and distrust of unsupported AI output. The thesis translates these concerns into four technical challenges: revision-correct paper representation; evidence-bounded summarization and question answering; inspectable and correctable interest memory; and bounded mobile integration. The resulting design separates logical papers from observed revisions, propagates lineage to sections, chunks, embeddings, summaries, and citations, and applies section-aware retrieval, explicit refusal, and layered source checks. Versioned behavioral events feed an auditable recommendation baseline. On Android, Room-backed cached state, a recoverable WorkManager event queue, a bounded citation-graph client, and explicit live, cached, fixture, fallback, and error states preserve the same contracts at the interface.
+
+The thesis separates design evidence, implementation evidence, and empirical outcomes. At the stated source revisions, the backend and AI service layers, revision-scoped retrieval, behavioral event handling, recommendation baseline, Android cache and event queue, and graph interaction have inspectable implementations or software-test support. These artifacts establish executable mechanisms, not final research effectiveness. A formative prototype study reports five participants completing five core tasks: opening a recommended paper, verifying a source, and using cited Q\&A each achieved 5/5 completion; graph exploration achieved 2/5; and preference editing achieved 4/5. The graph result motivated an explicit instruction, selected-node state, relation explanation, and persistent Open Paper action. Because participant-level timing, tap, and coded-observation records are unavailable in the local evidence package, these counts are treated as limited formative observations rather than general usability claims.
+
+In the retained Android tests, startup and resume, controlled state transitions, graph readiness and node selection, and event-synchronization samples satisfied their defined checks under the recorded configuration. A five-run live trace further confirmed duplicate-aware server ingestion and client readback. These results are bounded to the stated Android~14 emulator, source revision, and service configuration; they do not establish cross-device reliability, longitudinal recommendation benefit, or general usability.
+
+The principal contribution is an implementation-grounded mobile literature system with explicit evidence boundaries and bounded empirical results. It separates fluent output from verified support, software correctness from research effectiveness, and short-term behavior from long-term interest. The retained evidence shows that MNEME can preserve revision identity, source visibility, recoverable event delivery, and bounded graph interaction in the reported configuration, but it does not support a general claim that the system improves research productivity or understanding.
 \end{abstract}
 }
