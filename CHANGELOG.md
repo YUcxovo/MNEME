@@ -55,6 +55,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added authenticated `GET /graph/{paper_id}` with depth/node limits, deterministic algorithm enrichment, and a safe baseline fallback.
 - Added deterministic `behavior-v1` aggregation and authenticated idempotent `POST /events` batches with transactional preference recomputation.
 - Added PostgreSQL/pgvector end-to-end coverage for event deduplication, exact-revision/model behavior vectors, rollback, bounded citation-graph queries, and unresolved-to-local citation resolution across later graph synchronization.
+- Added a confidence-calibrated contrastive behavior model with dual-timescale decay, per-paper saturation, exposure-gated negative feedback, separate positive and negative profiles, inspectable evidence, and bounded confidence while retaining the frozen v1 replay baseline.
+- Added migration `0007`, an idempotent raw-event replay command, and version-aware digest generation for the active behavior profile.
+- Added a deterministic controlled behavior-evaluation fixture, four headline systems, five mechanism ablations, ranking and diversity metrics, paired fixed-seed bootstrap summaries, sanitized provenance, atomic artifacts, and thesis-ready plotting tools.
 
 ### Changed
 
@@ -65,6 +68,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Updated Android CI so instrumented-test Gradle commands run from the Android project root.
 - Bound summaries, chunks, embeddings, retrieval, Q&A evidence, and digest candidates to exact arXiv revisions instead of paper-level artifacts.
 - Restricted behavior-based recommendation candidates to the behavior vector's embedding model and invalidated cached manual digests after preference changes.
+- Changed recommendation generation to confidence-gate the behavior component, subtract negative similarity through a bounded contrastive affinity, and identify snapshots as `recommender-v2`.
 
 ### Fixed
 
@@ -77,6 +81,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   characters before chunk persistence.
 - Rejected behavioral events more than five minutes ahead of the server clock and bounded preference recomputation to the same accepted time range.
 - Serialized recommended-digest freshness checks and generation with behavioral preference updates so a concurrently ingested event cannot leave a newly generated stale digest reusable.
+- Prevented stale preference-model or generator snapshots from being reused after behavior semantics change.
+- Quantized derived vectors to pgvector's storage precision before no-op comparison so deterministic replay does not spuriously update preference freshness.
 - Indexed unresolved external citation targets for later provider-identity resolution.
 - Prevented current-revision summary and Q&A responses from reusing stale artifacts from an older arXiv revision.
 - Decoded PostgreSQL aggregate pgvector values through the vector type before recommendation scoring.
