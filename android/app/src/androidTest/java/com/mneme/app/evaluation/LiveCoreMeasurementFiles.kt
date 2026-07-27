@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -40,16 +39,10 @@ internal object LiveCoreMeasurementFiles {
         file(fileName).appendText(values.joinToString(",") { value -> csv(value) } + "\n")
     }
 
-    fun captureScreenshot(fileName: String) {
-        val screenshot =
-            requireNotNull(
-                InstrumentationRegistry
-                    .getInstrumentation()
-                    .uiAutomation
-                    .takeScreenshot(),
-            ) {
-                "Android did not return a screenshot."
-            }
+    fun captureScreenshot(
+        fileName: String,
+        screenshot: Bitmap,
+    ) {
         file(fileName).outputStream().use { output ->
             check(screenshot.compress(Bitmap.CompressFormat.PNG, 100, output)) {
                 "Android could not encode $fileName."
