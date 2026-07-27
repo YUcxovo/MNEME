@@ -57,7 +57,10 @@ class DemoUserBootstrapRepository:
                     explicit_topics=[],
                     followed_authors=[],
                     behavior_embedding=None,
+                    negative_behavior_embedding=None,
                     behavior_embedding_model=None,
+                    behavior_confidence=0.0,
+                    behavior_evidence={},
                     model_version=1,
                     updated_at=now,
                 )
