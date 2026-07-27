@@ -1,6 +1,8 @@
 """Execution-path tests for the RAG evaluation CLI."""
 
 import asyncio
+import json
+from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -9,13 +11,19 @@ from uuid import uuid4
 import pytest
 
 from mneme.ai.evaluation import QAFixture, load_qa_fixtures
+from mneme.ai.qa import REFUSAL_ANSWER, GroundedAnswer
+from mneme.ai.retrieval import RetrievedChunk
+from mneme.cli import run_qa_eval
 from mneme.cli.run_qa_eval import (
     DEFAULT_FIXTURES,
+    EXIT_NO_CASES_EVALUATED,
     build_parser,
     build_run_config,
+    evaluate_case,
     resolve_runnable,
 )
 from mneme.core.config import Settings
+from mneme.models.qa import QaSourceMatchStatus
 
 
 @pytest.mark.base
@@ -143,3 +151,137 @@ def test_resolve_requires_a_complete_embedding_set_for_the_configured_model() ->
     # A fully embedded revision resolves to the exact pinned row.
     resolved = _resolve(_ScriptedSession([paper, version, 10, 10]), _fixture())
     assert resolved == (paper, version)
+
+
+def _chunk(section: str, *, anchor: bool) -> RetrievedChunk:
+    return RetrievedChunk(
+        chunk_id=uuid4(),
+        paper_id=uuid4(),
+        chunk_index=0,
+        section_title=section,
+        content="c",
+        score=0.9,
+        is_context_anchor=anchor,
+    )
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_evaluate_case_splits_dense_and_anchor_sections_and_meters_the_run() -> None:
+    fixture = _fixture()
+    chunks = [_chunk("Method", anchor=False), _chunk("Introduction", anchor=True)]
+    embedding_spend: list[Decimal] = [Decimal("999")]  # stale spend from a previous case
+
+    class FakeRetrieval:
+        async def retrieve(self, **_: Any) -> list[RetrievedChunk]:
+            embedding_spend.append(Decimal("0.0001"))
+            return chunks
+
+    class FakeGenerator:
+        async def answer(self, **_: Any) -> GroundedAnswer:
+            return GroundedAnswer(
+                answer="k [1]",
+                citations=(),
+                source_match_status=QaSourceMatchStatus.MATCHED,
+            )
+
+    outcome = asyncio.run(
+        evaluate_case(
+            fixture,
+            paper=SimpleNamespace(id=uuid4()),  # type: ignore[arg-type]
+            version=SimpleNamespace(id=uuid4()),  # type: ignore[arg-type]
+            retrieval=FakeRetrieval(),  # type: ignore[arg-type]
+            generator=FakeGenerator(),  # type: ignore[arg-type]
+            embedding_spend=embedding_spend,
+        )
+    )
+
+    assert outcome.dense_sections == ("Method",)
+    assert outcome.anchor_sections == ("Introduction",)
+    assert outcome.refused is False
+    # Stale spend was cleared; only this case's embedding call is attributed.
+    assert outcome.query_embedding_cost == Decimal("0.0001")
+    assert outcome.pipeline_latency_ms >= 1
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_evaluate_case_marks_the_stable_refusal_answer_as_refused() -> None:
+    class FakeRetrieval:
+        async def retrieve(self, **_: Any) -> list[RetrievedChunk]:
+            return []
+
+    class FakeGenerator:
+        async def answer(self, **_: Any) -> GroundedAnswer:
+            return GroundedAnswer(
+                answer=REFUSAL_ANSWER,
+                citations=(),
+                source_match_status=QaSourceMatchStatus.INSUFFICIENT_EVIDENCE,
+            )
+
+    outcome = asyncio.run(
+        evaluate_case(
+            _fixture(),
+            paper=SimpleNamespace(id=uuid4()),  # type: ignore[arg-type]
+            version=SimpleNamespace(id=uuid4()),  # type: ignore[arg-type]
+            retrieval=FakeRetrieval(),  # type: ignore[arg-type]
+            generator=FakeGenerator(),  # type: ignore[arg-type]
+            embedding_spend=[],
+        )
+    )
+
+    assert outcome.refused is True
+    assert outcome.dense_sections == ()
+
+
+def _run_main(monkeypatch: pytest.MonkeyPatch, payload: dict[str, Any], argv: list[str]) -> None:
+    async def fake_run(settings: Any, *, fixtures_path: Path) -> dict[str, Any]:
+        return payload
+
+    monkeypatch.setattr(run_qa_eval, "run", fake_run)
+    monkeypatch.setattr(run_qa_eval, "get_settings", lambda: object())
+    monkeypatch.setattr("sys.argv", ["run_qa_eval", *argv])
+    run_qa_eval.main()
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_main_reports_skips_and_writes_the_output_file(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    output = tmp_path / "report.json"
+    payload = {
+        "fixture_version": "qa-seed-v2",
+        "evaluated": 14,
+        "corpus": {"0000.00000": {"arxiv_version": 2, "paper_version_id": "x"}},
+        "skipped": [{"fixture_id": "qa-x", "reason": "paper_not_ingested", "detail": "0000.00001"}],
+        "report": None,
+    }
+
+    _run_main(monkeypatch, payload, ["--output", str(output)])
+
+    captured = capsys.readouterr()
+    assert "skipped qa-x: paper_not_ingested (0000.00001)" in captured.err
+    assert json.loads(captured.out) == payload
+    assert json.loads(output.read_text(encoding="utf-8")) == payload
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_main_exits_nonzero_when_nothing_was_evaluated(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    payload = {
+        "fixture_version": "qa-seed-v2",
+        "evaluated": 0,
+        "corpus": {},
+        "skipped": [{"fixture_id": "qa-x", "reason": "embeddings_incomplete", "detail": "0/10"}],
+        "report": None,
+    }
+
+    with pytest.raises(SystemExit) as excinfo:
+        _run_main(monkeypatch, payload, [])
+
+    assert excinfo.value.code == EXIT_NO_CASES_EVALUATED
+    captured = capsys.readouterr()
+    assert "no fixtures were evaluated" in captured.err
