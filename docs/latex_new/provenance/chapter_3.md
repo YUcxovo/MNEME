@@ -32,7 +32,13 @@ This file is a non-rendered evidence ledger for contents/chapter_3.tex. It recor
 
 ## Figure provenance
 
-- Figures storymap, system-architecture, document-dag, qa-flow, behavior-loop, api-sequence, ui-flow, and usability-results are original TikZ diagrams embedded in contents/chapter_3.tex, derived from the sources above.
+- Figures storymap, system-architecture, document-dag, and ui-flow are original SVG diagrams under figures/src/ and are embedded in the chapter as high-resolution PNGs. Their layout was revised for legibility in the supervisor template; the SVG files remain the editable source of truth.
+- Reproducible diagram-rendering script: figures/src/render_chapter3_diagrams.sh. It uses librsvg to generate the four PNGs at their declared 2400-pixel widths.
+- chapter3_storymap.png: SHA-256 024a85ce241270e22150f927aa93f54755eb98278257918d80e6a6cc23ceb7f4.
+- chapter3_system_architecture.png: SHA-256 e79e0970912adb387a025c5cdc3f85f0026adf4743560d62501283fdc7af7346.
+- chapter3_document_dag.png: SHA-256 e89f53a19b555ca66e812302c69681fd22f6e09c75d30e38740705de7da50bae.
+- chapter3_ui_flow.png: SHA-256 46793959ae81202499022cf390a81fa780349f4383a8aec2ea945920bf8ed67c.
+- Figures qa-flow, behavior-loop, api-sequence, and usability-results remain original TikZ diagrams embedded in contents/chapter_3.tex, derived from the sources above.
 - Prototype source: materials/Mneme_demo.html; SHA-256 491799d4812c6118d3a3eff139f640b48e38f17b4b4adad205ca85d7d07a4f5f.
 - Reproducible capture script: figures/src/capture_prototype.cjs.
 - prototype_digest.png: SHA-256 e1adb5e13c61d406f90d09a7cb578282e96c8add37e9c12937d54a7534f0d418.

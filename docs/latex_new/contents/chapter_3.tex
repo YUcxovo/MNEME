@@ -23,6 +23,8 @@ The customer research revealed two complementary requirements. First, participan
 
 \begin{figure}[htbp]
   \centering
+  \includegraphics[width=\textwidth]{chapter3_storymap.png}
+  \iffalse
   \resizebox{\textwidth}{!}{%
   \begin{tikzpicture}[font=\sffamily,>=Latex]
     \draw[MnemeNavy,line width=1.2pt,-{Latex[length=3mm]}] (-7.1,0.35) -- (7.25,0.35);
@@ -47,6 +49,7 @@ The customer research revealed two complementary requirements. First, participan
     \node[align=center,text width=2.35cm,text=MnemeInk] at (6,-0.45) {Recover related\\work in context};
     \node[draw=MnemeRed,rounded corners=4pt,fill=MnemeRed!10,minimum width=2.35cm,minimum height=0.9cm,align=center,text=MnemeInk] at (6,-1.55) {Bounded citation\\graph};
   \end{tikzpicture}}
+  \fi
   \caption{Five-stage story map connecting the researcher's goal at each stage to the system capability that supports it. Paper preparation is the enabling capability beneath four user-visible experiences: personalized briefings, structured paper understanding, evidence-grounded question answering, and citation-graph exploration.}
   \label{fig:storymap}
 \end{figure}
@@ -134,6 +137,8 @@ Mneme separates the latency-sensitive mobile experience from document processing
 
 \begin{figure}[htbp]
   \centering
+  \includegraphics[width=0.98\textwidth]{chapter3_system_architecture.png}
+  \iffalse
   \resizebox{0.98\textwidth}{!}{%
   \begin{tikzpicture}[font=\sffamily\small,>=Latex]
     \draw[rounded corners=8pt,fill=MnemeBlue!5,draw=MnemeBlue!55,line width=0.8pt] (-7.2,2.0) rectangle (7.2,3.8);
@@ -172,6 +177,7 @@ Mneme separates the latency-sensitive mobile experience from document processing
     \draw[MnemeNavy,line width=0.9pt,<->] (s2.north) -- (domains.south);
     \draw[MnemeNavy,line width=0.9pt,<->] (models.east) -- (7.45,-3.4) -- (7.45,0.7) -- (workers.east);
   \end{tikzpicture}}
+  \fi
   \caption{Mneme system architecture and trust boundaries. Solid arrows carry domain data or public requests; the dashed arrow marks replaceable queue execution. PostgreSQL remains authoritative for durable state when queue delivery and database state differ.}
   \label{fig:system-architecture}
 \end{figure}
@@ -201,6 +207,8 @@ Figure~\ref{fig:document-dag} shows the resulting processing directed acyclic gr
 
 \begin{figure}[htbp]
   \centering
+  \includegraphics[width=0.97\textwidth]{chapter3_document_dag.png}
+  \iffalse
   \resizebox{0.97\textwidth}{!}{%
   \begin{tikzpicture}[font=\sffamily\scriptsize,>=Latex]
     \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=5pt,minimum width=2.1cm,minimum height=0.9cm,align=center] (observe) at (-6.4,0) {Validated\\metadata page};
@@ -225,6 +233,7 @@ Figure~\ref{fig:document-dag} shows the resulting processing directed acyclic gr
     \draw[MnemeRed!70,dashed,->] (1.2,-0.48) -- (1.2,-1.35);
     \node[draw=MnemeNavy!70,fill=white,rounded corners=4pt,minimum width=7.4cm,minimum height=0.65cm,align=center,font=\scriptsize] at (2.65,2.05) {Every stage: canonical input identity \(\rightarrow\) durable job \(\rightarrow\) bounded attempt \(\rightarrow\) safe public state};
   \end{tikzpicture}}
+  \fi
   \caption{Revision-aware document-processing graph. Summary and chunk branches share the same parsed lineage but remain independently retryable. The quality tier controls which evidence claims downstream services may make.}
   \label{fig:document-dag}
 \end{figure}
@@ -443,6 +452,8 @@ The interaction design preserves the story map's research loop while reducing th
 
 \begin{figure}[htbp]
   \centering
+  \includegraphics[width=0.98\textwidth]{chapter3_ui_flow.png}
+  \iffalse
   \resizebox{0.98\textwidth}{!}{%
   \begin{tikzpicture}[font=\sffamily\scriptsize,>=Latex]
     \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=6pt,minimum width=2.0cm,minimum height=0.85cm,align=center] (welcome) at (-8.0,1.5) {Welcome};
@@ -468,6 +479,7 @@ The interaction design preserves the story map's research loop while reducing th
     \draw[MnemeNavy,dotted,line width=0.85pt] (states) -- (paper);
     \draw[MnemeNavy,dotted,line width=0.85pt] (states) -- (digest);
   \end{tikzpicture}}
+  \fi
   \caption{Mobile information architecture. The briefing is the recurring home of the research loop; search and graph traversal are alternate discovery paths, and all network-dependent screens share explicit origin and failure states.}
   \label{fig:ui-flow}
 \end{figure}

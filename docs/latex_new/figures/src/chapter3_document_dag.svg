@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1450" viewBox="0 0 2400 1450" role="img" aria-labelledby="title desc">
+  <title id="title">Revision-aware document-processing graph</title>
+  <desc id="desc">Validated metadata becomes a revision-scoped document lineage that branches into summaries and embedded chunks before serving user-facing functions.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L11,5.5 L0,11 Z" fill="#17324D"/></marker>
+    <style>
+      .step { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #252A31; font-size: 40px; font-weight: 700; }
+      .detail { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #4C5664; font-size: 31px; font-weight: 500; }
+      .strip-title { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #17324D; font-size: 31px; font-weight: 700; letter-spacing: 1px; }
+      .strip-text { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #252A31; font-size: 32px; font-weight: 500; }
+      .card { stroke-width: 4; }
+    </style>
+  </defs>
+  <rect width="2400" height="1450" fill="#FFFFFF"/>
+
+  <rect x="120" y="55" width="2160" height="145" rx="30" fill="#F2F5F8" stroke="#7C91A5" stroke-width="3"/>
+  <text x="1200" y="112" text-anchor="middle" class="strip-title">REPEATABLE STAGE CONTRACT</text>
+  <text x="1200" y="165" text-anchor="middle" class="strip-text">Canonical input identity  -  durable job  -  bounded attempt  -  safe public state</text>
+
+  <g fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)">
+    <path d="M500 405 H610"/><path d="M1030 405 H1140"/><path d="M1560 405 H1670"/>
+  </g>
+  <rect x="80" y="300" width="420" height="210" rx="24" fill="#E8F2F7" stroke="#2F6F8F" class="card"/>
+  <text x="290" y="372" text-anchor="middle" class="step">Validated metadata</text><text x="290" y="421" text-anchor="middle" class="step">page</text><text x="290" y="470" text-anchor="middle" class="detail" style="font-size:28px">Provider response checked</text>
+  <rect x="610" y="300" width="420" height="210" rx="24" fill="#FFFFFF" stroke="#2F6F8F" class="card"/>
+  <text x="820" y="372" text-anchor="middle" class="step">Logical paper p</text><text x="820" y="421" text-anchor="middle" class="step">Revision r</text><text x="820" y="470" text-anchor="middle" class="detail" style="font-size:28px">Immutable content identity</text>
+  <rect x="1140" y="300" width="420" height="210" rx="24" fill="#E8F4F2" stroke="#2D8C87" class="card"/>
+  <text x="1350" y="372" text-anchor="middle" class="step">Download</text><text x="1350" y="421" text-anchor="middle" class="step">and checksum</text><text x="1350" y="470" text-anchor="middle" class="detail">Atomic PDF publication</text>
+  <rect x="1670" y="300" width="650" height="210" rx="24" fill="#E8F4F2" stroke="#2D8C87" class="card"/>
+  <text x="1995" y="372" text-anchor="middle" class="step">Parse and classify</text><text x="1995" y="421" text-anchor="middle" class="detail">Recover structure and reading order</text><text x="1995" y="470" text-anchor="middle" class="detail">or expose a degraded evidence tier</text>
+
+  <rect x="90" y="660" width="820" height="320" rx="28" fill="#FBF1F1" stroke="#B5544F" stroke-width="4"/>
+  <text x="500" y="726" text-anchor="middle" class="strip-title" style="fill:#B5544F">EVIDENCE QUALITY GATE</text>
+  <text x="500" y="778" text-anchor="middle" class="detail">The tier bounds downstream evidence claims</text>
+  <rect x="145" y="842" width="210" height="64" rx="32" fill="#FFFFFF" stroke="#B5544F" stroke-width="3"/><text x="250" y="884" text-anchor="middle" class="detail">structured</text>
+  <rect x="395" y="842" width="210" height="64" rx="32" fill="#FFFFFF" stroke="#B5544F" stroke-width="3"/><text x="500" y="884" text-anchor="middle" class="detail">text-only</text>
+  <rect x="645" y="842" width="210" height="64" rx="32" fill="#FFFFFF" stroke="#B5544F" stroke-width="3"/><text x="750" y="884" text-anchor="middle" class="detail">abstract-only</text>
+  <path d="M1995 510 V590 H500 V650" fill="none" stroke="#B5544F" stroke-width="6" stroke-dasharray="16 13" marker-end="url(#arrow)"/>
+
+  <rect x="1040" y="625" width="520" height="210" rx="24" fill="#F8EEDC" stroke="#C89445" class="card"/>
+  <text x="1300" y="700" text-anchor="middle" class="step">Structured summary</text><text x="1300" y="752" text-anchor="middle" class="detail" style="font-size:28px">Shares the parsed lineage</text><text x="1300" y="797" text-anchor="middle" class="detail" style="font-size:28px">and remains independently retryable</text>
+  <rect x="1800" y="625" width="520" height="210" rx="24" fill="#F8EEDC" stroke="#C89445" class="card"/>
+  <text x="2060" y="700" text-anchor="middle" class="step">Section-aware chunks</text><text x="2060" y="750" text-anchor="middle" class="detail" style="font-size:28px"><tspan x="2060">Ordered sections with</tspan><tspan x="2060" dy="42">bounded overlap and revision identity</tspan></text>
+  <path d="M1995 510 V560 H1300 V615" fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"/>
+  <path d="M1995 510 V615" fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"/>
+
+  <rect x="1800" y="1005" width="520" height="210" rx="24" fill="#FFF8EE" stroke="#C89445" class="card"/>
+  <text x="2060" y="1060" text-anchor="middle" class="step" style="font-size:35px"><tspan x="2060">Model-labelled</tspan><tspan x="2060" dy="46">embeddings</tspan></text><text x="2060" y="1162" text-anchor="middle" class="detail">Compatible vector space with</text><text x="2060" y="1202" text-anchor="middle" class="detail">paper and revision filters</text>
+  <path d="M2060 835 V995" fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"/>
+
+  <rect x="1040" y="1005" width="520" height="210" rx="24" fill="#EAF3EC" stroke="#4F8A5B" class="card"/>
+  <text x="1300" y="1080" text-anchor="middle" class="step">User-facing services</text><text x="1300" y="1132" text-anchor="middle" class="detail">Briefing, detail, retrieval,</text><text x="1300" y="1177" text-anchor="middle" class="detail">and paper-scoped Q&amp;A</text>
+  <path d="M1300 835 V995" fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"/>
+  <path d="M1800 1110 H1570" fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"/>
+
+  <rect x="520" y="1320" width="1360" height="78" rx="39" fill="#FFFFFF" stroke="#17324D" stroke-width="3"/>
+  <text x="1200" y="1371" text-anchor="middle" class="strip-text">Every artifact remains attached to one logical paper and one observed revision.</text>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1550" viewBox="0 0 2400 1550" role="img" aria-labelledby="title desc">
+  <title id="title">Mneme mobile information architecture</title>
+  <desc id="desc">The architecture moves from onboarding to a recurring research briefing and then to paper reading, source-grounded questions, citation exploration, and a later personalized briefing.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="11" markerHeight="11" refX="9" refY="5.5" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L11,5.5 L0,11 Z" fill="#17324D"/></marker>
+    <style>
+      .lane { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #5B6573; font-size: 31px; font-weight: 700; letter-spacing: 1.5px; }
+      .title { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #252A31; font-size: 39px; font-weight: 700; }
+      .detail { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #4C5664; font-size: 29px; font-weight: 500; }
+      .callout { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #17324D; font-size: 27px; font-weight: 700; }
+      .card { stroke-width: 4; }
+    </style>
+  </defs>
+  <rect width="2400" height="1550" fill="#FFFFFF"/>
+
+  <text x="95" y="70" class="lane">FIRST USE</text>
+  <rect x="75" y="100" width="2250" height="300" rx="30" fill="#F5F8FA" stroke="#B6C6D2" stroke-width="3"/>
+  <g fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"><path d="M490 250 H600"/><path d="M1005 250 H1115"/><path d="M1520 250 H1630"/></g>
+  <rect x="120" y="155" width="370" height="190" rx="24" fill="#E8F2F7" stroke="#2F6F8F" class="card"/><text x="305" y="230" text-anchor="middle" class="title">Welcome</text><text x="305" y="282" text-anchor="middle" class="detail">Explain reading</text><text x="305" y="324" text-anchor="middle" class="detail">outcomes</text>
+  <rect x="600" y="155" width="405" height="190" rx="24" fill="#E8F2F7" stroke="#2F6F8F" class="card"/><text x="802" y="230" text-anchor="middle" class="title">Research areas</text><text x="802" y="282" text-anchor="middle" class="detail">Explicit topic choices</text>
+  <rect x="1115" y="155" width="405" height="190" rx="24" fill="#E8F2F7" stroke="#2F6F8F" class="card"/><text x="1317" y="230" text-anchor="middle" class="title">Seed paper</text><text x="1317" y="282" text-anchor="middle" class="detail">Initial reading context</text>
+  <rect x="1630" y="140" width="640" height="220" rx="26" fill="#F8EEDC" stroke="#C89445" stroke-width="5"/><text x="1950" y="225" text-anchor="middle" class="title">Research briefing</text><text x="1950" y="284" text-anchor="middle" class="detail">Recurring home and</text><text x="1950" y="329" text-anchor="middle" class="detail">triage queue</text>
+
+  <text x="95" y="500" class="lane">READ AND VERIFY</text>
+  <rect x="75" y="530" width="2250" height="455" rx="30" fill="#F7FAF8" stroke="#B7CCBC" stroke-width="3"/>
+  <path d="M1950 360 V455 H1060 V620" fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"/>
+  <rect x="1260" y="423" width="510" height="62" rx="31" fill="#FFFFFF" stroke="#17324D" stroke-width="2"/><text x="1515" y="464" text-anchor="middle" class="callout">Open a recommended paper</text>
+  <rect x="130" y="680" width="390" height="185" rx="24" fill="#FFFFFF" stroke="#17324D" class="card"/><text x="325" y="754" text-anchor="middle" class="title">Search</text><text x="325" y="807" text-anchor="middle" class="detail">Known-paper entry point</text>
+  <rect x="760" y="620" width="600" height="280" rx="26" fill="#EAF3EC" stroke="#4F8A5B" stroke-width="5"/><text x="1060" y="711" text-anchor="middle" class="title">Paper detail and sources</text><text x="1060" y="772" text-anchor="middle" class="detail">Identity, summary, evidence labels,</text><text x="1060" y="819" text-anchor="middle" class="detail">and explicit representation state</text>
+  <path d="M520 772 H750" fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"/>
+  <rect x="1640" y="585" width="590" height="160" rx="24" fill="#E8F4F2" stroke="#2D8C87" class="card"/><text x="1935" y="650" text-anchor="middle" class="title">Paper-scoped Q&amp;A</text><text x="1935" y="700" text-anchor="middle" class="detail">Ask within one revision's evidence</text>
+  <rect x="1640" y="790" width="590" height="160" rx="24" fill="#FBF1F1" stroke="#B5544F" class="card"/><text x="1935" y="855" text-anchor="middle" class="title">Citation-graph exploration</text><text x="1935" y="905" text-anchor="middle" class="detail">Traverse a bounded paper neighborhood</text>
+  <path d="M1360 720 H1500 V665 H1630" fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"/>
+  <path d="M1360 815 H1500 V870 H1630" fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"/>
+
+  <text x="95" y="1080" class="lane">ADAPT THE NEXT CYCLE</text>
+  <rect x="75" y="1110" width="2250" height="350" rx="30" fill="#F5F6F8" stroke="#C3C9D0" stroke-width="3"/>
+  <rect x="120" y="1205" width="430" height="175" rx="24" fill="#FFFFFF" stroke="#17324D" class="card"/><text x="335" y="1274" text-anchor="middle" class="title">Interest controls</text><text x="335" y="1324" text-anchor="middle" class="detail">Inspect and correct</text><text x="335" y="1366" text-anchor="middle" class="detail">preferences</text>
+  <rect x="650" y="1205" width="500" height="175" rx="24" fill="#FFFFFF" stroke="#17324D" class="card"/><text x="900" y="1274" text-anchor="middle" class="title">Supported observations</text><text x="900" y="1324" text-anchor="middle" class="detail">Duplicate-safe interaction signals</text>
+  <rect x="1250" y="1205" width="480" height="175" rx="24" fill="#F8EEDC" stroke="#C89445" class="card"/><text x="1490" y="1274" text-anchor="middle" class="title">Later briefing</text><text x="1490" y="1324" text-anchor="middle" class="detail">Updated ranking snapshot</text>
+  <rect x="1830" y="1180" width="440" height="225" rx="24" fill="#EFF2F5" stroke="#7C8793" class="card"/><text x="2050" y="1250" text-anchor="middle" class="title">Shared state labels</text><text x="2050" y="1302" text-anchor="middle" class="detail">Live, cached, processing,</text><text x="2050" y="1347" text-anchor="middle" class="detail">degraded, empty, and error</text>
+  <path d="M335 1205 V1155 H1490 V1195" fill="none" stroke="#17324D" stroke-width="7" stroke-dasharray="18 13" marker-end="url(#arrow)"/>
+  <path d="M900 1205 V1155" fill="none" stroke="#17324D" stroke-width="7" stroke-dasharray="18 13"/>
+  <rect x="905" y="1128" width="420" height="55" rx="27" fill="#FFFFFF" stroke="#17324D" stroke-width="2"/><text x="1115" y="1165" text-anchor="middle" class="callout">Inform the next ranking cycle</text>
+  <text x="2050" y="1435" text-anchor="middle" class="detail">Applied to network-dependent screens</text>
+
+  <rect x="480" y="1490" width="1440" height="45" rx="22" fill="#FFFFFF"/>
+  <text x="1200" y="1523" text-anchor="middle" class="detail">Briefing selection starts reading; reading and explicit controls shape a later briefing.</text>
+</svg>

@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1120" viewBox="0 0 2400 1120" role="img" aria-labelledby="title desc">
+  <title id="title">Five-stage Mneme research story map</title>
+  <desc id="desc">Five stages connect researcher goals to supporting system capabilities and return to a continuing research cycle.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#17324D"/>
+    </marker>
+    <style>
+      .label { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #5B6573; font-size: 31px; font-weight: 700; letter-spacing: 1.5px; }
+      .stage { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #252A31; font-size: 43px; font-weight: 700; }
+      .body { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #252A31; font-size: 37px; font-weight: 500; }
+      .cycle { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #17324D; font-size: 30px; font-weight: 700; }
+      .card { fill: #FFFFFF; stroke-width: 5; }
+      .soft { stroke-width: 4; }
+    </style>
+  </defs>
+  <rect width="2400" height="1120" fill="#FFFFFF"/>
+  <text x="120" y="92" class="label">RESEARCH STAGE</text>
+  <text x="120" y="405" class="label">RESEARCHER GOAL</text>
+  <text x="120" y="694" class="label">SYSTEM CAPABILITY</text>
+
+  <path d="M420 260 H735 M890 260 H1205 M1360 260 H1675 M1830 260 H2145" fill="none" stroke="#17324D" stroke-width="8" marker-end="url(#arrow)"/>
+
+  <g>
+    <rect x="90" y="135" width="390" height="205" rx="26" class="card" stroke="#2F6F8F"/>
+    <circle cx="145" cy="192" r="31" fill="#2F6F8F"/>
+    <text x="145" y="204" text-anchor="middle" class="body" fill="#FFFFFF" style="fill:#FFFFFF;font-weight:700">1</text>
+    <text x="285" y="212" text-anchor="middle" class="stage"><tspan x="285">Receive</tspan><tspan x="285" dy="56">new papers</tspan></text>
+    <rect x="90" y="455" width="390" height="150" rx="22" fill="#F2F7FA" stroke="#2F6F8F" class="soft"/>
+    <text x="285" y="515" text-anchor="middle" class="body"><tspan x="285">Reduce manual</tspan><tspan x="285" dy="49">source checking</tspan></text>
+    <rect x="90" y="744" width="390" height="150" rx="22" fill="#E8F2F7" stroke="#2F6F8F" class="soft"/>
+    <text x="285" y="804" text-anchor="middle" class="body"><tspan x="285">Ingest and</tspan><tspan x="285" dy="49">prepare</tspan></text>
+  </g>
+
+  <g>
+    <rect x="570" y="135" width="390" height="205" rx="26" class="card" stroke="#2D8C87"/>
+    <circle cx="625" cy="192" r="31" fill="#2D8C87"/>
+    <text x="625" y="204" text-anchor="middle" class="body" fill="#FFFFFF" style="fill:#FFFFFF;font-weight:700">2</text>
+    <text x="765" y="212" text-anchor="middle" class="stage"><tspan x="765">Learn</tspan><tspan x="765" dy="56">interests</tspan></text>
+    <rect x="570" y="455" width="390" height="150" rx="22" fill="#F0F8F7" stroke="#2D8C87" class="soft"/>
+    <text x="765" y="515" text-anchor="middle" class="body"><tspan x="765">Make relevance</tspan><tspan x="765" dy="49">personal</tspan></text>
+    <rect x="570" y="744" width="390" height="150" rx="22" fill="#E5F3F1" stroke="#2D8C87" class="soft"/>
+    <text x="765" y="794" text-anchor="middle" class="body"><tspan x="765">Explicit and</tspan><tspan x="765" dy="49">behavioral memory</tspan></text>
+  </g>
+
+  <g>
+    <rect x="1050" y="135" width="390" height="205" rx="26" class="card" stroke="#C89445"/>
+    <circle cx="1105" cy="192" r="31" fill="#C89445"/>
+    <text x="1105" y="204" text-anchor="middle" class="body" fill="#FFFFFF" style="fill:#FFFFFF;font-weight:700">3</text>
+    <text x="1245" y="212" text-anchor="middle" class="stage"><tspan x="1245">Plan what</tspan><tspan x="1245" dy="56">to read</tspan></text>
+    <rect x="1050" y="455" width="390" height="150" rx="22" fill="#FBF6ED" stroke="#C89445" class="soft"/>
+    <text x="1245" y="515" text-anchor="middle" class="body"><tspan x="1245">Convert volume</tspan><tspan x="1245" dy="49">into priority</tspan></text>
+    <rect x="1050" y="744" width="390" height="150" rx="22" fill="#F8EEDC" stroke="#C89445" class="soft"/>
+    <text x="1245" y="804" text-anchor="middle" class="body"><tspan x="1245">Ranked research</tspan><tspan x="1245" dy="49">briefing</tspan></text>
+  </g>
+
+  <g>
+    <rect x="1530" y="135" width="390" height="205" rx="26" class="card" stroke="#4F8A5B"/>
+    <circle cx="1585" cy="192" r="31" fill="#4F8A5B"/>
+    <text x="1585" y="204" text-anchor="middle" class="body" fill="#FFFFFF" style="fill:#FFFFFF;font-weight:700">4</text>
+    <text x="1725" y="212" text-anchor="middle" class="stage"><tspan x="1725">Ask with</tspan><tspan x="1725" dy="56">sources</tspan></text>
+    <rect x="1530" y="455" width="390" height="150" rx="22" fill="#F1F7F2" stroke="#4F8A5B" class="soft"/>
+    <text x="1725" y="515" text-anchor="middle" class="body"><tspan x="1725">Inspect support</tspan><tspan x="1725" dy="49">for an answer</tspan></text>
+    <rect x="1530" y="744" width="390" height="150" rx="22" fill="#EAF3EC" stroke="#4F8A5B" class="soft"/>
+    <text x="1725" y="804" text-anchor="middle" class="body"><tspan x="1725">Summary and</tspan><tspan x="1725" dy="49">paper Q&amp;A</tspan></text>
+  </g>
+
+  <g>
+    <rect x="2010" y="135" width="300" height="205" rx="26" class="card" stroke="#B5544F"/>
+    <circle cx="2065" cy="192" r="31" fill="#B5544F"/>
+    <text x="2065" y="204" text-anchor="middle" class="body" fill="#FFFFFF" style="fill:#FFFFFF;font-weight:700">5</text>
+    <text x="2185" y="190" text-anchor="middle" class="stage" style="font-size:36px"><tspan x="2185">Explore</tspan><tspan x="2185" dy="48">citation</tspan><tspan x="2185" dy="48">connections</tspan></text>
+    <rect x="2010" y="455" width="300" height="150" rx="22" fill="#FBF1F1" stroke="#B5544F" class="soft"/>
+    <text x="2160" y="500" text-anchor="middle" class="body" style="font-size:32px"><tspan x="2160">Recover related</tspan><tspan x="2160" dy="42">work in</tspan><tspan x="2160" dy="42">context</tspan></text>
+    <rect x="2010" y="744" width="300" height="150" rx="22" fill="#F7E9E8" stroke="#B5544F" class="soft"/>
+    <text x="2160" y="790" text-anchor="middle" class="body" style="font-size:32px"><tspan x="2160">Bounded</tspan><tspan x="2160" dy="42">citation graph</tspan></text>
+  </g>
+
+  <path d="M2160 930 V1000 H285 V935" fill="none" stroke="#17324D" stroke-width="7" stroke-dasharray="17 13" marker-end="url(#arrow)"/>
+  <rect x="870" y="954" width="660" height="80" rx="40" fill="#FFFFFF" stroke="#17324D" stroke-width="3"/>
+  <text x="1200" y="1006" text-anchor="middle" class="cycle">New evidence starts the next cycle</text>
+</svg>

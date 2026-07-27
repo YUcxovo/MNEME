@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1650" viewBox="0 0 2400 1650" role="img" aria-labelledby="title desc">
+  <title id="title">Mneme system architecture and trust boundaries</title>
+  <desc id="desc">Four separated horizontal regions show the Android client, application service, durable and execution state, and validated external inputs. Connections run through dedicated gutters rather than through cards.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8.5" refY="5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#17324D"/>
+    </marker>
+    <style>
+      .region-title { font-family: "Noto Sans", "DejaVu Sans", sans-serif; font-size: 38px; font-weight: 700; }
+      .card-title { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #252A31; font-size: 32px; font-weight: 700; }
+      .card-text { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #4C5664; font-size: 27px; font-weight: 500; }
+      .flow { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #17324D; font-size: 24px; font-weight: 700; }
+      .legend { font-family: "Noto Sans", "DejaVu Sans", sans-serif; fill: #252A31; font-size: 25px; font-weight: 500; }
+      .card { fill: #FFFFFF; stroke-width: 4; }
+      .solid-flow { fill: none; stroke: #17324D; stroke-width: 6; marker-end: url(#arrow); }
+      .queued-flow { fill: none; stroke: #17324D; stroke-width: 6; stroke-dasharray: 17 13; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <rect width="2400" height="1650" fill="#FFFFFF"/>
+
+  <rect x="90" y="60" width="2220" height="285" rx="30" fill="#F2F7FA" stroke="#8CB8CD" stroke-width="4"/>
+  <text x="140" y="118" class="region-title" fill="#2F6F8F">Android client</text>
+  <rect x="145" y="150" width="600" height="145" rx="20" class="card" stroke="#2F6F8F"/>
+  <text x="445" y="207" text-anchor="middle" class="card-title">Compose UI</text>
+  <text x="445" y="254" text-anchor="middle" class="card-text">Navigation and explicit states</text>
+  <rect x="900" y="150" width="600" height="145" rx="20" class="card" stroke="#2F6F8F"/>
+  <text x="1200" y="207" text-anchor="middle" class="card-title">Room and DataStore</text>
+  <text x="1200" y="254" text-anchor="middle" class="card-text">Cache and event queue</text>
+  <rect x="1655" y="150" width="600" height="145" rx="20" class="card" stroke="#2F6F8F"/>
+  <text x="1955" y="207" text-anchor="middle" class="card-title">Background and graph</text>
+  <text x="1955" y="254" text-anchor="middle" class="card-text">WorkManager and local WebView</text>
+
+  <path d="M445 295 V425" class="solid-flow"/>
+  <path d="M1200 295 V425" class="solid-flow"/>
+  <path d="M1955 295 V425" class="solid-flow"/>
+  <rect x="315" y="335" width="260" height="50" rx="25" fill="#FFFFFF" stroke="#17324D" stroke-width="2"/>
+  <text x="445" y="369" text-anchor="middle" class="flow">REST / JSON</text>
+  <rect x="1035" y="335" width="330" height="50" rx="25" fill="#FFFFFF" stroke="#17324D" stroke-width="2"/>
+  <text x="1200" y="369" text-anchor="middle" class="flow">Local synchronization</text>
+  <rect x="1785" y="335" width="340" height="50" rx="25" fill="#FFFFFF" stroke="#17324D" stroke-width="2"/>
+  <text x="1955" y="369" text-anchor="middle" class="flow">Background dispatch</text>
+
+  <rect x="90" y="425" width="2220" height="285" rx="30" fill="#F0F8F7" stroke="#7FC1BC" stroke-width="4"/>
+  <text x="140" y="483" class="region-title" fill="#2D8C87">Application service</text>
+  <rect x="145" y="515" width="600" height="145" rx="20" class="card" stroke="#2D8C87"/>
+  <text x="445" y="572" text-anchor="middle" class="card-title">FastAPI /v1 contract</text>
+  <text x="445" y="619" text-anchor="middle" class="card-text">Auth, validation, error envelope</text>
+  <rect x="900" y="515" width="600" height="145" rx="20" class="card" stroke="#2D8C87"/>
+  <text x="1200" y="572" text-anchor="middle" class="card-title">Domain services</text>
+  <text x="1200" y="619" text-anchor="middle" class="card-text">Paper, preference, digest, Q&amp;A, graph</text>
+  <rect x="1655" y="515" width="600" height="145" rx="20" class="card" stroke="#2D8C87"/>
+  <text x="1955" y="572" text-anchor="middle" class="card-title">Revision-scoped workers</text>
+  <text x="1955" y="619" text-anchor="middle" class="card-text">Scheduling, retries, and recovery</text>
+
+  <path d="M445 660 V800" class="solid-flow"/>
+  <path d="M1200 660 V800" class="solid-flow"/>
+  <path d="M1955 660 V800" class="queued-flow"/>
+  <rect x="310" y="705" width="270" height="50" rx="25" fill="#FFFFFF" stroke="#17324D" stroke-width="2"/>
+  <text x="445" y="739" text-anchor="middle" class="flow">Durable writes</text>
+  <rect x="1025" y="705" width="350" height="50" rx="25" fill="#FFFFFF" stroke="#17324D" stroke-width="2"/>
+  <text x="1200" y="739" text-anchor="middle" class="flow">Filtered retrieval</text>
+  <rect x="1820" y="705" width="270" height="50" rx="25" fill="#FFFFFF" stroke="#17324D" stroke-width="2"/>
+  <text x="1955" y="739" text-anchor="middle" class="flow">Staged work</text>
+
+  <rect x="90" y="800" width="2220" height="370" rx="30" fill="#FBF6ED" stroke="#DAB06E" stroke-width="4"/>
+  <text x="140" y="860" class="region-title" fill="#9C6D29">Durable and execution state</text>
+  <rect x="140" y="905" width="480" height="205" rx="20" class="card" stroke="#C89445"/>
+  <text x="380" y="966" text-anchor="middle" class="card-title">PostgreSQL</text>
+  <text x="380" y="1014" text-anchor="middle" class="card-text">Authoritative domain state</text>
+  <text x="380" y="1057" text-anchor="middle" class="card-text">and durable job history</text>
+  <rect x="690" y="905" width="480" height="205" rx="20" class="card" stroke="#C89445"/>
+  <text x="930" y="966" text-anchor="middle" class="card-title">pgvector</text>
+  <text x="930" y="1014" text-anchor="middle" class="card-text">Revision-scoped chunks</text>
+  <text x="930" y="1057" text-anchor="middle" class="card-text">and embeddings</text>
+  <rect x="1240" y="905" width="480" height="205" rx="20" class="card" stroke="#C89445"/>
+  <text x="1480" y="966" text-anchor="middle" class="card-title">Redis and ARQ</text>
+  <text x="1480" y="1014" text-anchor="middle" class="card-text">Replaceable attempts,</text>
+  <text x="1480" y="1057" text-anchor="middle" class="card-text">delivery, and cache</text>
+  <rect x="1790" y="905" width="465" height="205" rx="20" class="card" stroke="#C89445"/>
+  <text x="2022" y="966" text-anchor="middle" class="card-title">Atomic file artifacts</text>
+  <text x="2022" y="1014" text-anchor="middle" class="card-text">PDF and parsed</text>
+  <text x="2022" y="1057" text-anchor="middle" class="card-text">sidecar publication</text>
+
+  <rect x="90" y="1260" width="2220" height="265" rx="30" fill="#FBF2F2" stroke="#D58A86" stroke-width="4"/>
+  <text x="140" y="1318" class="region-title" fill="#B5544F">Validated external inputs</text>
+  <rect x="145" y="1355" width="600" height="120" rx="20" class="card" stroke="#B5544F"/>
+  <text x="445" y="1405" text-anchor="middle" class="card-title">arXiv</text>
+  <text x="445" y="1448" text-anchor="middle" class="card-text">Metadata and PDF</text>
+  <rect x="900" y="1355" width="600" height="120" rx="20" class="card" stroke="#B5544F"/>
+  <text x="1200" y="1405" text-anchor="middle" class="card-title">Semantic Scholar</text>
+  <text x="1200" y="1448" text-anchor="middle" class="card-text">Citation observations</text>
+  <rect x="1655" y="1355" width="600" height="120" rx="20" class="card" stroke="#B5544F"/>
+  <text x="1955" y="1405" text-anchor="middle" class="card-title">Model providers</text>
+  <text x="1955" y="1448" text-anchor="middle" class="card-text">Language and embedding</text>
+
+  <path d="M2255 1355 H2340 V470 H2312" class="solid-flow"/>
+  <rect x="1900" y="1195" width="355" height="50" rx="25" fill="#FFFFFF" stroke="#17324D" stroke-width="2"/>
+  <text x="2077" y="1229" text-anchor="middle" class="flow">Validated provider I/O</text>
+
+  <line x1="145" y1="1595" x2="265" y2="1595" stroke="#17324D" stroke-width="6"/>
+  <text x="290" y="1604" class="legend">domain data or public request</text>
+  <line x1="1010" y1="1595" x2="1130" y2="1595" stroke="#17324D" stroke-width="6" stroke-dasharray="17 13"/>
+  <text x="1155" y="1604" class="legend">replaceable queue execution</text>
+</svg>
