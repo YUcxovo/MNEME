@@ -14,6 +14,7 @@ LIVE_BASE_URL="${MNEME_LIVE_CORE_BASE_URL:-}"
 LIVE_TOKEN="${MNEME_LIVE_CORE_TOKEN:-}"
 LIVE_SEED="${MNEME_LIVE_CORE_SEED:-1706.03762}"
 LIVE_QUESTION="${MNEME_LIVE_CORE_QUESTION:-What problem does this paper address, and what method does it propose?}"
+LIVE_QUESTION_BASE64="$(printf '%s' "$LIVE_QUESTION" | base64 | tr -d '\n')"
 DEVICE_OUTPUT="/sdcard/Android/data/com.mneme.app/files/live-core-evaluation"
 
 fail() {
@@ -31,6 +32,7 @@ trap pull_artifacts EXIT
 [[ -x "$ADB" ]] || fail "adb was not found under $ANDROID_SDK_ROOT."
 [[ -x "$JAVA_HOME/bin/java" ]] || fail "JDK 17 was not found under $JAVA_HOME."
 command -v jq >/dev/null || fail "jq is required to write the run manifest."
+command -v base64 >/dev/null || fail "base64 is required to pass the fixed question safely."
 [[ -n "$LIVE_BASE_URL" ]] ||
     fail "Set MNEME_LIVE_CORE_BASE_URL to the emulator-visible backend /v1/ URL."
 [[ -n "$LIVE_TOKEN" ]] ||
@@ -98,11 +100,14 @@ jq -n \
 "$ADB" install -r "$ANDROID_DIR/app/build/outputs/apk/debug/app-debug.apk" >/dev/null
 "$ADB" install -r \
     "$ANDROID_DIR/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk" >/dev/null
-"$ADB" shell pm clear com.mneme.app >/dev/null
+"$ADB" shell pm clear --user 0 com.mneme.app >/dev/null
 
+instrument_output="$RAW_DIR/instrumentation_output.txt"
+set +e
 "$ADB" shell am instrument \
     -w \
     -r \
+    --user 0 \
     -e class \
     com.mneme.app.evaluation.LiveCoreProductPathTest \
     -e liveCoreBaseUrl \
@@ -111,11 +116,20 @@ jq -n \
     "$LIVE_TOKEN" \
     -e liveCoreSeed \
     "$LIVE_SEED" \
-    -e liveCoreQuestion \
-    "$LIVE_QUESTION" \
-    com.mneme.app.test/androidx.test.runner.AndroidJUnitRunner
+    -e liveCoreQuestionBase64 \
+    "$LIVE_QUESTION_BASE64" \
+    com.mneme.app.test/androidx.test.runner.AndroidJUnitRunner \
+    | tee "$instrument_output"
+instrument_status="${PIPESTATUS[0]}"
+set -e
 
 pull_artifacts
+[[ "$instrument_status" -eq 0 ]] ||
+    fail "Android instrumentation returned exit status $instrument_status."
+grep -q '^OK (1 test)' "$instrument_output" ||
+    fail "Android instrumentation did not report one passing live-core test."
+[[ -s "$RAW_DIR/live_core_path.csv" ]] ||
+    fail "Android instrumentation did not produce live_core_path.csv."
 
 trap - EXIT
 "$ADB" shell am force-stop com.mneme.app
