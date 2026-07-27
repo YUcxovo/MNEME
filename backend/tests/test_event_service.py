@@ -227,6 +227,26 @@ def test_recompute_replays_raw_history_without_inserting_events() -> None:
 
 @pytest.mark.base
 @pytest.mark.db
+def test_aggregation_failure_exits_the_event_transaction_with_error() -> None:
+    repository = FakeEventRepository()
+    second_paper = uuid4()
+    repository.known_papers.add(second_paper)
+    repository.signals = [
+        BehaviorSignal(UserEventType.PAPER_SAVED, PAPER_ID, NOW),
+        BehaviorSignal(UserEventType.PAPER_SAVED, second_paper, NOW),
+    ]
+    repository.embeddings = {PAPER_ID: (1.0, 0.0), second_paper: (1.0,)}
+
+    with pytest.raises(ValueError, match="consistent dimensions"):
+        asyncio.run(_service(repository).ingest(USER_ID, [_event(uuid4())]))
+
+    assert repository.inserted
+    assert repository.stored is None
+    assert repository.transaction_state.exception_type is ValueError
+
+
+@pytest.mark.base
+@pytest.mark.db
 def test_event_service_rejects_timestamps_beyond_clock_skew() -> None:
     repository = FakeEventRepository()
     event = _event(uuid4())

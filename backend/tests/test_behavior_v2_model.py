@@ -210,6 +210,22 @@ def test_empty_history_returns_an_inspectable_zero_confidence_profile() -> None:
 
 
 @pytest.mark.base
+def test_cancelled_channels_cannot_retain_actionable_confidence() -> None:
+    profile = aggregate_behavior_profile(
+        [
+            _signal(UserEventType.PAPER_SAVED, paper_id=PAPER_A),
+            _signal(UserEventType.PAPER_SAVED, paper_id=PAPER_B),
+        ],
+        {PAPER_A: (1.0, 0.0), PAPER_B: (-1.0, 0.0)},
+        now=NOW,
+    )
+
+    assert profile.positive_embedding is None
+    assert profile.negative_embedding is None
+    assert profile.confidence == 0
+
+
+@pytest.mark.base
 def test_invalid_timestamps_dimensions_and_configuration_fail_closed() -> None:
     naive = BehaviorSignal(
         event_type=UserEventType.PAPER_SAVED,
