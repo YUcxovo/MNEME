@@ -135,7 +135,9 @@ def validate_protocol(rows: list[dict[str, str]]) -> None:
         )
     optional_qa_source_rows = grouped.get(("live_ui", "open_qa_source"), [])
     if len(optional_qa_source_rows) > 1:
-        raise ValueError("The optional Q&A source callback was recorded more than once.")
+        raise ValueError(
+            "The optional Q&A source callback was recorded more than once."
+        )
 
     for row in rows:
         if row["scenario"] in {
@@ -148,7 +150,9 @@ def validate_protocol(rows: list[dict[str, str]]) -> None:
             raise ValueError("A retained graph exceeded the Android request limit.")
         if row["scenario"] == "citation_graph":
             if int(row["graph_nodes"]) < 2 or int(row["graph_edges"]) < 1:
-                raise ValueError("The retained product path did not reach a multi-node graph.")
+                raise ValueError(
+                    "The retained product path did not reach a multi-node graph."
+                )
 
 
 def summarize(rows: list[dict[str, str]]) -> list[StageSummary]:
