@@ -87,4 +87,3 @@ Any change that affects ranking semantics bumps the recommendation generator ide
 ## Consequences
 
 The model is transparent and cheap enough to run synchronously after an event batch. Its controlled evaluation can isolate recency, saturation, exposure gating, contrastive negative evidence, and confidence gating without external APIs. It is still a hand-designed content-space model: controlled replay can validate its mechanisms but cannot prove long-term user benefit or optimal parameters. Such claims require longitudinal user data and remain outside the bounded evaluation.
-
