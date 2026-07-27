@@ -9,6 +9,7 @@ from mneme.ai.evaluation.harness import (
     RagCaseResult,
     RagEvaluationHarness,
     RagEvaluationReport,
+    RagRunConfig,
 )
 
 __all__ = [
@@ -20,5 +21,6 @@ __all__ = [
     "RagCaseResult",
     "RagEvaluationHarness",
     "RagEvaluationReport",
+    "RagRunConfig",
     "load_qa_fixtures",
 ]

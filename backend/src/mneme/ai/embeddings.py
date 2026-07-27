@@ -7,7 +7,8 @@ embedding spend counts against the daily AI cap.
 
 import asyncio
 import math
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
+from decimal import Decimal
 from importlib import import_module
 from threading import Lock
 from typing import Protocol, runtime_checkable
@@ -188,6 +189,7 @@ class EmbeddingService:
         budget: BudgetGuard,
         model: str,
         batch_size: int,
+        spend_listener: Callable[[Decimal], None] | None = None,
     ) -> None:
         if batch_size < 1:
             raise ValueError("batch_size must be at least 1")
@@ -195,6 +197,7 @@ class EmbeddingService:
         self._budget = budget
         self._model = model
         self._batch_size = batch_size
+        self._spend_listener = spend_listener
 
     @property
     def model(self) -> str:
@@ -218,6 +221,8 @@ class EmbeddingService:
                 result.model, TokenUsage(input_tokens=result.input_tokens, output_tokens=0)
             )
             await self._budget.record_spend(cost)
+            if self._spend_listener is not None:
+                self._spend_listener(cost)
             vectors.extend(result.vectors)
             logger.info(
                 "embedding_batch_completed",
@@ -234,7 +239,12 @@ class EmbeddingService:
         return vectors[0]
 
 
-def build_embedding_service(settings: Settings, redis: Redis) -> EmbeddingService | None:
+def build_embedding_service(
+    settings: Settings,
+    redis: Redis,
+    *,
+    spend_listener: Callable[[Decimal], None] | None = None,
+) -> EmbeddingService | None:
     """Build the explicitly configured embedding backend."""
     if settings.ai_embedding_backend is EmbeddingBackend.FASTEMBED:
         provider: EmbeddingProvider = FastEmbedEmbeddingProvider(
@@ -252,4 +262,5 @@ def build_embedding_service(settings: Settings, redis: Redis) -> EmbeddingServic
         budget=BudgetGuard(redis, daily_cap_usd=settings.ai_daily_budget_usd),
         model=settings.ai_embedding_model,
         batch_size=settings.ai_embedding_batch_size,
+        spend_listener=spend_listener,
     )

@@ -10,6 +10,8 @@ from mneme.ai.embeddings import EmbeddingService
 
 logger = structlog.get_logger(__name__)
 
+DEFAULT_CONTEXT_ANCHOR_COUNT = 2
+
 
 class SupportsChunkSearch(Protocol):
     """The ANN-search surface retrieval needs from the artifact repository."""
@@ -62,7 +64,7 @@ class RetrievalService:
         embedder: EmbeddingService,
         artifacts: SupportsChunkSearch,
         top_k: int,
-        context_anchor_count: int = 2,
+        context_anchor_count: int = DEFAULT_CONTEXT_ANCHOR_COUNT,
     ) -> None:
         if context_anchor_count < 0:
             raise ValueError("context_anchor_count must not be negative")
