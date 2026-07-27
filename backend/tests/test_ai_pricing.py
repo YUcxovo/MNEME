@@ -43,3 +43,19 @@ def test_local_fastembed_model_has_no_external_cost() -> None:
     usage = TokenUsage(input_tokens=1_000_000, output_tokens=0)
 
     assert estimate_cost("BAAI/bge-small-en-v1.5+fastembed-pad1536-v1", usage) == 0
+
+
+@pytest.mark.base
+def test_dated_release_id_prices_by_its_base_model() -> None:
+    usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
+
+    cost = estimate_cost("claude-haiku-4-5-20251001", usage)
+
+    assert cost == Decimal("6.00")
+
+
+@pytest.mark.base
+def test_dated_suffix_on_unknown_base_still_falls_back() -> None:
+    usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
+
+    assert estimate_cost("mystery-model-20260101", usage) == Decimal("30.00")
