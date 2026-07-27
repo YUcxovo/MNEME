@@ -133,6 +133,15 @@ For every measured group, warm-up iterations were run and discarded before retai
 Instrumentation tests wrote one record per measured operation, and a separate analysis program validated the expected sample counts and success fields before computing any summary statistic; across the recorded experiment, all 810 controlled measurement samples and all 25 live-backend stages met their stated success conditions.
 Because a single emulator configuration was measured, the numbers support controlled comparison across conditions rather than estimates of physical-device variability.
 
+Two research-evaluation harnesses complete the toolchain.
+The behavior model is evaluated with twelve deterministic synthetic traces spanning cold start, stable interest, recent interest shift, exposed and unexposed negative feedback, repeated interactions with one paper, contradictory feedback, incomplete embedding coverage, and duplicate replay.
+Four headline systems --- recency only, explicit-topic matching with recency, the earlier signed single-timescale profile that preceded the current design, and the confidence-calibrated contrastive model of Chapter~3 --- and five single-mechanism ablations all invoke the production aggregation and recommendation functions rather than a reimplementation of the scoring formula.
+Ranking quality is measured with graded nDCG@5, Recall@5, and reciprocal rank; the cold-start trace defines no relevance judgments and is excluded rather than scored as zero, leaving eleven applicable traces, and paired differences carry fixed-seed percentile bootstrap intervals over 10{,}000 resamples that are interpreted descriptively because the scenarios were designed for mechanism coverage rather than sampled from a user population.
+
+The grounded-assistance harness drives the deployed retrieval and answer pipeline over the fifteen pinned fixtures described under Back-end Development.
+Its live run used a flagship provider model with prompt version \texttt{qa-v2}, top-eight retrieval with two context anchors, rerank to four evidence chunks, a 0.25 evidence threshold, a 512-token output cap, and local \texttt{fastembed} embeddings whose 384-dimension vectors are L2-normalized and zero-padded into the frozen 1{,}536-dimension store --- a transformation that leaves cosine ordering unchanged.
+The full configuration is embedded in the retained report, and every completion in the reported run was generated live with no cached contribution.
+
 \subsection{UI Testing}
 
 The client's visible-state machinery was exercised in controlled trials that deliver deterministic results to the ViewModel layer and verify the resulting state and disclosure label.
@@ -197,15 +206,8 @@ Open selected graph paper & 5 & 106.1 & 109.2 \\
 \end{tabular}
 \end{table}
 
-\subsection{Controlled Evaluation of the Behavior Model}
-\label{sec:behavior-eval}
-
-The behavior model was evaluated with twelve deterministic synthetic traces spanning cold start, stable interest, recent interest shift, exposed and unexposed negative feedback, repeated interactions with one paper, contradictory feedback, incomplete embedding coverage, and duplicate replay.
-Four headline systems were compared: recency only, explicit-topic matching with recency, the earlier signed single-timescale profile that preceded the current design, and the confidence-calibrated contrastive model of Chapter~3 as deployed in production.
-Five ablations independently removed the dual timescale, per-paper saturation, exposure gate, negative channel, or confidence gate, and every configuration invoked the production aggregation and recommendation functions rather than a reimplementation of the scoring formula.
-Ranking quality was measured with graded nDCG@5, Recall@5, and reciprocal rank; the cold-start trace defines no relevance judgments and was excluded rather than scored as zero, leaving eleven applicable traces.
-Paired differences were summarized with a fixed-seed percentile bootstrap over 10{,}000 resamples, and the resulting intervals are interpreted descriptively because the scenarios were designed for mechanism coverage rather than sampled from a user population.
-Tables~\ref{tab:behavior-ranking} and~\ref{tab:behavior-paired} report the headline results and the paired comparisons.
+Acceptance of the interest-continuity mechanisms rests on the controlled behavior evaluation, whose protocol is described under Testing Tool: the executable question is whether each designed mechanism of Chapter~3 produces its specified effect when driven through the production scoring functions.
+Tables~\ref{tab:behavior-ranking} and~\ref{tab:behavior-paired} report the headline ranking results and the paired comparisons.
 
 \begin{table}[htbp]
 \centering
@@ -264,41 +266,9 @@ The fixture did not isolate an independent aggregate ranking gain for the dual-t
 \label{fig:behavior-mechanisms}
 \end{figure}
 
-In-process cost was measured with 1{,}536-dimensional vectors, five warm-up executions, and thirty recorded repetitions per scale, with inputs generated outside the timed region and output checksums verified on every repetition; Table~\ref{tab:behavior-performance} reports the distributions and Figure~\ref{fig:behavior-performance} their growth across scales.
-At the largest scale --- 4{,}096 events and 1{,}000 candidates --- median aggregation and ranking latencies were 115.966~ms and 197.230~ms.
-Latency grows close to linearly in the event and candidate counts across the two measured decades, and the tight gap between medians and 95th percentiles at every scale indicates that the computation is stable rather than dominated by occasional stalls.
-These measurements characterize local Python computation on one machine and exclude persistence, network transfer, provider inference, and Android rendering, so they bound the algorithmic contribution to briefing latency rather than an end-to-end service time.
-
-\begin{figure}[htbp]
-\centering
-\includegraphics[width=0.92\textwidth]{figures/mneme_behavior_performance.pdf}
-\caption{Median and 95th-percentile in-process latency over thirty repetitions after five warm-ups, using 1{,}536-dimensional vectors with inputs generated before timing. Database, network, provider, and client latency are excluded.}
-\label{fig:behavior-performance}
-\end{figure}
-
-\begin{table}[htbp]
-\centering
-\caption{In-process behavior-model latency by scale. Each cell is median~/~p95 in milliseconds over thirty repetitions after five warm-ups.}
-\label{tab:behavior-performance}
-\begin{tabular}{p{1.6cm}rrp{3.3cm}p{3.3cm}}
-\toprule
-Scale & Events & Candidates & Aggregation (ms) & Ranking (ms) \\
-\midrule
-Small & 64 & 50 & 1.619 / 1.723 & 4.991 / 5.089 \\
-Medium & 512 & 200 & 12.227 / 12.489 & 20.104 / 20.329 \\
-Large & 4{,}096 & 1{,}000 & 115.966 / 118.054 & 197.230 / 201.842 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Graded Evaluation of Evidence-Grounded Assistance}
-\label{sec:qa-eval}
-
-The graded answer-quality evaluation described under Back-end Development completed its first live run against the deployed pipeline.
+Acceptance of the assistance features closes with the first live run of the graded evaluation.
 All fifteen fixtures of the pinned corpus --- twelve answerable questions and three whose correct behavior is refusal, spanning seven arXiv papers at their exact pinned revisions --- were evaluated with zero skips: every paper resolved to its fixture-pinned version with a complete, model-consistent embedding set.
-The run configuration is embedded in the retained report: a flagship provider model with prompt version \texttt{qa-v2}, top-eight retrieval with two context anchors, rerank to four evidence chunks, a 0.25 evidence threshold, a 512-token output cap, and local \texttt{fastembed} embeddings whose 384-dimension vectors are L2-normalized and zero-padded into the frozen 1{,}536-dimension store, a transformation that leaves cosine ordering unchanged.
-Every completion was generated live; no cached completion contributed.
-Table~\ref{tab:qa-eval} summarizes the graded outcomes.
+Table~\ref{tab:qa-eval} summarizes the graded outcomes of this run; its latency and cost rows are taken up under Performance Testing.
 
 \begin{table}[htbp]
 \centering
@@ -332,9 +302,34 @@ The gap has a structural explanation --- scientific papers restate their central
 The single refusal failure is instructive.
 Asked about clinical-trial outcomes over the retrieval-augmentation paper, the model correctly identified that no excerpt mentions such evidence, but stated this conclusion in prose instead of emitting the designated insufficient-evidence marker, so the strict protocol counts it as an answered case.
 The substantive behavior --- refusing to fabricate --- was correct; the failure is one of contract adherence, and tightening the refusal-marker instruction in the prompt template is the concrete follow-up it motivates.
-Latency is dominated entirely by generation: the retrieval, reranking, and verification stages contribute roughly 80~ms of the 4{,}699~ms mean pipeline latency.
-The measured spend of \$0.326 for the full run sits within seven percent of the \$0.34 static-audit estimate of Table~\ref{tab:unit-economics}, which is direct validation of the audit's method on its first live data point.
-These figures come from one run, one provider route, and a fifteen-case corpus; they establish that the deployed pipeline meets its grounding contracts on the declared fixtures, not that answer quality generalizes across models, prompts, or question distributions.
+
+Because the cost audit proposes routing spend-dominant work to a lighter model tier, the same fifteen fixtures were re-run unchanged on the mid-tier route; Table~\ref{tab:qa-tiers} sets the two runs side by side.
+The grounding contracts essentially hold on the cheaper model: every answer again carried verified citations, eleven of twelve answers were fully source-matched with one partial, keyword coverage stayed at 0.92, and no answerable question was refused.
+Section placement is identical by construction --- retrieval and reranking do not involve the generation model --- and the observed hits confirm it.
+The decisive difference is the refusal contract: the mid-tier model answered all three unanswerable questions in prose instead of emitting the refusal marker, an adherence collapse from two-of-three to zero-of-three that reproduced across two independent runs of the tier.
+The routing consequence is concrete: bulk summarization can move to the lighter tier on cost grounds, but user-facing grounded answering should remain on the flagship route until the refusal marker survives the cheaper model, which makes the prompt-hardening follow-up above a precondition of the cost optimization rather than an optional polish.
+These grading outcomes come from single live runs per tier over a fifteen-case corpus; they establish that the deployed pipeline meets its grounding contracts on the declared fixtures, not that answer quality generalizes across models, prompts, or question distributions.
+
+\begin{table}[htbp]
+\centering
+\caption{Tier comparison of the graded evaluation on identical fixtures and configuration; only the generation model differs. Each column is one live run with caching disabled for the mid tier.}
+\label{tab:qa-tiers}
+\begin{tabular}{p{6.2cm}rr}
+\toprule
+Metric & Flagship tier & Mid tier \\
+\midrule
+Evaluated fixtures (of 15) & 15 & 15 \\
+Citation rate over answered cases & 1.00 & 1.00 \\
+Source-matched answers (full~/~partial) & 12~/~0 & 11~/~1 \\
+Mean keyword coverage & 0.94 & 0.92 \\
+False refusals on answerable cases & 0 of 12 & 0 of 12 \\
+Refusal-marker adherence & 2 of 3 & 0 of 3 \\
+Section-placement hits (dense top-8) & 4 of 12 & 4 of 12 \\
+Mean end-to-end pipeline latency & 4{,}699~ms & 3{,}422~ms \\
+Measured run cost & \$0.326 & \$0.054 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Performance Testing}
 \label{sec:e4-android}
@@ -434,7 +429,37 @@ Read back a live briefing (live) & 5 & 26.776 & 135.906 \\
 \end{tabular}
 \end{table}
 
-On the backend side, model cost is treated as a first-class performance dimension, because a continuously running assistant is constrained as much by provider spend as by latency.
+On the backend side, the behavior model's in-process cost was measured with 1{,}536-dimensional vectors, five warm-up executions, and thirty recorded repetitions per scale, with inputs generated outside the timed region and output checksums verified on every repetition; Table~\ref{tab:behavior-performance} reports the distributions and Figure~\ref{fig:behavior-performance} their growth across scales.
+At the largest scale --- 4{,}096 events and 1{,}000 candidates --- median aggregation and ranking latencies were 115.966~ms and 197.230~ms.
+Latency grows close to linearly in the event and candidate counts across the two measured decades, and the tight gap between medians and 95th percentiles at every scale indicates that the computation is stable rather than dominated by occasional stalls.
+These measurements characterize local Python computation on one machine and exclude persistence, network transfer, provider inference, and Android rendering, so they bound the algorithmic contribution to briefing latency rather than an end-to-end service time.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/mneme_behavior_performance.pdf}
+\caption{Median and 95th-percentile in-process latency over thirty repetitions after five warm-ups, using 1{,}536-dimensional vectors with inputs generated before timing. Database, network, provider, and client latency are excluded.}
+\label{fig:behavior-performance}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{In-process behavior-model latency by scale. Each cell is median~/~p95 in milliseconds over thirty repetitions after five warm-ups.}
+\label{tab:behavior-performance}
+\begin{tabular}{p{1.6cm}rrp{3.3cm}p{3.3cm}}
+\toprule
+Scale & Events & Candidates & Aggregation (ms) & Ranking (ms) \\
+\midrule
+Small & 64 & 50 & 1.619 / 1.723 & 4.991 / 5.089 \\
+Medium & 512 & 200 & 12.227 / 12.489 & 20.104 / 20.329 \\
+Large & 4{,}096 & 1{,}000 & 115.966 / 118.054 & 197.230 / 201.842 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Provider latency sits on top of this local computation.
+In the live graded runs of Tables~\ref{tab:qa-eval} and~\ref{tab:qa-tiers}, mean end-to-end pipeline latency was 4{,}699~ms on the flagship route and 3{,}422~ms on the mid tier, dominated entirely by generation in both cases: retrieval, reranking, and citation verification together contribute roughly 80~ms.
+
+Model cost is treated as a first-class performance dimension alongside latency, because a continuously running assistant is constrained as much by provider spend as by response time.
 A static audit inventoried every provider call site --- the summarization worker, grounded question answering, query embedding, and batched chunk embedding; recommendation scoring reuses stored vectors and makes no provider call --- and estimated unit economics from provider list prices under the deployed input and output caps.
 The estimates assume the deployed caps: summary input bounded at roughly 15{,}000 tokens with a 1{,}024-token output, and question answering built from about six 450-token evidence chunks with a 512-token output.
 Table~\ref{tab:unit-economics} reports the resulting unit costs across the three configured provider tiers.
@@ -459,8 +484,8 @@ Summaries per \$5 day & $\sim$50 & $\sim$250 & --- \\
 \end{tabular}
 \end{table}
 The audit's principal consequence is a routing insight: bulk summarization is the dominant and least quality-sensitive spend, so moving it to a lighter tier while reserving the flagship tier for user-visible grounded answers would extend the same budget several-fold; the switch awaits a summary-quality comparison so that cost is not saved at the price of structured-output fidelity.
-All dollar figures are estimates derived from a retained price snapshot with a companion script that recomputes them, and measured spend is available from the per-completion cost telemetry once the deployed pipeline runs at scale.
+All dollar figures are estimates derived from a retained price snapshot with a companion script that recomputes them, and the graded evaluation supplies the audit's first measured data points: the flagship run's spend of \$0.326 sits within seven percent of the \$0.34 estimate, and the mid-tier run's \$0.054 falls below the \$0.07 estimate because real questions consumed fewer tokens than the audit's capped assumptions, so the estimates behave as intended upper bounds while measured spend at scale remains available from the per-completion cost telemetry.
 
 Four boundaries qualify these results.
-Device measurements come from one emulator configuration; controlled timings measure client-internal transitions rather than network or frame latency; the behavior-model evaluation demonstrates implemented mechanisms on designed traces and does not establish that the model infers real preferences, improves satisfaction, or meets an end-to-end latency target; and the graded answer-quality evaluation reflects a single live run on one provider route over a fifteen-case corpus, so its rates are exact for the declared fixtures but are not distributional estimates and do not certify answer quality under other models, prompts, or question populations.
+Device measurements come from one emulator configuration; controlled timings measure client-internal transitions rather than network or frame latency; the behavior-model evaluation demonstrates implemented mechanisms on designed traces and does not establish that the model infers real preferences, improves satisfaction, or meets an end-to-end latency target; and the graded answer-quality evaluation reflects one live run on each of two provider routes over a fifteen-case corpus, so its rates are exact for the declared fixtures but are not distributional estimates and do not certify answer quality under other models, prompts, or question populations.
 Chapter~5 discusses the corresponding outlook items.
