@@ -72,6 +72,7 @@ jq -n \
         fixed_free_form_question: $question,
         ui_iterations: 1,
         repository_iterations: 5,
+        test_apk_embeds_live_token: false,
         backend_ai_configuration: {
             summary_model: $summary_model,
             qa_model: $qa_model,
@@ -88,6 +89,7 @@ jq -n \
     ANDROID_HOME="$ANDROID_SDK_ROOT" \
         ANDROID_SDK_ROOT="$ANDROID_SDK_ROOT" \
         JAVA_HOME="$JAVA_HOME" \
+        MNEME_DEMO_TOKEN="" \
         ./gradlew \
         ktlintCheck \
         detekt \
@@ -107,6 +109,7 @@ set +e
 "$ADB" shell am instrument \
     -w \
     -r \
+    --no-window-animation \
     --user 0 \
     -e class \
     com.mneme.app.evaluation.LiveCoreProductPathTest \

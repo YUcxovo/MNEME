@@ -72,7 +72,10 @@ The raw token is passed to Android instrumentation and is never retained. The
 runner refuses a dirty tracked worktree, requires exactly one ready device, and
 records the repository revision, device environment, fixed inputs, and
 non-secret AI configuration. Its exit trap pulls partial artifacts even if a
-live stage fails.
+live stage fails. The runner builds the test APK without an embedded demo token,
+so ordinary application background scheduling cannot interfere with the
+instrumented path. The live token is supplied only to the repository constructed
+inside the test.
 
 ## Evidence and interpretation
 
