@@ -19,7 +19,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EVALUATION_DIR = REPO_ROOT / "docs" / "evaluation" / "live-core"
 RAW_DIR = EVALUATION_DIR / "raw"
@@ -94,6 +93,14 @@ def read_csv() -> list[dict[str, str]]:
         return list(csv.DictReader(handle))
 
 
+def read_optional_csv(file_name: str) -> list[dict[str, str]]:
+    path = RAW_DIR / file_name
+    if not path.is_file():
+        return []
+    with path.open(newline="", encoding="utf-8") as handle:
+        return list(csv.DictReader(handle))
+
+
 def read_json(file_name: str) -> dict[str, object]:
     path = RAW_DIR / file_name
     if not path.is_file():
@@ -140,19 +147,55 @@ def validate_protocol(rows: list[dict[str, str]]) -> None:
         )
 
     for row in rows:
-        if row["scenario"] in {
-            "seed_to_five_paper_briefing",
-            "live_five_paper_briefing",
-        }:
-            if int(row["paper_count"]) != 5:
-                raise ValueError("A retained seed stage did not return five papers.")
+        if (
+            row["scenario"]
+            in {
+                "seed_to_five_paper_briefing",
+                "live_five_paper_briefing",
+            }
+            and int(row["paper_count"]) != 5
+        ):
+            raise ValueError("A retained seed stage did not return five papers.")
         if row["scenario"] == "citation_graph" and int(row["graph_nodes"]) > 50:
             raise ValueError("A retained graph exceeded the Android request limit.")
-        if row["scenario"] == "citation_graph":
-            if int(row["graph_nodes"]) < 2 or int(row["graph_edges"]) < 1:
-                raise ValueError(
-                    "The retained product path did not reach a multi-node graph."
-                )
+        if row["scenario"] == "citation_graph" and (
+            int(row["graph_nodes"]) < 2 or int(row["graph_edges"]) < 1
+        ):
+            raise ValueError(
+                "The retained product path did not reach a multi-node graph."
+            )
+
+
+def validate_seed_matrix(
+    rows: list[dict[str, str]],
+    manifest: dict[str, object],
+) -> None:
+    expected_seeds = manifest.get("additional_seed_arxiv_ids", [])
+    if not isinstance(expected_seeds, list) or not all(
+        isinstance(seed, str) for seed in expected_seeds
+    ):
+        raise ValueError("Run manifest has an invalid additional-seed list.")
+    observed_seeds = [row["seed_arxiv_id"] for row in rows]
+    if sorted(observed_seeds) != sorted(expected_seeds):
+        raise ValueError(
+            "Live seed matrix does not match the run manifest.\n"
+            f"Expected: {expected_seeds}\nObserved: {observed_seeds}",
+        )
+    for row in rows:
+        if not as_success(row["success"]):
+            raise ValueError(
+                f"Live seed matrix failed for {row['seed_arxiv_id']}: {row['outcome']}"
+            )
+        if int(row["paper_count"]) != 5:
+            raise ValueError("A matrix seed did not return five papers.")
+        if int(row["graph_nodes"]) < 2 or int(row["graph_edges"]) < 1:
+            raise ValueError("A matrix seed did not reach a multi-node graph.")
+        if int(row["graph_nodes"]) > 50:
+            raise ValueError("A matrix graph exceeded the Android request limit.")
+        if row["briefing_origin"] != "LIVE_BACKEND":
+            raise ValueError("A matrix briefing was not labelled as live backend data.")
+        if row["graph_origin"] != "LIVE_BACKEND":
+            raise ValueError("A matrix graph was not labelled as live backend data.")
 
 
 def summarize(rows: list[dict[str, str]]) -> list[StageSummary]:
@@ -182,6 +225,7 @@ def summarize(rows: list[dict[str, str]]) -> list[StageSummary]:
 
 def write_results(
     rows: list[dict[str, str]],
+    seed_matrix_rows: list[dict[str, str]],
     summaries: list[StageSummary],
     environment: dict[str, object],
     manifest: dict[str, object],
@@ -218,6 +262,23 @@ def write_results(
                 {row["selected_arxiv_id"] for row in rows if row["selected_arxiv_id"]}
             ),
         },
+        "multi_seed_matrix": [
+            {
+                "seed_arxiv_id": row["seed_arxiv_id"],
+                "success": as_success(row["success"]),
+                "total_duration_ms": float(row["total_duration_ms"]),
+                "seed_duration_ms": float(row["seed_duration_ms"]),
+                "graph_duration_ms": float(row["graph_duration_ms"]),
+                "open_neighbor_duration_ms": float(row["open_neighbor_duration_ms"]),
+                "paper_count": int(row["paper_count"]),
+                "graph_nodes": int(row["graph_nodes"]),
+                "graph_edges": int(row["graph_edges"]),
+                "graph_status": row["graph_status"],
+                "neighbor_arxiv_id": row["neighbor_arxiv_id"],
+                "poll_count": int(row["poll_count"] or 0),
+            }
+            for row in seed_matrix_rows
+        ],
         "results": [asdict(summary) for summary in summaries],
     }
     EVALUATION_DIR.mkdir(parents=True, exist_ok=True)
@@ -262,10 +323,11 @@ def configure_plots() -> None:
 
 def plot_results(
     rows: list[dict[str, str]],
+    seed_matrix_rows: list[dict[str, str]],
     summaries: list[StageSummary],
 ) -> None:
     lookup = {(item.track, item.scenario): item for item in summaries}
-    figure, axes = plt.subplots(1, 2, figsize=(10.2, 4.8))
+    figure, axes = plt.subplots(1, 3, figsize=(14.2, 4.8))
 
     repository = [lookup[("live_repository", stage)] for stage in REPOSITORY_SCENARIOS]
     labels = [display_label(item.scenario, rows) for item in repository]
@@ -328,6 +390,57 @@ def plot_results(
         fontsize=8,
     )
 
+    matrix_positions = list(range(len(seed_matrix_rows)))
+    seed_seconds = [float(row["seed_duration_ms"]) / 1000 for row in seed_matrix_rows]
+    graph_seconds = [float(row["graph_duration_ms"]) / 1000 for row in seed_matrix_rows]
+    open_seconds = [
+        float(row["open_neighbor_duration_ms"]) / 1000 for row in seed_matrix_rows
+    ]
+    axes[2].barh(matrix_positions, seed_seconds, color=TEAL, label="Seed to briefing")
+    axes[2].barh(
+        matrix_positions,
+        graph_seconds,
+        left=seed_seconds,
+        color=BLUE,
+        label="Load graph",
+    )
+    axes[2].barh(
+        matrix_positions,
+        open_seconds,
+        left=[
+            seed_value + graph_value
+            for seed_value, graph_value in zip(
+                seed_seconds,
+                graph_seconds,
+                strict=True,
+            )
+        ],
+        color=GOLD,
+        label="Open neighbour",
+    )
+    axes[2].set_yticks(
+        matrix_positions,
+        [row["seed_arxiv_id"] for row in seed_matrix_rows],
+    )
+    axes[2].invert_yaxis()
+    axes[2].set_xlabel("Observed duration (s)")
+    axes[2].set_title(
+        "Additional live seed paths",
+        loc="left",
+        fontweight="bold",
+    )
+    axes[2].grid(axis="x")
+    axes[2].legend(frameon=False, fontsize=8)
+    for position, row in zip(matrix_positions, seed_matrix_rows, strict=True):
+        axes[2].text(
+            float(row["total_duration_ms"]) / 1000,
+            position,
+            f"  {row['graph_nodes']} nodes / {row['graph_edges']} edges",
+            va="center",
+            color=INK,
+            fontsize=8,
+        )
+
     figure.tight_layout()
     FIGURE_DIR.mkdir(parents=True, exist_ok=True)
     for suffix in ("pdf", "png"):
@@ -341,13 +454,15 @@ def plot_results(
 
 def main() -> None:
     rows = read_csv()
+    seed_matrix_rows = read_optional_csv("live_seed_matrix.csv")
     environment = read_json("environment.json")
     manifest = read_json("run_manifest.json")
     validate_protocol(rows)
+    validate_seed_matrix(seed_matrix_rows, manifest)
     summaries = summarize(rows)
-    write_results(rows, summaries, environment, manifest)
+    write_results(rows, seed_matrix_rows, summaries, environment, manifest)
     configure_plots()
-    plot_results(rows, summaries)
+    plot_results(rows, seed_matrix_rows, summaries)
     failed = [row for row in rows if not as_success(row["success"])]
     print(
         json.dumps(
@@ -355,6 +470,10 @@ def main() -> None:
                 "rows": len(rows),
                 "failed_rows": len(failed),
                 "summary_rows": len(summaries),
+                "multi_seed_rows": len(seed_matrix_rows),
+                "multi_seed_successes": sum(
+                    as_success(row["success"]) for row in seed_matrix_rows
+                ),
                 "selected_arxiv_ids": sorted(
                     {
                         row["selected_arxiv_id"]
