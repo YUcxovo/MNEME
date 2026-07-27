@@ -1,5 +1,6 @@
 """Transactional persistence primitives for behavioral events."""
 
+import struct
 from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
@@ -189,8 +190,8 @@ class EventRepository:
     ) -> None:
         """Persist a derived contrastive profile while preserving explicit preferences."""
         preference = await self.lock_preferences(user_id)
-        positive = profile.positive_embedding
-        negative = profile.negative_embedding
+        positive = _as_pgvector_tuple(profile.positive_embedding)
+        negative = _as_pgvector_tuple(profile.negative_embedding)
         stored_model = embedding_model if positive is not None or negative is not None else None
         current_positive = _as_float_tuple(preference.behavior_embedding)
         current_negative = _as_float_tuple(preference.negative_behavior_embedding)
@@ -222,3 +223,12 @@ def _as_float_tuple(value: list[float] | None) -> tuple[float, ...] | None:
     if value is None:
         return None
     return tuple(float(item) for item in value)
+
+
+def _as_pgvector_tuple(
+    value: tuple[float, ...] | None,
+) -> tuple[float, ...] | None:
+    """Match pgvector's single-precision storage before no-op comparison."""
+    if value is None:
+        return None
+    return tuple(struct.unpack("!f", struct.pack("!f", float(item)))[0] for item in value)

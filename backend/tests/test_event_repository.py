@@ -1,6 +1,8 @@
 """Unit tests for behavioral-event persistence primitives."""
 
 import asyncio
+import struct
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import cast
 from unittest.mock import AsyncMock, MagicMock
@@ -145,6 +147,46 @@ def test_storing_identical_behavior_profile_does_not_touch_preference_row() -> N
         await repository.store_behavior_profile(
             USER_ID,
             profile=profile,
+            embedding_model="embedding-test-v1",
+        )
+        return session
+
+    session = asyncio.run(exercise())
+    session.flush.assert_not_awaited()
+
+
+@pytest.mark.base
+@pytest.mark.db
+def test_pgvector_float32_round_trip_remains_a_profile_noop() -> None:
+    async def exercise() -> AsyncMock:
+        profile = aggregate_behavior_profile(
+            [BehaviorSignal(UserEventType.PAPER_SAVED, PAPER_ID, NOW)],
+            {PAPER_ID: (0.9606839529674632, 0.2776432713320825)},
+            now=NOW,
+        )
+        assert profile.positive_embedding is not None
+        stored_vector = [
+            struct.unpack("!f", struct.pack("!f", value))[0] for value in profile.positive_embedding
+        ]
+        evidence = {
+            "model_name": profile.model_name,
+            "model_version": profile.model_version,
+            **profile.evidence.as_json(),
+        }
+        session = AsyncMock(spec=AsyncSession)
+        session.scalar.return_value = UserPreference(
+            user_id=USER_ID,
+            behavior_embedding=stored_vector,
+            negative_behavior_embedding=None,
+            behavior_embedding_model="embedding-test-v1",
+            behavior_confidence=profile.confidence,
+            behavior_evidence=evidence,
+            model_version=profile.model_version,
+        )
+
+        await EventRepository(cast(AsyncSession, session)).store_behavior_profile(
+            USER_ID,
+            profile=replace(profile),
             embedding_model="embedding-test-v1",
         )
         return session
