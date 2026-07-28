@@ -201,6 +201,34 @@ def test_candidate_query_requires_current_summary_and_usable_status() -> None:
 
 @pytest.mark.base
 @pytest.mark.rag
+def test_ready_candidate_query_keeps_summary_requirements_without_age_window() -> None:
+    now = datetime(2026, 7, 21, tzinfo=UTC)
+    scalar_result = Mock()
+    scalar_result.all.return_value = []
+    session = Mock(spec=AsyncSession)
+    session.scalars = AsyncMock(return_value=scalar_result)
+    repository = DigestRepository(cast(AsyncSession, session))
+
+    papers = asyncio.run(repository.list_ready_candidates(before=now, limit=200))
+
+    assert papers == []
+    await_args = session.scalars.await_args
+    assert await_args is not None
+    statement = await_args.args[0]
+    sql = str(
+        statement.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+    assert "papers.processing_status IN ('ready', 'partial')" in sql
+    assert "EXISTS (SELECT paper_summaries.id" in sql
+    assert f"papers.published_at < '{now}'" in sql
+    assert "papers.published_at >=" not in sql
+
+
+@pytest.mark.base
+@pytest.mark.rag
 def test_embedding_mean_is_limited_to_each_papers_latest_revision() -> None:
     paper_id = uuid4()
     rows = Mock()
