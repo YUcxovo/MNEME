@@ -210,8 +210,29 @@ The interest editor was exercised as one complete device path. The test edited a
 \subsection{Acceptance Testing for Features}
 
 Feature acceptance maps the acceptance criteria of Chapter~3 to executable checks.
-For the literature-representation features, the decisive check is revision isolation: an API test asserts that question answering scoped to one paper revision cannot retrieve chunks belonging to another, which is the executable form of the guarantee that a revision update cannot silently change what the user is reading.
-Idempotent re-preparation is covered by the deterministic chunking and content-hash tests in the backend suite.
+Table~\ref{tab:feature-acceptance} summarizes the main user-facing tasks, their expected outcomes, and the recorded results. Performance measurements are reported separately in Section~\ref{sec:android-performance}.
+
+\begin{table}[htbp]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{2pt}
+\caption{Feature acceptance results for the integrated mobile workflow.}
+\label{tab:feature-acceptance}
+\begin{tabular}{P{2.0cm}P{2.45cm}P{2.55cm}P{3.65cm}c}
+\toprule
+\MnemeTableHeader{Feature} & \MnemeTableHeader{Test task} & \MnemeTableHeader{Expected result} & \MnemeTableHeader{Actual result} & \MnemeTableHeader{Status} \\
+\midrule
+Offline disclosure & Reopen a stored briefing without network access & Show cached content and identify its origin & Cached offline state appeared in all 30 controlled trials & Pass \\
+Paper preparation & Poll a paper-processing job until completion & Show processing before the paper becomes ready & The three-stage transition completed in all 10 controlled trials & Pass \\
+Evidence-linked Q\&A & Ask the fixed question and open an answer source & Display an answer with evidence status and a working source action & Both retained live UI traces returned source-linked answers and opened the source & Pass \\
+Citation graph & Select a neighboring paper, open it, and return & Preserve selection and restore the graph interaction & All 11 graph and application-flow tests passed & Pass \\
+Event synchronization & Retry an interrupted upload and replay the same identifiers & Deliver queued events once and acknowledge duplicates & All 30 controlled trials per queue stage passed; five live repetitions accepted three new events and marked the replay as duplicate & Pass \\
+\bottomrule
+\end{tabular}
+\normalsize
+\end{table}
+
+The table records only checks with retained test output or live traces. For the literature-representation features, the decisive backend check is revision isolation: an API test asserts that question answering scoped to one paper revision cannot retrieve chunks belonging to another. Idempotent re-preparation is covered by deterministic chunking and content-hash tests.
 
 For the assistance features, acceptance rests on refusal and verification behavior.
 Tests cover refusal below the evidence threshold and through the model-side insufficient-evidence marker, citation-marker validation against the evidence list, and the source-match labeling of answers.
@@ -253,70 +274,12 @@ Figure~\ref{fig:live-android-path} shows three user-facing states recorded durin
 \label{fig:live-android-path}
 \end{figure}
 
-A later instrumented trace repeated the same visible path after the backend had retained the paper artifacts and could reuse cached provider completions. The seed response still came from the live backend. This condition records artifact reuse, while the Android cache is measured in a separate restore stage. All required UI stages succeeded again. Table~\ref{tab:live-core} reports the two single-run UI observations separately and does not pool them into a latency distribution.
-Five further repetitions exercised the application data layer, network mapping, and cache handling without measuring Compose interaction. Every stage succeeded. These timings characterize a warm path because the repeated operations could reuse durable artifacts and cached completions.
-
-The generation-inclusive UI trace spent 22.4 seconds preparing the five-paper briefing and 24.3 seconds answering the question. In the later artifact-reuse trace, the same stages took 4.7 and 0.9 seconds. The corresponding warm repository operations completed in tens to hundreds of milliseconds. These observations locate substantial waiting time outside the client state machinery. The two UI traces are individual acceptance observations collected under different reuse conditions, so repeated cold-versus-warm measurement remains a separate experiment.
-
-\begin{table}[htbp]
-\centering
-\caption{Live-core acceptance stages under three recorded conditions: generation-inclusive UI, artifact-reuse UI, and five warm data-layer repetitions. All required stages succeeded.}
-\label{tab:live-core}
-\begin{tabular}{p{6.4cm}rrr}
-\toprule
-\MnemeTableHeader{Stage} & \MnemeTableHeader{$n$} & \MnemeTableHeader{Median (ms)} & \MnemeTableHeader{p95 (ms)} \\
-\midrule
-\multicolumn{4}{l}{\emph{Instrumented UI trace (single live repetition)}} \\
-Seed to five-paper briefing & 1 & 22{,}434.5 & N/A \\
-Paper detail and stored summary & 1 & 4{,}521.0 & N/A \\
-Free-form question with sources & 1 & 24{,}289.9 & N/A \\
-Open paper source & 1 & 3{,}118.3 & N/A \\
-Open answer source excerpt & 1 & 6{,}608.7 & N/A \\
-Citation graph render & 1 & 6{,}780.7 & N/A \\
-Select graph neighbor & 1 & 4{,}732.6 & N/A \\
-Open selected neighbor & 1 & 1{,}754.2 & N/A \\
-\addlinespace
-\multicolumn{4}{l}{\emph{Instrumented UI trace after artifact reuse (single live repetition)}} \\
-Seed to five-paper briefing & 1 & 4{,}665.7 & N/A \\
-Paper detail and stored summary & 1 & 397.7 & N/A \\
-Free-form question with sources & 1 & 887.1 & N/A \\
-Open paper source & 1 & 187.9 & N/A \\
-Open answer source excerpt & 1 & 408.8 & N/A \\
-Citation graph render & 1 & 606.3 & N/A \\
-Select graph neighbor & 1 & 823.5 & N/A \\
-Open selected neighbor & 1 & 124.3 & N/A \\
-\addlinespace
-\multicolumn{4}{l}{\emph{Application data-layer track (five repetitions, warm path)}} \\
-Live five-paper briefing & 5 & 141.3 & 175.9 \\
-Cached briefing restore & 5 & 4.1 & 21.3 \\
-Paper detail and stored summary & 5 & 36.1 & 46.0 \\
-Free-form question with sources & 5 & 177.3 & 214.4 \\
-Citation graph & 5 & 22.6 & 28.7 \\
-Open selected graph paper & 5 & 106.1 & 109.2 \\
-\bottomrule
-\end{tabular}
-\end{table}
+A later instrumented trace repeated the same visible path after the backend had retained the paper artifacts and could reuse cached provider completions. The seed response still came from the live backend, and all required UI stages succeeded again. Five further repetitions exercised the application data layer, network mapping, and cache handling without measuring Compose interaction; every required stage succeeded. Timing differences between these conditions are discussed under Performance Testing rather than treated as feature-acceptance criteria.
 
 The fixed-seed protocol was extended to two additional arXiv seeds so that the same client contract was exercised beyond the initial \emph{Attention Is All You Need} seed (arXiv:1706.03762).
-Each seed independently requested a five-paper briefing, loaded a depth-two graph for the first returned paper, selected a non-centre node, and opened that paper through the standard detail path.
-Both paths succeeded, as summarized in Table~\ref{tab:live-seed-matrix}.
-The briefing preparation accounted for more than 99.9\% of the measured total in both observations; loading the prepared graph and opening a neighbor together took less than 40~ms.
+Each seed independently requested a five-paper briefing, loaded a depth-two graph for the first returned paper, selected a non-centre node, and opened that paper through the standard detail path. Both paths succeeded. Seed \texttt{2010.11929} produced a six-node, five-edge graph and completed in 48{,}058.1~ms, including 48{,}022.0~ms of preparation. Seed \texttt{2106.09685} produced a seven-node, six-edge graph and completed in 46{,}597.5~ms, including 46{,}560.6~ms of preparation. Thus, briefing preparation accounted for more than 99.9\% of the measured total in both observations, while loading the prepared graph and opening a neighbor together took less than 40~ms.
 
-\begin{table}[htbp]
-\centering
-\caption{Additional live seed-to-graph acceptance observations. Each row records one complete production path.}
-\label{tab:live-seed-matrix}
-\begin{tabular}{lrrrr}
-\toprule
-\MnemeTableHeader{arXiv seed} & \MnemeTableHeader{Papers} & \MnemeTableHeader{Graph nodes / edges} & \MnemeTableHeader{Preparation (ms)} & \MnemeTableHeader{Total (ms)} \\
-\midrule
-\texttt{2010.11929} & 5 & 6 / 5 & 48{,}022.0 & 48{,}058.1 \\
-\texttt{2106.09685} & 5 & 7 / 6 & 46{,}560.6 & 46{,}597.5 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Together, the fixed-seed traces and the additional seed matrix show that the client, API contracts, stored paper artifacts, AI pipeline, and citation-graph interaction completed the recorded live paths under the documented configurations.
+Together, the fixed-seed traces show that the client, API contracts, stored paper artifacts, AI pipeline, and citation-graph interaction completed the recorded live paths under the documented configurations.
 These acceptance traces establish cross-layer completion; recommendation relevance, scientific answer correctness, and graph-neighborhood usefulness are evaluated separately or left for future user studies.
 
 The controlled behavior evaluation examines whether each interest-continuity mechanism described in Chapter~3 produces its specified effect when driven through the production scoring functions.
@@ -503,6 +466,7 @@ Together, the tier studies support different routing choices for the two evaluat
 \label{sec:android-performance}
 
 Client-side performance was measured on the emulator configuration described under Testing Tool.
+The live traces provide a separate end-to-end observation. The generation-inclusive UI trace spent 22.4 seconds preparing the five-paper briefing and 24.3 seconds answering the question. After the backend could reuse retained artifacts and cached provider completions, a later trace took 4.7 and 0.9 seconds for the same stages. These are two individual observations under different reuse conditions, not a latency distribution or a controlled cold-versus-warm comparison. They nevertheless show that the recorded provider and artifact-preparation waits were much longer than the client state transitions.
 Figure~\ref{fig:mobile-reliability} and Table~\ref{tab:mobile-reliability} report the resulting distributions.
 All 20 cold process starts and all 20 task foreground/resume operations completed: cold start had a median of 2{,}773~ms with a 95th percentile of 4{,}444~ms, and foreground/resume had a median of 133.5~ms with a 95th percentile of 445~ms.
 Android confirmed a hot-launch classification for only nine of the twenty resume operations and returned an unknown classification for the remainder, so the reported distribution describes foreground/resume timing. It is not a verified hot-start benchmark.

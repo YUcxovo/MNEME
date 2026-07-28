@@ -63,7 +63,8 @@ The same paper may consequently participate in several later decisions, each of 
 When paper identity, evidence, interest context, or visible interaction state is lost during a transition, a later output may appear plausible while referring to the wrong revision, unsupported text, an inaccurate account of the reader's intent, or unavailable data whose status is unclear.
 
 Meeting these requirements raises four connected research challenges.
-The first technical challenge is revision-correct paper representation.
+
+\textbf{Challenge 1: revision-correct paper representation.}
 A source document can change while summaries, chunks, embeddings, and citations remain attached to an older revision.
 A paper identifier alone does not reveal this difference.
 The difficulty extends beyond detecting that a new file exists, because each derived artifact has its own creation time, configuration, and dependence on the source text.
@@ -71,7 +72,7 @@ An unchanged logical identifier can therefore refer to several evidential states
 The challenge is to preserve a lineage from a logical paper to an observed revision and from that revision to every derived artifact, including the conditions under which an artifact becomes outdated.
 Without this lineage, later retrieval and generation cannot determine whether two apparently compatible artifacts were produced from the same evidence.
 
-The second technical challenge is evidence-bounded assistance.
+\textbf{Challenge 2: evidence-bounded assistance.}
 It must separate the presence of a citation from the support that the cited evidence provides.
 A generated answer may contain a valid paper identifier while one or more of its claims remain unsupported.
 Scientific claim-verification research makes the evidence unit explicit by pairing claims with rationale spans~\cite{wadden2020scifact}, and fine-grained attribution work shows why document-level identifiers alone make exact support difficult to inspect~\cite{huang2024grounded}.
@@ -79,14 +80,14 @@ Retrieval also introduces several possible failure points: no relevant passage m
 The challenge is to distinguish identifier validity, evidence availability, claim--evidence consistency, and evidence coverage, including cases in which the available text does not support an answer.
 This distinction is necessary because a syntactically valid citation marker provides weaker assurance than a source span that supports the associated claim.
 
-The third technical challenge is adaptive but inspectable interest memory.
+\textbf{Challenge 3: adaptive but inspectable interest memory.}
 It must interpret incomplete and sometimes ambiguous expressions of intent.
 Opening, saving, skipping, and questioning a paper differ in strength and duration: saving commonly indicates deliberate interest, while a single opening may reflect curiosity, an assignment, or an accidental action.
 Repeated events can provide additional evidence, although frequency alone does not resolve the context in which they occurred.
 The challenge is to combine explicit interests with bounded behavioral events while preserving a clear account of why an interest changed and allowing the corresponding state to be corrected or deleted.
 The resulting representation must therefore support adaptation without treating an inferred preference as an unquestionable statement of the user's research agenda.
 
-The fourth technical challenge is bounded mobile integration.
+\textbf{Challenge 4: bounded mobile integration.}
 It must preserve research context under intermittent connectivity, restricted background execution, and limited screen area.
 These conditions can conceal evidence or stale state even when the server-side mechanism is correct.
 Long-running preparation and graph operations may complete after the user has navigated elsewhere, and a retry may repeat an interaction that has already reached the server.
@@ -95,53 +96,9 @@ The challenge is to preserve paper identity, evidence access, and interaction me
 The challenges interact: revision errors can contaminate retrieval, duplicated mobile events can distort later ranking, and an interface that hides degraded operation can convert a recoverable limitation into a misleading research interaction.
 Solving any challenge in isolation therefore leaves the overall literature workflow vulnerable at the boundaries between components.
 
-\subsection{Cross-Layer Continuity Model}
-
-The four challenges can be stated as continuity conditions over a single reading transition.
-Let the state at time \(t\) be
-\begin{equation}
-  X_t=(p,r,\mathcal{A},\mathcal{E},U,V),
-  \label{eq:continuity-state}
-\end{equation}
-where \(p\) is the logical paper, \(r\) its observed revision, \(\mathcal{A}\) the set of derived artifacts, \(\mathcal{E}\) the displayed claim--source links, \(U\) the explicit and behavioral preference state, and \(V\) the visible client state.
-A transition \(T_t:X_t\rightarrow X_{t+1}\) preserves continuity when four predicates hold:
-\begin{equation}
-  C(T_t)=C_R(T_t)\land C_E(T_t)\land C_U(T_t)\land C_I(T_t).
-  \label{eq:continuity-invariant}
-\end{equation}
-
-The representation predicate \(C_R\) requires the artifacts and source links used in a transition to retain a compatible \((p,r)\) lineage.
-The evidence predicate \(C_E\) requires each displayed source marker to resolve to evidence used for the associated claim.
-The preference predicate \(C_U\) requires a change in user state, together with a later recommendation reason, to be traceable to declared topics, recorded events, and the stated reference time.
-The interaction predicate \(C_I\) requires the selected paper identity and the availability of its data to remain visible across a client transition.
-A failure of any predicate identifies a specific break in continuity even when the other parts of the workflow remain operational.
-The conjunction is deliberately strict: success in one layer does not compensate for a lost paper revision, an unsupported claim, an untraceable preference change, or an ambiguous client state in another layer.
-
-\begin{figure}[htbp]
-  \centering
-  \begin{tikzpicture}[font=\sffamily\small,>=Latex]
-    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=5pt,minimum width=3.2cm,minimum height=0.85cm,align=center] (revision) at (-4.8,1.6) {Paper and revision\\identity \(C_R\)};
-    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,minimum width=3.2cm,minimum height=0.85cm,align=center] (artifact) at (0,1.6) {Derived artifacts\\and retrieved excerpts};
-    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,minimum width=3.2cm,minimum height=0.85cm,align=center] (evidence) at (4.8,1.6) {Displayed claims and\\source status \(C_E\)};
-    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=5pt,minimum width=3.2cm,minimum height=0.85cm,align=center] (events) at (-4.8,-1.25) {Declared interests and\\bounded events};
-    \node[draw=MnemeGold!80!black,fill=MnemeGold!8,rounded corners=5pt,minimum width=3.2cm,minimum height=0.85cm,align=center] (profile) at (0,-1.25) {Traceable preference\\state \(C_U\)};
-    \node[draw=MnemeNavy,fill=MnemeNavy!7,rounded corners=5pt,minimum width=3.2cm,minimum height=1.05cm,align=center] (client) at (4.8,-1.25) {Visible paper identity\\and availability \(C_I\)};
-    \draw[MnemeNavy,line width=0.9pt,->] (revision) -- (artifact);
-    \draw[MnemeNavy,line width=0.9pt,->] (artifact) -- (evidence);
-    \draw[MnemeNavy,line width=0.9pt,->] (events) -- (profile);
-    \draw[MnemeNavy,line width=0.9pt,->] (profile) -- (client);
-    \draw[MnemeNavy,line width=0.9pt,->] (evidence) -- (client);
-    \draw[MnemeNavy!65,dashed,line width=0.8pt,->] (revision.south) to[out=-55,in=145] (client.north);
-  \end{tikzpicture}
-  \caption{Dependency among the four continuity conditions. A reading transition depends on compatible paper identity, claim--source relations, traceable preference state, and visible interaction state.}
-  \label{fig:continuity-dependencies}
-\end{figure}
-\FloatBarrier
-
 \subsection{Research Questions}
 
-The continuity conditions translate the four challenges into the following
-research questions:
+The four challenges lead to the following research questions:
 
 \begin{description}[leftmargin=2.3cm,style=nextline]
   \item[RQ1] How can a literature system preserve revision-correct paper identity and section-level provenance throughout ingestion and the creation of derived artifacts?
@@ -244,18 +201,13 @@ The central block identifies the information shared across these capabilities: p
 \end{figure}
 \FloatBarrier
 
-\subsection{Contributions and Evaluation Approach}
+\subsection{Contributions}
 
 The provenance contract associates each derived artifact with a logical paper, a specific revision, a transformation configuration, and a content hash.
 Evidence-bounded assistance links answer claims to source spans and distinguishes supported, partially supported, and unsupported outcomes.
 Interest adaptation applies declared behavioral events to a time-decayed normalized representation while retaining the information needed for inspection and correction.
 Mobile integration preserves selected paper identity, event meaning, and content availability across asynchronous operations and recovery.
 Together, these contributions supply stable evidence inputs, constrain generated assistance, maintain a traceable interest state, and keep the resulting state visible during interaction.
-
-The evaluation is organized around the four technical challenges.
-Revision-isolation tests examine provenance; paper-specific question-answering experiments measure retrieval, citation support, and refusal behavior; controlled traces examine interest adaptation; and Android measurements assess mobile reliability and graph interaction.
-The ten-interview customer study and five-participant prototype study complement these technical evaluations by informing the requirements and interaction design.
-Software tests verify specified behavior, while controlled and live measurements characterize the implemented mechanisms under documented configurations.
 
 \subsection{Thesis Structure}
 

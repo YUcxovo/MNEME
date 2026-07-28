@@ -39,22 +39,19 @@ The scenario set supports the mechanics and failure protections of the model.
 It produced no independent aggregate ranking gain for dual-timescale decay or confidence gating; real-user preference accuracy and long-term benefit remain questions for longitudinal evaluation.
 
 RQ4 addressed whether the integrated mobile workflow preserves paper identity, evidence access, and interaction meaning while exposing live, cached, processing, and failure states.
-The Android baseline recorded 810 successful controlled measurements spanning startup, state transitions, polling, graph rendering and selection, and event synchronization.
-A separate \(2\times2\) CPU and RAM experiment recorded 12{,}960 successful controlled samples across sixteen independent cold-boot sessions.
-All 25 stages in the five-repetition live event trace also met their success conditions, including retry after an injected failure, duplicate-aware ingestion, and client readback.
-The complete seed-to-reading path produced a five-paper briefing, opened paper detail, answered a free-form question with sources, rendered a multi-node citation graph, and opened a selected neighboring paper.
-Two additional arXiv seeds completed the seed-to-graph path, providing limited evidence that the integration was not confined to the original seed.
+The Android baseline completed all 810 controlled measurements of startup, state transitions, polling, graph interaction, and event synchronization.
+The resource experiment added 12{,}960 successful samples across sixteen independent cold-boot sessions.
+In the live integration trace, all 25 event stages met their conditions, including retry after an injected failure, duplicate-aware ingestion, and client readback.
+The complete device path then produced a five-paper briefing, opened paper detail, returned a source-linked answer, rendered a multi-node citation graph, and opened a selected neighboring paper.
+Two further arXiv seeds completed the seed-to-graph path. These repetitions provide limited evidence beyond the original seed, rather than a general claim about all papers.
 
 The mobile measurements also identify where time is spent.
-In the baseline Android~14 configuration, cold process start had a median of 2.77~s, while foreground/resume had a median of 134~ms.
-An existing WebView reached graph DOM readiness in 83.0--112~ms at 1--50 nodes, compared with 140--454~ms for a newly created WebView.
-In the resource-controlled experiment, moving from two to four virtual cores reduced cold-start latency by a descriptive median of 38.6\% across four counterbalanced blocks, and moving from 2 to 6~GiB reduced it by 13.7\%.
-Existing-WebView update and native selection medians differed by only a few milliseconds between the four configurations.
-The stable reused-WebView and selection measurements support the reported resource comparison.
-The new-WebView timer exhibited a synchronization-sensitive five-second mode under the four-core settings and was therefore retained in the record while excluded from CPU-effect interpretation.
-The generation-inclusive live trace spent 22.4~s preparing the briefing and 24.3~s answering the question; a later trace with reusable backend artifacts took 4.7~s and 0.9~s for the same stages.
-The two traces are separate acceptance observations under different reuse conditions.
-Together, they show that provider inference and artifact preparation account for much more waiting time than the client state transitions in the recorded paths.
+In the baseline Android~14 configuration, cold process start had a median of 2.77~s, whereas foreground/resume had a median of 134~ms.
+Updating an existing graph WebView remained below 112~ms at the tested sizes, while creating a new WebView was slower and more variable.
+The resource-controlled study indicates that startup was more sensitive to assigned CPU and memory than existing-WebView updates or native graph selection.
+Its new-WebView timer also developed a synchronization-sensitive five-second mode under the four-core settings. Those samples remain in the record, but they are excluded from causal interpretation of the CPU effect.
+The live traces show the larger system boundary: generation-inclusive briefing and answer stages took 22.4~s and 24.3~s, compared with 4.7~s and 0.9~s after backend artifacts could be reused.
+Because these are separate single observations rather than repeated cold and warm trials, they locate likely waiting time but do not estimate a general speed-up.
 
 The formative prototype study complements the software measurements.
 All five participants completed the briefing, source, and cited-Q\&A tasks; four completed interest editing, and two completed graph exploration.
@@ -67,11 +64,8 @@ The revision-aware data and job model makes paper-derived artifacts attributable
 The assistance pipeline gives retrieved evidence, refusal, and source matching explicit interfaces and failure outcomes.
 The behavioral model makes event semantics, confidence, and recommendation reasons replayable and inspectable.
 The Android client carries these properties through cached state, asynchronous polling, duplicate-safe event delivery, and bounded graph interaction.
-Together, the evaluations combine 533 backend tests, controlled mechanism
-traces, fifteen live question-answering cases, 13{,}770 Android controlled
-samples across the baseline and factorial studies, and live integration
-paths. Anomalous and failed outcomes are retained where they define the
-interpretation.
+The evidence comes from complementary forms of testing rather than one aggregate score: backend regression tests establish software contracts, controlled traces isolate mechanisms, live question-answering cases exercise the provider boundary, and Android measurements cover the client state machine and integration path.
+Failed or anomalous outcomes are retained when they change the interpretation, including the incomplete refusal result and the unstable new-WebView timing mode.
 
 The completed evaluation defines a clear scope for the conclusions.
 The document-processing evaluation does not cover a stratified corpus of scientific layouts and revisions.

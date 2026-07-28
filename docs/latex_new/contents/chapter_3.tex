@@ -576,6 +576,46 @@ Algorithm~\ref{alg:citation-graph} defines the server-side view and leaves spati
 
 Across document, behavior, and graph paths, the same reliability rule applies: durable domain state precedes replaceable execution or presentation state. Stable identifiers make retries safe; model, parser, behavior, and graph versions prevent silent semantic changes; and public responses expose typed status without returning internal exception text. Paper excerpts sent to model providers exclude raw behavioral history and unnecessary profile fields. Secrets remain outside source and mobile resources, while generated-artifact metadata records enough configuration to interpret a result. Chapter~4 reports implementation and testing evidence for these mechanisms.
 
+\subsection{Mobile State, Recovery, and Event Delivery}
+\label{subsec:mobile-state-recovery}
+
+The mobile client preserves the same paper identity while remote work, local storage, and navigation progress at different rates.
+When a paper is opened, the client first attempts to load its remote representation.
+A validated response is stored before it becomes the visible live state.
+If the request fails, a locally stored paper can remain readable with a cached label; question answering and citation-graph requests instead show a retryable error because no local substitute has the same meaning.
+An HTTP~202 response is treated as processing rather than failure, and the client polls the durable job until the representation is ready or a safe error is returned.
+
+\begin{algorithm}[htbp]
+  \caption{Origin-aware mobile paper resolution}
+  \label{alg:mobile-paper-resolution}
+  \KwIn{Selected paper identity \(p\), optional locally stored paper record}
+  \KwOut{Typed presentation state with visible content origin}
+  Cancel an earlier load, enter \emph{loading} for \(p\), and request its remote representation\;
+  \If{the remote request fails}{\Return cached content when available; otherwise enter a retryable error state\;}
+  Store a validated remote paper locally before presenting its derived content\;
+  \While{the summary response identifies a queued or running job}{
+    Display the preparation stage and poll the durable job after a bounded interval\;
+    Propagate cancellation without converting it to a visible failure\;
+  }
+  \eIf{the representation is ready}{Render live content\;}{Enter a retryable error state with the safe public message\;}
+\end{algorithm}
+
+Algorithm~\ref{alg:mobile-paper-resolution} gives one paper route a single active load, preventing a late response for a previous route from replacing the newly selected paper.
+It also keeps transport failure, server-side processing, cache recovery, and completed content as separate states that the interface can explain.
+
+Graph presentation uses a locally packaged WebView because the force-directed canvas and its interaction bridge are more tractable in Web technology than in a custom Compose drawing stack.
+This separation keeps the graph data and task, visual encoding, interaction, and layout mechanism as distinct design layers~\cite{munzner2009nested}.
+Android validates unique node identities, the presence of the centre node, and the absence of dangling edges before serializing the graph for the WebView.
+The return bridge accepts only an identifier present in the displayed graph and posts the selected paper UUID to the Android main thread.
+Native state then retains the selection, relationship context, and \emph{Open Paper} action across navigation.
+This boundary leaves layout computation in the WebView while keeping navigation and accessibility semantics in Android.
+
+Behavioral events follow a similarly bounded delivery path.
+Impressions, paper opens, and paper-scoped questions carry stable paper identities and client-generated event UUIDs.
+They remain in the Room-backed queue until the server acknowledges them, and WorkManager retries delivery after uncertain connectivity or process interruption.
+The server reports accepted and duplicate identifiers separately, so replay does not require the client to guess whether the first request arrived.
+Raw reading history is not included in language-model prompts, and explicit topics remain editable when the user wants to correct the resulting recommendation state.
+
 \section{API Design}
 \label{sec:api-design}
 
@@ -729,8 +769,6 @@ Figures~\ref{fig:prototype-reading} and~\ref{fig:prototype-graph} document the i
   \label{fig:prototype-reading}
 \end{figure}
 
-Graph exploration uses a locally packaged WebView because a force-directed canvas and interaction bridge are more tractable in Web technology than in a custom Compose drawing stack. The separation follows the distinction between data and task abstraction, visual encoding and interaction, and the algorithm that realizes the visual form in the nested model of visualization design~\cite{munzner2009nested}. The server response remains a layout-independent node-and-edge object. Android validates that node identities are unique, verifies that the centre node exists, rejects dangling edges, and maps the declared algorithm status before the response reaches the renderer. It then serializes the validated object for the local WebView, where JavaScript computes the spatial presentation. The narrow return bridge rejects an identifier that is absent from the currently displayed graph and posts an accepted paper UUID to the Android main thread. The native layer preserves the selection, mirrors the title and relationship context outside the canvas, and supplies the \emph{Open Paper} action. This boundary keeps navigation and accessibility semantics under Android control while allowing graph presentation to evolve independently from server-side graph construction, clustering, and ranking.
-
 The graph requires stronger affordance than a conventional list because spatial proximity does not tell a first-time user what is actionable. Interaction taxonomies for information visualization identify selection and exploration as distinct operations that the interface must support~\cite{yi2007interaction}; task-oriented visualization design likewise asks why the user acts, what data is targeted, and how the operation is performed~\cite{brehmer2013typology}. Mneme's task is to identify a related paper, inspect its relationship to the centre, and continue to the paper record. A short instruction appears above the canvas. Selection produces a persistent visual state, an explanation of the relationship, and a visible \emph{Open Paper} action. A legend explains edge direction and algorithmic grouping. Visually truncated node labels retain their complete title in the native preview. Android stores the selected identity, allowing the graph and native preview to restore the same selection after the reader returns from paper detail. The implemented public graph contains paper nodes and citation edges. Figure~\ref{fig:prototype-graph} also shows concept and author tabs because the formative prototype examined a wider interaction concept.
 
 \begin{figure}[htbp]
@@ -740,26 +778,10 @@ The graph requires stronger affordance than a conventional list because spatial 
   \label{fig:prototype-graph}
 \end{figure}
 
-Network state is visible interface content. On opening a briefing, the client can restore the latest local snapshot and then request a live one. The visible origin distinguishes restored cache from a server response, and a refresh failure leaves the last valid snapshot readable. Paper Q\&A and graph exploration have no semantically equivalent local substitute, so loss of connectivity produces a retryable state. Processing is likewise distinct from failure: an HTTP~202 response shows the paper stage and job state, whereas a validation or service error uses the stable message and request identity from the API envelope.
-
-\begin{algorithm}[htbp]
-  \caption{Origin-aware mobile paper resolution}
-  \label{alg:mobile-paper-resolution}
-  \KwIn{Selected paper identity \(p\), optional locally stored paper record}
-  \KwOut{Typed presentation state with visible content origin}
-  Cancel an earlier load, enter \emph{loading} for \(p\), and request its remote representation\;
-  \If{the remote request fails}{\Return cached content when available; otherwise enter a retryable error state\;}
-  Store a validated remote paper locally before presenting its derived content\;
-  \While{the summary response identifies a queued or running job}{
-    Display the preparation stage and poll the durable job after a bounded interval\;
-    Propagate cancellation without converting it to a visible failure\;
-  }
-  \eIf{the representation is ready}{Render live content\;}{Enter a retryable error state with the safe public message\;}
-\end{algorithm}
-
-Algorithm~\ref{alg:mobile-paper-resolution} gives one paper route a single active load and keeps transport, processing, cache recovery, and failure as different transitions. Cancellation matters because a response for a previous route should not become the content of a newly selected paper. The cache path is deliberately asymmetric: stored paper metadata can support a clearly labelled degraded detail view, while a paper-scoped answer or citation graph has no local replacement with the same meaning. Those operations therefore expose retryable errors when the service is unavailable.
-
-The minimum behavioral capture policy follows the same restraint. Impression, paper-open, and paper-scoped-question events are attached to stable paper identities, stored locally until acknowledgement, and uploaded in bounded batches. An impression records exposure with zero preference weight. An open or paper-scoped question supplies positive evidence whose eventual influence is moderated by profile confidence. The interface presents these values as interaction evidence rather than certain intent, and raw reading history is excluded from language-model prompts. Recommendation reasons expose the components that affected the score, and explicit topics remain editable. This makes personalization observable enough to contest without requiring the user to understand embedding vectors.
+Network state remains visible interface content.
+The client distinguishes a restored briefing from a server response and keeps the last valid snapshot readable when refresh fails.
+Processing, retryable failure, and cached recovery use different messages and actions.
+The technical state transitions and event-delivery boundary are described in Section~\ref{subsec:mobile-state-recovery}; this section focuses on how those states are presented to the reader.
 
 The visual system uses a restrained navy, teal, gold, green, and red palette consistent with the diagrams in this chapter. Operational meaning is carried by text labels, icons, selected outlines, and action placement as well as colour. Large targets, scalable text, semantic content descriptions, predictable back navigation, and a native selected-node summary define the accessibility requirements for touch and screen-reader use. The formative task study below evaluates discoverability of the principal flow. Evaluation with assistive technologies and a wider range of users would extend this evidence to accessibility in use.
 
