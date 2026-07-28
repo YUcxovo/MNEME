@@ -122,6 +122,8 @@ private class ConfigurationErrorRepository(
 
     override suspend fun loadBriefing(): BriefingUiModel = throw error
 
+    override suspend fun updateInterests(topics: List<String>): BriefingUiModel = throw error
+
     override suspend fun loadPaper(paperId: String): PaperContentResult = throw error
 
     override suspend fun refreshPaper(
