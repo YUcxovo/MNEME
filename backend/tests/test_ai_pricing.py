@@ -55,7 +55,17 @@ def test_dated_release_id_prices_by_its_base_model() -> None:
 
 
 @pytest.mark.base
+def test_hyphenated_dated_release_id_prices_by_its_base_model() -> None:
+    usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
+
+    cost = estimate_cost("gpt-4o-2024-08-06", usage)
+
+    assert cost == Decimal("12.50")
+
+
+@pytest.mark.base
 def test_dated_suffix_on_unknown_base_still_falls_back() -> None:
     usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
 
     assert estimate_cost("mystery-model-20260101", usage) == Decimal("30.00")
+    assert estimate_cost("mystery-model-2026-01-01", usage) == Decimal("30.00")

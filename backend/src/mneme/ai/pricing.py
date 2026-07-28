@@ -71,10 +71,11 @@ _FALLBACK_PRICING = ModelPricing(
     input_usd_per_mtok=Decimal("5.00"), output_usd_per_mtok=Decimal("25.00")
 )
 
-# Providers may resolve a requested model to a dated release id
-# ("claude-haiku-4-5" -> "claude-haiku-4-5-20251001"); price such ids by
-# their base entry instead of the never-undercount fallback.
-_RELEASE_SUFFIX = re.compile(r"-\d{8}$")
+# Providers may resolve a requested model to a dated release id, in either the
+# Anthropic form ("claude-haiku-4-5" -> "claude-haiku-4-5-20251001") or the
+# OpenAI form ("gpt-4o" -> "gpt-4o-2024-08-06"); price such ids by their base
+# entry instead of the never-undercount fallback.
+_RELEASE_SUFFIX = re.compile(r"-(?:\d{8}|\d{4}-\d{2}-\d{2})$")
 
 
 def estimate_cost(model: str, usage: TokenUsage) -> Decimal:
