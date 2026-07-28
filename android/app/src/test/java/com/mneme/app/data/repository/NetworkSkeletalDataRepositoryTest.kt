@@ -121,6 +121,74 @@ class NetworkSkeletalDataRepositoryTest {
         }
 
     @Test
+    fun updateInterests_preservesAuthorsCachesCanonicalTopicsAndFeedsNextBriefing() =
+        runBlocking {
+            val remote =
+                FakeRemote().apply {
+                    preferences =
+                        preferences().copy(
+                            followedAuthors = listOf("ada lovelace"),
+                        )
+                }
+            val cache = FakeCache()
+            val repository = NetworkSkeletalDataRepository(remote, cache) { REFRESHED_AT }
+
+            val briefing =
+                repository.updateInterests(
+                    listOf("  Programming Languages  ", "programming languages", "Software Engineering"),
+                )
+            val topics = briefing.interests
+
+            assertEquals(
+                listOf("Programming Languages", "Software Engineering"),
+                remote.preferenceUpdates.single().topics,
+            )
+            assertEquals(
+                listOf("ada lovelace"),
+                remote.preferenceUpdates.single().followedAuthors,
+            )
+            assertEquals(
+                listOf("Programming Languages", "Software Engineering"),
+                topics,
+            )
+            assertEquals(topics, cache.storedPreferences?.topics)
+            assertEquals(topics, briefing.interests)
+            assertEquals(
+                listOf("get_preferences", "update_preferences"),
+                remote.operations.take(2),
+            )
+            assertTrue(
+                remote.operations.indexOf("update_preferences") <
+                    remote.operations.indexOf("generate_digest"),
+            )
+        }
+
+    @Test
+    fun updateInterests_pendingDigestDoesNotChangeDeviceCache() {
+        val remote =
+            FakeRemote().apply {
+                digestResult =
+                    RemoteResource.Accepted(
+                        JobDto(
+                            id = "preparing-updated-digest",
+                            stage = "generate_digest",
+                            status = "running",
+                        ),
+                    )
+            }
+        val cache = FakeCache()
+        val repository = NetworkSkeletalDataRepository(remote, cache)
+
+        assertThrows(ContentPendingException::class.java) {
+            runBlocking { repository.updateInterests(listOf("systems")) }
+        }
+
+        assertEquals(listOf("systems"), remote.preferenceUpdates.single().topics)
+        assertEquals(null, cache.storedPreferences)
+        assertEquals(null, cache.storedDigest)
+    }
+
+    @Test
     fun paperAcceptedThenSucceeded_returnsSourceMatchedLiveSummary() =
         runBlocking {
             val remote = FakeRemote()
@@ -329,6 +397,8 @@ class NetworkSkeletalDataRepositoryTest {
         val questions = mutableListOf<QuestionDto>()
         val seedRequests = mutableListOf<SeedInitializationRequestDto>()
         val graphRequests = mutableListOf<Triple<String, Int, Int>>()
+        val preferenceUpdates = mutableListOf<PreferenceUpdateDto>()
+        val operations = mutableListOf<String>()
 
         override suspend fun getHealth(): HealthDto = HealthDto("ok")
 
@@ -342,11 +412,21 @@ class NetworkSkeletalDataRepositoryTest {
         override suspend fun getPaperSummary(paperId: String): RemoteResource<SummaryDto> = summaryResults.removeFirst()
 
         override suspend fun getPreferences(): PreferencesDto {
+            operations += "get_preferences"
             briefingFailure?.let { throw it }
             return preferences
         }
 
-        override suspend fun updatePreferences(update: PreferenceUpdateDto): PreferencesDto = preferences
+        override suspend fun updatePreferences(update: PreferenceUpdateDto): PreferencesDto {
+            operations += "update_preferences"
+            preferenceUpdates += update
+            preferences =
+                preferences.copy(
+                    topics = update.topics,
+                    followedAuthors = update.followedAuthors,
+                )
+            return preferences
+        }
 
         override suspend fun initializeFromSeed(request: SeedInitializationRequestDto): SeedInitializationDto {
             seedRequests += request
@@ -363,6 +443,7 @@ class NetworkSkeletalDataRepositoryTest {
         override suspend fun listDigests(limit: Int): DigestPageDto = DigestPageDto(emptyList())
 
         override suspend fun generateRecommendedDigest(): RemoteResource<DigestDto> {
+            operations += "generate_digest"
             briefingFailure?.let { throw it }
             return digestResult
         }
@@ -390,6 +471,7 @@ class NetworkSkeletalDataRepositoryTest {
     private class FakeCache : SkeletalCache {
         var cachedBriefing: CachedBriefing? = null
         var storedDigest: DigestDto? = null
+        var storedPreferences: PreferencesDto? = null
         var storedBriefingAt: Long? = null
         val papers = mutableMapOf<String, CachedPaper>()
         val openedPaperIds = mutableListOf<String>()
@@ -400,6 +482,7 @@ class NetworkSkeletalDataRepositoryTest {
             refreshedAtEpochMillis: Long,
         ) {
             storedDigest = digest
+            storedPreferences = preferences
             storedBriefingAt = refreshedAtEpochMillis
         }
 

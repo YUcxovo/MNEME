@@ -46,6 +46,8 @@ internal class ScenarioRepository(
 
     override suspend fun loadBriefing(): BriefingUiModel = refreshedBriefing
 
+    override suspend fun updateInterests(topics: List<String>): BriefingUiModel = refreshedBriefing.copy(interests = topics)
+
     override suspend fun loadPaper(paperId: String): PaperContentResult = paperResults.removeFirst()
 
     override suspend fun refreshPaper(
