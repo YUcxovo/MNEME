@@ -71,6 +71,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Preserved citation-backed seed candidates when a temporary arXiv batch failure requires
+  smaller metadata requests, and return an explicit retryable error instead of silently
+  completing with unrelated papers when their metadata remains unavailable.
+- Kept manual recommendation refresh useful for an older seed library by ranking processed
+  catalog papers when the configured recent-candidate window is empty.
 - Accepted numeric Semantic Scholar external identifiers while retaining string validation
   for arXiv identities, matching the provider's live response format.
 - Restored the last complete Room-backed briefing after an Android process restart instead

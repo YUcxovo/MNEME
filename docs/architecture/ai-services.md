@@ -181,8 +181,11 @@ are requeued on the next client retry. AI failures map to stable codes:
   derived from the dominant components and persisted per entry.
 - `POST /v1/digests/recommended` reuses a digest generated in the last 24
   hours or scores synchronously (no LLM call) and stores an immutable
-  `manual` digest snapshot. The contract's 202 branch stays reserved for a
-  future slow path.
+  `manual` digest snapshot. Candidate selection prefers the configured
+  recent window. If that window is empty, a manual refresh ranks the
+  processed catalog so an older seed library can still respond to explicit
+  interest changes. Scheduled weekly generation retains its recent-window
+  boundary. The contract's 202 branch stays reserved for a future slow path.
 
 ## Knowledge-graph algorithms (Milestone 3)
 

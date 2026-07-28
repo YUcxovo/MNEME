@@ -35,6 +35,7 @@ from mneme.services.recommendation import DigestBundle
 from mneme.services.seed_graph import (
     InsufficientSeedGraphCandidates,
     SeedGraphCandidateService,
+    SeedGraphMetadataUnavailable,
 )
 from mneme.services.semantic_scholar import (
     SemanticScholarClient,
@@ -109,6 +110,18 @@ async def initialize_from_seed(
                     reference_edges=graph_result.references.observed,
                     citation_edges=graph_result.citations.observed,
                 )
+            except SeedGraphMetadataUnavailable as error:
+                logger.warning(
+                    "seed_graph_metadata_unavailable",
+                    seed_arxiv_id=seed_arxiv_id,
+                    error_type=type(error.__cause__).__name__,
+                )
+                raise ApiError(
+                    status.HTTP_502_BAD_GATEWAY,
+                    "citation_metadata_unavailable",
+                    "The backend could not finish the citation-backed paper library. "
+                    "Please retry the seed.",
+                ) from error
             except (
                 ArxivClientError,
                 ArxivParseError,

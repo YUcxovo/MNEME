@@ -146,6 +146,21 @@ class DigestRepository:
         self, *, since: datetime, limit: int, before: datetime | None = None
     ) -> list[Paper]:
         """Return recent latest-revision papers with a usable summary."""
+        return await self._list_candidates(since=since, limit=limit, before=before)
+
+    async def list_ready_candidates(
+        self, *, limit: int, before: datetime | None = None
+    ) -> list[Paper]:
+        """Return latest-revision papers with a usable summary at any age."""
+        return await self._list_candidates(since=None, limit=limit, before=before)
+
+    async def _list_candidates(
+        self,
+        *,
+        since: datetime | None,
+        limit: int,
+        before: datetime | None,
+    ) -> list[Paper]:
         latest_version_id = (
             select(PaperVersion.id)
             .where(PaperVersion.paper_id == Paper.id)
@@ -157,7 +172,6 @@ class DigestRepository:
         statement = (
             select(Paper)
             .where(
-                Paper.published_at >= since,
                 Paper.processing_status.in_((ProcessingStatus.READY, ProcessingStatus.PARTIAL)),
                 exists(
                     select(PaperSummary.id).where(
@@ -170,6 +184,8 @@ class DigestRepository:
             .limit(limit)
             .options(selectinload(Paper.author_links).selectinload(PaperAuthor.author))
         )
+        if since is not None:
+            statement = statement.where(Paper.published_at >= since)
         if before is not None:
             statement = statement.where(Paper.published_at < before)
         return list((await self._session.scalars(statement)).all())
