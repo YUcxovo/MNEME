@@ -72,11 +72,12 @@ private enum class TopLevelDestination(
         }
 }
 
-private data class MnemeUiSnapshot(
+internal data class MnemeUiSnapshot(
     val home: HomeUiState,
     val paper: PaperDetailUiState,
     val qa: QaUiState,
     val graph: GraphUiState,
+    val interestEdit: InterestEditUiState,
 )
 
 private data class MnemeUiActions(
@@ -88,6 +89,7 @@ private data class MnemeUiActions(
     val requestQa: (String, String) -> Unit,
     val requestGraph: (String) -> Unit,
     val retryGraph: (String) -> Unit,
+    val saveInterests: (List<String>) -> Unit,
 )
 
 @Composable
@@ -97,10 +99,7 @@ fun MnemeApp(
     onOpenSource: ((String) -> Unit)? = null,
 ) {
     val onboardingState by viewModel.onboardingState.collectAsStateWithLifecycle()
-    val homeState by viewModel.homeState.collectAsStateWithLifecycle()
-    val paperState by viewModel.paperState.collectAsStateWithLifecycle()
-    val qaState by viewModel.qaState.collectAsStateWithLifecycle()
-    val graphState by viewModel.graphState.collectAsStateWithLifecycle()
+    val snapshot = viewModel.collectUiSnapshot()
     when (val current = onboardingState) {
         OnboardingUiState.Checking ->
             Box(
@@ -132,7 +131,7 @@ fun MnemeApp(
             )
         OnboardingUiState.Ready ->
             MnemeAppScaffold(
-                snapshot = MnemeUiSnapshot(homeState, paperState, qaState, graphState),
+                snapshot = snapshot,
                 actions =
                     MnemeUiActions(
                         refreshBriefing = viewModel::refreshBriefing,
@@ -143,6 +142,7 @@ fun MnemeApp(
                         requestQa = viewModel::askQuestion,
                         requestGraph = { paperId -> viewModel.loadGraph(paperId) },
                         retryGraph = { paperId -> viewModel.loadGraph(paperId, force = true) },
+                        saveInterests = viewModel::saveInterests,
                     ),
                 onOpenSource = onOpenSource,
                 modifier = modifier,
@@ -159,7 +159,10 @@ fun MnemeApp(
     var paperState by remember(repository) { mutableStateOf<PaperDetailUiState>(PaperDetailUiState.Idle) }
     var qaState by remember(repository) { mutableStateOf<QaUiState>(QaUiState.Idle) }
     var graphState by remember(repository) { mutableStateOf<GraphUiState>(GraphUiState.Idle) }
-    val briefing = remember(repository) { repository.briefing() }
+    var briefing by remember(repository) { mutableStateOf(repository.briefing()) }
+    var interestEditState by remember(repository) {
+        mutableStateOf<InterestEditUiState>(InterestEditUiState.Idle)
+    }
     val loadPaper = { paperId: String ->
         paperState =
             repository.paper(paperId)?.let(PaperDetailUiState::Content)
@@ -186,6 +189,7 @@ fun MnemeApp(
                 paperState,
                 qaState,
                 graphState,
+                interestEditState,
             ),
         actions =
             MnemeUiActions(
@@ -197,6 +201,10 @@ fun MnemeApp(
                 requestQa = loadQa,
                 requestGraph = loadGraph,
                 retryGraph = loadGraph,
+                saveInterests = { topics ->
+                    briefing = briefing.copy(interests = topics)
+                    interestEditState = InterestEditUiState.Saved
+                },
             ),
         onOpenSource = onOpenSource,
         modifier = modifier,
@@ -311,7 +319,9 @@ private fun MnemeNavHost(
         composable<InterestsRoute> {
             InterestsDestination(
                 homeState = snapshot.home,
+                editState = snapshot.interestEdit,
                 onRetry = actions.refreshBriefing,
+                onSave = actions.saveInterests,
             )
         }
         composable<PaperDetailRoute> { entry ->

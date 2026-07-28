@@ -14,7 +14,9 @@ import com.mneme.app.ui.qa.QaScreen
 @Composable
 internal fun InterestsDestination(
     homeState: HomeUiState,
+    editState: InterestEditUiState,
     onRetry: () -> Unit,
+    onSave: (List<String>) -> Unit,
 ) {
     when (homeState) {
         HomeUiState.Loading -> LoadingState(message = "Loading research interests...")
@@ -28,6 +30,8 @@ internal fun InterestsDestination(
             InterestsScreen(
                 interests = homeState.briefing.interests,
                 disclosure = homeState.briefing.disclosure,
+                editState = editState,
+                onSave = onSave,
             )
     }
 }
