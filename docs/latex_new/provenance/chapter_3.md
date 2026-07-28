@@ -4,6 +4,7 @@ This file is a non-rendered evidence ledger for contents/chapter_3.tex. It recor
 
 ## Source snapshot
 
+- Second-supervisor design-scope revision baseline: 9ef8fca. The revised chapter preserves the exact template hierarchy, retains design-level architecture and formative evidence, and moves algorithms, equations, parameter catalogues, and runtime implementation details to the non-rendered transfer package at `thesis_revison/TEMP_CONTENT.md`.
 - Chapter source baseline inspected for this revision: 17da6785217510728bc39ee324bdcc23e5441456.
 - Android/UI handoff and implementation snapshot inspected for the state, navigation, and graph-interaction revision: 4c1e53310f7e989ceab1ba4186faef7d4617665c.
 - Behavior-model source snapshot inspected for the revised interest-memory design: 0a21abd847a09db172edf680b12dd56b07e1e3a7.
@@ -38,14 +39,15 @@ This file is a non-rendered evidence ledger for contents/chapter_3.tex. It recor
 
 ## Figure provenance
 
-- Figures storymap, system-architecture, document-dag, behavior-loop, and ui-flow are original SVG diagrams under figures/src/ and are embedded in the chapter as high-resolution PNGs. Their layout was revised for legibility in the supervisor template; the SVG files remain the editable source of truth.
+- Figures storymap, system-architecture, document-dag, and ui-flow are original SVG diagrams under figures/src/ and remain embedded in Chapter 3 as high-resolution PNGs. Their layout was revised for legibility in the supervisor template; the SVG files remain the editable source of truth.
+- The behavior-loop PNG and editable SVG were removed from rendered Chapter 3 together with the behavior equations and pseudocode. They remain available to Chapter 4 through transfer packet `CH3-OUT-003` and must not be counted as a Chapter 3 figure.
 - Reproducible diagram-rendering script: figures/src/render_chapter3_diagrams.sh. It uses librsvg to generate the five PNGs at their declared 2400-pixel widths.
 - chapter3_storymap.png: SHA-256 024a85ce241270e22150f927aa93f54755eb98278257918d80e6a6cc23ceb7f4.
 - chapter3_system_architecture.png: SHA-256 e79e0970912adb387a025c5cdc3f85f0026adf4743560d62501283fdc7af7346.
 - chapter3_document_dag.png: SHA-256 e89f53a19b555ca66e812302c69681fd22f6e09c75d30e38740705de7da50bae.
 - chapter3_behavior_loop.png: SHA-256 79eb489856ef0b46bf77bb588c10ffbb01f79ff5518ba45361de97466b453588.
 - chapter3_ui_flow.png: SHA-256 46793959ae81202499022cf390a81fa780349f4383a8aec2ea945920bf8ed67c.
-- Figures qa-flow, api-sequence, and usability-results remain original TikZ diagrams embedded in contents/chapter_3.tex, derived from the sources above.
+- Figures api-sequence and usability-results remain original TikZ diagrams embedded in contents/chapter_3.tex, derived from the sources above. The former inline Q&A method flow was removed from rendered Chapter 3 and is represented by transfer packet `CH3-OUT-002`.
 - Prototype source: materials/Mneme_demo.html; SHA-256 491799d4812c6118d3a3eff139f640b48e38f17b4b4adad205ca85d7d07a4f5f.
 - Reproducible capture script: figures/src/capture_prototype.cjs.
 - prototype_digest.png: SHA-256 e1adb5e13c61d406f90d09a7cb578282e96c8add37e9c12937d54a7534f0d418.
@@ -62,6 +64,12 @@ This file is a non-rendered evidence ledger for contents/chapter_3.tex. It recor
 - Niu et al. (2024), RAGTruth: A Hallucination Corpus for Developing Trustworthy Retrieval-Augmented Language Models. ACL Anthology and DOI: https://aclanthology.org/2024.acl-long.585/ and https://doi.org/10.18653/v1/2024.acl-long.585
 - Ramos et al. (2024), Transparent and Scrutable Recommendations Using Natural Language User Profiles. ACL Anthology and DOI: https://aclanthology.org/2024.acl-long.753/ and https://doi.org/10.18653/v1/2024.acl-long.753
 - Amershi et al. (2019), Guidelines for Human-AI Interaction. ACM DOI and Microsoft Research publication page: https://doi.org/10.1145/3290605.3300233 and https://www.microsoft.com/en-us/research/publication/guidelines-for-human-ai-interaction/
+- Android Developers, Build an Offline-First App. Official platform guide inspected 2026-07-28: https://developer.android.com/topic/architecture/data-layer/offline-first
+- Head et al. (2021), Augmenting Scientific Papers with Just-in-Time, Position-Sensitive Definitions of Terms and Symbols. ACM DOI: https://doi.org/10.1145/3411764.3445648
+- Munzner (2009), A Nested Model for Visualization Design and Validation. IEEE DOI and PubMed record: https://doi.org/10.1109/TVCG.2009.111 and https://pubmed.ncbi.nlm.nih.gov/19834155/
+- Yi et al. (2007), Toward a Deeper Understanding of the Role of Interaction in Information Visualization. IEEE DOI and institutional record: https://doi.org/10.1109/TVCG.2007.70515 and https://www.research.ed.ac.uk/en/publications/toward-a-deeper-understanding-of-the-role-of-interaction-in-infor/
+- Brehmer and Munzner (2013), A Multi-Level Typology of Abstract Visualization Tasks. IEEE DOI and UBC project record: https://doi.org/10.1109/TVCG.2013.124 and https://www.cs.ubc.ca/labs/imager/tr/2013/MultiLevelTaskTypology/
+- Fan et al. (2019), Concurrent Think-Aloud Verbalizations and Usability Problems. ACM DOI: https://doi.org/10.1145/3325281
 
 | Bib key | Metadata fields cross-checked | Claim supported in Chapter 3 | Result |
 | --- | --- | --- | --- |
@@ -71,6 +79,12 @@ This file is a non-rendered evidence ledger for contents/chapter_3.tex. It recor
 | niu2024ragtruth | Title, eight-author order, ACL 2024, pages 10862--10878, DOI | Retrieved context can coexist with unsupported or contradictory generated claims | Verified |
 | ramos2024scrutable | Title, five-author order, ACL 2024, pages 13971--13984, DOI | Inspectable and editable user profiles motivate scrutable recommendation representations | Verified |
 | amershi2019guidelines | Title, 13-author order, CHI 2019, pages 1--13, DOI | Human-AI interfaces should set expectations and support correction of wrong inferences | Verified |
+| androidOfflineFirst2026 | Corporate author, title, official URL, access date | Offline-first design assigns local/network reconciliation to repositories and supports immediate local reads | Verified |
+| head2021scholarphi | Title, seven-author order, CHI 2021, article length, DOI | Position-sensitive reading support presents contextual information at the point of need | Verified |
+| munzner2009nested | Title, author, TVCG 15(6), pages 921--928, DOI | Visualization design separates domain/task abstraction, encoding/interaction, and algorithm layers | Verified |
+| yi2007interaction | Title, four-author order, TVCG 13(6), pages 1224--1231, DOI | Selection and exploration are distinct categories of visualization interaction | Verified |
+| brehmer2013typology | Title, two-author order, TVCG 19(12), pages 2376--2385, DOI | Task analysis distinguishes why, what, and how an interaction is performed | Verified |
+| fan2019thinkaloud | Title, four-author order, TOCHI 26(5), article 28, pages 1--35, DOI | Concurrent think-aloud is used in usability testing, and verbalization patterns vary in their relation to usability problems | Verified |
 
 ## Claim boundaries for editorial review
 
@@ -85,3 +99,5 @@ This file is a non-rendered evidence ledger for contents/chapter_3.tex. It recor
 - Followed authors are stored explicit preferences but are not described as a recommendation-scoring component.
 - Process health is not described as database, Redis, or provider health.
 - The usability findings are formative, task-specific, and not evidence of model, ranking, runtime, or redesign effectiveness.
+- The graph adjustments were not tested in a second participant study. Chapter 3 reports the observed problem and resulting design change only; Chapter 4 functional tests must not be used to claim improved usability.
+- Chapter 3 contains no algorithm, equation, pseudocode, model-weight table, backend implementation procedure, final-product screenshot, or performance result. The implementation-level material is preserved in `CH3-OUT-001` through `CH3-OUT-006` for owner-local Chapter 4 integration.

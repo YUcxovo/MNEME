@@ -12,741 +12,211 @@
 \definecolor{MnemeGray}{HTML}{EFF2F5}
 \definecolor{MnemeInk}{HTML}{252A31}
 
-The design of Mneme follows a continuous research activity. A researcher repeatedly encounters new literature, decides what deserves attention, reconstructs what has already been read, checks evidence, and revises an evolving account of personal interests. Chapter~2 establishes the customer evidence behind this activity. The present chapter translates that evidence into the application's story map, acceptance boundaries, engine architecture, interface contract, and interaction design. It also reports the formative usability study that tested whether the principal workflow was legible in an interactive prototype.
+Chapter~2 established that researchers do not experience literature work as a sequence of isolated searches. New papers enter an existing reading practice: the reader decides whether a paper deserves attention, reconstructs its argument, checks the supporting text, relates it to earlier work, and gradually revises a personal sense of relevance. Mneme was designed around this recurring activity. This chapter explains how the customer evidence was translated into a story map, feature boundaries, a mobile--service architecture, a public interface, and an initial interaction design. It then reports the formative prototype study and the changes that followed from the observed problems.
 
-Traceability is a cross-cutting design property. Paper-derived artifacts are associated with an observed source revision; generated answers are constrained to retrieved excerpts from one paper; behavioral adaptation separates positive and negative evidence and calibrates its influence by evidence confidence; and mobile states distinguish live, cached, controlled, degraded, and failed outcomes. Together, these mechanisms make the origin and evidential status of an output available to the surrounding software and, where useful, to the reader. Their behavior and output quality are examined empirically in Chapter~4. The design connects the representation, evidence, interest, and interaction challenges introduced in Chapter~1.
+Three design concerns recur throughout the chapter. First, a paper and the evidence derived from it must remain identifiable even when a later revision appears. Second, generated material and personalized ranking must reveal enough of their basis to support inspection or correction. Third, useful content should remain distinguishable from cached, incomplete, or failed content when network and processing conditions change. These concerns shape the design without prescribing a particular parser, ranking formula, queue, or model. The corresponding implementation methods and their evaluation are presented in Chapter~4.
 
 \section{Storymap and Features}
 \label{sec:storymap-features}
 
-The customer research revealed complementary needs before and after a paper is selected. Participants used abstracts, figures, venues, authors, and code availability as rapid triage signals. They also needed to recover and verify information after the initial encounter. The resulting workflow connects discovery, interpretation, evidence inspection, retention, and renewed discovery. The story map in Figure~\ref{fig:storymap} expresses this dependency as five stages in the research loop.
+The interview and affinity-map findings described in Chapter~2 point to needs both before and after a paper is selected. Participants used titles, abstracts, authors, venues, figures, and code availability to decide what to open, but they also described difficulty recovering useful papers, checking generated explanations, and maintaining awareness of related work. Treating these needs as separate screens would reproduce the fragmentation that the application is intended to reduce. The story map organizes Mneme as one reading loop with five connected stages, shown in Figure~\ref{fig:storymap}.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{chapter3_storymap.png}
-  \iffalse
-  \resizebox{\textwidth}{!}{%
-  \begin{tikzpicture}[font=\sffamily,>=Latex]
-    \draw[MnemeNavy,line width=1.2pt,-{Latex[length=3mm]}] (-7.1,0.35) -- (7.25,0.35);
-    \fill[MnemeBlue] (-6,0.35) circle (0.19);
-    \node[draw=MnemeBlue,very thick,rounded corners=5pt,fill=white,minimum width=2.25cm,minimum height=1.25cm,align=center,text=MnemeInk] at (-6,1.35) {\textbf{1. Receive}\\\textbf{new papers}};
-    \node[align=center,text width=2.35cm,text=MnemeInk] at (-6,-0.45) {Reduce manual\\source checking};
-    \node[draw=MnemeBlue,rounded corners=4pt,fill=MnemeBlue!10,minimum width=2.35cm,minimum height=0.9cm,align=center,text=MnemeInk] at (-6,-1.55) {Ingest and\\prepare};
-    \fill[MnemeTeal] (-3,0.35) circle (0.19);
-    \node[draw=MnemeTeal,very thick,rounded corners=5pt,fill=white,minimum width=2.25cm,minimum height=1.25cm,align=center,text=MnemeInk] at (-3,1.35) {\textbf{2. Learn}\\\textbf{interests}};
-    \node[align=center,text width=2.35cm,text=MnemeInk] at (-3,-0.45) {Make relevance\\personal};
-    \node[draw=MnemeTeal,rounded corners=4pt,fill=MnemeTeal!10,minimum width=2.35cm,minimum height=0.9cm,align=center,text=MnemeInk] at (-3,-1.55) {Explicit and\\behavioral memory};
-    \fill[MnemeGold] (0,0.35) circle (0.19);
-    \node[draw=MnemeGold,very thick,rounded corners=5pt,fill=white,minimum width=2.25cm,minimum height=1.25cm,align=center,text=MnemeInk] at (0,1.35) {\textbf{3. Plan what}\\\textbf{to read}};
-    \node[align=center,text width=2.35cm,text=MnemeInk] at (0,-0.45) {Convert volume\\into priority};
-    \node[draw=MnemeGold,rounded corners=4pt,fill=MnemeGold!10,minimum width=2.35cm,minimum height=0.9cm,align=center,text=MnemeInk] at (0,-1.55) {Ranked research\\briefing};
-    \fill[MnemeGreen] (3,0.35) circle (0.19);
-    \node[draw=MnemeGreen,very thick,rounded corners=5pt,fill=white,minimum width=2.25cm,minimum height=1.25cm,align=center,text=MnemeInk] at (3,1.35) {\textbf{4. Ask with}\\\textbf{sources}};
-    \node[align=center,text width=2.35cm,text=MnemeInk] at (3,-0.45) {Inspect support\\for an answer};
-    \node[draw=MnemeGreen,rounded corners=4pt,fill=MnemeGreen!10,minimum width=2.35cm,minimum height=0.9cm,align=center,text=MnemeInk] at (3,-1.55) {Summary and\\paper Q\&A};
-    \fill[MnemeRed] (6,0.35) circle (0.19);
-    \node[draw=MnemeRed,very thick,rounded corners=5pt,fill=white,minimum width=2.25cm,minimum height=1.25cm,align=center,text=MnemeInk] at (6,1.35) {\textbf{5. Explore}\\\textbf{connections}};
-    \node[align=center,text width=2.35cm,text=MnemeInk] at (6,-0.45) {Recover related\\work in context};
-    \node[draw=MnemeRed,rounded corners=4pt,fill=MnemeRed!10,minimum width=2.35cm,minimum height=0.9cm,align=center,text=MnemeInk] at (6,-1.55) {Bounded citation\\graph};
-  \end{tikzpicture}}
-  \fi
-  \caption{Five-stage story map connecting the researcher's goal at each stage to the system capability that supports it. Paper preparation is the enabling capability beneath four user-visible experiences: personalized briefings, structured paper understanding, evidence-grounded question answering, and citation-graph exploration.}
+  \caption{Five-stage story map for the recurring research-reading activity. Paper preparation enables four user-facing experiences: interest-aware briefing, structured understanding, evidence-grounded question answering, and citation-graph exploration.}
   \label{fig:storymap}
 \end{figure}
 
-The first stage, receiving new papers, is deliberately an engine-facing stage because every later interaction depends on the quality of the source representation. Mneme observes metadata from scholarly providers, associates each observation with a logical work and a specific revision, acquires the corresponding PDF where permitted, and produces a structured or explicitly degraded representation. A paper that cannot be parsed confidently remains available through its metadata and abstract. This fallback preserves continuity and prevents an abstract-only representation from being mistaken for full-text evidence.
+The first stage, receiving new papers, is mainly invisible to the reader but determines what every later screen can claim. Mneme observes a scholarly record, associates it with a stable paper identity and a specific source revision, and prepares the available text. The design does not require every paper to yield a complete representation. When full text cannot be prepared reliably, metadata and an abstract can still support discovery, provided that the reduced evidence level remains visible. This choice favors continuity over silent substitution: a partial paper remains useful, but it is not presented as if all sections had been processed.
 
-Learning interests combines direct instruction with observed interaction. A first-use flow asks for research topics and a seed paper, which gives the system a useful starting point without requiring a long preference form. The mobile client records paper impressions as exposure evidence and records opens and paper-scoped questions as supported positive observations; each event can be uploaded with duplicate-safe identity. The shared event contract further assigns semantics to explicit save, share, and exposed-skip actions without interpreting the absence of an action as preference evidence. The design keeps explicit topics and the contrastive behavioral profile distinguishable because a chosen topic and an inferred signal have different epistemic meanings. The user interface can consequently offer recommendation reasons and correction controls without presenting behavioral inference as certain intent.
+The second stage establishes a starting account of the reader's interests. Onboarding asks for a small set of topics and a seed paper, limiting initial effort while giving the first briefing a concrete basis. Later interaction can supply additional evidence, but inferred behavior remains distinct from topics that the reader entered deliberately. The distinction matters because a paper open, a question, and a skipped item can have several explanations. Mneme treats adaptation as revisable assistance rather than a declaration of the user's intent. The interest view provides a direct correction path, and recommendation reasons expose the most relevant basis for an item.
 
-Planning what to read turns the candidate stream into a research briefing. The default product rhythm is weekly, while an explicit refresh can request an on-demand recommendation snapshot. Each entry contains the paper identity, a concise description, a normalized relevance score, and a reason derived from the scoring components. The briefing is an immutable snapshot: later preference changes affect subsequent briefings and leave the rationale for an earlier recommendation unchanged. This property supports reproducibility and also gives the mobile cache a stable object to restore.
+The third stage turns a large candidate stream into a bounded research briefing. A briefing is not designed as an endless feed. It presents a compact ranked set with paper identity, a short account, a relevance indication, and a reason that can be examined during triage. The default weekly rhythm supports periodic orientation, while an explicit refresh accommodates an immediate need. Each briefing is treated as a stable snapshot so that a restored mobile view still represents the same recommendation decision; later preference changes affect a later briefing instead of rewriting an earlier one.
 
-The source-grounded reading stage supports two complementary tasks: structured summarization and paper-specific question answering. The summary separates a concise account of the paper from its claims, method, and limitations. Question answering addresses a narrower information need by retrieving excerpts from one observed revision and asking a language model to answer from that evidence. The interface presents source labels with an answer and uses an insufficient-evidence state when the retrieved excerpts cannot support a response. Retrieval-augmented generation (RAG) generally combines parametric generation with an explicit non-parametric memory~\cite{lewis2020rag}; Mneme narrows that memory to the selected paper revision so that the evidence set remains inspectable.
+The fourth stage supports close reading through structured paper understanding and paper-scoped question answering. A structured view separates an overview from claims, method, and limitations so that the reader can move quickly between different reading purposes. Question answering narrows retrieval to the selected paper and associates the response with the supplied excerpts. Retrieval-augmented generation combines generation with an external evidence store~\cite{lewis2020rag}; in Mneme, restricting that store to the selected source revision makes the evidence set small enough to inspect. When the available excerpts do not support an answer, the normal result is an explicit insufficient-evidence state rather than a fluent replacement.
 
-Exploring connections uses a bounded directed citation graph. The central paper, locally known citing papers, and locally known referenced papers form a neighborhood that can be traversed without loading an unbounded scholarly network onto a phone. The response represents the locally resolved neighborhood and records whether algorithmic enrichment or a deterministic citation-only fallback produced its ordering. Unresolved external identities remain available for later resolution. Selection leads to a native preview and a persistent action that returns the reader to a paper detail screen, so graph exploration remains part of the reading task.
+The fifth stage places one paper in a bounded citation neighborhood. The graph is intended to answer a practical question---which related paper should the reader inspect next?---rather than to reproduce a complete scholarly network on a phone. A selected node reveals its relationship to the central paper and provides a direct route to the ordinary paper view. Limiting the neighborhood keeps the display legible and allows graph exploration to rejoin the reading loop instead of becoming a disconnected visualization.
 
-The five stages form a closed loop. Receiving and preparation make evidence available; explicit and observed interests make ranking possible; briefing interactions identify the next paper; source-grounded reading creates further observations; and graph traversal discovers additional works that may re-enter the preparation pipeline. The architecture must therefore preserve identity and failure information across repeated cycles. That requirement explains why the following acceptance criteria include provenance, idempotency, boundedness, and degraded operation in addition to visible screen outcomes.
+These stages form a cycle rather than a funnel. Preparation makes a paper readable; briefing and search determine which paper receives attention; reading and question asking create new evidence about the reader's interests; graph exploration reveals another candidate; and the next briefing reflects the accumulated, bounded evidence. Stable paper identity connects the cycle. Visible evidence and origin states ensure that a temporary failure or a partial representation changes what the interface says, not which paper the reader believes is being examined.
+
+The core feature set follows directly from this cycle. Mneme requires paper preparation, interest-aware briefings, structured paper views, source-linked questions, and bounded citation exploration because removing any one of them breaks a transition in the intended activity. Search, preference editing, local restoration, and explicit processing states support those transitions. More speculative modes, such as concept and author graphs, remain useful design explorations but are not necessary to establish the principal loop.
 
 \section{Acceptance Criteria for Features}
 \label{sec:acceptance-criteria}
 
-Acceptance criteria translate the story map into observable contracts. They are stated at feature boundaries because correct rendering alone cannot verify the underlying paper revision, evidence set, or retry semantics. The Given--When--Then form in Table~\ref{tab:acceptance-criteria} fixes the precondition, user or system action, and externally observable consequence. These criteria provide a consistent basis for subsequent implementation and testing.
+The design criteria in Table~\ref{tab:acceptance-criteria} describe outcomes that a reader can observe at the boundary of each core feature. They do not duplicate the implementation tests in Chapter~4. In particular, they avoid prescribing a ranking formula, parsing threshold, retry count, or model provider. Those choices may change while the reader-facing obligation remains stable.
 
-\small
-\begin{longtable}{@{}p{0.16\textwidth}p{0.24\textwidth}p{0.22\textwidth}p{0.29\textwidth}@{}}
-  \caption{Feature-level acceptance criteria derived from the story map and reconciled with the system interface.}\label{tab:acceptance-criteria}\\
-  \toprule
-  \MnemeTableHeader{Feature boundary} & \MnemeTableHeader{Given} & \MnemeTableHeader{When} & \MnemeTableHeader{Then} \\
-  \midrule
-  \endfirsthead
-  \multicolumn{4}{c}{\tablename\ \thetable\ continued}\\
-  \toprule
-  \MnemeTableHeader{Feature boundary} & \MnemeTableHeader{Given} & \MnemeTableHeader{When} & \MnemeTableHeader{Then} \\
-  \midrule
-  \endhead
-  \midrule
-  \multicolumn{4}{r}{Continued on next page}\\
-  \endfoot
-  \bottomrule
-  \endlastfoot
-  Paper ingestion and preparation & At least one scholarly category or seed reference is valid & Metadata synchronization observes a paper & The catalogue records its stable work identity, title, authors, abstract, categories, publication time, and canonical source links. \\
-  \MnemeRowRule
-  Paper ingestion and preparation & A known logical paper is observed at a previously unseen provider revision & The observation is persisted & A new immutable revision record is created; existing revision-derived artifacts are neither overwritten nor silently reused. \\
-  \MnemeRowRule
-  Paper ingestion and preparation & A revision has an accessible PDF & Document preparation runs & The bounded download is signature-checked and atomically stored, and the parser records its provenance and quality tier. \\
-  \MnemeRowRule
-  Paper ingestion and preparation & Full-text extraction is not sufficiently reliable & Downstream preparation continues & The system exposes an abstract-only representation and a partial quality state, with no unsupported section-level evidence. \\
-  \MnemeRowRule
-  Personalized research briefing & A user supplies topics or a seed paper & The preference profile is initialized & The stored explicit preference can be inspected and used as an input to candidate ranking. \\
-  \MnemeRowRule
-  Personalized research briefing & A briefing and an explicit topic profile already exist & The user adds, edits, or deletes a topic and saves the profile & The server replaces the explicit topics, the next briefing is ranked from the updated profile, and the earlier briefing remains an unchanged historical snapshot. \\
-  \MnemeRowRule
-  Personalized research briefing & Explicit interests, behavioral evidence, or both are available with recent candidate papers & A briefing is requested or scheduled & The response is a bounded ranked snapshot with a paper, relevance score, and deterministic recommendation reason for each entry. \\
-  \MnemeRowRule
-  Personalized research briefing & The client repeats a previously acknowledged behavioral event & The event batch is uploaded again & The event is counted as a duplicate and does not update the derived preference twice. \\
-  \MnemeRowRule
-  Personalized research briefing & A skip has no impression or open for the same paper during the preceding seven days & The behavioral profile is recomputed & The skip is retained in event history but contributes no negative preference evidence. \\
-  \MnemeRowRule
-  Personalized research briefing & Repeated eligible interactions concern the same paper & The behavioral profile is recomputed & Per-paper support approaches a bounded value, preventing one paper from dominating through event frequency alone. \\
-  \MnemeRowRule
-  Personalized research briefing & Behavioral evidence is sparse or compatible embeddings cover only part of the eligible papers & Candidates are ranked & Profile confidence attenuates the behavioral component, and zero confidence reduces ranking to the available cold-start signals. \\
-  \MnemeRowRule
-  Personalized research briefing & One scoring signal is unavailable & Candidates are ranked & The available components are renormalized, and the reason refers only to components that participated in the score. \\
-  \MnemeRowRule
-  Structured paper understanding & A paper has a stored summary for its selected revision & The paper detail is opened & The user receives a concise account of the paper together with method, claims, limitations, and the recorded source-quality state. \\
-  \MnemeRowRule
-  Structured paper understanding & A summary is requested before its artifact is ready & The API accepts processing & The client receives a durable job identity, can poll a safe public state, and never interprets queue acceptance as a completed summary. \\
-  \MnemeRowRule
-  Evidence-grounded paper Q\&A & Embedded chunks exist for the selected paper revision & The user asks a paper-specific question & Retrieval is restricted to that paper and revision; any returned citation marker identifies an excerpt supplied to the generator. \\
-  \MnemeRowRule
-  Evidence-grounded paper Q\&A & No retrieved candidate satisfies the evidence threshold & An answer is requested & The interface displays a stable insufficient-evidence response without presenting an unsupported answer. \\
-  \MnemeRowRule
-  Evidence-grounded paper Q\&A & A generated marker refers outside the supplied evidence, or the cited excerpt has inadequate local lexical support & The post-generation check runs & The unsupported marker is not treated as source-matched, and the response status communicates the bounded outcome. \\
-  \MnemeRowRule
-  Citation-graph exploration & Resolved local citation relations exist for a selected paper & A graph neighborhood is requested & The server returns a directed paper graph within the requested depth and node limits, with an explicit graph version and algorithm status. \\
-  \MnemeRowRule
-  Citation-graph exploration & The enrichment algorithm fails or citation coverage is incomplete & The graph is assembled & A deterministic citation-only neighborhood remains available, while the response avoids implying that absent external neighbors do not exist. \\
-  \MnemeRowRule
-  Citation-graph exploration & A node in the current mobile graph is selected & The reader inspects the selection and opens the paper & The bridge accepts only an identity present in that graph, the native preview exposes its relationship context, and returning from paper detail restores the selected graph node. \\
-  \MnemeRowRule
-  Cross-cutting mobile state & A previously live briefing is stored locally and a refresh fails & The application is reopened & The cached origin is disclosed and preserved; a controlled fixture is not silently substituted for live content. \\
-\end{longtable}
-\normalsize
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{User-facing acceptance criteria for the core research loop.}
+  \label{tab:acceptance-criteria}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.20\textwidth}>{\raggedright\arraybackslash}p{0.32\textwidth}>{\raggedright\arraybackslash}p{0.39\textwidth}@{}}
+    \toprule
+    \MnemeTableHeader{Feature} & \MnemeTableHeader{User situation and action} & \MnemeTableHeader{Acceptable visible outcome} \\
+    \midrule
+    Paper preparation & A reader opens a known paper whose source quality varies. & The paper identity remains stable, and the view distinguishes complete, partial, processing, and unavailable representations. \\
+    \MnemeRowRule
+    Research briefing & A reader supplies interests or a seed and requests a briefing. & A bounded set of papers is ranked with concise reasons; a later preference edit affects a later briefing without altering the saved snapshot. \\
+    \MnemeRowRule
+    Structured reading & A prepared paper is opened. & Overview, claims, method, limitations, source identity, and evidence quality are presented as distinguishable parts of one paper view. \\
+    \MnemeRowRule
+    Paper question answering & A reader asks a question about the selected paper. & The answer remains scoped to that paper, exposes its cited excerpts, and uses an insufficient-evidence outcome when support is inadequate. \\
+    \MnemeRowRule
+    Citation exploration & A reader selects a node in the paper's graph neighborhood. & Selection is visually persistent, relationship context is stated, and the selected paper can be opened without losing the graph context. \\
+    \MnemeRowRule
+    Continuity and correction & A refresh fails or a recommendation appears irrelevant. & The interface identifies cached or failed content, preserves the last valid readable state where appropriate, and offers a direct route to retry or edit explicit interests. \\
+    \bottomrule
+  \end{tabular}
+  \normalsize
+\end{table}
 
-Several criteria specify how the system presents partial but useful outcomes. An abstract-only representation, an insufficient-evidence answer, a fallback graph, and a cached briefing remain useful when their origin is visible. This principle gives the API and client a consistent vocabulary: quality, source match, algorithm status, processing state, and content origin are part of the feature contract. Acceptance therefore depends on the meaning of the displayed state as well as the presence of content.
+Several criteria deliberately admit a limited outcome. A partial paper, an evidence-based refusal, a bounded graph, and a cached briefing can all be correct responses. Their acceptability depends on whether the limitation is disclosed and whether the next useful action remains clear. This principle avoids a common ambiguity in artificial intelligence (AI)-assisted interfaces, where the presence of generated content may be mistaken for evidence that the underlying operation succeeded completely.
 
-The criteria also distinguish repeatable software behavior from empirical output quality. A duplicate-safe event or an idempotent document job can be accepted because its state transition is deterministic, whereas the relevance of a recommended paper and the usefulness of a generated answer require empirical evaluation. An evidence-based refusal is the correct Q\&A result when retrieved support is inadequate, and an abstract-only paper is the correct ingestion result when the source cannot support full-text processing. This distinction allows Chapter~4 to examine software correctness and empirical quality with measures suited to each.
+The criteria also separate observable software behavior from empirical quality. Repeated delivery, stable navigation, and disclosed content origin can be assessed against deterministic expectations. Recommendation usefulness, answer quality, and processing performance require different measurements. Chapter~4 turns these feature boundaries into test tasks with expected and actual results, while keeping performance and model behavior as separate evaluation questions.
 
 \section{Engine Architecture}
 \label{sec:engine-architecture}
 
 \subsection{System Boundaries and End-to-End Flow}
 
-Mneme separates the latency-sensitive mobile experience from document processing and model inference. Figure~\ref{fig:system-architecture} shows four operational regions. The Android application owns presentation, navigation, explicitly labelled local state, and durable capture of supported interactions. The FastAPI service owns authentication, validation, public state transitions, and orchestration. PostgreSQL with pgvector owns durable domain and vector state, while Redis and ARQ carry replaceable execution attempts and cache entries. Scholarly sources and model providers remain external dependencies whose responses are validated before they affect durable state.
+Mneme separates the latency-sensitive mobile experience from document preparation and model inference. Figure~\ref{fig:system-architecture} shows four regions. The Android application owns navigation, presentation, local continuity, and capture of supported interactions. The application service owns the public contract and coordinates domain operations. Durable paper, user, graph, and vector state resides in PostgreSQL with pgvector, while replaceable execution and cache state is handled separately. Scholarly sources and model providers remain external dependencies whose output must cross a validation boundary before it becomes part of the study system.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.98\textwidth]{chapter3_system_architecture.png}
-  \iffalse
-  \resizebox{0.98\textwidth}{!}{%
-  \begin{tikzpicture}[font=\sffamily\small,>=Latex]
-    \draw[rounded corners=8pt,fill=MnemeBlue!5,draw=MnemeBlue!55,line width=0.8pt] (-7.2,2.0) rectangle (7.2,3.8);
-    \node[anchor=west,font=\bfseries,text=MnemeBlue] at (-6.9,3.5) {Android client};
-    \node[draw=MnemeBlue,fill=white,rounded corners=5pt,minimum width=3.25cm,minimum height=0.75cm,align=center] (compose) at (-4.5,2.75) {Compose UI\\navigation and explicit states};
-    \node[draw=MnemeBlue,fill=white,rounded corners=5pt,minimum width=3.25cm,minimum height=0.75cm,align=center] (local) at (0,2.75) {Room and DataStore\\cache and event queue};
-    \node[draw=MnemeBlue,fill=white,rounded corners=5pt,minimum width=3.25cm,minimum height=0.75cm,align=center] (background) at (4.5,2.75) {WorkManager sync\\local graph WebView};
-
-    \draw[rounded corners=8pt,fill=MnemeTeal!5,draw=MnemeTeal!55,line width=0.8pt] (-7.2,-0.05) rectangle (7.2,1.75);
-    \node[anchor=west,font=\bfseries,text=MnemeTeal] at (-6.9,1.45) {Application service};
-    \node[draw=MnemeTeal,fill=white,rounded corners=5pt,minimum width=3.25cm,minimum height=0.75cm,align=center] (api) at (-4.5,0.7) {FastAPI /v1 contract\\auth, validation, error envelope};
-    \node[draw=MnemeTeal,fill=white,rounded corners=5pt,minimum width=3.25cm,minimum height=0.75cm,align=center] (domains) at (0,0.7) {Paper, preference, digest,\\Q\&A, event, and graph services};
-    \node[draw=MnemeTeal,fill=white,rounded corners=5pt,minimum width=3.25cm,minimum height=0.75cm,align=center] (workers) at (4.5,0.7) {Revision-scoped workers\\schedulers and recovery};
-
-    \draw[rounded corners=8pt,fill=MnemeGold!7,draw=MnemeGold!65,line width=0.8pt] (-7.2,-2.1) rectangle (7.2,-0.3);
-    \node[anchor=west,font=\bfseries,text=MnemeGold!80!black] at (-6.9,-0.6) {Durable and execution state};
-    \node[draw=MnemeGold,fill=white,rounded corners=5pt,minimum width=2.75cm,minimum height=0.75cm,align=center,font=\scriptsize] (postgres) at (-5.1,-1.35) {PostgreSQL\\domain truth};
-    \node[draw=MnemeGold,fill=white,rounded corners=5pt,minimum width=2.75cm,minimum height=0.75cm,align=center,font=\scriptsize] (vector) at (-1.7,-1.35) {pgvector\\revision-scoped chunks};
-    \node[draw=MnemeGold,fill=white,rounded corners=5pt,minimum width=2.75cm,minimum height=0.75cm,align=center,font=\scriptsize] (redis) at (1.7,-1.35) {Redis and ARQ\\attempts and cache};
-    \node[draw=MnemeGold,fill=white,rounded corners=5pt,minimum width=2.75cm,minimum height=0.75cm,align=center,font=\scriptsize] (files) at (5.1,-1.35) {Atomic file artifacts\\PDF and parsed sidecar};
-
-    \draw[rounded corners=8pt,fill=MnemeRed!4,draw=MnemeRed!50,line width=0.8pt] (-7.2,-4.15) rectangle (7.2,-2.35);
-    \node[anchor=west,font=\bfseries,text=MnemeRed] at (-6.9,-2.65) {Validated external inputs};
-    \node[draw=MnemeRed,fill=white,rounded corners=5pt,minimum width=3.25cm,minimum height=0.75cm,align=center] (arxiv) at (-4.5,-3.4) {arXiv\\metadata and PDF};
-    \node[draw=MnemeRed,fill=white,rounded corners=5pt,minimum width=3.25cm,minimum height=0.75cm,align=center] (s2) at (0,-3.4) {Semantic Scholar\\citation observations};
-    \node[draw=MnemeRed,fill=white,rounded corners=5pt,minimum width=3.25cm,minimum height=0.75cm,align=center] (models) at (4.5,-3.4) {Language and\\embedding providers};
-
-    \draw[MnemeNavy,line width=0.9pt,<->] (compose) -- node[right,font=\scriptsize,fill=white,inner sep=1pt]{REST/JSON} (api);
-    \draw[MnemeNavy,line width=0.9pt,<->] (local) -- (domains);
-    \draw[MnemeNavy,line width=0.9pt,<->] (background) -- (workers);
-    \draw[MnemeNavy,line width=0.9pt,<->] (api.south) -- (postgres.north);
-    \draw[MnemeNavy,line width=0.9pt,<->] (domains.south) -- (vector.north);
-    \draw[MnemeNavy,dashed,line width=0.9pt,<->] (workers.south west) -- (redis.north east);
-    \draw[MnemeNavy,line width=0.9pt,<->] (workers.south east) -- (files.north west);
-    \draw[MnemeNavy,line width=0.9pt,<->] (arxiv.west) -- (-7.45,-3.4) -- (-7.45,0.7) -- (api.west);
-    \draw[MnemeNavy,line width=0.9pt,<->] (s2.north) -- (domains.south);
-    \draw[MnemeNavy,line width=0.9pt,<->] (models.east) -- (7.45,-3.4) -- (7.45,0.7) -- (workers.east);
-  \end{tikzpicture}}
-  \fi
-  \caption{Mneme system architecture and trust boundaries. Solid arrows carry domain data or public requests; the dashed arrow marks replaceable queue execution. PostgreSQL remains authoritative for durable state when queue delivery and database state differ.}
+  \caption{High-level architecture and trust boundaries. The mobile client communicates through a versioned service interface; durable records remain separate from replaceable execution state and validated external inputs.}
   \label{fig:system-architecture}
 \end{figure}
 
-The four regions share the conceptual domain model shown in Figure~\ref{fig:conceptual-domain-model}. Durable identities organize the model across service boundaries. A paper remains the stable object used by navigation, events, briefings, and graph edges. A revision is the evidence-bearing object used by parsing, summaries, chunks, embeddings, and pipeline jobs. User state and reader-facing outputs refer back to these identities without copying the complete scholarly record into each feature.
+This division follows the different lifetimes of the work. Opening a cached briefing or returning to a selected graph node should remain responsive on the phone, whereas acquiring a PDF, extracting text, creating model-derived artifacts, or rebuilding a profile may outlive one screen or request. The client owns interaction continuity, while the service owns operations whose completion must remain meaningful after a process or connection changes. The API communicates that distinction through ordinary resources and explicit processing states.
 
-\begin{figure}[htbp]
-  \centering
-  \resizebox{0.98\textwidth}{!}{%
-  \begin{tikzpicture}[font=\sffamily\small,>=Latex]
-    \draw[rounded corners=8pt,draw=MnemeBlue!35,fill=MnemeBlue!2,line width=0.7pt] (-7.0,1.7) rectangle (7.0,5.65);
-    \draw[rounded corners=8pt,draw=MnemeGold!45,fill=MnemeGold!3,line width=0.7pt] (-7.0,-2.15) rectangle (7.0,1.35);
-    \node[anchor=west,font=\bfseries,text=MnemeNavy] at (-6.75,5.35) {Scholarly records and derived evidence};
-    \node[anchor=west,font=\bfseries,text=MnemeNavy] at (-6.75,1.05) {Reader state and outputs};
+A paper has two related identities in this design. The logical paper is the stable object used in routes, briefings, events, and graph edges. An observed revision identifies the source content from which a summary, evidence excerpt, or embedding was derived. Keeping these identities separate prevents a later source update from silently changing the basis of an earlier output. User-facing objects can still refer to the familiar paper, while evidence-bearing objects retain the revision needed for interpretation.
 
-    \node[draw=MnemeBlue,fill=MnemeBlue!9,rounded corners=5pt,minimum width=2.55cm,minimum height=0.85cm,align=center,font=\bfseries] (paper) at (-5.65,4.05) {Logical paper};
-    \node[draw=MnemeBlue,fill=white,rounded corners=5pt,minimum width=2.55cm,minimum height=0.85cm,align=center] (cited) at (-5.65,2.55) {Cited paper};
-    \node[draw=MnemeBlue,fill=white,rounded corners=5pt,minimum width=2.55cm,minimum height=0.85cm,align=center] (revision) at (-2.15,4.05) {Observed revision};
-    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,minimum width=2.45cm,minimum height=0.85cm,align=center] (chunk) at (1.15,4.65) {Evidence chunk\\and embedding};
-    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,minimum width=2.45cm,minimum height=0.85cm,align=center] (summary) at (1.15,3.35) {Structured\\summary};
-    \node[draw=MnemeRed,fill=MnemeRed!7,rounded corners=5pt,minimum width=2.45cm,minimum height=0.85cm,align=center] (job) at (4.75,2.55) {Durable\\pipeline job};
+The Android side follows a unidirectional flow from a screen action through a ViewModel and repository to a typed presentation state. Network and local records are reconciled before rendering, so a transport response is not itself treated as interface state. This choice supports the offline-first principle that local data should remain immediately readable for features that promise offline access~\cite{androidOfflineFirst2026}. It also lets live, cached, processing, empty, and failed outcomes share the same screen structure without becoming indistinguishable.
 
-    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=5pt,minimum width=2.55cm,minimum height=0.85cm,align=center,font=\bfseries] (user) at (-5.65,-0.65) {User identity};
-    \node[draw=MnemeGold,fill=white,rounded corners=5pt,minimum width=2.55cm,minimum height=0.85cm,align=center] (preference) at (-2.15,0.05) {Explicit and\\behavioral preference};
-    \node[draw=MnemeGold,fill=white,rounded corners=5pt,minimum width=2.55cm,minimum height=0.85cm,align=center] (event) at (-2.15,-1.35) {Event UUID and\\paper reference};
-
-    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,minimum width=2.45cm,minimum height=0.85cm,align=center] (digest) at (1.55,0.05) {Immutable briefing\\and ranked papers};
-    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,minimum width=2.45cm,minimum height=0.85cm,align=center] (conversation) at (1.15,-1.35) {Paper-scoped\\Q\&A conversation};
-    \node[draw=MnemeNavy,fill=MnemeNavy!7,rounded corners=5pt,minimum width=2.45cm,minimum height=0.85cm,align=center] (message) at (4.75,-1.35) {Ordered messages\\and source records};
-
-    \draw[MnemeNavy,line width=0.9pt,->] (paper) -- (revision);
-    \draw[MnemeRed!75,line width=0.9pt,->] (paper) -- (cited);
-    \draw[MnemeNavy,line width=0.9pt,->] (revision) -- (chunk);
-    \draw[MnemeNavy,line width=0.9pt,->] (revision) -- (summary);
-    \draw[MnemeNavy,line width=0.9pt,->] (revision.south) |- (job.west);
-    \draw[MnemeNavy,line width=0.9pt,->] (user) -- (preference);
-    \draw[MnemeNavy,line width=0.9pt,->] (user) -- (event);
-    \draw[MnemeNavy,line width=0.9pt,->] (preference) -- (digest);
-    \draw[MnemeNavy,line width=0.9pt,->] (event) -- (conversation);
-    \draw[MnemeNavy,line width=0.9pt,->] (conversation) -- (message);
-    \draw[MnemeNavy,dashed,line width=0.85pt] (message.east) -- (6.45,-1.35);
-    \draw[MnemeNavy,dashed,line width=0.85pt] (6.45,-1.35) -- (6.45,4.65);
-    \draw[MnemeNavy,dashed,line width=0.85pt,->] (6.45,4.65) -- (chunk.east);
-  \end{tikzpicture}}
-  \caption{Conceptual identity model for provenance and replay. The upper band connects a logical paper to its observed revisions, derived evidence, citation targets, and durable processing jobs. The lower band connects user state to briefings, behavioral events, and paper-scoped conversations; the dashed link records the evidence source retained with a message.}
-  \label{fig:conceptual-domain-model}
-\end{figure}
-
-The model contains two kinds of change. Paper metadata and user preference are evolving state: a later observation can refresh the current catalogue view, and a later explicit edit or event replay can produce a new preference state. Revisions, generated artifacts, briefing snapshots, accepted events, and conversation messages are historical records. A new revision or briefing creates a new object and preserves the basis of earlier output. This separation permits the system to answer both a current-state question, such as ``what should be read next?'', and a provenance question, such as ``which paper text supported this earlier answer?''.
-
-Historical records retain stable references and the fields needed to interpret their original state. A briefing entry stores its rank, score, reason, paper identity, and the preference and generator versions needed to interpret the snapshot. It obtains current bibliographic metadata from the catalogue. A Q\&A conversation is scoped to one paper, and its assistant messages retain source records for the revision used at generation time. A behavioral event carries a paper identity when the event semantics require one. This design keeps mutable paper and profile objects out of historical records and enables referential validation at each service boundary.
-
-The Android region follows a unidirectional state flow. A screen emits an action to its ViewModel, the ViewModel obtains a domain result through a repository, and the result becomes a typed UI state observed by Compose. Retrofit and OkHttp map the versioned API into transport objects, while repositories reconcile remote responses with Room snapshots before presentation. Android's offline-first guidance similarly assigns coordination of local and network sources to the data layer and recommends an immediately readable local source for supported offline behavior~\cite{androidOfflineFirst2026}. Mneme applies this pattern to briefing and paper snapshots. This boundary prevents a network response from becoming interface state directly and allows controlled and live data sources to exercise the same ViewModel and rendering path. Loading, content, processing, cached, and error conditions are represented explicitly in the state model.
-
-Stable paper identifiers connect the briefing, paper detail, paper-scoped Q\&A, and citation graph without serializing a complete paper object into a navigation route; source records retain the same paper identity when the reader inspects supporting material. DataStore retains small preference and mode values, while Room retains briefing and paper metadata together with a duplicate-safe event queue. WorkManager is intended for persistent Android work that must survive loss of the visible screen or process and provides retry policies for failed work~\cite{androidWorkManager2026}. Mneme uses it for constrained event upload and scheduled briefing refresh, while screen-bound reads remain cancellable coroutines. A locally packaged WebView asset renders the graph, and node identity is mirrored through a restricted JavaScript bridge into a native Compose preview. The graph selection is saved against its centre-paper route, so returning from an opened paper restores the prior graph context. This arrangement preserves the interaction benefits of a force-directed graph while keeping navigation and accessibility-relevant selection state in the native layer.
-
-The server region is intentionally divided between synchronous request handling and asynchronously recoverable work. Catalogue reads, preference updates, event ingestion, recommendation scoring, and bounded graph assembly operate through domain services and repositories. PDF acquisition, parsing, summarization, chunking, embedding, and scheduled briefing assembly use durable jobs and ARQ workers because their latency and external dependencies do not fit a single mobile request. The API can therefore return either a complete representation or an accepted job identity without holding a connection open during document preparation.
-
-PostgreSQL is the source of truth because papers, revisions, citations, preferences, generated artifacts, and job histories must survive queue eviction and process restart. pgvector resides in the same database so that vector retrieval can be filtered by the relational paper and revision identities in one query. Redis provides low-latency completion caching, budget counters, and ARQ delivery; durable completion is determined from the database. Local file storage holds PDF and parsed sidecar artifacts under UUID-derived paper and revision directories. This choice is sufficient for the study deployment and can be replaced by object storage if later use requires a different storage scale.
-
-The external region is an untrusted input boundary. arXiv metadata and PDF URLs must agree on a logical identifier and explicit revision. Semantic Scholar observations can refer to papers outside the local catalogue, so unresolved endpoint identities are retained without being exposed as fabricated local nodes. Model responses are parsed, associated with provider and prompt metadata, and checked against output contracts before persistence. These boundaries allow a provider failure to become a controlled error or degraded artifact without corrupting the logical paper history.
-
-The principal architectural alternative was a phone-centred design in which document extraction and language-model inference execute on the device. That approach would reduce server dependence but would impose model, memory, battery, and background-execution constraints unrelated to the main research questions. Mneme assigns interaction continuity to the mobile client and places replaceable computational services behind a stable API. A single synchronous document-processing request was also considered. Partial failure in that design would restart the entire pipeline and obscure which revision and stage produced an artifact. The staged architecture trades additional state for recovery, provenance, and bounded retries.
+Two broader alternatives were considered. A phone-centred architecture would reduce dependence on a service, but document extraction and model inference would compete with mobile memory, battery, and background-execution limits. A single synchronous service call would be simpler to describe, but a connection timeout would then obscure whether work had been accepted, partly completed, or lost. The selected split adds explicit state, but that state supports recovery, evidence lineage, and a clearer mobile experience.
 
 \subsection{Cross-Layer Design Invariants}
 
-The architecture is governed by invariants that remain meaningful when a particular database, queue, model provider, or user-interface component is replaced. Table~\ref{tab:design-invariants} states the principal invariant, the failure it prevents, and the mechanism used to preserve it. The first two concern research evidence, the third and fourth concern distributed execution, and the final two concern what the reader can infer from the mobile interface.
+The architecture is organized around six design invariants. Stable identity ensures that navigation, events, graph edges, and generated artifacts continue to refer to the intended paper. Revision lineage keeps derived evidence attached to the source content that produced it. Durable acceptance prevents a replaceable worker or cache from becoming the only record of work. Duplicate safety lets a client repeat an uncertain submission without multiplying its effect. Bounded work constrains a document, graph, batch, or generated response before it can exhaust shared resources. Visible degradation ensures that partial or restored content is not presented as a complete live result.
 
-\begin{table}[htbp]
-  \centering
-  \small
-  \caption{Cross-layer design invariants and their operational mechanisms.}
-  \label{tab:design-invariants}
-  \begin{tabular}{@{}p{0.20\textwidth}p{0.34\textwidth}p{0.37\textwidth}@{}}
-    \toprule
-    \MnemeTableHeader{Invariant} & \MnemeTableHeader{Failure prevented} & \MnemeTableHeader{Operational mechanism} \\
-    \midrule
-    Stable identity & A route, event, graph edge, or artifact silently refers to a different paper. & Internal paper UUIDs connect public resources; external identifiers are normalized and retained as provenance. \\
-    \MnemeRowRule
-    Revision lineage & A summary, chunk, or answer source is reused after the source text changes. & Immutable revision records and material lineage fields scope every derived artifact. \\
-    \MnemeRowRule
-    Durable state first & Queue loss or process restart erases the only record of accepted work. & Domain and job state is committed before replaceable queue delivery or cache publication. \\
-    \MnemeRowRule
-    Duplicate-safe replay & A retry applies the same event or processing request more than once. & Canonical idempotency keys and client-generated event UUIDs converge repeated submissions. \\
-    \MnemeRowRule
-    Bounded computation & One paper, graph, event batch, or model request exhausts shared resources. & Size, count, depth, time, output, and budget limits are checked at public and worker boundaries. \\
-    \MnemeRowRule
-    Visible degradation & Cached, partial, fallback, or processing content appears equivalent to a complete live result. & Typed status and origin fields survive mapping into explicit mobile presentation states. \\
-    \bottomrule
-  \end{tabular}
-  \normalsize
-\end{table}
+These invariants are intentionally independent of a specific database, queue, or model. For example, replacing the execution system should not change the requirement that accepted long-running work has a stable public identity. Replacing the graph layout should not change the requirement that the selected node maps to a valid paper. Replacing the model should not remove the distinction between a generated claim and the excerpt supplied as support. The invariants provide a common vocabulary for design review across mobile, service, storage, and external-provider boundaries.
 
-These invariants also determine where validation occurs. Provider data is checked before persistence, persisted identities are checked before expensive work, model outputs are checked before publication, and transport objects are checked before they become mobile domain models. Validation is repeated at boundaries because each layer protects a different claim. A valid PDF byte stream may still yield weak document structure; a valid JSON graph may still contain a dangling edge; a valid source marker may still provide inadequate support for a claim. The system records these outcomes separately so that one successful check does not erase a later limitation.
-
-Failure handling follows the ownership of state. A worker may retry a replaceable execution attempt, while the database retains the durable job and any earlier valid artifact. The mobile client may retry a request, while its local cache retains the last disclosed snapshot. A model call may be repeated only when its canonical task identity and budget policy permit it. This division reduces the number of components that can declare an operation complete and makes recovery behavior a first-class part of the design.
+Validation occurs at more than one boundary because each boundary protects a different meaning. A downloaded file may be a valid PDF and still provide weak document structure. A graph response may be valid JSON and still contain an edge to an absent node. A generated source marker may refer to a supplied excerpt without establishing that the complete answer is scientifically correct. The design records these outcomes separately. One successful check does not erase a later limitation, and the interface communicates only the strongest status justified by the completed checks.
 
 \subsection{Revision-Aware Document and Evidence Flow}
 
-The data model distinguishes a logical paper \(p\) from an observed revision \(r\). The logical paper retains discovery metadata and stable external identifiers; the revision retains the source checksum, byte size, parser version, parse checksum, quality tier, and timestamps associated with one content state. A derived artifact \(a\) is therefore interpreted as
-\begin{equation}
-  a = f\!\left(p,r,h,\theta\right).
-  \label{eq:artifact-lineage}
-\end{equation}
-In Equation~\ref{eq:artifact-lineage}, \(h\) is the content checksum and \(\theta\) contains the transformation identity relevant to the artifact, such as parser, embedding model, prompt, or generator configuration. Equality of the logical paper identifier does not imply that two artifacts are interchangeable. Reuse is valid only when the material lineage fields for the artifact class match.
-
-The arXiv synchronization path first normalizes the provider identifier, then parses and validates an entire Atom page before persistence. Metadata for a logical work is refreshed only when the provider exposes a newer source timestamp, while a previously unseen revision creates a distinct version row. Network access occurs outside the database transaction, and the validated page is persisted atomically. A serial request limiter and bounded retry policy for transport, rate-limit, and server errors prevent concurrent background tasks from turning provider pressure into inconsistent local state.
-
-Figure~\ref{fig:document-dag} shows the resulting processing directed acyclic graph. Download, parse, summary, chunk, and embedding stages carry both the logical paper UUID and the exact revision UUID. Parsing is the branch point: a structured document can feed summary generation in parallel with deterministic chunk construction, and chunk construction subsequently feeds embedding. Readiness is reconciled only from artifacts for the selected revision.
+Figure~\ref{fig:document-dag} presents document preparation at design level. Metadata observation creates or updates a logical paper and identifies the source revision. PDF acquisition and parsing then determine whether full-text evidence is available. Summary generation and evidence-chunk preparation depend on that revision-specific representation, while embedding depends on the prepared chunks. These parallel paths allow independent retry and prevent one failed derivative from invalidating another valid artifact.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.97\textwidth]{chapter3_document_dag.png}
-  \iffalse
-  \resizebox{0.97\textwidth}{!}{%
-  \begin{tikzpicture}[font=\sffamily\scriptsize,>=Latex]
-    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=5pt,minimum width=2.1cm,minimum height=0.9cm,align=center] (observe) at (-6.4,0) {Validated\\metadata page};
-    \node[draw=MnemeBlue,fill=white,rounded corners=5pt,minimum width=2.1cm,minimum height=0.9cm,align=center] (identity) at (-3.8,0) {Logical paper \(p\)\\immutable revision \(r\)};
-    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,minimum width=1.8cm,minimum height=0.9cm,align=center] (download) at (-1.2,0) {Download\\and checksum};
-    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,minimum width=1.8cm,minimum height=0.9cm,align=center] (parse) at (1.2,0) {Parse and\\classify};
-    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=5pt,minimum width=2.2cm,minimum height=0.9cm,align=center] (summary) at (4.0,1.05) {Structured\\summary};
-    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=5pt,minimum width=2.2cm,minimum height=0.9cm,align=center] (chunks) at (4.0,-1.05) {Section-aware\\chunks};
-    \node[draw=MnemeGold,fill=white,rounded corners=5pt,minimum width=1.9cm,minimum height=0.9cm,align=center] (embed) at (6.8,-1.05) {Model-labelled\\embeddings};
-    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,minimum width=2.0cm,minimum height=1.15cm,align=center] (services) at (9.55,0) {Briefing, detail,\\retrieval, and Q\&A};
-
-    \draw[MnemeNavy,line width=0.9pt,->] (observe) -- (identity);
-    \draw[MnemeNavy,line width=0.9pt,->] (identity) -- (download);
-    \draw[MnemeNavy,line width=0.9pt,->] (download) -- (parse);
-    \draw[MnemeNavy,line width=0.9pt,->] (parse) -- (summary);
-    \draw[MnemeNavy,line width=0.9pt,->] (parse) -- (chunks);
-    \draw[MnemeNavy,line width=0.9pt,->] (chunks) -- (embed);
-    \draw[MnemeNavy,line width=0.9pt,->] (summary) -- (services);
-    \draw[MnemeNavy,line width=0.9pt,->] (embed) -- (services);
-
-    \node[draw=MnemeRed!70,fill=MnemeRed!5,rounded corners=4pt,minimum width=4.6cm,minimum height=0.75cm,align=center,font=\scriptsize] at (1.2,-1.75) {Quality tier: structured \quad text-only \quad abstract-only};
-    \draw[MnemeRed!70,dashed,->] (1.2,-0.48) -- (1.2,-1.35);
-    \node[draw=MnemeNavy!70,fill=white,rounded corners=4pt,minimum width=7.4cm,minimum height=0.65cm,align=center,font=\scriptsize] at (2.65,2.05) {Every stage: canonical input identity \(\rightarrow\) durable job \(\rightarrow\) bounded attempt \(\rightarrow\) safe public state};
-  \end{tikzpicture}}
-  \fi
-  \caption{Revision-aware document-processing graph. Summary and chunk branches share the same parsed lineage but remain independently retryable. The quality tier controls which evidence claims downstream services may make.}
+  \includegraphics[width=0.92\textwidth]{chapter3_document_dag.png}
+  \caption{Revision-aware preparation flow. Every derived path remains attached to the observed source revision, and an explicitly partial representation can support limited reading when full-text preparation is unavailable.}
   \label{fig:document-dag}
 \end{figure}
 
-Each stage receives an idempotency key computed from canonical JSON containing the stage, pipeline version, scope, and material inputs. Download identity includes the paper and revision; parse identity additionally includes the source checksum and parser version; embedding identity includes the parsed artifact and embedding model. A uniqueness constraint causes concurrent submissions of the same logical work to converge on one durable job. The database records queued, running, succeeded, or failed state and a safe public error code. Redis receives an attempt identifier derived from the durable job and the next dispatch identity, while the worker increments the persisted attempt only when execution begins. A stale dispatch lease can be recovered without changing the durable job UUID.
+The principal design decision is that readiness is a property of the required artifact, not of the request that initiated its preparation. A paper may be ready for metadata display before it is ready for structured reading, and it may be ready for structured reading before evidence embeddings exist for question answering. The service reports the available state without implying that all downstream work succeeded. This model also supports safe reuse: an artifact can be reused only when its paper revision and the method identity needed to interpret it still match the requested operation.
 
-Document storage applies the same all-or-nothing principle to bytes. The downloader validates the URL, declared and streamed size, PDF signature, and checksum. It writes to a temporary file, synchronizes the bytes, and atomically replaces the destination. Parsed sidecars use the same publication rule and include schema version, paper and revision identifiers, source checksum, page count, ordered sections, page ranges, quality tier, fallback reason, and timestamp. After a crash, storage contains either the complete previous artifact or an identifiable temporary file; an incomplete file cannot appear as a valid published artifact.
-
-\begin{algorithm}[htbp]
-  \caption{Revision-safe document preparation}
-  \label{alg:document-preparation}
-  \KwIn{Logical paper \(p\), revision \(r\), validated source metadata, pipeline configuration \(\theta\)}
-  \KwOut{A revision-scoped artifact state and durable identities for subsequent stages}
-  Derive a durable job identity from \(p\), \(r\), the stage, and \(\theta\)\;
-  \If{that job has succeeded}{\Return its published artifact state\;}
-  Download and validate the revision under bounded size and time limits\;
-  Publish the verified PDF atomically, then parse it into a versioned sidecar\;
-  Record the parser identity, quality tier, checksum, and revision lineage\;
-  Persist revision-scoped summary and chunk jobs before dispatching them\;
-  \If{a controlled failure occurs}{
-    Persist a stable failure state and retain any earlier valid artifact\;
-  }
-  \Return the current artifact state and child-job identities\;
-\end{algorithm}
-
-Algorithm~\ref{alg:document-preparation} states the stage-level invariant independently of a particular worker or storage implementation. Durable identity is established before execution, and downstream work is recorded before delivery to a replaceable queue. This ordering permits retry after a process or queue failure without publishing partial bytes or losing the lineage between a parsed artifact and the exact revision from which it was produced.
-
-Scientific PDFs still vary in embedded text, column structure, marginal furniture, and heading typography. CERMINE describes the reconstruction of document structure from page layout and text cues when PDF files do not encode a reliable semantic hierarchy~\cite{tkaczyk2015cermine}. S2ORC demonstrates the downstream value of retaining paragraphs, section headers, citation mentions, and resolved bibliography links in machine-readable scholarly text~\cite{lo2020s2orc}. These systems motivate Mneme's explicit treatment of structure and provenance; Mneme's parser is evaluated according to its own implementation and evidence tiers. It combines PyMuPDF text blocks with pdfplumber layout information, reconstructs reading order for common two-column pages, filters likely marginal text blocks, and detects section boundaries from layout and heading cues. The \texttt{structured} tier indicates useful text with credible sections; \texttt{text\_only} indicates useful text without sufficient structural confidence; \texttt{abstract\_only} substitutes the provider abstract when the PDF cannot support full-text processing. This hierarchy is a robustness strategy and assigns lower evidence fidelity to degraded tiers.
-
-Chunk construction consumes the ordered sections and splits oversized content near sentence boundaries while retaining controlled overlap, section identity, page range, content hash, token estimate, and revision identity. The selected configuration uses an estimated 450-token upper bound with a 60-token overlap, providing a fixed and reproducible basis for evaluation. Prior work shows that chunk size and context-preserving chunking strategies affect retrieval quality and answer faithfulness~\cite{wang2024bestpractices}. The model label stored with each embedding prevents retrieval and recommendation from comparing vectors produced in incompatible spaces.
-
-Paper-specific Q\&A adds a second evidence boundary, shown in Figure~\ref{fig:qa-flow}. The question is embedded and compared by cosine distance only with chunks from the selected paper revision and embedding model. The repository performs an exact ordered pgvector search. At most two early embedded chunks can be appended as overview anchors without displacing the highest-ranked question-specific evidence. A deterministic reranker combines normalized vector similarity \(D(q,c)\) with content-word overlap \(L(q,c)\):
-\begin{equation}
-  R(q,c)=0.7D(q,c)+0.3L(q,c).
-  \label{eq:qa-rerank}
-\end{equation}
-
-Equation~\ref{eq:qa-rerank} keeps the second-stage score inspectable: semantic proximity remains dominant, and lexical overlap supplies a task-specific correction without adding another learned model.
-
-\begin{figure}[htbp]
-  \centering
-  \begin{tikzpicture}[font=\sffamily\small,>=Latex]
-    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=5pt,minimum width=3.3cm,minimum height=0.95cm,align=center] (question) at (0,4.7) {Paper-specific question};
-    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,minimum width=3.3cm,minimum height=0.95cm,align=center] (retrieve) at (0,3.25) {Revision-bounded retrieval};
-    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=5pt,minimum width=3.3cm,minimum height=0.95cm,align=center] (rerank) at (0,1.8) {Rerank and select excerpts};
-    \node[draw=MnemeRed,fill=MnemeRed!7,diamond,aspect=2.15,align=center,inner sep=2pt] (threshold) at (0,0.15) {Sufficient\\evidence?};
-    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,minimum width=3.1cm,minimum height=1.0cm,align=center] (generate) at (-4.0,-1.65) {Generate from\\numbered excerpts};
-    \node[draw=MnemeGreen,fill=white,rounded corners=5pt,minimum width=3.1cm,minimum height=1.0cm,align=center] (verify) at (0,-1.65) {Validate markers and\\local source support};
-    \node[draw=MnemeNavy,fill=MnemeNavy!7,rounded corners=5pt,minimum width=3.1cm,minimum height=1.0cm,align=center] (answer) at (4.0,-1.65) {Answer, sources,\\and source-match status};
-    \node[draw=MnemeRed,fill=white,rounded corners=5pt,minimum width=3.3cm,minimum height=1.0cm,align=center] (refuse) at (4.8,0.15) {Insufficient-evidence response};
-
-    \draw[MnemeNavy,line width=0.9pt,->] (question) -- (retrieve);
-    \draw[MnemeNavy,line width=0.9pt,->] (retrieve) -- (rerank);
-    \draw[MnemeNavy,line width=0.9pt,->] (rerank) -- (threshold);
-    \draw[MnemeGreen,line width=0.9pt,->] (threshold.west) -| node[pos=0.2,above,font=\small]{yes} (generate.north);
-    \draw[MnemeGreen,line width=0.9pt,->] (generate) -- (verify);
-    \draw[MnemeGreen,line width=0.9pt,->] (verify) -- (answer);
-    \draw[MnemeRed,line width=0.9pt,->] (threshold.east) -- node[above,font=\small]{no} (refuse.west);
-  \end{tikzpicture}
-  \caption{Evidence-grounded single-paper Q\&A flow from revision-scoped retrieval to either a source-linked answer or an insufficient-evidence response.}
-  \label{fig:qa-flow}
-\end{figure}
-
-If no evidence exists or the best reranked score is below the configured threshold, the service returns a fixed refusal without invoking a language model. Otherwise, the generator receives numbered excerpts with section and page context and must return source markers drawn from those excerpts. The post-generation mechanism discards out-of-range markers and assesses local content-word overlap between a citation-bearing claim and its cited chunk. RAGTruth shows that retrieved context can coexist with unsupported or contradictory generation~\cite{niu2024ragtruth}, while ALCE evaluates answer correctness separately from citation quality and divides citation quality into support coverage and citation relevance~\cite{gao2023alce}. Mneme therefore uses \emph{matched}, \emph{partial}, and \emph{insufficient evidence} to report revision membership, marker validity, and local lexical support. This source-matching mechanism does not evaluate semantic entailment or broader factual accuracy.
-
-\begin{algorithm}[htbp]
-  \caption{Revision-scoped answer generation and source checking}
-  \label{alg:qa-evidence}
-  \KwIn{Paper \(p\), revision \(r\), question \(q\), embedding model \(m\), retrieval count \(k\), evidence threshold \(\tau\)}
-  \KwOut{Answer text, valid source records, and a source-match state}
-  Embed \(q\) and retrieve \(k\) candidates filtered by \(p\), \(r\), and \(m\)\;
-  Add at most two non-duplicate overview anchors from revision \(r\)\;
-  Compute \(R(q,c)=0.7D(q,c)+0.3L(q,c)\) and order the evidence\;
-  \If{the evidence is empty or its best score is below \(\tau\)}{\Return the fixed insufficient-evidence response\;}
-  Generate an answer from the selected, numbered excerpts\;
-  \If{the answer is empty or contains no usable marker}{\Return the fixed insufficient-evidence response\;}
-  Discard invalid markers and measure local support for the remaining citations\;
-  Assign \emph{matched}, \emph{partial}, or \emph{insufficient} from the valid-marker and overlap checks\;
-  \Return the answer, valid source records, and assigned state\;
-\end{algorithm}
-
-Algorithm~\ref{alg:qa-evidence} makes each reported source-match state reproducible. The retrieval filter establishes revision membership, and the final checks establish marker validity and local lexical support. The returned state records the outcome of these checks for the client and for later evaluation.
-
-Model-facing stages communicate through provider-independent request and result objects. Routing selects a configured model by task; a canonical cache key includes task, provider, model, prompt version, messages, and output limit; and a Redis budget guard prevents new calls after the configured daily counter reaches its threshold. The counter is an operational stop-loss, and concurrent in-flight requests can still cross the threshold. Persisted summary artifacts retain provider, model, prompt version, input identity, generation parameters, token counts, latency, and estimated cost. Persisted Q\&A messages retain the answer, citations, source-match state, provider, model, prompt version, and optional usage, latency, and cost telemetry. They omit the complete generation request, so the records support audit and partial reconstruction without guaranteeing bit-for-bit regeneration. Secrets and raw behavioral history are not included in model prompts.
+Evidence-grounded question answering uses the same lineage. The reader selects a paper, the service retrieves candidate excerpts only from its selected revision, and the generator receives a bounded evidence set. The returned markers are checked against that set before the interface presents their source records. This design supports local inspection, but it does not treat marker validity as proof that an answer is complete or scientifically true. Retrieved context can coexist with unsupported generated statements~\cite{niu2024ragtruth}, so answer behavior and source support are evaluated separately in Chapter~4.
 
 \subsection{Interest Memory, Recommendation, and Citation Graph}
 
-Implicit-feedback systems must distinguish an observed action from the confidence with which that action represents preference. Hu, Koren, and Volinsky formulate this distinction explicitly for implicit data~\cite{hu2008implicit}, while temporal recommendation models show that user preference and item effects can change over time~\cite{koren2009temporal}. These concerns motivate Mneme's transparent content-space model, whose predictive behavior is evaluated independently in Chapter~4.
+Interest memory combines explicit and behavioral evidence without collapsing them into one opaque profile. Topics and followed authors are statements that the reader can inspect and edit. Opens, saves, shares, paper-scoped questions, and qualified negative observations are weaker evidence whose interpretation depends on context, recency, repetition, and coverage. The architecture preserves the raw event record and derives a versioned behavioral state from it. This makes adaptation replayable and allows the interface to attenuate or omit behavioral influence when the available evidence is sparse.
 
-The interest model uses auditable deterministic aggregation. Every event contains a client-generated UUID, event type, timezone-aware occurrence time, optional paper identity, and duration only for a paper-open event. Event insertion and profile recomputation occur in one transaction while the user row is locked. A repeated UUID is acknowledged as a duplicate, so an ambiguous mobile retry cannot apply the same observation twice. Raw events remain the authoritative input, while the derived state records its embedding-model identity, behavior-model identity, parameters, confidence, and evidence summary. Replaying the same event history against the same paper embeddings and reference time therefore reconstructs the same state without rewriting explicit preferences.
+Recommendation composes the available interest signals with paper recency and records a concise reason derived from the components that actually participated. Missing evidence does not receive an invented neutral value; the remaining components determine the result within the declared design. An immutable briefing then preserves the ranked papers and reasons shown at that time. This distinction between editable state and historical output is important for correction: changing a topic should alter the next recommendation decision without revising what the application previously displayed.
 
-The model first distinguishes exposure from preference evidence. An impression records that a paper was shown but contributes no positive weight. Opens, saves, shares, and paper-scoped questions provide positive evidence; a skip provides negative evidence only if an impression or open for the same paper occurred during the preceding seven days. This gate prevents an unobserved paper from being interpreted as a rejected topic. Briefing dismissal remains outside the paper-interest profile because it has no paper identity. Table~\ref{tab:behavior-weights} defines these fixed semantics. The magnitudes encode design priorities within this model, not measured certainty about the user's intent.
+The citation graph is separate from the interest model even though both can reveal a next paper. Citation observations form directed relationships between papers. Some provider identities may not yet correspond to local paper records, so the design retains unresolved observations without exposing them as fabricated nodes. A public query selects a bounded neighborhood around the current paper and may enrich its ordering or grouping. If enrichment is unavailable, a deterministic citation-only view remains possible and is identified as such. Spatial layout is a client concern; graph construction, identity resolution, and bounded selection remain service concerns.
 
-\begin{table}[htbp]
-  \centering
-  \small
-  \caption{Event semantics in the contrastive behavioral aggregation.}
-  \label{tab:behavior-weights}
-  \begin{tabular}{@{}p{0.32\textwidth}p{0.18\textwidth}p{0.40\textwidth}@{}}
-    \toprule
-    \MnemeTableHeader{Observed event} & \MnemeTableHeader{Base weight} & \MnemeTableHeader{Interpretation} \\
-    \midrule
-    Paper impression & \(0\) & Exposure record used to qualify a subsequent skip. \\
-    \MnemeRowRule
-    Paper opened & \(+1\) & Positive evidence refined by bounded reading duration. \\
-    \MnemeRowRule
-    Paper saved & \(+3\) & Explicit positive retention signal. \\
-    \MnemeRowRule
-    Paper skipped & \(-1\) & Negative evidence only after recent exposure to the same paper. \\
-    \MnemeRowRule
-    Paper shared & \(+4\) & Strong explicit positive action. \\
-    \MnemeRowRule
-    Paper-scoped question asked & \(+2\) & Positive evidence of engagement with the selected paper. \\
-    \MnemeRowRule
-    Briefing dismissed & \(0\) & Session-level observation excluded from the paper-interest profile. \\
-    \bottomrule
-  \end{tabular}
-  \normalsize
-\end{table}
-
-For eligible event \(i\), let \(b_i\) denote its signed base weight, \(m_i\) its duration multiplier, and \(\Delta_i\) its age in days. Only an open uses duration. If its observed duration is \(d_i\) seconds, clamped to the interval \([0,300]\), the continuous multiplier and dual-timescale temporal decay are
-\begin{equation}
-  m_i=0.5+\frac{\log(1+d_i/30)}{\log 11},
-  \qquad
-  g(\Delta_i)=0.70\,2^{-\Delta_i/14}+0.30\,2^{-\Delta_i/60}.
-  \label{eq:behavior-temporal-weight}
-\end{equation}
-A missing duration gives \(m_i=1\), and a non-open event also uses unit duration multiplier. The effective signed evidence is \(\widetilde{w}_i=b_i m_i g(\Delta_i)\); observations older than 180 days contribute no profile evidence. The logarithmic transform lets reading time refine an open without allowing passive dwell time to outweigh an explicit save or share. Combining a 14-day and a 60-day half-life preserves sensitivity to recent changes while retaining a smaller persistent component. These fixed, replayable parameters define the configuration evaluated in this study.
-
-A direct signed average has two undesirable properties: repeated actions on one paper can dominate through frequency, and positive and negative vectors can cancel into a near-zero representation that hides conflicting evidence. Mneme addresses the first property by accumulating positive and negative mass separately for each paper \(j\), then applying diminishing returns:
-\begin{equation}
-  M_j^+=\sum_{i\in j}\max(\widetilde{w}_i,0),
-  \quad M_j^-=\sum_{i\in j}\max(-\widetilde{w}_i,0),
-  \quad a_j^+=1-e^{-M_j^+/3},
-  \quad a_j^-=1-e^{-M_j^-}.
-  \label{eq:behavior-saturation}
-\end{equation}
-The resulting supports \(a_j^+\) and \(a_j^-\) are bounded below one, so another interaction with an already well-supported paper has less influence than evidence from a distinct paper. Let \(v_j\) be the compatible mean chunk embedding of paper \(j\). Positive and negative interest states are then maintained as independently normalized support-weighted centroids:
-\begin{equation}
-  u^+=\operatorname{norm}\!\left(\sum_j a_j^+v_j\right),
-  \qquad
-  u^-=\operatorname{norm}\!\left(\sum_j a_j^-v_j\right).
-  \label{eq:behavior-contrastive-profile}
-\end{equation}
-Here, \(\operatorname{norm}(x)=x/\lVert x\rVert_2\) for a non-degenerate vector; a channel with no compatible evidence is absent. Separate centroids preserve attraction and avoidance when the observations conflict.
-
-The profile also estimates how much influence its behavioral evidence should receive. Let \(M=\sum_j(a_j^++a_j^-)\) be total embedded support, \(D\) the number of distinct embedded papers with non-zero support, and \(Q\) the fraction of eligible evidence papers for which a compatible embedding is available. The bounded confidence is
-\begin{equation}
-  C=Q\sqrt{\left(1-e^{-M/3}\right)\left(1-e^{-D/3}\right)},
-  \qquad 0\leq C\leq 1.
-  \label{eq:behavior-confidence}
-\end{equation}
-This construction requires both evidence mass and diversity, while incomplete embedding coverage reduces confidence directly. Repeated engagement with one paper can strengthen its support but cannot immediately grant the behavioral component its full nominal weight. Missing embeddings do not delete raw observations; they remain available for a later deterministic replay.
-
-Recommendation keeps explicit preference and inferred behavior as separate components. For candidate paper \(p\) with embedding \(v_p\), the contrastive affinity compares alignment with the positive and negative centroids:
-\begin{equation}
-  A(p)=\operatorname{clip}_{[0,1]}\!\left(0.5+0.5\left[\cos(u^+,v_p)-\cos(u^-,v_p)\right]\right).
-  \label{eq:behavior-affinity}
-\end{equation}
-An absent channel contributes zero cosine similarity. If \(T(p)\) is explicit-topic match and \(F(p)=2^{-d/7}\) is recency for publication age \(d\), define component values \((x_T,x_B,x_F)=(T(p),A(p),F(p))\) and nominal weights \((\alpha_T,\alpha_B,\alpha_F)=(0.45,0.35C,0.20)\). For the set \(\mathcal{K}(p)\) of available components, the implemented score is
-\begin{equation}
-  S(p)=\frac{\sum_{k\in\mathcal{K}(p)}\alpha_k x_k}{\sum_{k\in\mathcal{K}(p)}\alpha_k}.
-  \label{eq:recommendation-score}
-\end{equation}
-A missing topic or behavioral component is omitted from \(\mathcal{K}(p)\). A zero-confidence profile therefore follows the cold-start signals and gives no behavioral weight to one weak observation. Stable paper UUID ordering resolves exact score ties. Recommendation reasons are selected from components that participated in the score and are not generated after ranking. Work on scrutable recommendation profiles motivates exposing and correcting the representation behind a recommendation~\cite{ramos2024scrutable}; Mneme implements the narrower property that explicit topics remain editable and displayed reasons remain faithful to the deterministic components.
-
-Explicit correction follows a separate state transition from behavioral aggregation. The mobile interest view maintains an editable draft, rejects blank or duplicate topics, and submits the complete normalized topic list. The preference service replaces the explicit list while preserving followed authors and records the update time. A recommended-digest request accepts a previous snapshot only when it is newer than the current preference state; after a correction, that condition fails and the service evaluates the candidate pool with the updated topics. The client displays success only after the updated preference and the newly ranked briefing have both returned. The earlier briefing is retained with its original scores and reasons because it records what was recommended under the preceding state. This sequence makes a correction visible in the next decision without rewriting historical evidence.
-
-\begin{algorithm}[htbp]
-  \caption{Replayable contrastive preference update and candidate ranking}
-  \label{alg:behavior-ranking}
-  \KwIn{Deduplicated event history \(E\), compatible paper embeddings \(V\), reference time \(t\), candidate set \(P\)}
-  \KwOut{Ranked candidates and a versioned evidence summary}
-  \ForEach{event \(e_i\in E\)}{
-    Exclude stale events and events without a usable paper identity\;
-    Admit a negative skip only when recent exposure exists for the same paper\;
-    Accumulate signed, time-decayed evidence \(\widetilde{w}_i=b_i m_i g(\Delta_i)\) by paper\;
-  }
-  Apply the saturation functions in Equation~\ref{eq:behavior-saturation} per paper\;
-  Construct \(u^+\) and \(u^-\) from compatible embeddings and compute confidence \(C\)\;
-  \ForEach{candidate \(p\in P\)}{
-    Compute \(S(p)\) from the available topic, behavioral, and recency components\;
-    Derive a reason only from components that participated in \(S(p)\)\;
-  }
-  \Return candidates ordered by score and stable paper identity, with confidence and evidence counts\;
-\end{algorithm}
-
-Algorithm~\ref{alg:behavior-ranking} separates the replayable computation from its interpretation. The event history and compatible embeddings determine the result for a fixed reference time. The output carries evidence counts and confidence so that a later experiment can inspect why behavioral influence increased, decreased, or remained absent. This procedure supports mechanism evaluation in Chapter~4 without treating interaction weights as direct measurements of human preference.
-
-Figure~\ref{fig:behavior-loop} connects these algebraic choices to the mobile observation boundary and the immutable briefing. The proposed model is a hand-designed content-space representation whose transparency and replayability support controlled mechanism tests. Chapter~4 evaluates its software invariants and ranking behavior; parameter selection and long-term user benefit remain subjects for longitudinal user evidence.
-
-\begin{figure}[htbp]
-  \centering
-    \begin{tikzpicture}[font=\sffamily\small,>=Latex]
-    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=5pt,
-      minimum width=3.65cm,minimum height=1.5cm,align=center] (interaction) at (-4.65,1.55)
-      {\textbf{Interaction}\\exposure, open,\\or question};
-    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,
-      minimum width=3.65cm,minimum height=1.5cm,align=center] (retry) at (0,1.55)
-      {\textbf{Durable retry}\\client UUID\\and event queue};
-    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,
-      minimum width=3.65cm,minimum height=1.5cm,align=center] (ingest) at (4.65,1.55)
-      {\textbf{Safe ingestion}\\idempotency\\and exposure gate};
-    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=5pt,
-      minimum width=3.65cm,minimum height=1.5cm,align=center] (interest) at (4.65,-1.15)
-      {\textbf{Interest state}\\saturated positive\\and negative profiles};
-    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,
-      minimum width=3.65cm,minimum height=1.5cm,align=center] (ranking) at (0,-1.15)
-      {\textbf{Ranking}\\confidence-scaled\\contrastive affinity};
-    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,
-      minimum width=3.65cm,minimum height=1.5cm,align=center] (briefing) at (-4.65,-1.15)
-      {\textbf{Briefing}\\frozen score\\and reason};
-    \draw[MnemeNavy,line width=0.9pt,->] (interaction) -- (retry);
-    \draw[MnemeNavy,line width=0.9pt,->] (retry) -- (ingest);
-    \draw[MnemeNavy,line width=0.9pt,->] (ingest) -- (interest);
-    \draw[MnemeNavy,line width=0.9pt,->] (interest) -- (ranking);
-    \draw[MnemeNavy,line width=0.9pt,->] (ranking) -- (briefing);
-    \draw[MnemeNavy,dashed,line width=0.9pt,->] (briefing.north) --
-      node[right,align=left,font=\scriptsize]{later acknowledged\\observations}
-      (interaction.south);
-  \end{tikzpicture}
-  \caption{Inspectable behavioral feedback loop. Stable event identities preserve duplicate safety; exposure gating, per-paper saturation, contrastive state, and evidence confidence determine how later observations influence a new briefing without rewriting an earlier snapshot.}
-  \label{fig:behavior-loop}
-\end{figure}
-
-Citation relations use a separate directed graph model. An edge from \(p_s\) to \(p_t\) means that source paper \(p_s\) cites target paper \(p_t\). A provider observation may initially identify one endpoint only by its Semantic Scholar identifier, but at least one endpoint must already be local. Persisting that unresolved observation preserves information that can be repaired when the external identity is subsequently associated with a local paper. Self-edges and duplicates are removed during resolution, and only edges whose endpoints resolve to local paper UUIDs enter the public graph.
-
-The public graph query performs a bidirectional traversal from the selected paper within explicit depth and node limits. Depth is restricted to one or two hops, and the node limit cannot exceed 200. Citation-derived weighting, deterministic label propagation, and weighted-degree ranking enrich the resulting snapshot. Label propagation originates as a local community-detection method in which nodes repeatedly adopt labels supported by their neighbours~\cite{raghavan2007label}. Mneme uses weighted votes, deterministic tie-breaking, and a maximum of ten update rounds within the selected citation neighborhood. The public graph contains paper nodes and directed citation edges. If enrichment fails, chronological citation ordering provides a deterministic fallback and the response marks the algorithm status. Raw citation observations remain persistent, while the enriched view is computed per request. This avoids invalidation rules for stored layouts at the cost of repeated computation over the selected neighborhood.
-
-\begin{algorithm}[htbp]
-  \caption{Bounded citation-graph view construction}
-  \label{alg:citation-graph}
-  \KwIn{Centre paper \(p_0\), resolved local citation snapshot \(G=(V,E)\), depth \(d\), node limit \(L\)}
-  \KwOut{A bounded node-and-edge view with algorithm status}
-  Clamp \(d\) and \(L\), then assign each edge a hub-damped citation weight\;
-  Expand bidirectionally from \(p_0\) by cumulative path strength until depth or node limit is reached\;
-  Retain edges whose endpoints both occur in the selected node set\;
-  Initialize every selected node with a unique community label\;
-  \For{at most ten rounds}{
-    Update each label from the strongest weighted neighbouring label\;
-    Resolve ties deterministically and stop when no label changes\;
-  }
-  Rank nodes by normalized weighted degree while preserving \(p_0\) as the centre\;
-  \If{enrichment fails}{Construct a bounded chronological view and set status to \emph{fallback}\;}
-  \Return selected papers, directed edges, community labels, ranks, and status\;
-\end{algorithm}
-
-Algorithm~\ref{alg:citation-graph} defines the server-side view and leaves spatial layout to the client. The hub-damped edge weight reduces the influence of highly cited targets during expansion, while the explicit depth and node limits bound response size. Deterministic tie-breaking gives the same logical snapshot the same ordering and grouping. The fallback preserves graph access when enrichment fails and identifies that outcome in the response.
-
-Across document, behavior, and graph paths, the same reliability rule applies: durable domain state precedes replaceable execution or presentation state. Stable identifiers make retries safe; model, parser, behavior, and graph versions prevent silent semantic changes; and public responses expose typed status without returning internal exception text. Paper excerpts sent to model providers exclude raw behavioral history and unnecessary profile fields. Secrets remain outside source and mobile resources, while generated-artifact metadata records enough configuration to interpret a result. Chapter~4 reports implementation and testing evidence for these mechanisms.
+These two discovery paths serve different intentions. The briefing answers which papers appear relevant to the reader's evolving interests. The graph answers how the selected paper is connected to locally known literature. Keeping the paths distinct makes their explanations more faithful and prevents visual proximity from being interpreted as a personalized score. Their detailed aggregation, ranking, and graph-selection methods belong to Back-end Development in Chapter~4.
 
 \subsection{Mobile State, Recovery, and Event Delivery}
 \label{subsec:mobile-state-recovery}
 
-The mobile client preserves the same paper identity while remote work, local storage, and navigation progress at different rates.
-When a paper is opened, the client first attempts to load its remote representation.
-A validated response is stored before it becomes the visible live state.
-If the request fails, a locally stored paper can remain readable with a cached label; question answering and citation-graph requests instead show a retryable error because no local substitute has the same meaning.
-An HTTP~202 response is treated as processing rather than failure, and the client polls the durable job until the representation is ready or a safe error is returned.
+Mobile interaction continues while remote work, local storage, and navigation progress at different rates. A paper screen may receive a complete response, learn that preparation is still running, recover an earlier local record after failure, or have no usable content. These outcomes become separate presentation states with different messages and actions. A late response for a previous route must not replace the newly selected paper, and cancellation caused by navigation must not appear as a service failure.
 
-\begin{algorithm}[htbp]
-  \caption{Origin-aware mobile paper resolution}
-  \label{alg:mobile-paper-resolution}
-  \KwIn{Selected paper identity \(p\), optional locally stored paper record}
-  \KwOut{Typed presentation state with visible content origin}
-  Cancel an earlier load, enter \emph{loading} for \(p\), and request its remote representation\;
-  \If{the remote request fails}{\Return cached content when available; otherwise enter a retryable error state\;}
-  Store a validated remote paper locally before presenting its derived content\;
-  \While{the summary response identifies a queued or running job}{
-    Display the preparation stage and poll the durable job after a bounded interval\;
-    Propagate cancellation without converting it to a visible failure\;
-  }
-  \eIf{the representation is ready}{Render live content\;}{Enter a retryable error state with the safe public message\;}
-\end{algorithm}
+Graph presentation divides responsibility between a locally packaged WebView and native Android state. The WebView performs the force-directed layout and canvas interaction; the native layer validates the selected identity, presents relationship context, and controls navigation. This division follows the nested-model view that data, task, visual encoding, interaction, and algorithm are separate design questions~\cite{munzner2009nested}. The selected node is retained against the central paper so that opening a neighbor and returning does not erase the reader's position.
 
-Algorithm~\ref{alg:mobile-paper-resolution} gives one paper route a single active load, preventing a late response for a previous route from replacing the newly selected paper.
-It also keeps transport failure, server-side processing, cache recovery, and completed content as separate states that the interface can explain.
-
-Graph presentation uses a locally packaged WebView because the force-directed canvas and its interaction bridge are more tractable in Web technology than in a custom Compose drawing stack.
-This separation keeps the graph data and task, visual encoding, interaction, and layout mechanism as distinct design layers~\cite{munzner2009nested}.
-Android validates unique node identities, the presence of the centre node, and the absence of dangling edges before serializing the graph for the WebView.
-The return bridge accepts only an identifier present in the displayed graph and posts the selected paper UUID to the Android main thread.
-Native state then retains the selection, relationship context, and \emph{Open Paper} action across navigation.
-This boundary leaves layout computation in the WebView while keeping navigation and accessibility semantics in Android.
-
-Behavioral events follow a similarly bounded delivery path.
-Impressions, paper opens, and paper-scoped questions carry stable paper identities and client-generated event UUIDs.
-They remain in the Room-backed queue until the server acknowledges them, and WorkManager retries delivery after uncertain connectivity or process interruption.
-The server reports accepted and duplicate identifiers separately, so replay does not require the client to guess whether the first request arrived.
-Raw reading history is not included in language-model prompts, and explicit topics remain editable when the user wants to correct the resulting recommendation state.
+Supported behavioral observations use client-generated identities and remain locally queued until the service acknowledges them. A retry can repeat delivery without asking the client to infer whether an earlier request arrived. This mechanism supports continuity, but it does not justify interpreting every absence of interaction as dislike. Event meaning is defined by the behavioral method in Chapter~4; the mobile design is responsible for faithful capture, disclosure, and delivery of the supported actions.
 
 \section{API Design}
 \label{sec:api-design}
 
-The API is the boundary at which the mobile experience, durable domain model, and background engine must agree on meaning. Mneme uses a resource-oriented JSON contract under \texttt{/v1}, with \texttt{snake\_case} fields, typed UUID identities, and ISO~8601 timestamps. FastAPI generates the runtime OpenAPI~3.1.0 schema, while a frozen OpenAPI~3.0.3 document serves as the compatibility specification against which the public surface is checked. The interface contains 13 public operations and keeps internal worker stages behind the service boundary. Papers, preferences, briefings, questions, events, graph neighborhoods, and jobs each have a public representation that can be generated from the application and checked against that compatibility specification. This contract-first arrangement lets the Android client map network objects into its own domain models without depending on database tables or model-provider payloads.
+The public API is the contract between the mobile experience and the service architecture. It uses versioned JSON resources, bearer authentication, stable paper identifiers, and a common error envelope with a request identifier. FastAPI's generated schema describes the study service, while a frozen compatibility specification supports client development against a stable baseline. The design favors resource meaning over internal service names, allowing storage, queue, or provider changes without altering the mobile workflow. Table~\ref{tab:api-surface} groups the contract by the task each resource supports.
 
-Table~\ref{tab:api-surface} groups the operations by responsibility. The unauthenticated health operation establishes only that the application process can answer an HTTP request; it does not certify PostgreSQL, Redis, or external-provider availability. Protected operations use a pre-provisioned principal so that user-scoped resources retain explicit ownership even in a single-user demonstration. Collection endpoints use opaque keyset cursors and a default page size of 20, bounded between 1 and 50. The client consequently cannot derive ordering assumptions from the cursor representation, and insertion of a newer paper or briefing does not make an offset silently refer to a different record.
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Public resource groups and the design responsibility of each boundary.}
+  \label{tab:api-surface}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.22\textwidth}>{\raggedright\arraybackslash}p{0.30\textwidth}>{\raggedright\arraybackslash}p{0.39\textwidth}@{}}
+    \toprule
+    \MnemeTableHeader{Resource group} & \MnemeTableHeader{Mobile purpose} & \MnemeTableHeader{Contract boundary} \\
+    \midrule
+    Papers and search & Discover and open a stable paper record. & Returns normalized identity and bibliographic data while distinguishing unavailable or partial derived content. \\
+    \MnemeRowRule
+    Summaries and jobs & Read a prepared account or monitor accepted work. & Distinguishes a ready resource from a durable processing state and a safe terminal error. \\
+    \MnemeRowRule
+    Questions and conversations & Ask within the selected paper and inspect evidence. & Preserves paper scope, ordered messages, source records, and an explicit source-support state. \\
+    \MnemeRowRule
+    Preferences and briefings & Correct interests and obtain a ranked snapshot. & Keeps editable preference state separate from an immutable recommendation response. \\
+    \MnemeRowRule
+    Events & Deliver supported interactions after uncertain connectivity. & Accepts stable event identities and distinguishes newly accepted observations from duplicates. \\
+    \MnemeRowRule
+    Graphs & Explore a bounded neighborhood around one paper. & Returns valid paper nodes and directed edges with bounds and a disclosed construction status. \\
+    \bottomrule
+  \end{tabular}
+  \normalsize
+\end{table}
 
-\small
-\begin{longtable}{@{}p{0.20\textwidth}p{0.30\textwidth}p{0.42\textwidth}@{}}
-  \caption{Public API surface and the principal semantic boundary of each resource group.}\label{tab:api-surface}\\
-  \toprule
-  \MnemeTableHeader{Resource group} & \MnemeTableHeader{Operation} & \MnemeTableHeader{Contract role} \\
-  \midrule
-  \endfirsthead
-  \multicolumn{3}{c}{\tablename\ \thetable\ continued}\\
-  \toprule
-  \MnemeTableHeader{Resource group} & \MnemeTableHeader{Operation} & \MnemeTableHeader{Contract role} \\
-  \midrule
-  \endhead
-  \midrule
-  \multicolumn{3}{r}{Continued on next page}\\
-  \endfoot
-  \bottomrule
-  \endlastfoot
-  Availability & \textsc{Get}: health status & Reports process liveness without requiring authentication or implying dependency health. \\
-  \MnemeRowRule
-  Paper catalogue & \textsc{Get}: paper collection\newline\textsc{Get}: paper by identifier & Returns cursor-paginated public metadata or one paper identified by the system UUID. \\
-  \MnemeRowRule
-  Paper preparation & \textsc{Get}: paper summary by identifier & Returns a revision-derived summary with HTTP~200, or a durable job representation with HTTP~202 when preparation has been accepted. \\
-  \MnemeRowRule
-  Interest memory & \textsc{Get} or \textsc{Put}: current-user preferences\newline\textsc{Post}: onboarding seed & Reads or replaces explicit topics and followed authors; seed initialization creates an inspectable category-based starting briefing before behavioral evidence is available. \\
-  \MnemeRowRule
-  Behavioral evidence & \textsc{Post}: behavioral-event batch & Accepts at most 500 typed, client-identified events and returns separate accepted and duplicate counts. \\
-  \MnemeRowRule
-  Research briefing & \textsc{Get}: briefing collection\newline\textsc{Post}: recommended briefing & Reads immutable briefing snapshots or requests a bounded recommendation snapshot for the authenticated principal. \\
-  \MnemeRowRule
-  Paper understanding & \textsc{Post}: paper question & Accepts a 1--500 character question tied to one paper and returns an answer, source records, conversation identity, and bounded source-match state. \\
-  \MnemeRowRule
-  Citation exploration & \textsc{Get}: graph by paper identifier & Returns a paper-only directed neighborhood with depth 1--2, at most 200 nodes, an algorithm state, and a graph version when available. \\
-  \MnemeRowRule
-  Asynchronous state & \textsc{Get}: job status by identifier & Exposes queued, running, succeeded, or failed state and a safe error code for a durable pipeline job. \\
-\end{longtable}
-\normalsize
-
-The most consequential interface decision is to represent long work as a state transition with a durable job resource. A summary request first checks the selected revision for a stored artifact. A ready artifact produces HTTP~200. Otherwise, the service creates or reuses the earliest missing revision-scoped job, persists its durable identity, attempts dispatch, and returns HTTP~202 with that job. The Android client can then poll \texttt{/jobs/\{job\_id\}} and repeat the original read after success. The deterministic recommendation path can return a briefing synchronously, while its schema admits the same job representation for a slower scoring path. This separation keeps transport timeout, queue acceptance, model execution, and completed domain state from collapsing into one ambiguous result.
-
-Figure~\ref{fig:api-sequence} illustrates the corresponding state choreography. The database is authoritative for both the artifact and the job; ARQ carries a replaceable attempt. A queue failure after durable job persistence is reported as a temporary service error and releases the dispatch claim, so a later request can dispatch the same durable job without creating a second logical operation. The public job never contains a stack trace, prompt, token, or provider exception. After the worker publishes its artifact and updates the job state, a poll observes success and the resource read returns the completed representation.
+Long-running work is represented as a resource state rather than a prolonged connection. Figure~\ref{fig:api-sequence} illustrates the summary case. A read returns the available summary when the selected revision is ready. Otherwise, the response identifies accepted work that the client can monitor before repeating the domain read. The public job state does not expose worker internals; it tells the client whether the requested outcome is queued, running, complete, or safely failed.
 
 \begin{figure}[htbp]
   \centering
-  \resizebox{0.97\textwidth}{!}{%
-  \begin{tikzpicture}[font=\sffamily\small,>=Latex]
-    \foreach \x/\name/\colour in {-6/{Android client}/MnemeBlue,-2/{FastAPI /v1}/MnemeTeal,2/{PostgreSQL}/MnemeGold,6/{ARQ worker}/MnemeRed}
-    {
-      \node[draw=\colour,fill=\colour!9,rounded corners=5pt,minimum width=2.4cm,minimum height=0.75cm,align=center,font=\bfseries] at (\x,0.6) {\name};
-      \draw[\colour!65,dashed,line width=0.8pt] (\x,0.18) -- (\x,-7.0);
-    }
-    \draw[MnemeNavy,->,line width=0.85pt] (-6,-0.35) -- node[above,font=\scriptsize]{\texttt{GET /papers/\{id\}/summary}} (-2,-0.35);
-    \draw[MnemeNavy,->,line width=0.85pt] (-2,-1.05) -- node[above,font=\scriptsize]{read selected revision and artifact} (2,-1.05);
-    \draw[MnemeNavy,->,line width=0.85pt] (2,-1.75) -- node[above,font=\scriptsize]{artifact absent} (-2,-1.75);
-    \draw[MnemeNavy,->,line width=0.85pt] (-2,-2.45) -- node[above,font=\scriptsize]{create or reuse durable job} (2,-2.45);
-    \draw[MnemeNavy,->,line width=0.85pt] (-2,-3.15) -- node[above,font=\scriptsize]{dispatch revision-scoped attempt} (6,-3.15);
-    \draw[MnemeBlue,->,line width=0.9pt] (-2,-3.85) -- node[above,font=\scriptsize]{HTTP 202 + job UUID} (-6,-3.85);
-    \draw[MnemeNavy,->,line width=0.85pt] (6,-4.55) -- node[above,font=\scriptsize]{publish artifact; update durable state} (2,-4.55);
-    \draw[MnemeNavy,->,line width=0.85pt] (-6,-5.25) -- node[above,font=\scriptsize]{\texttt{GET /jobs/\{job\_id\}}} (-2,-5.25);
-    \draw[MnemeNavy,->,line width=0.85pt] (-2,-5.75) -- node[above,font=\scriptsize]{read safe job state} (2,-5.75);
-    \draw[MnemeGreen,->,line width=0.9pt] (-2,-6.35) -- node[above,font=\scriptsize]{HTTP 200, \texttt{succeeded}} (-6,-6.35);
-    \node[draw=MnemeGreen,fill=MnemeGreen!8,rounded corners=4pt,align=center,font=\scriptsize,minimum width=5.2cm,minimum height=0.65cm] at (0,-7.45) {Repeatable resource read returns the revision-derived summary};
-  \end{tikzpicture}}
-  \caption{Asynchronous summary sequence. Durable job identity is persisted before a replaceable worker attempt is dispatched, which distinguishes accepted work from completed work and makes client polling and retry unambiguous.}
+  \begin{tikzpicture}[font=\sffamily\scriptsize,>=Latex]
+    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=4pt,minimum width=2.3cm,minimum height=0.7cm] (client) at (-5.2,0) {Android client};
+    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=4pt,minimum width=2.3cm,minimum height=0.7cm] (api) at (-1.75,0) {Public API};
+    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=4pt,minimum width=2.3cm,minimum height=0.7cm] (state) at (1.75,0) {Durable state};
+    \node[draw=MnemeRed,fill=MnemeRed!7,rounded corners=4pt,minimum width=2.3cm,minimum height=0.7cm] (worker) at (5.2,0) {Processing service};
+    \foreach \x in {-5.2,-1.75,1.75,5.2}{\draw[MnemeNavy!35,dashed] (\x,-0.5) -- (\x,-6.8);}
+    \draw[MnemeNavy,->] (-5.2,-1.0) -- node[above]{read summary} (-1.75,-1.0);
+    \draw[MnemeNavy,->] (-1.75,-1.55) -- node[above]{check selected revision} (1.75,-1.55);
+    \draw[MnemeNavy,->] (1.75,-2.1) -- node[above]{not ready} (-1.75,-2.1);
+    \draw[MnemeNavy,->] (-1.75,-2.65) -- node[above]{record accepted work} (1.75,-2.65);
+    \draw[MnemeNavy,->] (-1.75,-3.2) -- node[above]{accepted state} (-5.2,-3.2);
+    \draw[MnemeNavy,->] (1.75,-3.75) -- node[above]{dispatch attempt} (5.2,-3.75);
+    \draw[MnemeNavy,->] (5.2,-4.3) -- node[above]{publish validated result} (1.75,-4.3);
+    \draw[MnemeNavy,->] (-5.2,-4.85) -- node[above]{read work state} (-1.75,-4.85);
+    \draw[MnemeNavy,->] (-1.75,-5.4) -- node[above]{complete} (-5.2,-5.4);
+    \draw[MnemeNavy,->] (-5.2,-5.95) -- node[above]{repeat summary read} (-1.75,-5.95);
+    \draw[MnemeNavy,->] (-1.75,-6.5) -- node[above]{revision-bound summary} (-5.2,-6.5);
+  \end{tikzpicture}
+  \caption{Public state transition for asynchronous paper preparation. Durable acceptance is visible before replaceable processing begins, and the client repeats an ordinary resource read after completion.}
   \label{fig:api-sequence}
 \end{figure}
 
-Idempotency is expressed differently for the two write patterns. Pipeline creation derives a uniqueness key from canonical stage inputs, so repeated summary requests converge on one logical job. Behavioral ingestion accepts client-generated event UUIDs and reports how many items were newly accepted and how many were duplicates. The entire event batch and behavior recomputation execute transactionally for one user. Recalculation derives the positive and negative profile embeddings, bounded confidence, and evidence summary from the authoritative event history without exposing those persistence fields through the ingestion response. If any referenced paper or timestamp violates the contract, the whole batch is rejected. These semantics let the mobile client retain an event until acknowledgement and retry after uncertain connectivity without needing to infer whether the first request reached the server.
+Write operations use the same principle of explicit identity. Preference replacement returns the state that was accepted, while event delivery reports which observations were new and which were duplicates. A request that contains an invalid paper or timestamp fails as a coherent batch rather than leaving an ambiguous partial preference update. Read operations use bounded collection sizes and stable ordering so that the client can render an honest empty state and repeat a request without relying on hidden server order.
 
-The question endpoint is synchronous because its useful response is the answer and its source-match state. A request identifies one paper, an optional conversation, and a question of at most 500 characters. The conversation UUID preserves ownership and paper scope, while generation remains grounded in the new question and selected revision. The response presents source records at section and chunk granularity. The graph endpoint likewise presents paper nodes and directed citation edges. Both interfaces keep provider observations, prompt context, and other persistence details behind the service boundary.
-
-Every failure crosses the API through one envelope containing \texttt{code}, \texttt{message}, \texttt{request\_id}, and optional structured \texttt{details}. Validation details describe locations and error types without echoing rejected values. Database and unexpected failures are logged with the request identity but become non-sensitive service or internal errors at the boundary. The same sanitized \texttt{X-Request-ID} is attached to the response, giving the client a support handle without exposing stack traces. Stable application codes distinguish, for example, an unknown paper, an unavailable queue, invalid pagination, inadequate configuration, and malformed input even when several cases share an HTTP status.
-
-All operations except process health require an opaque Bearer token representing the pre-provisioned user. The raw token is supplied from deployment and mobile configuration and is absent from source resources; the server stores its SHA-256 digest and compares the received token in constant time. This mechanism supplies stable ownership for the single-user study deployment. A production multi-user deployment would extend the same boundary with account lifecycle, authorization, transport, and secret-management controls.
-
-Three alternatives clarify the contract's priorities. Blocking until document processing finishes would produce a simpler response type but would couple mobile timeouts to PDF and model latency; the explicit job resource was preferred. Offset pagination would be easier to inspect manually but is unstable under insertion; opaque keyset cursors were preferred. Returning database or provider objects directly would reduce mapping code but would leak storage evolution and sensitive diagnostics into the app; explicit Pydantic response schemas and a common error envelope were preferred. The added translation code is therefore a deliberate cost paid for compatibility, failure clarity, and a narrower privacy surface.
+The contract also limits what a response status means. A healthy API process is not evidence that an external provider is available. A valid answer envelope is not evidence that every generated sentence is supported. A graph with no local neighbors is not evidence that the paper has no citations elsewhere. These distinctions are carried through explicit quality, origin, source-support, processing, and construction fields. The Android client maps those fields into user-facing states instead of reconstructing meaning from a message string.
 
 \section{UI/UX Design}
 \label{sec:ui-ux-design}
 
-The interaction design preserves the story map's research loop while reducing the number of decisions required on a phone. Mneme uses the briefing as its primary entry because the recurring task is to decide what deserves attention next; search remains available for a known paper. Figure~\ref{fig:ui-flow} shows the resulting information architecture. Onboarding establishes a small explicit interest profile and one seed reference, the briefing supports triage, paper detail supports understanding, and Q\&A and graph views branch from a paper whose identity is already visible. The stable identity carried by each route lets those views refer to one paper record while retaining their own typed presentation state. Interest editing and observed interactions feed subsequent briefing generation after the current reading task.
+The initial user interface and user experience (UI/UX) design gives the research briefing a central position because it is the point at which recurring discovery becomes a reading decision. Figure~\ref{fig:ui-flow} shows the information architecture used for the formative prototype. Onboarding establishes a small explicit profile and one seed paper; the briefing supports triage; paper detail supports structured understanding; and question answering and graph exploration extend from a paper whose identity is already visible. Search and interest editing remain available without interrupting the primary path.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.98\textwidth]{chapter3_ui_flow.png}
-  \iffalse
-  \resizebox{0.98\textwidth}{!}{%
-  \begin{tikzpicture}[font=\sffamily\scriptsize,>=Latex]
-    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=6pt,minimum width=2.0cm,minimum height=0.85cm,align=center] (welcome) at (-8.0,1.5) {Welcome};
-    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=6pt,minimum width=2.0cm,minimum height=0.85cm,align=center] (topics) at (-5.0,1.5) {Research\\areas};
-    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=6pt,minimum width=2.0cm,minimum height=0.85cm,align=center] (seed) at (-2.0,1.5) {Seed paper};
-    \node[draw=MnemeGold,fill=MnemeGold!12,rounded corners=6pt,minimum width=2.35cm,minimum height=1.0cm,align=center,font=\bfseries] (digest) at (1.35,1.5) {Research\\briefing};
-    \node[draw=MnemeGreen,fill=MnemeGreen!10,rounded corners=6pt,minimum width=2.35cm,minimum height=1.0cm,align=center,font=\bfseries] (paper) at (5.0,1.5) {Paper detail\\and sources};
-    \node[draw=MnemeTeal,fill=MnemeTeal!9,rounded corners=6pt,minimum width=2.2cm,minimum height=0.9cm,align=center] (qa) at (8.3,2.55) {Paper-scoped\\Q\&A};
-    \node[draw=MnemeRed,fill=MnemeRed!7,rounded corners=6pt,minimum width=2.2cm,minimum height=0.9cm,align=center] (graph) at (8.3,0.45) {Citation-graph\\exploration};
-    \node[draw=MnemeNavy,fill=white,rounded corners=6pt,minimum width=2.0cm,minimum height=0.85cm,align=center] (search) at (1.35,-1.2) {Search};
-    \node[draw=MnemeNavy,fill=white,rounded corners=6pt,minimum width=2.0cm,minimum height=0.85cm,align=center] (interests) at (-2.0,-1.2) {Interest\\controls};
-    \node[draw=MnemeGray,fill=MnemeGray,rounded corners=5pt,minimum width=3.4cm,minimum height=0.75cm,align=center] (states) at (5.0,-1.2) {Live, cached, processing,\\degraded, empty, and error states};
-
-    \draw[MnemeNavy,line width=0.9pt,->] (welcome) -- (topics);
-    \draw[MnemeNavy,line width=0.9pt,->] (topics) -- (seed);
-    \draw[MnemeNavy,line width=0.9pt,->] (seed) -- (digest);
-    \draw[MnemeNavy,line width=0.9pt,->] (digest) -- (paper);
-    \draw[MnemeNavy,line width=0.9pt,->] (paper) -- (qa);
-    \draw[MnemeNavy,line width=0.9pt,->] (paper) -- (graph);
-    \draw[MnemeNavy,line width=0.9pt,->] (search) -- (paper);
-    \draw[MnemeNavy,line width=0.9pt,<->] (interests) -- (digest);
-    \draw[MnemeNavy,dashed,line width=0.85pt,->] (paper.south) .. controls (4.7,-2.25) and (1.7,-2.25) .. node[below]{supported observations inform a later briefing} (digest.south);
-    \draw[MnemeNavy,dotted,line width=0.85pt] (states) -- (paper);
-    \draw[MnemeNavy,dotted,line width=0.85pt] (states) -- (digest);
-  \end{tikzpicture}}
-  \fi
-  \caption{Mobile information architecture. The briefing is the recurring home of the research loop; search and graph traversal are alternate discovery paths, and all network-dependent screens share explicit origin and failure states.}
+  \caption{Initial mobile information architecture used to organize the formative prototype. Network-dependent screens share explicit processing, origin, empty, and failure states.}
   \label{fig:ui-flow}
 \end{figure}
 
-The onboarding path follows progressive disclosure. The first screen explains the product in terms of reading outcomes and asks for one arXiv reference. The seed category initializes an explicit preference and supplies the context from which the backend prepares the first briefing. After entry, the interest view exposes that profile so that topics can be added, edited, or deleted before a later briefing is requested. This creates a populated first session with a short setup sequence while preserving a direct correction path. It also follows the human--AI interaction principle that a system should communicate what it can do and make correction possible when an inferred result is wrong~\cite{amershi2019guidelines}.
+Onboarding uses progressive disclosure. Asking for a small number of topics and one known paper is enough to explain the personalization model without presenting a lengthy settings form before the product has shown value. The interest view remains available after onboarding because an inferred result must be correctable. This follows human--AI interaction guidance that a system should communicate its capabilities and support correction when its interpretation is wrong~\cite{amershi2019guidelines}.
 
-The briefing screen supports rapid comparison. Each card presents title, authorship, category or date context, a short description, a normalized relevance score, and a concise reason before the primary open action. Recommendation rationale is positioned near the score because a detached explanation is unlikely to be used during triage. Saving and preference tuning remain secondary actions so they do not compete with opening the paper. An empty briefing preserves the navigation and offers search or interest correction without fabricating recommendations.
+The briefing is designed for comparison rather than close reading. Each card presents identity, a short description, relevance context, and a concise reason before the primary open action. The reason appears beside the ranked item because it is most useful at the decision point. Paper detail then increases information density and separates overview, claims, method, and limitations. Source actions remain close to the generated material they qualify. Position-sensitive reading assistance similarly benefits from presenting supporting context where the reader encounters the unfamiliar content~\cite{head2021scholarphi}.
 
-Paper detail changes the information density. The title and source identity remain at the top, while the generated account separates overview, claims, method, and limitations. Citation chips and source-match labels sit adjacent to the text they qualify. Research on position-sensitive reading assistance shows the value of presenting contextual definitions at the point where a reader encounters an unfamiliar term or symbol~\cite{head2021scholarphi}. Mneme applies the same locality principle to evidence access: the source action is placed beside the generated material it qualifies. Each source record exposes section and chunk context and opens the canonical paper source. This placement supports verification, while the labels identify the result of local source matching. A partial or abstract-only representation uses text as well as colour to disclose its evidence tier.
-
-The Q\&A screen inherits the selected paper identity and asks a question within that scope. The answer body and source list are presented as one inspection unit, with source markers visible beside the generated response. A matched, partial, or insufficient-evidence label describes the post-generation check defined in Section~\ref{sec:engine-architecture}. Conversation identity groups related exchanges, while every new answer remains grounded in the selected revision and current question. When no adequate excerpt is found, the insufficient-evidence response occupies the normal answer region and remains distinct from a transport failure.
-
-Figures~\ref{fig:prototype-reading} and~\ref{fig:prototype-graph} document the interactive prototype used to test these decisions. Controlled fixture content kept the screen hierarchy and task affordances consistent across the five moderated sessions. Runtime behavior and model quality are evaluated separately in Chapter~4.
+The question screen inherits the selected paper rather than asking the reader to restate its scope. Answer text and cited excerpts form one inspection unit. An insufficient-evidence response occupies the ordinary answer region so that it cannot be confused with a network error. Figure~\ref{fig:prototype-reading} shows the initial prototype states used during the moderated sessions. The images contain controlled fixture content and establish the tested interaction design; they are not screenshots of model execution or evidence of the final Android implementation.
 
 \begin{figure}[htbp]
   \centering
@@ -763,95 +233,72 @@ Figures~\ref{fig:prototype-reading} and~\ref{fig:prototype-graph} document the i
   \begin{minipage}[t]{0.32\textwidth}
     \centering
     \includegraphics[width=\linewidth]{prototype_qa.png}\\[0.4em]
-    \textbf{(c) Source-linked Q\&A}
+    \textbf{(c) Source-linked question}
   \end{minipage}
-  \caption{Prototype screens for the reading spine, showing the transition from recommendation rationale to structured understanding and cited question answering.}
+  \caption{Initial prototype screens for the reading path. The controlled fixture kept information hierarchy and task affordances consistent across the five sessions.}
   \label{fig:prototype-reading}
 \end{figure}
 
-The graph requires stronger affordance than a conventional list because spatial proximity does not tell a first-time user what is actionable. Interaction taxonomies for information visualization identify selection and exploration as distinct operations that the interface must support~\cite{yi2007interaction}; task-oriented visualization design likewise asks why the user acts, what data is targeted, and how the operation is performed~\cite{brehmer2013typology}. Mneme's task is to identify a related paper, inspect its relationship to the centre, and continue to the paper record. A short instruction appears above the canvas. Selection produces a persistent visual state, an explanation of the relationship, and a visible \emph{Open Paper} action. A legend explains edge direction and algorithmic grouping. Visually truncated node labels retain their complete title in the native preview. Android stores the selected identity, allowing the graph and native preview to restore the same selection after the reader returns from paper detail. The implemented public graph contains paper nodes and citation edges. Figure~\ref{fig:prototype-graph} also shows concept and author tabs because the formative prototype examined a wider interaction concept.
+The graph posed a different interaction problem. Spatial proximity alone does not tell a first-time reader which marks are selectable or what selection will do. Visualization interaction taxonomies distinguish selection from exploration~\cite{yi2007interaction}, while task-oriented design asks why the reader acts, what object is targeted, and how the action is performed~\cite{brehmer2013typology}. The prototype tested whether participants could select a related paper and continue to its paper view. Figure~\ref{fig:prototype-graph} shows the tested graph state. Its concept and author tabs explored a broader visual vocabulary than the paper-only citation graph defined by the public contract.
 
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.56\textwidth]{prototype_graph.png}
-  \caption{Prototype of graph exploration with fixture nodes. Concept and author views extend the visual vocabulary explored in the formative interface beyond the paper-only citation graph.}
+  \caption{Initial graph prototype with controlled fixture nodes. Concept and author views were exploratory interface states, whereas the public graph design is limited to papers and citation relations.}
   \label{fig:prototype-graph}
 \end{figure}
 
-Network state remains visible interface content.
-The client distinguishes a restored briefing from a server response and keeps the last valid snapshot readable when refresh fails.
-Processing, retryable failure, and cached recovery use different messages and actions.
-The technical state transitions and event-delivery boundary are described in Section~\ref{subsec:mobile-state-recovery}; this section focuses on how those states are presented to the reader.
-
-The visual system uses a restrained navy, teal, gold, green, and red palette consistent with the diagrams in this chapter. Operational meaning is carried by text labels, icons, selected outlines, and action placement as well as colour. Large targets, scalable text, semantic content descriptions, predictable back navigation, and a native selected-node summary define the accessibility requirements for touch and screen-reader use. The formative task study below evaluates discoverability of the principal flow. Evaluation with assistive technologies and a wider range of users would extend this evidence to accessibility in use.
+Operational state is part of the interface rather than a hidden technical condition. A restored briefing retains its content and identifies its cached origin when refresh fails. Processing and retryable failure use different messages and actions. Colour supports this distinction but does not carry it alone; labels, icons, selection outlines, and action placement provide redundant cues. Scalable text, semantic descriptions, predictable back navigation, and a native selected-node summary form the accessibility requirements. The formative study addressed discoverability of the principal flow, not accessibility with assistive technologies.
 
 \section{Usability Testing}
 \label{sec:usability-testing}
 
-The architecture and interaction design establish what the system should expose. A formative usability study examined whether first-time readers could discover the intended path in an interactive prototype. Five participants were tested individually on comprehension and navigation across the central research loop. Task completion counts and qualitative observations from the moderated sessions show whether participants could locate and act on a recommendation explanation, source, answer, graph node, or preference control. Fixed prototype content held these interaction targets constant; system and model quality are evaluated through the experiments in Chapter~4.
+The formative study examined whether first-time readers could discover the intended path through the interactive prototype. Five participants completed the same moderated tasks using fixed fixture content. This design held the target controls and information hierarchy constant across sessions. The study supports task-level observations about the tested prototype; it does not measure recommendation quality, answer correctness, runtime performance, or the usability of the later application.
 
 \subsection{Usability Testing Script}
 \label{subsec:usability-script}
 
-Each session began with the same explanation: the study evaluated the interface; confusing behavior was useful evidence; participation could stop at any time; and the participant should think aloud. Concurrent think-aloud protocols can reveal usability problems, although the form of verbalization can influence the problems observed~\cite{fan2019thinkaloud}. The script therefore kept the instruction and facilitator behavior consistent across sessions. A test identity was already available so that routine setup would not consume the session. The facilitator presented tasks without naming a screen or control and responded to requests for help with non-directive prompts. This procedure preserved false starts and hesitation, particularly for controls whose appearance suggested information without making the available action clear.
+Each session began by explaining that the interface, rather than the participant, was under evaluation; confusing behavior was useful evidence; and participation could stop at any time. Participants were asked to think aloud. Concurrent think-aloud is widely used in usability testing, and different verbalization patterns vary in how strongly they indicate a usability problem~\cite{fan2019thinkaloud}. The facilitator used the same instruction and non-directive prompts for all sessions and avoided naming the target screen or control.
 
-The script's research questions matched the story-map transitions. It asked whether a participant could understand why a briefing item was recommended, recover a paper's main contribution and one source, ask a paper-scoped question and inspect the cited evidence, move from a paper into related work through the graph, and correct the interest profile. The pre-session questions covered paper-reading frequency, research area, discovery practice, prior AI-reading tools, and familiarity with citation graphs. The post-session questions asked which component was useful or confusing, whether reasons and citations affected confidence, and what should change. These questions provided context for interpreting the observed behavior. The retained study record supports task-level completion counts and qualitative observations, which form the basis of the analysis below.
+The five tasks corresponded to transitions in the story map: understanding why a paper was recommended, locating its contribution and one source, asking a paper-scoped question and inspecting the cited evidence, moving from a paper into related work through the graph, and correcting an interest. Table~\ref{tab:usability-script} states the observable criterion used for each task. Pre-session questions covered reading frequency, research area, discovery practice, prior AI-reading tools, and familiarity with citation graphs. Post-session questions asked which component was useful or confusing and whether reasons or citations affected confidence. The retained record supports completion counts and qualitative observations, but it does not contain participant-level timing, taps, hesitation duration, or complete transcripts.
 
-Table~\ref{tab:usability-script} defines the five tasks and the observable success criterion used in analysis. Target time and action counts were specified before testing as facilitation guides. The retained results contain success counts rather than participant-level timing, tap, or hesitation records, so task completion is the primary quantitative outcome. T3 measures whether the participant located both an answer and its cited excerpt; the accompanying observations describe how participants approached that verification step.
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Moderated prototype tasks and observable success criteria.}
+  \label{tab:usability-script}
+  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.07\textwidth}>{\raggedright\arraybackslash}p{0.43\textwidth}>{\raggedright\arraybackslash}p{0.41\textwidth}@{}}
+    \toprule
+    \MnemeTableHeader{ID} & \MnemeTableHeader{Participant task} & \MnemeTableHeader{Observable success criterion} \\
+    \midrule
+    T1 & Find why the top paper was recommended and open it. & Paper detail is reached from the briefing. \\
+    \MnemeRowRule
+    T2 & Find the paper's main contribution and verify one source. & The contribution and one associated evidence source are located. \\
+    \MnemeRowRule
+    T3 & Ask which dataset the paper used and inspect the cited evidence. & The answer region and its cited excerpt are located. \\
+    \MnemeRowRule
+    T4 & Open the graph and inspect one related or citing paper. & A related paper is opened through graph interaction. \\
+    \MnemeRowRule
+    T5 & Add or remove an interest topic used for later briefings. & The preference change is saved. \\
+    \bottomrule
+  \end{tabular}
+  \normalsize
+\end{table}
 
-\small
-\begin{longtable}{@{}p{0.07\textwidth}p{0.42\textwidth}p{0.31\textwidth}p{0.118\textwidth}@{}}
-  \caption{Moderated usability tasks, observable success criteria, and pre-specified facilitation targets.}\label{tab:usability-script}\\
-  \toprule
-  \MnemeTableHeader{ID} & \MnemeTableHeader{Participant task} & \MnemeTableHeader{Observable success criterion} & \MnemeTableHeader{Target} \\
-  \midrule
-  \endfirsthead
-  \multicolumn{4}{c}{\tablename\ \thetable\ continued}\\
-  \toprule
-  \MnemeTableHeader{ID} & \MnemeTableHeader{Participant task} & \MnemeTableHeader{Observable success criterion} & \MnemeTableHeader{Target} \\
-  \midrule
-  \endhead
-  \midrule
-  \multicolumn{4}{r}{Continued on next page}\\
-  \endfoot
-  \bottomrule
-  \endlastfoot
-  T1 & Find why the top paper was recommended and open it. & Paper detail reached from the briefing. & \(\leq 20\) s; \(\leq 2\) taps \\
-  \MnemeRowRule
-  T2 & Find the paper's main contribution and verify one source. & Contribution located and one evidence source identified. & \(\leq 45\) s \\
-  \MnemeRowRule
-  T3 & Ask which dataset the paper used and inspect the cited evidence. & Answer region and its cited evidence located. & \(\leq 60\) s \\
-  \MnemeRowRule
-  T4 & Open the graph and inspect one related or citing paper. & A related paper opened through graph interaction. & \(\leq 45\) s; \(\leq 3\) taps \\
-  \MnemeRowRule
-  T5 & Change briefing preferences by adding or removing an interest topic. & Preference change saved. & \(\leq 60\) s \\
-\end{longtable}
-\normalsize
-
-The primary measure was unaided binary task success under the stated criterion. Qualitative notes were used to locate the source of a failure and were kept as observations rather than converted into a post hoc numerical scale. This design suits a formative study because a concentrated task failure can identify an actionable interaction defect even in a small sample. The resulting claims concern discoverability under moderated task prompts.
+Unaided binary task completion was the primary measure. Qualitative notes were used to identify the source of a failure but were not converted into a numerical scale after the study. With five participants, the purpose was to identify concentrated interaction problems and guide revision, not to estimate a population success rate. The analysis reports counts and limits its conclusions to discoverability under the moderated prompts.
 
 \subsection{Usability Tests and Results}
 \label{subsec:usability-results}
 
-Figure~\ref{fig:usability-results} reports the recorded completion counts. All five participants completed briefing triage (T1), source inspection (T2), and cited Q\&A inspection (T3). Two of five completed the graph transition (T4), and four of five saved a preference change (T5). Across the five tasks, 21 of 25 participant--task attempts met the corresponding criterion, a descriptive proportion of 84\%. The task-specific counts show where the interaction succeeded and where redesign was required.
+Figure~\ref{fig:usability-results} reports the recorded completion counts. All five participants completed briefing triage (T1), source inspection (T2), and cited question inspection (T3). Two completed the graph transition (T4), and four saved a preference change (T5). In total, 21 of 25 participant--task attempts met their success criterion, a descriptive proportion of 84\%. The task-level distribution is more informative than the aggregate because it identifies where the initial interaction design failed.
 
 \begin{figure}[htbp]
   \centering
   \begin{tikzpicture}[font=\sffamily\small]
     \draw[MnemeNavy,line width=0.9pt,->] (0.7,0) -- (9.0,0);
     \draw[MnemeNavy,line width=0.9pt,->] (0.7,0) -- (0.7,5.8);
-    \foreach \y in {0,1,2,3,4,5}
-    {
-      \draw[MnemeNavy!25] (0.62,\y) -- (8.7,\y);
-      \node[left,text=MnemeInk] at (0.55,\y) {\y};
-    }
-    \foreach \x/\task/\score/\colour in {1.7/T1/5/MnemeGreen,3.25/T2/5/MnemeGreen,4.8/T3/5/MnemeGreen,6.35/T4/2/MnemeRed,7.9/T5/4/MnemeGold}
-    {
-      \fill[\colour!75] (\x-0.45,0) rectangle (\x+0.45,\score);
-      \draw[\colour!90!black,line width=0.7pt] (\x-0.45,0) rectangle (\x+0.45,\score);
-      \node[above,font=\bfseries,text=MnemeInk] at (\x,\score) {\score/5};
-      \node[below,font=\bfseries,text=MnemeInk] at (\x,-0.18) {\task};
-    }
+    \foreach \y in {0,1,2,3,4,5}{\draw[MnemeNavy!25] (0.62,\y) -- (8.7,\y); \node[left,text=MnemeInk] at (0.55,\y) {\y};}
+    \foreach \x/\task/\score/\colour in {1.7/T1/5/MnemeGreen,3.25/T2/5/MnemeGreen,4.8/T3/5/MnemeGreen,6.35/T4/2/MnemeRed,7.9/T5/4/MnemeGold}{\fill[\colour!75] (\x-0.45,0) rectangle (\x+0.45,\score); \draw[\colour!90!black,line width=0.7pt] (\x-0.45,0) rectangle (\x+0.45,\score); \node[above,font=\bfseries,text=MnemeInk] at (\x,\score) {\score/5}; \node[below,font=\bfseries,text=MnemeInk] at (\x,-0.18) {\task};}
     \node[rotate=90,font=\bfseries,text=MnemeInk] at (-0.15,2.8) {Participants meeting criterion};
     \node[align=center,font=\scriptsize,text=MnemeInk] at (1.7,-0.85) {Briefing};
     \node[align=center,font=\scriptsize,text=MnemeInk] at (3.25,-0.85) {Source};
@@ -859,14 +306,14 @@ Figure~\ref{fig:usability-results} reports the recorded completion counts. All f
     \node[align=center,font=\scriptsize,text=MnemeInk] at (6.35,-0.85) {Graph};
     \node[align=center,font=\scriptsize,text=MnemeInk] at (7.9,-0.85) {Interests};
   \end{tikzpicture}
-  \caption{Observed task success in the formative prototype study (\(n=5\)); each bar shows the number of participants who met the corresponding task criterion.}
+  \caption{Observed task completion in the formative prototype study (\(n=5\)). Each bar shows the number of participants who met the corresponding criterion.}
   \label{fig:usability-results}
 \end{figure}
 
-The 15 of 15 completions across T1--T3 show that, under explicit task prompts, participants could move from a recommendation reason to paper detail, locate a source-oriented summary path, and inspect evidence associated with a Q\&A response. Session notes described the briefing as readily legible and citation-backed answers as useful. They also indicated that verification deserved a stronger visual cue. A reader responding to an explicit verification task may locate a source control that is less noticeable during ordinary reading. The design therefore retains the briefing structure and places source labels and citation chips closer to the claims they qualify. Chapter~4 complements this interaction result with separate measures of system and answer behavior.
+The 15 completions across T1--T3 indicate that the prompted reading path was discoverable in the prototype. Participants could move from a recommendation to paper detail, locate a source-oriented summary path, and inspect the cited evidence associated with an answer. Session notes also suggested that evidence access deserved a stronger visual cue. The revised design therefore places source labels and citation actions beside the generated content they qualify instead of treating verification as a secondary destination.
 
-Two participants completed T4 and used the graph to open a related paper. The other three did not infer which elements could be selected or how selection led to a paper, although the visual form attracted attention. This concentrated result motivated three coupled changes: an instruction cue states that a node can be tapped, the selected node acquires a persistent state with relationship context, and an \emph{Open Paper} action remains visible after selection. These changes directly address the observed discoverability problem, and software tests verify the revised interaction behavior.
+Graph exploration produced the clearest problem. Three participants did not infer which elements were selectable or how selection led to another paper. The adjusted design adds a short instruction above the canvas, a persistent selected-node state, explicit relationship context, and a visible \emph{Open Paper} action. These changes address the observed ambiguity in action and consequence. They were not evaluated in a second participant study, so the present result establishes the rationale for the redesign, not an improvement in usability. Functional verification of selection and navigation in Chapter~4 answers a different question and must not be interpreted as user-study evidence.
 
-T5 was completed by four participants. The single failure and accompanying observation indicated that participants could understand the interest controls once they found them, while their initial placement lacked prominence. Preference tuning therefore remains one action away from the briefing and receives an explicit settings entry. This placement also supports the broader transparency objective: a user who sees an irrelevant reason can inspect and correct explicit interests without leaving the reading loop. Chapter~4 examines the effect of an explicit profile correction on subsequent ranking under controlled conditions.
+One participant did not complete the interest-editing task. The observation indicated that the controls were understandable after discovery but insufficiently prominent from the briefing. The adjusted design therefore keeps preference editing one action away from the briefing and gives it an explicit settings entry. This change also supports correction of personalization: when a reason appears irrelevant, the reader can inspect and edit explicit interests without abandoning the reading task.
 
-The study established a legible reading spine for briefing triage, source inspection, cited Q\&A, and interest correction. It also isolated graph discoverability as the principal interaction problem: three participants did not complete T4, and their observed difficulty led directly to the instruction cue, persistent selection state, relationship preview, and visible \emph{Open Paper} action. The five moderated sessions and controlled prototype content support this formative design conclusion. A repeated study with the revised graph, participant background measures, and per-task timing would quantify the effect of those changes and extend the present findings beyond prompted first-use interaction.
+Taken together, the sessions support a narrow formative conclusion. The initial prototype exposed a legible path through briefing, paper reading, source inspection, and paper-scoped questioning, while graph discoverability required substantial revision and interest controls required a clearer entry point. The study does not establish the effectiveness of the revised graph, general usability across researcher populations, or accessibility in use. Those questions require a new participant protocol with the revised interface, retained participant characteristics, and task-level measurements. The application implementation and final-product interface are described separately in Chapter~4 so that the design evidence in this chapter is not confused with implementation evidence.
