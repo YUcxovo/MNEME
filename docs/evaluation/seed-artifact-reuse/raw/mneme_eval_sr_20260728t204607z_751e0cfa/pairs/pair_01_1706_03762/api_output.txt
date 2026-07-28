@@ -1,0 +1,19 @@
+INFO:     Started server process [260523]
+INFO:     Waiting for application startup.
+{"environment": "testing", "version": "0.1.0", "event": "application_started", "level": "info", "timestamp": "2026-07-28T20:46:11.186445Z"}
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+{"http_status": 200, "duration_ms": 1.119, "event": "request_completed", "http_method": "GET", "request_id": "d978bd67-6f39-450e-a63c-188c8c81721a", "http_path": "/v1/health", "level": "info", "timestamp": "2026-07-28T20:46:11.320145Z"}
+INFO:     127.0.0.1:45488 - "GET /v1/health HTTP/1.1" 200 OK
+HTTP Request: GET https://export.arxiv.org/api/query?id_list=1706.03762&max_results=1 "HTTP/1.1 200 OK"
+HTTP Request: GET https://api.semanticscholar.org/graph/v1/paper/ARXIV%3A1706.03762?fields=externalIds%2Creferences.externalIds "HTTP/1.1 200 OK"
+HTTP Request: GET https://export.arxiv.org/api/query?id_list=1705.04304%2C1705.03122%2C1703.03906%2C1703.03130%2C1703.10722&max_results=5 "HTTP/1.1 200 OK"
+{"seed_arxiv_id": "1706.03762", "paper_count": 5, "reference_edges": 20, "citation_edges": 0, "event": "seed_graph_candidates_prepared", "http_method": "POST", "request_id": "efb91b71-b248-4864-99e3-595ccb6147fd", "http_path": "/v1/onboarding/seed", "level": "info", "timestamp": "2026-07-28T20:46:16.760913Z"}
+{"seed_arxiv_id": "1706.03762", "category": "cs.CL", "paper_count": 5, "candidate_source": "citation_graph", "event": "seed_initialization_completed", "http_method": "POST", "request_id": "efb91b71-b248-4864-99e3-595ccb6147fd", "http_path": "/v1/onboarding/seed", "level": "info", "timestamp": "2026-07-28T20:46:42.789875Z"}
+{"http_status": 200, "duration_ms": 29608.979, "event": "request_completed", "http_method": "POST", "request_id": "efb91b71-b248-4864-99e3-595ccb6147fd", "http_path": "/v1/onboarding/seed", "level": "info", "timestamp": "2026-07-28T20:46:42.807558Z"}
+INFO:     127.0.0.1:39302 - "POST /v1/onboarding/seed HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+{"event": "application_stopped", "level": "info", "timestamp": "2026-07-28T20:46:48.670986Z"}
+INFO:     Application shutdown complete.
+INFO:     Finished server process [260523]

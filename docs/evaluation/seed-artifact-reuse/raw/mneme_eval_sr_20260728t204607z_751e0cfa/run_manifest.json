@@ -1,0 +1,73 @@
+{
+  "schema_version": "seed-artifact-reuse-run-manifest-v1",
+  "run_id": "mneme_eval_sr_20260728t204607z_751e0cfa",
+  "measured_at_utc": "2026-07-28T20:46:08Z",
+  "repository_revision": "0048878706245859122c8b374558675f260e047f",
+  "fixed_seeds": [
+    "1706.03762",
+    "2010.11929",
+    "2106.09685"
+  ],
+  "pairs": [
+    {
+      "pair_id": "pair_01",
+      "seed_arxiv_id": "1706.03762",
+      "relative_dir": "pairs/pair_01_1706_03762",
+      "database_name": "mneme_eval_sr_20260728t204607z_751e0cfa_pair_01",
+      "queue_name": "mneme:jobs:eval:mneme_eval_sr_20260728t204607z_751e0cfa:pair_01",
+      "redis_database": 0,
+      "redis_instance_port": 6381
+    },
+    {
+      "pair_id": "pair_02",
+      "seed_arxiv_id": "2010.11929",
+      "relative_dir": "pairs/pair_02_2010_11929",
+      "database_name": "mneme_eval_sr_20260728t204607z_751e0cfa_pair_02",
+      "queue_name": "mneme:jobs:eval:mneme_eval_sr_20260728t204607z_751e0cfa:pair_02",
+      "redis_database": 0,
+      "redis_instance_port": 6382
+    },
+    {
+      "pair_id": "pair_03",
+      "seed_arxiv_id": "2106.09685",
+      "relative_dir": "pairs/pair_03_2106_09685",
+      "database_name": "mneme_eval_sr_20260728t204607z_751e0cfa_pair_03",
+      "queue_name": "mneme:jobs:eval:mneme_eval_sr_20260728t204607z_751e0cfa:pair_03",
+      "redis_database": 0,
+      "redis_instance_port": 6383
+    }
+  ],
+  "timing_endpoint": "Immediately before submit click to visible live five-paper briefing.",
+  "source_tree_clean_at_start": true,
+  "finish_tree_gate": "pending",
+  "android_data_cleared_before_each_condition": true,
+  "backend_state_preserved_between_first_and_reuse": true,
+  "dedicated_redis_instance_per_pair": true,
+  "failed_runs_retried": false,
+  "token_retained": false,
+  "hashes": {
+    "app_apk_sha256": "0cf33a6b8a5079889f7c3e3523ed074f9192018f161f89fb857496a12f629425",
+    "test_apk_sha256": "8410ed7e9bcf5ae1e6823aaa4ebb321786e6971d4eb897c3b5617ef17efe8607",
+    "runner_sha256": "4ea5eb9607dd9370a15c08e4aea224fdf5e496b9998079e364a1365acc33da1f",
+    "inspector_sha256": "fe516682acdf63be56aca20f072d183abe6a5078c7537a60c92cfebcce2c4800",
+    "analyzer_sha256": "bed4b52312e0e8a0abe1d1f1a56a840c19ee41f69ec7bd73ecccfd2dad9ec5eb",
+    "android_test_sources_sha256": "421fc2d60854b61494977d0fdbd1b098be00646fd83e232d27d21a769bade992"
+  },
+  "device_environment": {
+    "serial": "emulator-5554",
+    "model": "sdk_gphone64_x86_64",
+    "product": "sdk_gphone64_x86_64",
+    "android_release": "14",
+    "android_api": "34",
+    "boot_id": "1486cd60-38c2-4a08-a9bb-278ecf6c590f",
+    "webview_provider": "(com.google.android.webview, 113.0.5672.136)"
+  },
+  "host_environment": {
+    "logical_cpus": "14",
+    "memory_kib": "32330308",
+    "load_average_1m_5m_15m": "1.96,2.32,2.82",
+    "kernel": "Linux 7.0.0-28-generic x86_64 GNU/Linux"
+  },
+  "interpretation": "Seed-to-visible-briefing latency under paired reuse-eligible backend state. Immutable jobs and artifacts are verified, but the contrast is not a causal isolation of artifact caching.",
+  "analysis": "Three fixed paired observations; descriptive median and range only."
+}

@@ -1,0 +1,21 @@
+Traceback (most recent call last):
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/tools/evaluation/inspect_seed_artifact_state.py", line 454, in <module>
+    main()
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/tools/evaluation/inspect_seed_artifact_state.py", line 438, in main
+    snapshot = asyncio.run(create_snapshot(arguments))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/tools/evaluation/inspect_seed_artifact_state.py", line 370, in create_snapshot
+    environment = guarded_environment(arguments.pair_id)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/tools/evaluation/inspect_seed_artifact_state.py", line 64, in guarded_environment
+    raise RuntimeError("Inspector refuses a non-local PostgreSQL host.")
+RuntimeError: Inspector refuses a non-local PostgreSQL host.
