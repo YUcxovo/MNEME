@@ -1,0 +1,53 @@
+{
+  "all_trials_valid": true,
+  "candidate_sources": [
+    "citation_graph",
+    "citation_graph",
+    "citation_graph"
+  ],
+  "candidate_sources_homogeneous": true,
+  "duration_ms": {
+    "maximum": 41731.145,
+    "median": 36496.898,
+    "minimum": 28458.372,
+    "range": 13272.772999999997,
+    "values": [
+      28458.372,
+      41731.145,
+      36496.898
+    ]
+  },
+  "individual_results": [
+    {
+      "api_request_duration_ms": 26718.259,
+      "candidate_source": "citation_graph",
+      "duration_ms": 28458.372,
+      "paper_count": 5,
+      "paper_ids": "9a5f6db5-24df-4c31-80af-b1c36119764e;619bf8d4-ca5c-456d-9047-59f69dee2a34;23be5347-5e66-4d32-8588-ea2d15353220;68779d08-847b-46bd-bc99-aaae7d9bee6e;d32265e1-1158-4a9e-bd1a-b4c591ffa75d",
+      "seed_arxiv_id": "1706.03762",
+      "trial_id": "trial_01"
+    },
+    {
+      "api_request_duration_ms": 41163.187,
+      "candidate_source": "citation_graph",
+      "duration_ms": 41731.145,
+      "paper_count": 5,
+      "paper_ids": "c8be8b59-d082-4fa2-a5a0-9441f23c5fc1;3e4dcd85-9a7c-4972-b273-19a9d036521e;d0cb1550-abb3-42e7-bb33-377b7168aa88;08beeb40-3d2a-41be-8704-e23b18b029ed;5d4923ea-f3a7-4350-911a-073d445bd061",
+      "seed_arxiv_id": "2010.11929",
+      "trial_id": "trial_02"
+    },
+    {
+      "api_request_duration_ms": 35056.756,
+      "candidate_source": "citation_graph",
+      "duration_ms": 36496.898,
+      "paper_count": 5,
+      "paper_ids": "88f64c10-fdca-4409-82fd-06db44dd7fc9;3e950c0b-003b-473e-9b52-51a55550cc3b;02e2b11c-bd05-406c-8d54-a399b9755841;27611b24-de31-4123-96a1-eaea417ccd10;287782da-25e8-4620-ba66-1b69a38fb232",
+      "seed_arxiv_id": "2106.09685",
+      "trial_id": "trial_03"
+    }
+  ],
+  "interpretation_boundary": "Three fixed, single first-initialization observations from submit click to a visible live five-paper briefing. Each trial used fresh Android data, PostgreSQL, Redis, storage, and user state. Host caches and live external-provider conditions were not reset. Candidate source is retained because citation-graph and category-fallback paths have different workloads. Descriptive median, minimum, maximum, and range only; no percentile, confidence interval, or population claim.",
+  "schema_version": "seed-first-initialization-analysis-v1",
+  "successful_trials": 3,
+  "trial_count": 3
+}

@@ -1,0 +1,12 @@
+{
+  "api_request_duration_ms": 26718.259,
+  "candidate_source": "citation_graph",
+  "category": "cs.CL",
+  "paper_count": 5,
+  "request_id": "e0bfaaad-fed9-43a6-a17c-571ea50d5cb0",
+  "schema_version": "seed-first-initialization-candidate-source-v1",
+  "secrets_retained": false,
+  "seed_arxiv_id": "1706.03762",
+  "source_event": "seed_initialization_completed",
+  "trial_id": "trial_01"
+}

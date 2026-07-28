@@ -1,0 +1,10 @@
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001, Create the v0.1 application schema.
+INFO  [alembic.runtime.migration] Running upgrade 0001 -> 0002, Add revision-scoped document provenance and pipeline identity.
+INFO  [alembic.runtime.migration] Running upgrade 0002 -> 0003, Add source download provenance to paper revisions.
+INFO  [alembic.runtime.migration] Running upgrade 0003 -> 0004, Add a recoverable dispatch lease to durable pipeline jobs.
+INFO  [alembic.runtime.migration] Running upgrade 0004 -> 0005, Expand citations to represent incoming external observations.
+INFO  [alembic.runtime.migration] Running upgrade 0005 -> 0006, Index unresolved citation targets for later local resolution.
+INFO  [alembic.runtime.migration] Running upgrade 0006 -> 0007, Add contrastive behavior-v2 profile state.
+{"preferences_created": true, "status": "ok", "user_created": true, "user_id": "21e68be0-ee02-43c4-8a8d-5022d8928243"}
