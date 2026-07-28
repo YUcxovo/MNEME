@@ -92,12 +92,23 @@ private fun BriefingFeed(
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .testTag(briefing.contentTestTag()),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         briefingItems(briefing = briefing, onPaperClick = onPaperClick)
     }
+}
+
+private fun BriefingUiModel.contentTestTag(): String {
+    val origin =
+        disclosure.origin.name
+            .lowercase()
+            .replace('_', '-')
+    return "briefing-content-${papers.size}-$origin"
 }
 
 private fun LazyListScope.briefingItems(
