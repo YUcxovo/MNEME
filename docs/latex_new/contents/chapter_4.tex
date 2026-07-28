@@ -36,10 +36,11 @@ Both properties are verified by the synchronization experiments reported later i
 
 The home surface is the briefing list, composed of cards that pair each recommended paper with its match information, a human-readable reason produced by the recommendation scorer, and one dominant open action.
 The paper detail screen presents the structured summary with its source-linked elements, and the question-answering surface accepts a free-form question and renders the grounded answer together with its citation markers, so a reader can move from a cited claim to its supporting evidence excerpt.
-Verification labels sit adjacent to the claims they qualify. This placement responds directly to the formative usability observations of Chapter~3.
+Verification labels sit adjacent to the claims they qualify, following the formative usability observations reported in Chapter~3.
 
 The citation graph is the one control that leaves the Compose toolkit.
 It is rendered by a locally bundled D3 visualization inside a WebView, so no network fetch is required for the visualization itself, while node selection is mirrored back into native state through a JavaScript bridge.
+Before a graph is serialized for the WebView, the client validates unique node identities, the presence of the centre node, and the absence of dangling edges; the return bridge accepts only an identifier present in the displayed graph and posts the selection to the Android main thread.
 The native side therefore remains the single source of truth for the current selection, which enables the persistent ``open paper'' action, a distinct selected-node style, and the selection-restoration behavior verified under UI Testing.
 Graph size is bounded at fifty nodes by the client request contract, keeping both rendering cost and user orientation manageable on a phone screen.
 
@@ -60,8 +61,25 @@ The cold-start and resume latencies reported under Performance Testing therefore
 \subsection{Other Aspects}
 
 Persistence is provided by Room with explicit schema migrations; briefing and paper caches carry offline metadata and retention policies.
-Background work is scheduled through WorkManager, which owns periodic refresh and recovers interrupted work after process death; the durable event queue is drained by this machinery, and a reserved event returns to the pending state when its worker is interrupted.
+Background work is scheduled through WorkManager~\cite{androidWorkManager2026}, which owns periodic refresh and recovers interrupted work after process death; the durable event queue is drained by this machinery, and a reserved event returns to the pending state when its worker is interrupted.
 Local notifications announce newly generated briefings, and first-run onboarding derives an initial arXiv category from a seed paper, preparing an initial set of papers through the backend pipeline before the first briefing is shown.
+
+Paper resolution gives each route a single active load, so a late response for a previously selected paper cannot replace the newly selected one. Algorithm~\ref{alg:mobile-paper-resolution} states the implemented procedure realizing the origin-disclosure states designed in Chapter~3; the three-stage polling behavior it produces is measured under Performance Testing.
+
+\begin{algorithm}[htbp]
+  \caption{Origin-aware mobile paper resolution}
+  \label{alg:mobile-paper-resolution}
+  \KwIn{Selected paper identity \(p\), optional locally stored paper record}
+  \KwOut{Typed presentation state with visible content origin}
+  Cancel an earlier load, enter \emph{loading} for \(p\), and request its remote representation\;
+  \If{the remote request fails}{\Return cached content when available; otherwise enter a retryable error state\;}
+  Store a validated remote paper locally before presenting its derived content\;
+  \While{the summary response identifies a queued or running job}{
+    Display the preparation stage and poll the durable job after a bounded interval\;
+    Propagate cancellation without converting it to a visible failure\;
+  }
+  \eIf{the representation is ready}{Render live content\;}{Enter a retryable error state with the safe public message\;}
+\end{algorithm}
 
 Device-level results were collected on Android~14 under the baseline and resource-controlled emulator configurations described under Testing Tool.
 The study varies CPU and RAM within one emulation host.
@@ -72,29 +90,94 @@ Physical-device validation and notification-permission testing across additional
 The backend is a Python/FastAPI service.
 It uses PostgreSQL for durable storage, \texttt{pgvector} for vector search, Redis for caching, budget accounting, and job queues, and ARQ workers for background processing.
 Its data model separates a paper's logical identity from its observed arXiv revisions: metadata ingestion registers papers, while long-running preparation, including parsing, section-aware chunking, summarization, and embedding, runs in workers whose job state survives process restart.
-Every derived artifact binds to a specific paper revision, and this binding is the structural foundation for the representation-continuity mechanisms that follow.
+Chapter~3 fixed the design boundaries and public contracts of this service; the subsections below describe the implemented methods behind them, together with the parameters used in the evaluation.
 
-Determinism and explicit identity enforce representation continuity.
+\subsection{Revision-Safe Document Preparation}
+\label{subsec:backend-preparation}
+
+The data model distinguishes a logical paper \(p\) from an observed revision \(r\). The logical paper retains discovery metadata and stable external identifiers; the revision retains the source checksum, byte size, parser version, parse checksum, quality tier, and timestamps associated with one content state. A derived artifact \(a\) is interpreted as
+\begin{equation}
+  a = f\!\left(p,r,h,\theta\right),
+  \label{eq:artifact-lineage}
+\end{equation}
+where \(h\) is the content checksum and \(\theta\) contains the transformation identity relevant to the artifact, such as parser, embedding model, prompt, or generator configuration. Equality of the logical paper identifier does not imply that two artifacts are interchangeable; reuse is valid only when the material lineage fields for the artifact class match. This binding is the structural foundation for the representation-continuity mechanisms that follow.
+
+Algorithm~\ref{alg:document-preparation} states the preparation contract at the stage level.
+
+\begin{algorithm}[htbp]
+  \caption{Revision-safe document preparation}
+  \label{alg:document-preparation}
+  \KwIn{Logical paper \(p\), revision \(r\), validated source metadata, pipeline configuration \(\theta\)}
+  \KwOut{A revision-scoped artifact state and durable identities for subsequent stages}
+  Derive a durable job identity from \(p\), \(r\), the stage, and \(\theta\)\;
+  \If{that job has succeeded}{\Return its published artifact state\;}
+  Download and validate the revision under bounded size and time limits\;
+  Publish the verified PDF atomically, then parse it into a versioned sidecar\;
+  Record the parser identity, quality tier, checksum, and revision lineage\;
+  Persist revision-scoped summary and chunk jobs before dispatching them\;
+  \If{a controlled failure occurs}{
+    Persist a stable failure state and retain any earlier valid artifact\;
+  }
+  \Return the current artifact state and child-job identities\;
+\end{algorithm}
+
+Durable identity is established before execution, and downstream work is recorded before delivery to a replaceable queue, so a process or queue failure can be retried without publishing partial bytes or losing the lineage between a parsed artifact and the exact revision that produced it.
+Each processing stage receives an idempotency key computed from canonical inputs containing the stage, pipeline version, scope, and material identity: download identity includes the paper and revision, parse identity additionally includes the source checksum and parser version, and embedding identity includes the parsed artifact and the embedding model.
+A uniqueness constraint causes concurrent submissions of the same logical work to converge on one durable job; the database records the public lifecycle, while replaceable queue attempts refer back to that job.
+PDF and parsed-sidecar publication use temporary files and atomic replacement, so after a crash, storage contains either the complete previous artifact or an identifiable temporary file, and an incomplete file cannot appear as a valid published artifact.
+
+Parsing must tolerate the variability of scientific PDFs in embedded text, column structure, marginal furniture, and heading typography.
+CERMINE reconstructs document structure from page layout and text cues when PDF files encode no reliable semantic hierarchy~\cite{tkaczyk2015cermine}, and S2ORC demonstrates the downstream value of retaining paragraphs, section headers, and citation structure in machine-readable scholarly text~\cite{lo2020s2orc}.
+The implemented parser combines PyMuPDF text blocks with pdfplumber layout information, reconstructs reading order for common two-column pages, filters likely marginal text blocks, and detects section boundaries from layout and heading cues.
+It assigns a quality tier according to the evidence actually available: \texttt{structured} indicates useful text with credible sections, \texttt{text\_only} indicates useful text without sufficient structural confidence, and \texttt{abstract\_only} substitutes the provider abstract when the PDF cannot support full-text processing. A degraded document therefore remains usable at a disclosed, lower evidence fidelity.
+
 Chunking is deterministic: the same parsed sections always produce the same chunk contents and content hashes, which makes the embedding stage idempotent and re-chunking comparable across runs.
+Chunk construction splits oversized content near sentence boundaries with controlled overlap and retains section identity, page range, content hash, token estimate, and revision identity.
+The deployed configuration bounds chunks at an estimated 450 tokens with a 60-token overlap; these values are the fixed study configuration rather than tuned optima, and chunk size and context-preserving chunking strategies are known to affect retrieval quality and answer faithfulness~\cite{wang2024bestpractices}.
 Each embedding is stored in a 1536-dimension vector column paired with the identity of the model that produced it, under a database constraint that either both or neither are set, so a model migration cannot leave orphan vectors that silently poison similarity search.
 Retrieval is revision-scoped by construction: an update to a paper produces new artifacts for the new revision and leaves the old revision unchanged. Question answering over one revision cannot draw evidence from another.
 
+\subsection{Evidence-Grounded Question Answering}
+\label{subsec:backend-qa}
+
 Evidence continuity is implemented as a pipeline that is transparent about each of its stages.
 Retrieval embeds the question and performs an exact cosine-ordered vector search over one revision's chunks, returning the top eight by similarity plus up to two early-document context anchors that preserve overview context; dense membership and anchor membership are tracked independently, because an early section can legitimately be both.
-Reranking uses an interpretable lexical blend. The final score weights vector similarity at 0.7 and the fraction of the question's content words present in the chunk at 0.3, ties break on the original retrieval order, and the top four chunks become evidence. Anchors outside that set are appended without displacing question-specific evidence.
+
+Reranking uses an interpretable lexical blend. For a question \(q\) and candidate chunk \(c\), the deterministic second-stage score combines normalized vector similarity \(D(q,c)\) with content-word overlap \(L(q,c)\):
+\begin{equation}
+  R(q,c)=0.7D(q,c)+0.3L(q,c).
+  \label{eq:qa-rerank}
+\end{equation}
+Semantic proximity remains dominant, and lexical overlap supplies a task-specific correction without adding another learned model. Ties break on the original retrieval order, and the top four chunks become evidence; anchors outside that set are appended without displacing question-specific evidence.
+
 Generation is refused before any model call when no evidence reaches a minimum score of 0.25; the model may itself decline through a designated insufficient-evidence marker, and both paths return the same fixed refusal answer, so refusal is a single, recognizable outcome for the client.
 After generation, citation verification checks every bracketed marker against the evidence list. Markers outside the list are dropped, and each cited excerpt is compared with the claim sentences that carry its marker.
 A citation counts as source-matched when at least 30\% of the claim's content words appear in the cited chunk, and answers are labeled matched, partially matched, or insufficient.
-Following the distinction drawn in citation-quality research~\cite{gao2023alce}, this mechanism performs retrieved-source matching. It verifies lexical anchoring in retrieved text and does not establish semantic entailment or scientific correctness.
-Figure~\ref{fig:qa-pipeline} assembles these stages into one view. Every arrow either narrows or checks the evidence, and both exits, a labeled answer and the fixed refusal, are explicit outcomes of the pipeline.
+Retrieved context can coexist with unsupported or contradictory generation~\cite{niu2024ragtruth}, and following the distinction drawn in citation-quality research~\cite{gao2023alce}, this mechanism performs retrieved-source matching. It verifies lexical anchoring in retrieved text and does not establish semantic entailment or scientific correctness.
+
+Algorithm~\ref{alg:qa-evidence} combines these stages into the implemented procedure.
+
+\begin{algorithm}[htbp]
+  \caption{Revision-scoped answer generation and source checking}
+  \label{alg:qa-evidence}
+  \KwIn{Paper \(p\), revision \(r\), question \(q\), embedding model \(m\), retrieval count \(k\), evidence threshold \(\tau\)}
+  \KwOut{Answer text, valid source records, and a source-match state}
+  Embed \(q\) and retrieve \(k\) candidates filtered by \(p\), \(r\), and \(m\)\;
+  Add at most two non-duplicate overview anchors from revision \(r\)\;
+  Compute \(R(q,c)\) from Equation~\ref{eq:qa-rerank} and order the evidence\;
+  \If{the evidence is empty or its best score is below \(\tau\)}{\Return the fixed insufficient-evidence response\;}
+  Generate an answer from the selected, numbered excerpts\;
+  \If{the answer is empty or contains no usable marker}{\Return the fixed insufficient-evidence response\;}
+  Discard invalid markers and measure local support for the remaining citations\;
+  Assign \emph{matched}, \emph{partial}, or \emph{insufficient} from the valid-marker and overlap checks\;
+  \Return the answer, valid source records, and assigned state\;
+\end{algorithm}
+
+The retrieval filter establishes revision membership, and the final checks establish marker validity and local lexical support; the returned state records the outcome of these checks for the client and for the graded evaluation reported under Testing Results.
+Figure~\ref{fig:qa-pipeline} assembles the same stages into one view. Every arrow either narrows or checks the evidence, and both exits, a labeled answer and the fixed refusal, are explicit outcomes of the pipeline.
 
 \begin{figure}[htbp]
 \centering
-\definecolor{MnemeNavy}{HTML}{17324D}
-\definecolor{MnemeBlue}{HTML}{2F6F8F}
-\definecolor{MnemeGold}{HTML}{C89445}
-\definecolor{MnemeGreen}{HTML}{4F8A5B}
-\definecolor{MnemeRed}{HTML}{B5544F}
 \resizebox{0.98\textwidth}{!}{%
 \begin{tikzpicture}[
   font=\small,
@@ -126,27 +209,194 @@ Figure~\ref{fig:qa-pipeline} assembles these stages into one view. Every arrow e
 \label{fig:qa-pipeline}
 \end{figure}
 
-Interest continuity is served by a recommendation scorer that composes three signals: explicit topic match with nominal weight 0.45, a contrastive behavioral affinity with nominal weight \(0.35C\), and publication recency with a one-week half-life at weight 0.2.
-The behavioral affinity compares a candidate's mean chunk embedding with the profile's positive and negative interest centroids, and confidence \(C\) scales its influence.
-The behavior embedding is produced by deterministic, confidence-calibrated contrastive aggregation.
-The design accounts for sparse observations and changes in interests over time.
-It treats a skip as negative evidence only after recorded exposure and limits the effect of repeated activity on one paper.
-The aggregation maintains separate positive and negative channels, applies dual-timescale decay, saturates per-paper support, and carries evidence confidence into the final recommendation score.
-The signed single-timescale profile that preceded this design is kept available as a frozen baseline for the evaluation reported later in this chapter.
-Missing signals redistribute their weight over the available ones, so a cold-start user still receives a meaningful ranking, and the ranking is deterministic with a stable tie-break.
-Each recommendation carries human-readable reasons derived from its dominant scoring signals. The client renders these deterministic reasons beside each briefing entry, satisfying the scrutability requirement established in Chapter~3.
+\subsection{Behavioral Interest Model and Recommendation}
+\label{subsec:backend-behavior}
 
-The citation graph that the client renders is produced by a deterministic algorithm layer. Its pure functions support citation-edge weighting, optional keyword co-occurrence, bounded selection, clustering, and ranking. The public graph service currently supplies persisted citation edges and no keyword co-occurrence input, so its returned edges represent resolved citation relations.
+Interest continuity is served by a recommendation scorer that composes three signals: explicit topic match, a contrastive behavioral affinity scaled by an evidence confidence, and publication recency.
+The implementation responds to two long-standing observations about implicit feedback, that an observed action is not the same as confident preference~\cite{hu2008implicit} and that preferences drift over time~\cite{koren2009temporal}, with a deterministic, confidence-calibrated contrastive aggregation over content-space embeddings.
+The signed single-timescale profile that preceded this design is kept available as a frozen baseline for the evaluation reported later in this chapter.
+
+The model first distinguishes exposure from preference evidence.
+An impression records that a paper was shown but contributes no positive weight; opens, saves, shares, and paper-scoped questions provide positive evidence; and a skip provides negative evidence only if an impression or open for the same paper occurred during the preceding seven days, which prevents an unobserved paper from being interpreted as a rejected topic.
+Briefing dismissal remains outside the paper-interest profile because it has no paper identity.
+Table~\ref{tab:behavior-weights} defines these fixed semantics. The magnitudes encode design priorities within this model, not measured certainty about the user's intent.
+
+\begin{table}[htbp]
+  \centering
+  \small
+  \caption{Event semantics in the contrastive behavioral aggregation.}
+  \label{tab:behavior-weights}
+  \begin{tabular}{@{}p{0.32\textwidth}p{0.18\textwidth}p{0.40\textwidth}@{}}
+    \toprule
+    \MnemeTableHeader{Observed event} & \MnemeTableHeader{Base weight} & \MnemeTableHeader{Interpretation} \\
+    \midrule
+    Paper impression & \(0\) & Exposure record used to qualify a subsequent skip. \\
+    \MnemeRowRule
+    Paper opened & \(+1\) & Positive evidence refined by bounded reading duration. \\
+    \MnemeRowRule
+    Paper saved & \(+3\) & Explicit positive retention signal. \\
+    \MnemeRowRule
+    Paper skipped & \(-1\) & Negative evidence only after recent exposure to the same paper. \\
+    \MnemeRowRule
+    Paper shared & \(+4\) & Strong explicit positive action. \\
+    \MnemeRowRule
+    Paper-scoped question asked & \(+2\) & Positive evidence of engagement with the selected paper. \\
+    \MnemeRowRule
+    Briefing dismissed & \(0\) & Session-level observation excluded from the paper-interest profile. \\
+    \bottomrule
+  \end{tabular}
+  \normalsize
+\end{table}
+
+For eligible event \(i\), let \(b_i\) denote its signed base weight, \(m_i\) its duration multiplier, and \(\Delta_i\) its age in days. Only an open uses duration. If its observed duration is \(d_i\) seconds, clamped to the interval \([0,300]\), the continuous multiplier and dual-timescale temporal decay are
+\begin{equation}
+  m_i=0.5+\frac{\log(1+d_i/30)}{\log 11},
+  \qquad
+  g(\Delta_i)=0.70\,2^{-\Delta_i/14}+0.30\,2^{-\Delta_i/60}.
+  \label{eq:behavior-temporal-weight}
+\end{equation}
+A missing duration gives \(m_i=1\), and a non-open event also uses unit duration multiplier. The effective signed evidence is \(\widetilde{w}_i=b_i m_i g(\Delta_i)\); observations older than 180 days contribute no profile evidence. The logarithmic transform lets reading time refine an open without allowing passive dwell time to outweigh an explicit save or share. Combining a 14-day and a 60-day half-life preserves sensitivity to recent changes while retaining a smaller persistent component. These fixed, replayable parameters define the configuration evaluated in this study.
+
+A direct signed average has two undesirable properties: repeated actions on one paper can dominate through frequency, and positive and negative vectors can cancel into a near-zero representation that hides conflicting evidence. The first property is addressed by accumulating positive and negative mass separately for each paper \(j\), then applying diminishing returns:
+\begin{equation}
+  M_j^+=\sum_{i\in j}\max(\widetilde{w}_i,0),
+  \quad M_j^-=\sum_{i\in j}\max(-\widetilde{w}_i,0),
+  \quad a_j^+=1-e^{-M_j^+/3},
+  \quad a_j^-=1-e^{-M_j^-}.
+  \label{eq:behavior-saturation}
+\end{equation}
+The resulting supports \(a_j^+\) and \(a_j^-\) are bounded below one, so another interaction with an already well-supported paper has less influence than evidence from a distinct paper. Let \(v_j\) be the compatible mean chunk embedding of paper \(j\). Positive and negative interest states are then maintained as independently normalized support-weighted centroids:
+\begin{equation}
+  u^+=\operatorname{norm}\!\left(\sum_j a_j^+v_j\right),
+  \qquad
+  u^-=\operatorname{norm}\!\left(\sum_j a_j^-v_j\right).
+  \label{eq:behavior-contrastive-profile}
+\end{equation}
+Here, \(\operatorname{norm}(x)=x/\lVert x\rVert_2\) for a non-degenerate vector; a channel with no compatible evidence is absent. Separate centroids preserve attraction and avoidance when the observations conflict.
+
+The profile also estimates how much influence its behavioral evidence should receive. Let \(M=\sum_j(a_j^++a_j^-)\) be total embedded support, \(D\) the number of distinct embedded papers with non-zero support, and \(Q\) the fraction of eligible evidence papers for which a compatible embedding is available. The bounded confidence is
+\begin{equation}
+  C=Q\sqrt{\left(1-e^{-M/3}\right)\left(1-e^{-D/3}\right)},
+  \qquad 0\leq C\leq 1.
+  \label{eq:behavior-confidence}
+\end{equation}
+This construction requires both evidence mass and diversity, while incomplete embedding coverage reduces confidence directly. Repeated engagement with one paper can strengthen its support but cannot immediately grant the behavioral component its full nominal weight. Missing embeddings do not delete raw observations; they remain available for a later deterministic replay.
+
+Recommendation keeps explicit preference and inferred behavior as separate components. For candidate paper \(p\) with embedding \(v_p\), the contrastive affinity compares alignment with the positive and negative centroids:
+\begin{equation}
+  A(p)=\operatorname{clip}_{[0,1]}\!\left(0.5+0.5\left[\cos(u^+,v_p)-\cos(u^-,v_p)\right]\right).
+  \label{eq:behavior-affinity}
+\end{equation}
+An absent channel contributes zero cosine similarity. If \(T(p)\) is explicit-topic match and \(F(p)=2^{-d/7}\) is recency for publication age \(d\), define component values \((x_T,x_B,x_F)=(T(p),A(p),F(p))\) and nominal weights \((\alpha_T,\alpha_B,\alpha_F)=(0.45,0.35C,0.20)\). For the set \(\mathcal{K}(p)\) of available components, the implemented score is
+\begin{equation}
+  S(p)=\frac{\sum_{k\in\mathcal{K}(p)}\alpha_k x_k}{\sum_{k\in\mathcal{K}(p)}\alpha_k}.
+  \label{eq:recommendation-score}
+\end{equation}
+A missing topic or behavioral component is omitted from \(\mathcal{K}(p)\), so a cold-start user still receives a meaningful ranking, and a zero-confidence profile follows the cold-start signals without giving behavioral weight to one weak observation. Stable paper UUID ordering resolves exact score ties.
+Work on scrutable recommendation profiles motivates exposing and correcting the representation behind a recommendation~\cite{ramos2024scrutable}. The implementation provides the narrower property that explicit topics remain editable and that each recommendation carries human-readable reasons selected only from components that participated in its score; the client renders these deterministic reasons beside each briefing entry.
+
+Algorithm~\ref{alg:behavior-ranking} separates the replayable computation from its interpretation.
+
+\begin{algorithm}[htbp]
+  \caption{Replayable contrastive preference update and candidate ranking}
+  \label{alg:behavior-ranking}
+  \KwIn{Deduplicated event history \(E\), compatible paper embeddings \(V\), reference time \(t\), candidate set \(P\)}
+  \KwOut{Ranked candidates and a versioned evidence summary}
+  \ForEach{event \(e_i\in E\)}{
+    Exclude stale events and events without a usable paper identity\;
+    Admit a negative skip only when recent exposure exists for the same paper\;
+    Accumulate signed, time-decayed evidence \(\widetilde{w}_i=b_i m_i g(\Delta_i)\) by paper\;
+  }
+  Apply the saturation functions in Equation~\ref{eq:behavior-saturation} per paper\;
+  Construct \(u^+\) and \(u^-\) from compatible embeddings and compute confidence \(C\)\;
+  \ForEach{candidate \(p\in P\)}{
+    Compute \(S(p)\) from the available topic, behavioral, and recency components\;
+    Derive a reason only from components that participated in \(S(p)\)\;
+  }
+  \Return candidates ordered by score and stable paper identity, with confidence and evidence counts\;
+\end{algorithm}
+
+The event history and compatible embeddings determine the result for a fixed reference time, and the output carries evidence counts and confidence, so the mechanism evaluation reported under Testing Results can inspect why behavioral influence increased, decreased, or remained absent without treating interaction weights as direct measurements of human preference.
+Figure~\ref{fig:behavior-loop} connects these mechanisms to the mobile observation boundary and the immutable briefing.
+
+\begin{figure}[htbp]
+  \centering
+    \begin{tikzpicture}[font=\sffamily\small,>=Latex]
+    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=5pt,
+      minimum width=3.65cm,minimum height=1.5cm,align=center] (interaction) at (-4.65,1.55)
+      {\textbf{Interaction}\\exposure, open,\\or question};
+    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,
+      minimum width=3.65cm,minimum height=1.5cm,align=center] (retry) at (0,1.55)
+      {\textbf{Durable retry}\\client UUID\\and event queue};
+    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,
+      minimum width=3.65cm,minimum height=1.5cm,align=center] (ingest) at (4.65,1.55)
+      {\textbf{Safe ingestion}\\idempotency\\and exposure gate};
+    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=5pt,
+      minimum width=3.65cm,minimum height=1.5cm,align=center] (interest) at (4.65,-1.15)
+      {\textbf{Interest state}\\saturated positive\\and negative profiles};
+    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,
+      minimum width=3.65cm,minimum height=1.5cm,align=center] (ranking) at (0,-1.15)
+      {\textbf{Ranking}\\confidence-scaled\\contrastive affinity};
+    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,
+      minimum width=3.65cm,minimum height=1.5cm,align=center] (briefing) at (-4.65,-1.15)
+      {\textbf{Briefing}\\frozen score\\and reason};
+    \draw[MnemeNavy,line width=0.9pt,->] (interaction) -- (retry);
+    \draw[MnemeNavy,line width=0.9pt,->] (retry) -- (ingest);
+    \draw[MnemeNavy,line width=0.9pt,->] (ingest) -- (interest);
+    \draw[MnemeNavy,line width=0.9pt,->] (interest) -- (ranking);
+    \draw[MnemeNavy,line width=0.9pt,->] (ranking) -- (briefing);
+    \draw[MnemeNavy,dashed,line width=0.9pt,->] (briefing.north) --
+      node[right,align=left,font=\scriptsize]{later acknowledged\\observations}
+      (interaction.south);
+  \end{tikzpicture}
+  \caption{Inspectable behavioral feedback loop. Stable event identities preserve duplicate safety; exposure gating, per-paper saturation, contrastive state, and evidence confidence determine how later observations influence a new briefing without rewriting an earlier snapshot.}
+  \label{fig:behavior-loop}
+\end{figure}
+
+\subsection{Bounded Citation-Graph Construction}
+\label{subsec:backend-graph}
+
+The citation graph that the client renders is produced by a deterministic algorithm layer over persisted citation observations. An edge records that a source paper cites a target paper. A provider observation may initially identify one citation endpoint only by an external identifier, but at least one endpoint is local; the unresolved observation is retained until it can be associated with a local paper. Self-edges and duplicates are removed during resolution, and only edges whose endpoints resolve to local paper identities enter the public graph, so a missing external node does not imply an absent citation.
+The public graph service currently supplies persisted citation edges and no keyword co-occurrence input, so its returned edges represent resolved citation relations.
+
 Citation edges are damped by the inverse logarithm of the target's citation in-degree, reducing the influence of ubiquitously cited papers on layout and ranking.
 A bounded best-first expansion from the requested center paper selects the neighborhood by cumulative edge weight, so a truncated result retains the highest-weight paths reached from the center.
-Surviving nodes receive cluster identities from a deterministic weighted label propagation with a bounded number of rounds and rank scores from weighted degree centrality normalized to the unit interval.
-The public route bounds traversal depth at two and the node limit at 200, and the client's request contract asks for at most fifty nodes. These limits bound the graph passed to the device.
+Surviving nodes receive cluster identities from a weighted adaptation of label propagation, a local community-detection method in which nodes repeatedly adopt labels supported by their neighbours~\cite{raghavan2007label}, using deterministic tie-breaking and at most ten update rounds; the grouping is a presentation aid, not a semantic topic ground truth. Rank scores come from weighted degree centrality normalized to the unit interval.
+The public route bounds traversal depth at two and the node limit at 200, and the client's request contract asks for at most fifty nodes. These limits bound the graph passed to the device, and a chronological citation-only view with a disclosed algorithm status is the deterministic fallback when enrichment fails.
+
+Algorithm~\ref{alg:citation-graph} states the construction.
+
+\begin{algorithm}[htbp]
+  \caption{Bounded citation-graph view construction}
+  \label{alg:citation-graph}
+  \KwIn{Centre paper \(p_0\), resolved local citation snapshot \(G=(V,E)\), depth \(d\), node limit \(L\)}
+  \KwOut{A bounded node-and-edge view with algorithm status}
+  Clamp \(d\) and \(L\), then assign each edge a hub-damped citation weight\;
+  Expand bidirectionally from \(p_0\) by cumulative path strength until depth or node limit is reached\;
+  Retain edges whose endpoints both occur in the selected node set\;
+  Initialize every selected node with a unique community label\;
+  \For{at most ten rounds}{
+    Update each label from the strongest weighted neighbouring label\;
+    Resolve ties deterministically and stop when no label changes\;
+  }
+  Rank nodes by normalized weighted degree while preserving \(p_0\) as the centre\;
+  \If{enrichment fails}{Construct a bounded chronological view and set status to \emph{fallback}\;}
+  \Return selected papers, directed edges, community labels, ranks, and status\;
+\end{algorithm}
+
+The server-side view leaves spatial layout to the client, and deterministic tie-breaking gives the same logical snapshot the same ordering and grouping. Raw citation observations remain persistent, while the enriched view is computed per request; this avoids invalidation rules for stored layouts at the cost of repeated computation over the selected neighborhood.
+
+\subsection{Provider Routing, Caching, and Evaluation Instrumentation}
+\label{subsec:backend-provider}
 
 Provider routing, caching, and cost control cut across the whole AI layer.
-Each task routes to a configured provider; Anthropic, OpenAI, and DeepSeek adapters are implemented, providers are inferred from model identifiers, and route validation occurs at service startup.
-Completions are cached in Redis for 24 hours for question answering and seven days for summaries. The prompt version participates in every cache key, so a template change invalidates cleanly.
-A shared daily budget guard refuses provider calls once the configured daily cap (five US dollars by default) is spent, and exhaustion surfaces to the client as an explicit rate-limit response.
+Model-facing stages communicate through provider-independent request and result objects. Each task routes to a configured model; Anthropic, OpenAI, and DeepSeek adapters are implemented, providers are inferred from model identifiers, and route validation occurs at service startup.
+Completions are cached in Redis for 24 hours for question answering and seven days for summaries, under a canonical key containing the task, provider, model, prompt version, messages, and output limit, so a template change invalidates cleanly.
+A shared daily budget guard refuses provider calls once the configured daily cap (five US dollars by default) is spent, and exhaustion surfaces to the client as an explicit rate-limit response. The counter is an operational stop-loss rather than a strict bound, because concurrent in-flight requests can still cross the threshold.
+
 Every completion persists its provider, model snapshot, prompt version, input hash, token counts, estimated cost, and latency, so live operation is auditable from the database without additional instrumentation.
+Question messages additionally retain the answer, citations, and source-match state, but omit the complete generation request; the records support audit and partial reconstruction rather than bit-for-bit regeneration.
+Raw behavioral history and secrets are excluded from model prompts.
 
 Finally, the backend includes the instrumentation to measure the assistance quality it provides.
 A graded evaluation harness drives the full retrieval and grounded-answer pipeline over a frozen fixture corpus of fifteen manually curated cases across seven arXiv papers, twelve answerable and three whose correct behavior is refusal.
@@ -186,7 +436,7 @@ All 12{,}960 samples satisfied their predefined success conditions, and each con
 
 Three research-evaluation harnesses measure behavioral ranking, explicit-interest correction, and grounded assistance.
 The behavior model is evaluated with twelve deterministic synthetic traces spanning cold start, stable interest, recent interest shift, exposed and unexposed negative feedback, repeated interactions with one paper, contradictory feedback, incomplete embedding coverage, and duplicate replay.
-Four headline systems, recency only, explicit-topic matching with recency, the earlier signed single-timescale profile, and the confidence-calibrated contrastive model of Chapter~3, invoke the production aggregation and recommendation functions. Five single-mechanism ablations use the same functions.
+Four headline systems, recency only, explicit-topic matching with recency, the earlier signed single-timescale profile, and the confidence-calibrated contrastive model of Section~\ref{subsec:backend-behavior}, invoke the production aggregation and recommendation functions. Five single-mechanism ablations use the same functions.
 Ranking quality is measured with graded nDCG@5, Recall@5, and reciprocal rank. The cold-start trace defines no relevance judgments and is excluded, leaving eleven applicable traces. Paired differences carry fixed-seed percentile bootstrap intervals over 10{,}000 resamples and are interpreted descriptively because the scenarios were designed for mechanism coverage and were not sampled from a user population.
 
 The explicit-interest experiment isolates direct correction from behavioral inference. Its frozen fixture contains eight synthetic candidates, two each for attention, quantum computing, robotics, and databases, with publication time held constant. The production ranking function evaluates four successive profiles: attention alone; attention with quantum added; quantum replaced by robotics; and robotics deleted. One record is retained for every candidate and state, including rank, score, reasons, and the presence of the expected topic-match reason. Four transition checks state the expected score direction before analysis. API tests separately replace the stored topic list and request the next recommended digest, while repository tests verify normalization, persistence, and rejection of a digest older than the preference update.
@@ -282,7 +532,7 @@ Each seed independently requested a five-paper briefing, loaded a depth-two grap
 Together, the fixed-seed traces show that the client, API contracts, stored paper artifacts, AI pipeline, and citation-graph interaction completed the recorded live paths under the documented configurations.
 These acceptance traces establish cross-layer completion; recommendation relevance, scientific answer correctness, and graph-neighborhood usefulness are evaluated separately or left for future user studies.
 
-The controlled behavior evaluation examines whether each interest-continuity mechanism described in Chapter~3 produces its specified effect when driven through the production scoring functions.
+The controlled behavior evaluation examines whether each interest-continuity mechanism defined in Section~\ref{subsec:backend-behavior} produces its specified effect when driven through the production scoring functions.
 Tables~\ref{tab:behavior-ranking} and~\ref{tab:behavior-paired} report the headline ranking results and the paired comparisons.
 
 \begin{table}[htbp]
