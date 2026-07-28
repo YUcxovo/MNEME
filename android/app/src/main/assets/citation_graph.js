@@ -5,6 +5,7 @@
     let selectedId = null;
     let nodeSelection = null;
     let simulation = null;
+    let activeRenderId = null;
 
     function nodeColorKey(node) {
         return node.clusterId || node.category || "uncategorized";
@@ -35,6 +36,20 @@
         }
     }
 
+    function notifyRenderFrameReady(renderId, nodeCount, edgeCount, tickCount) {
+        if (
+            window.MnemeGraphBridge &&
+            typeof window.MnemeGraphBridge.renderFrameReady === "function"
+        ) {
+            window.MnemeGraphBridge.renderFrameReady(
+                renderId,
+                nodeCount,
+                edgeCount,
+                tickCount
+            );
+        }
+    }
+
     function selectNodeById(id, notify) {
         if (!nodeSelection || !nodeSelection.data().some(function (node) { return node.id === id; })) {
             return false;
@@ -47,7 +62,12 @@
         return true;
     }
 
-    function render(payload) {
+    function render(payload, renderId) {
+        renderId = String(renderId);
+        activeRenderId = renderId;
+        document.body.dataset.rendererReady = "false";
+        document.body.dataset.renderId = renderId;
+
         const host = d3.select("#graph");
         host.selectAll("*").remove();
         if (simulation) {
@@ -91,7 +111,8 @@
             .attr("viewBox", [0, 0, width, height])
             .classed("dense", nodes.length > 20)
             .attr("role", "img")
-            .attr("aria-label", "Directed paper citation graph");
+            .attr("aria-label", "Directed paper citation graph")
+            .attr("data-render-id", renderId);
 
         const definitions = svg.append("defs");
         definitions.append("marker")
@@ -182,6 +203,8 @@
                 return node.title + category;
             });
 
+        let tickCount = 0;
+        let frameReadyReported = false;
         simulation = d3.forceSimulation(nodes)
             .force(
                 "link",
@@ -201,6 +224,7 @@
                 })
             )
             .on("tick", function () {
+                tickCount += 1;
                 nodes.forEach(function (node) {
                     const radius = nodeRadius(node, payload.centerId);
                     node.x = Math.max(horizontalPadding, Math.min(width - horizontalPadding, node.x));
@@ -215,13 +239,34 @@
                     "transform",
                     function (node) { return "translate(" + node.x + "," + node.y + ")"; }
                 );
+
+                if (!frameReadyReported) {
+                    frameReadyReported = true;
+                    window.requestAnimationFrame(function () {
+                        if (activeRenderId !== renderId) {
+                            return;
+                        }
+                        const renderedNodeCount = document.querySelectorAll(".node").length;
+                        const renderedEdgeCount = document.querySelectorAll(".edge").length;
+                        const domComplete =
+                            renderedNodeCount === nodes.length &&
+                            renderedEdgeCount === edges.length;
+                        document.body.dataset.rendererReady = domComplete ? "true" : "false";
+                        document.body.dataset.renderId = renderId;
+                        notifyRenderFrameReady(
+                            renderId,
+                            renderedNodeCount,
+                            renderedEdgeCount,
+                            tickCount
+                        );
+                    });
+                }
             });
 
         selectedId = nodes.some(function (node) { return node.id === selectedId; })
             ? selectedId
             : payload.centerId;
         selectNodeById(selectedId, false);
-        document.body.dataset.rendererReady = "true";
     }
 
     window.MnemeGraph = {

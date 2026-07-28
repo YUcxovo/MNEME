@@ -30,6 +30,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination
@@ -109,15 +111,16 @@ fun MnemeApp(
     onSharePaper: ((String, String) -> Unit)? = null,
 ) {
     val onboardingState by viewModel.onboardingState.collectAsStateWithLifecycle()
-    val snapshot = viewModel.collectUiSnapshot()
+    val snapshot = viewModel.collectUiSnapshot(onboardingState)
     Surface(
+        modifier = modifier.semantics { testTagsAsResourceId = true },
         color = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
     ) {
         when (val current = onboardingState) {
             OnboardingUiState.Checking ->
                 Box(
-                    modifier = modifier.fillMaxSize().testTag("briefing-restore-loading"),
+                    modifier = Modifier.fillMaxSize().testTag("briefing-restore-loading"),
                     contentAlignment = Alignment.Center,
                 ) {
                     LoadingState(message = stringResource(R.string.briefing_restore_loading))
@@ -127,11 +130,11 @@ fun MnemeApp(
                     initialReference = "",
                     errorMessage = null,
                     onSubmit = viewModel::initializeFromSeed,
-                    modifier = modifier,
+                    modifier = Modifier,
                 )
             is OnboardingUiState.Loading ->
                 Box(
-                    modifier = modifier.fillMaxSize().testTag("seed-onboarding-loading"),
+                    modifier = Modifier.fillMaxSize().testTag("seed-onboarding-loading"),
                     contentAlignment = Alignment.Center,
                 ) {
                     LoadingState(message = stringResource(R.string.onboarding_loading))
@@ -141,7 +144,7 @@ fun MnemeApp(
                     initialReference = current.arxivReference,
                     errorMessage = current.message,
                     onSubmit = viewModel::initializeFromSeed,
-                    modifier = modifier,
+                    modifier = Modifier,
                 )
             OnboardingUiState.Ready ->
                 MnemeAppScaffold(
@@ -149,7 +152,7 @@ fun MnemeApp(
                     actions = viewModel.uiActions(),
                     onOpenSource = onOpenSource,
                     onSharePaper = onSharePaper,
-                    modifier = modifier,
+                    modifier = Modifier,
                 )
         }
     }
@@ -168,7 +171,7 @@ fun MnemeApp(
         actions = state.actions,
         onOpenSource = onOpenSource,
         onSharePaper = onSharePaper,
-        modifier = modifier,
+        modifier = modifier.semantics { testTagsAsResourceId = true },
     )
 }
 
