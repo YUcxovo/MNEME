@@ -60,8 +60,10 @@ class FakeDigestRepository:
         digests: list[Digest] | None = None,
         next_cursor: str | None = None,
         embeddings: dict[UUID, tuple[float, ...]] | None = None,
+        ready_papers: list[Paper] | None = None,
     ) -> None:
         self.papers = papers
+        self.ready_papers = ready_papers if ready_papers is not None else []
         self.preferences = preferences
         self.fresh = fresh
         self.digests = digests if digests is not None else []
@@ -69,6 +71,7 @@ class FakeDigestRepository:
         self.created: list[Digest] = []
         self.list_calls: list[tuple[UUID, int, DigestCursor | None]] = []
         self.candidate_calls: list[tuple[datetime, datetime | None, int]] = []
+        self.ready_candidate_calls: list[tuple[datetime | None, int]] = []
         self.embeddings = embeddings or {}
         self.embedding_calls: list[tuple[list[UUID], str]] = []
         self.operation_calls: list[str] = []
@@ -109,6 +112,12 @@ class FakeDigestRepository:
     ) -> list[Paper]:
         self.candidate_calls.append((since, before, limit))
         return self.papers[:limit]
+
+    async def list_ready_candidates(
+        self, *, limit: int, before: datetime | None = None
+    ) -> list[Paper]:
+        self.ready_candidate_calls.append((before, limit))
+        return self.ready_papers[:limit]
 
     async def mean_chunk_embeddings(
         self,
@@ -396,6 +405,29 @@ def test_empty_candidate_pool_returns_empty_digest() -> None:
 
     assert response.status_code == 200
     assert response.json()["entries"] == []
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_manual_digest_uses_ready_catalog_when_recent_window_is_empty() -> None:
+    older_paper = _paper("Attention from an older seed library", age_days=90)
+    preferences = UserPreference(
+        user_id=USER_ID,
+        explicit_topics=["attention"],
+        followed_authors=[],
+        model_version=2,
+    )
+    repository = FakeDigestRepository(
+        papers=[],
+        ready_papers=[older_paper],
+        preferences=preferences,
+    )
+
+    response = asyncio.run(_post(_application(repository)))
+
+    assert response.status_code == 200
+    assert response.json()["entries"][0]["paper"]["title"] == older_paper.title
+    assert repository.ready_candidate_calls
 
 
 @pytest.mark.base

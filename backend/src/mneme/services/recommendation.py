@@ -120,6 +120,16 @@ class RecommendedDigestService:
             limit=_CANDIDATE_POOL_LIMIT,
             before=as_of,
         )
+        if digest_type is DigestType.MANUAL and not papers:
+            papers = await self._repository.list_ready_candidates(
+                limit=_CANDIDATE_POOL_LIMIT,
+                before=as_of,
+            )
+            logger.info(
+                "recommended_digest_using_ready_catalog",
+                user_id=str(user_id),
+                candidates=len(papers),
+            )
         embeddings = (
             await self._repository.mean_chunk_embeddings(
                 [paper.id for paper in papers],

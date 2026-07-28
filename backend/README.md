@@ -102,9 +102,12 @@ Seed onboarding uses the same provider and persistence boundaries automatically.
 a bounded citation neighborhood for the supplied seed, validates the related arXiv records,
 persists five neighbors and their real edges, and prepares the seed together with the five
 briefing papers. A depth-two graph opened from any returned paper can therefore recover the
-shared seed neighborhood. If Semantic Scholar is unavailable or fewer than five neighbors
-can be resolved through arXiv, onboarding uses the existing five-paper same-category
-fallback. Graph reads remain free of external provider calls.
+shared seed neighborhood. Candidate metadata is resolved in bounded batches; a failed batch
+is retried as serialized single-paper requests on the same rate-limited client. If discovered
+neighbor metadata remains unavailable, onboarding returns a retryable error rather than
+silently replacing the graph-backed selection. If Semantic Scholar is unavailable or fewer
+than five neighbors can be identified, onboarding uses the existing five-paper same-category
+fallback without creating citation edges. Graph reads remain free of external provider calls.
 
 `POST /v1/events` stores raw client UUIDs once and recomputes the active `behavior-v2` profile in the same PostgreSQL transaction. Event timestamps must be timezone-aware ISO 8601 values and cannot be more than five minutes ahead of the server clock; the recomputation query uses the same upper bound. The active model uses positive and negative channels, continuous opened-paper duration weighting, 14/60-day decay, per-paper saturation, exposure-gated skips, bounded confidence, a 180-day window, and latest-revision paper embeddings from the configured model. ADR 0003 freezes the parameters, while `behavior-v1` remains callable as the replay baseline.
 

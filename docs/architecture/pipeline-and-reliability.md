@@ -76,8 +76,12 @@ Seed onboarding adds one bounded synchronous preparation path for the first read
 session. It resolves five arXiv citation neighbors for the supplied seed, persists the real
 provider edges, and dispatches the seed plus those five papers through the existing
 revision-scoped jobs. The endpoint waits for usable terminal paper states before returning
-the five-entry briefing. Provider graph failure selects the existing same-category
-fallback; it does not create inferred citation edges.
+the five-entry briefing. arXiv metadata is requested in bounded groups, and a failed group is
+retried as serialized single-paper requests without discarding the already discovered
+citation identities. Exhausted metadata recovery returns a retryable upstream error rather
+than a successful briefing without the prepared graph. Semantic Scholar unavailability or
+an insufficient citation neighborhood selects the existing same-category fallback; it does
+not create inferred citation edges.
 
 ## Failure Semantics
 

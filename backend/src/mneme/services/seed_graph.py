@@ -11,8 +11,9 @@ from mneme.repositories.citation_graph import (
     CitationGraphRepository,
     CitationPersistenceResult,
 )
-from mneme.services.arxiv.client import ArxivClient
-from mneme.services.arxiv.types import ArxivFeed
+from mneme.services.arxiv.client import ArxivClient, ArxivClientError
+from mneme.services.arxiv.parser import ArxivParseError
+from mneme.services.arxiv.types import ArxivFeed, ArxivPaperRecord
 from mneme.services.semantic_scholar import (
     CitationDirection,
     SemanticPaper,
@@ -22,6 +23,10 @@ from mneme.services.semantic_scholar import (
 
 class InsufficientSeedGraphCandidates(RuntimeError):
     """The provider neighborhood cannot supply the requested local papers."""
+
+
+class SeedGraphMetadataUnavailable(RuntimeError):
+    """arXiv metadata for a discovered citation neighborhood is unavailable."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,11 +95,10 @@ class SeedGraphCandidateService:
                 "The seed has too few arXiv-resolvable citation neighbors"
             )
 
-        candidate_feed = await self._arxiv_client.fetch_by_ids(candidate_ids)
-        records_by_id = {record.arxiv_id: record for record in candidate_feed.records}
-        selected_records = tuple(
-            records_by_id[arxiv_id] for arxiv_id in candidate_ids if arxiv_id in records_by_id
-        )[:library_size]
+        selected_records = await self._resolve_arxiv_records(
+            candidate_ids,
+            library_size=library_size,
+        )
         if len(selected_records) != library_size:
             raise InsufficientSeedGraphCandidates(
                 "arXiv did not return enough citation-neighbor records"
@@ -110,6 +114,51 @@ class SeedGraphCandidateService:
             center=center,
             references=references,
             citations=citations,
+        )
+
+    async def _resolve_arxiv_records(
+        self,
+        candidate_ids: tuple[str, ...],
+        *,
+        library_size: int,
+    ) -> tuple[ArxivPaperRecord, ...]:
+        """Resolve provider-ordered metadata without discarding neighbors after one 429."""
+        records_by_id: dict[str, ArxivPaperRecord] = {}
+        batch_size = library_size
+        for start in range(0, len(candidate_ids), batch_size):
+            batch = candidate_ids[start : start + batch_size]
+            try:
+                feed = await self._arxiv_client.fetch_by_ids(batch)
+            except (ArxivClientError, ArxivParseError, ValueError):
+                feed = await self._resolve_batch_individually(batch)
+            for record in feed.records:
+                if record.arxiv_id in batch:
+                    records_by_id.setdefault(record.arxiv_id, record)
+            selected = tuple(
+                records_by_id[arxiv_id] for arxiv_id in candidate_ids if arxiv_id in records_by_id
+            )[:library_size]
+            if len(selected) == library_size:
+                return selected
+        return tuple(
+            records_by_id[arxiv_id] for arxiv_id in candidate_ids if arxiv_id in records_by_id
+        )[:library_size]
+
+    async def _resolve_batch_individually(self, batch: tuple[str, ...]) -> ArxivFeed:
+        """Retry a failed batch as single-paper requests on the same rate-limited client."""
+        records = []
+        for arxiv_id in batch:
+            try:
+                feed = await self._arxiv_client.fetch_by_ids((arxiv_id,))
+            except (ArxivClientError, ArxivParseError, ValueError) as error:
+                raise SeedGraphMetadataUnavailable(
+                    "arXiv citation-neighbor metadata remained unavailable after retry"
+                ) from error
+            records.extend(record for record in feed.records if record.arxiv_id == arxiv_id)
+        return ArxivFeed(
+            records=tuple(records),
+            total_results=len(records),
+            start_index=0,
+            items_per_page=len(records),
         )
 
     async def persist(
