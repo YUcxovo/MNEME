@@ -29,6 +29,14 @@
     <string name="graph_title">Citation connections</string>
     <string name="graph_version">Graph version: %1$s</string>
     <string name="interests_description">These topics seed the recommendations in your research briefing.</string>
+    <string name="interests_add">Add topic</string>
+    <string name="interests_blank_error">Topics cannot be blank.</string>
+    <string name="interests_duplicate_error">Each topic must be unique.</string>
+    <string name="interests_new_topic">New topic</string>
+    <string name="interests_remove">Remove</string>
+    <string name="interests_save">Save and refresh recommendations</string>
+    <string name="interests_saved">Interests saved and recommendations refreshed.</string>
+    <string name="interests_topic_number">Topic %1$d</string>
     <string name="interests_topics_label">YOUR TOPICS</string>
     <string name="kicker_research_briefing">WEEKLY RESEARCH BRIEFING</string>
     <string name="kicker_research_memory">RESEARCH MEMORY</string>
