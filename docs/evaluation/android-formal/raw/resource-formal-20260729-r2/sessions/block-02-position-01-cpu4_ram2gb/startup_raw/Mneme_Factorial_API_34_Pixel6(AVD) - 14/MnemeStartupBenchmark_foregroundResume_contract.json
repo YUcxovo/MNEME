@@ -1,0 +1,58 @@
+{
+  "status": "assertions_passed_for_completed_iterations",
+  "expected_ui_tag": "briefing-content-5-cached-backend",
+  "declared_raw_iterations": 6,
+  "warmup_iteration_ordinal": 1,
+  "completed_assertion_observations": 7,
+  "observations": [
+    {
+      "assertion_observation_ordinal": 1,
+      "pid": "8167",
+      "activity_record_id": "b7b6bb7",
+      "same_pid": true,
+      "same_activity": true
+    },
+    {
+      "assertion_observation_ordinal": 2,
+      "pid": "8167",
+      "activity_record_id": "b7b6bb7",
+      "same_pid": true,
+      "same_activity": true
+    },
+    {
+      "assertion_observation_ordinal": 3,
+      "pid": "8167",
+      "activity_record_id": "b7b6bb7",
+      "same_pid": true,
+      "same_activity": true
+    },
+    {
+      "assertion_observation_ordinal": 4,
+      "pid": "8167",
+      "activity_record_id": "b7b6bb7",
+      "same_pid": true,
+      "same_activity": true
+    },
+    {
+      "assertion_observation_ordinal": 5,
+      "pid": "8167",
+      "activity_record_id": "b7b6bb7",
+      "same_pid": true,
+      "same_activity": true
+    },
+    {
+      "assertion_observation_ordinal": 6,
+      "pid": "8167",
+      "activity_record_id": "b7b6bb7",
+      "same_pid": true,
+      "same_activity": true
+    },
+    {
+      "assertion_observation_ordinal": 7,
+      "pid": "8167",
+      "activity_record_id": "b7b6bb7",
+      "same_pid": true,
+      "same_activity": true
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+NOTE: Your device is running a version of ART where method tracing is known to
+affect performance measurement after trace capture, so method tracing is
+off by default.
+
+To use method tracing, either flash this device, use a different device, or
+enable method tracing with MicrobenchmarkConfig / instrumentation argument, and
+only run one test at a time.
+
+For more information, see https://issuetracker.google.com/issues/316174880
+Delay to await runtime image flush
+WARNING: Running on Emulator
+Benchmark is running on an emulator, which is not representative of
+real user devices. Use a physical device to benchmark. Emulator
+benchmark improvements might not carry over to a real user's
+experience (or even regress real device performance).
+
+MnemeStartupBenchmark_coldCachedLaunch
+timeToFullDisplayMs      [min 800.9](file://MnemeStartupBenchmark_coldCachedLaunch_iter002_2026-07-28-20-18-31.perfetto-trace),   [median 845.4](file://MnemeStartupBenchmark_coldCachedLaunch_iter003_2026-07-28-20-18-34.perfetto-trace),   [max 937.4](file://MnemeStartupBenchmark_coldCachedLaunch_iter000_2026-07-28-20-18-23.perfetto-trace)
+timeToInitialDisplayMs   [min 451.7](file://MnemeStartupBenchmark_coldCachedLaunch_iter002_2026-07-28-20-18-31.perfetto-trace),   [median 475.1](file://MnemeStartupBenchmark_coldCachedLaunch_iter003_2026-07-28-20-18-34.perfetto-trace),   [max 512.2](file://MnemeStartupBenchmark_coldCachedLaunch_iter000_2026-07-28-20-18-23.perfetto-trace)
+Traces: Iteration [0](file://MnemeStartupBenchmark_coldCachedLaunch_iter000_2026-07-28-20-18-23.perfetto-trace) [1](file://MnemeStartupBenchmark_coldCachedLaunch_iter001_2026-07-28-20-18-27.perfetto-trace) [2](file://MnemeStartupBenchmark_coldCachedLaunch_iter002_2026-07-28-20-18-31.perfetto-trace) [3](file://MnemeStartupBenchmark_coldCachedLaunch_iter003_2026-07-28-20-18-34.perfetto-trace) [4](file://MnemeStartupBenchmark_coldCachedLaunch_iter004_2026-07-28-20-18-38.perfetto-trace) [5](file://MnemeStartupBenchmark_coldCachedLaunch_iter005_2026-07-28-20-18-42.perfetto-trace)

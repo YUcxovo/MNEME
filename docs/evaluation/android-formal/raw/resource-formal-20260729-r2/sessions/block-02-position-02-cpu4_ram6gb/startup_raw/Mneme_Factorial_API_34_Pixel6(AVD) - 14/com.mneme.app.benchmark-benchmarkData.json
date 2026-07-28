@@ -1,0 +1,157 @@
+{
+    "context": {
+        "build": {
+            "brand": "google",
+            "device": "emu64xa",
+            "fingerprint": "google/sdk_gphone64_x86_64/emu64xa:14/UE1A.230829.050/12077443:userdebug/dev-keys",
+            "id": "UE1A.230829.050",
+            "model": "sdk_gphone64_x86_64",
+            "type": "userdebug",
+            "version": {
+                "codename": "REL",
+                "sdk": 34
+            }
+        },
+        "cpuCoreCount": 4,
+        "cpuLocked": false,
+        "cpuMaxFreqHz": 2000,
+        "memTotalBytes": 6220120064,
+        "sustainedPerformanceModeEnabled": false,
+        "artMainlineVersion": 340818082,
+        "osCodenameAbbreviated": "U",
+        "compilationMode": "run-from-apk",
+        "payload": {}
+    },
+    "benchmarks": [
+        {
+            "name": "coldCachedLaunch",
+            "params": {},
+            "className": "com.mneme.app.benchmark.MnemeStartupBenchmark",
+            "totalRunTimeNs": 32070605162,
+            "metrics": {
+                "timeToFullDisplayMs": {
+                    "minimum": 800.911229,
+                    "maximum": 937.408333,
+                    "median": 845.424843,
+                    "coefficientOfVariation": 0.05362549018993336,
+                    "runs": [
+                        937.408333,
+                        835.126526,
+                        800.911229,
+                        855.138383,
+                        835.711303,
+                        857.086875
+                    ]
+                },
+                "timeToInitialDisplayMs": {
+                    "minimum": 451.7086,
+                    "maximum": 512.226088,
+                    "median": 475.082951,
+                    "coefficientOfVariation": 0.046561083815127656,
+                    "runs": [
+                        512.226088,
+                        456.550252,
+                        451.7086,
+                        468.107938,
+                        484.674534,
+                        482.057964
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 0,
+            "repeatIterations": 6,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 0",
+                    "filename": "MnemeStartupBenchmark_coldCachedLaunch_iter000_2026-07-28-20-18-23.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 1",
+                    "filename": "MnemeStartupBenchmark_coldCachedLaunch_iter001_2026-07-28-20-18-27.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 2",
+                    "filename": "MnemeStartupBenchmark_coldCachedLaunch_iter002_2026-07-28-20-18-31.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 3",
+                    "filename": "MnemeStartupBenchmark_coldCachedLaunch_iter003_2026-07-28-20-18-34.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 4",
+                    "filename": "MnemeStartupBenchmark_coldCachedLaunch_iter004_2026-07-28-20-18-38.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 5",
+                    "filename": "MnemeStartupBenchmark_coldCachedLaunch_iter005_2026-07-28-20-18-42.perfetto-trace"
+                }
+            ]
+        },
+        {
+            "name": "foregroundResume",
+            "params": {},
+            "className": "com.mneme.app.benchmark.MnemeStartupBenchmark",
+            "totalRunTimeNs": 52274548001,
+            "metrics": {
+                "timeToInitialDisplayMs": {
+                    "minimum": 62.966241,
+                    "maximum": 81.145413,
+                    "median": 69.72669400000001,
+                    "coefficientOfVariation": 0.09667221276050794,
+                    "runs": [
+                        70.427358,
+                        62.966241,
+                        81.145413,
+                        69.02603,
+                        63.281817,
+                        72.968163
+                    ]
+                }
+            },
+            "sampledMetrics": {},
+            "warmupIterations": 0,
+            "repeatIterations": 6,
+            "thermalThrottleSleepSeconds": 0,
+            "profilerOutputs": [
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 0",
+                    "filename": "MnemeStartupBenchmark_foregroundResume_iter000_2026-07-28-20-19-01.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 1",
+                    "filename": "MnemeStartupBenchmark_foregroundResume_iter001_2026-07-28-20-19-09.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 2",
+                    "filename": "MnemeStartupBenchmark_foregroundResume_iter002_2026-07-28-20-19-16.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 3",
+                    "filename": "MnemeStartupBenchmark_foregroundResume_iter003_2026-07-28-20-19-23.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 4",
+                    "filename": "MnemeStartupBenchmark_foregroundResume_iter004_2026-07-28-20-19-31.perfetto-trace"
+                },
+                {
+                    "type": "PerfettoTrace",
+                    "label": "Trace Iteration 5",
+                    "filename": "MnemeStartupBenchmark_foregroundResume_iter005_2026-07-28-20-19-38.perfetto-trace"
+                }
+            ]
+        }
+    ]
+}

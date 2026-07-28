@@ -1,0 +1,103 @@
+captured_at_utc=2026-07-28T20:11:09Z
+load_average=4.88 3.92 3.51 1/1356 228100
+kernel=Linux why-laptop 7.0.0-28-generic #28~24.04.1-Ubuntu SMP PREEMPT_DYNAMIC Wed Jul  1 15:50:57 UTC 2 x86_64 x86_64 x86_64 GNU/Linux
+os_release:
+PRETTY_NAME="Ubuntu 24.04.4 LTS"
+NAME="Ubuntu"
+VERSION_ID="24.04"
+VERSION="24.04.4 LTS (Noble Numbat)"
+VERSION_CODENAME=noble
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=noble
+LOGO=ubuntu-logo
+cpu:
+Architecture:                            x86_64
+CPU op-mode(s):                          32-bit, 64-bit
+Address sizes:                           42 bits physical, 48 bits virtual
+Byte Order:                              Little Endian
+CPU(s):                                  14
+On-line CPU(s) list:                     0-13
+Vendor ID:                               GenuineIntel
+Model name:                              Intel(R) Core(TM) Ultra 5 225H
+CPU family:                              6
+Model:                                   197
+Thread(s) per core:                      1
+Core(s) per socket:                      14
+Socket(s):                               1
+Stepping:                                2
+CPU(s) scaling MHz:                      75%
+CPU max MHz:                             4900.0000
+CPU min MHz:                             400.0000
+BogoMIPS:                                7372.80
+Flags:                                   fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx pdpe1gb rdtscp lm constant_tsc art arch_perfmon pebs bts rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_freq pni pclmulqdq dtes64 monitor ds_cpl vmx smx est tm2 ssse3 sdbg fma cx16 xtpr pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt tsc_deadline_timer aes xsave avx f16c rdrand lahf_lm abm 3dnowprefetch cpuid_fault epb ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow flexpriority ept vpid ept_ad fsgsbase tsc_adjust bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt clwb intel_pt sha_ni xsaveopt xsavec xgetbv1 xsaves split_lock_detect user_shstk avx_vnni lam wbnoinvd dtherm ida arat pln pts hwp hwp_notify hwp_act_window hwp_epp hwp_pkg_req hfi vnmi umip pku ospke waitpkg gfni vaes vpclmulqdq rdpid bus_lock_detect movdiri movdir64b fsrm md_clear serialize arch_lbr ibt flush_l1d arch_capabilities
+Virtualization:                          VT-x
+L1d cache:                               448 KiB (12 instances)
+L1i cache:                               768 KiB (12 instances)
+L2 cache:                                22 MiB (7 instances)
+L3 cache:                                18 MiB (1 instance)
+NUMA node(s):                            1
+NUMA node0 CPU(s):                       0-13
+Vulnerability Gather data sampling:      Not affected
+Vulnerability Ghostwrite:                Not affected
+Vulnerability Indirect target selection: Not affected
+Vulnerability Itlb multihit:             Not affected
+Vulnerability L1tf:                      Not affected
+Vulnerability Mds:                       Not affected
+Vulnerability Meltdown:                  Not affected
+Vulnerability Mmio stale data:           Not affected
+Vulnerability Old microcode:             Not affected
+Vulnerability Reg file data sampling:    Not affected
+Vulnerability Retbleed:                  Not affected
+Vulnerability Spec rstack overflow:      Not affected
+Vulnerability Spec store bypass:         Mitigation; Speculative Store Bypass disabled via prctl
+Vulnerability Spectre v1:                Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:                Mitigation; Enhanced / Automatic IBRS; IBPB conditional; PBRSB-eIBRS Not affected; BHI BHI_DIS_S
+Vulnerability Srbds:                     Not affected
+Vulnerability Tsa:                       Not affected
+Vulnerability Tsx async abort:           Not affected
+Vulnerability Vmscape:                   Mitigation; IBPB before exit to userspace
+memory:
+               total        used        free      shared  buff/cache   available
+Mem:     33106235392  3860267008 16563458048   758292480 14124945408 29245968384
+Swap:     8589930496  5988331520  2601598976
+power:
+/sys/class/power_supply/AC
+  type=Mains
+  online=1
+/sys/class/power_supply/BAT0
+  type=Battery
+  status=Not charging
+  capacity=98
+/sys/class/power_supply/hidpp_battery_0
+  type=Battery
+  online=1
+  status=Discharging
+  capacity=94
+/sys/class/power_supply/ucsi-source-psy-USBC000:001
+  type=USB
+  online=0
+  status=Discharging
+/sys/class/power_supply/ucsi-source-psy-USBC000:002
+  type=USB
+  online=1
+  status=Charging
+cpu_governors:
+/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu1/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu10/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu11/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu12/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu13/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu2/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu3/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu4/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu5/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu6/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu7/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu8/cpufreq/scaling_governor=powersave
+/sys/devices/system/cpu/cpu9/cpufreq/scaling_governor=powersave

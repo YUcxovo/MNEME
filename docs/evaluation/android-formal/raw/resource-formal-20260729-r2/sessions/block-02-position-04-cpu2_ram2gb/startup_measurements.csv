@@ -1,0 +1,11 @@
+track,scenario,session_id,iteration,raw_iteration,metric,duration_ms,success,outcome,source_file
+startup,cached_cold,5ba97cf8-2aea-4440-a9c8-9a06cb05833d,1,2,timeToFullDisplayMs,1555.621,true,macrobenchmark_assertions_passed,Mneme_Factorial_API_34_Pixel6(AVD) - 14/com.mneme.app.benchmark-benchmarkData.json
+startup,cached_cold,5ba97cf8-2aea-4440-a9c8-9a06cb05833d,2,3,timeToFullDisplayMs,1509.098,true,macrobenchmark_assertions_passed,Mneme_Factorial_API_34_Pixel6(AVD) - 14/com.mneme.app.benchmark-benchmarkData.json
+startup,cached_cold,5ba97cf8-2aea-4440-a9c8-9a06cb05833d,3,4,timeToFullDisplayMs,1215.435,true,macrobenchmark_assertions_passed,Mneme_Factorial_API_34_Pixel6(AVD) - 14/com.mneme.app.benchmark-benchmarkData.json
+startup,cached_cold,5ba97cf8-2aea-4440-a9c8-9a06cb05833d,4,5,timeToFullDisplayMs,1594.573,true,macrobenchmark_assertions_passed,Mneme_Factorial_API_34_Pixel6(AVD) - 14/com.mneme.app.benchmark-benchmarkData.json
+startup,cached_cold,5ba97cf8-2aea-4440-a9c8-9a06cb05833d,5,6,timeToFullDisplayMs,1191.219,true,macrobenchmark_assertions_passed,Mneme_Factorial_API_34_Pixel6(AVD) - 14/com.mneme.app.benchmark-benchmarkData.json
+startup,foreground_resume,5ba97cf8-2aea-4440-a9c8-9a06cb05833d,1,2,timeToInitialDisplayMs,98.372,true,macrobenchmark_assertions_passed,Mneme_Factorial_API_34_Pixel6(AVD) - 14/com.mneme.app.benchmark-benchmarkData.json
+startup,foreground_resume,5ba97cf8-2aea-4440-a9c8-9a06cb05833d,2,3,timeToInitialDisplayMs,81.71,true,macrobenchmark_assertions_passed,Mneme_Factorial_API_34_Pixel6(AVD) - 14/com.mneme.app.benchmark-benchmarkData.json
+startup,foreground_resume,5ba97cf8-2aea-4440-a9c8-9a06cb05833d,3,4,timeToInitialDisplayMs,126.661,true,macrobenchmark_assertions_passed,Mneme_Factorial_API_34_Pixel6(AVD) - 14/com.mneme.app.benchmark-benchmarkData.json
+startup,foreground_resume,5ba97cf8-2aea-4440-a9c8-9a06cb05833d,4,5,timeToInitialDisplayMs,65.41,true,macrobenchmark_assertions_passed,Mneme_Factorial_API_34_Pixel6(AVD) - 14/com.mneme.app.benchmark-benchmarkData.json
+startup,foreground_resume,5ba97cf8-2aea-4440-a9c8-9a06cb05833d,5,6,timeToInitialDisplayMs,106.151,true,macrobenchmark_assertions_passed,Mneme_Factorial_API_34_Pixel6(AVD) - 14/com.mneme.app.benchmark-benchmarkData.json

@@ -1,0 +1,103 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preBenchmarkBuild UP-TO-DATE
+> Task :app:mergeBenchmarkArtProfile UP-TO-DATE
+> Task :app:desugarBenchmarkFileDependencies UP-TO-DATE
+> Task :app:buildKotlinToolingMetadata UP-TO-DATE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateBenchmarkBuildConfig UP-TO-DATE
+> Task :app:checkBenchmarkAarMetadata UP-TO-DATE
+> Task :app:generateBenchmarkResValues UP-TO-DATE
+> Task :app:mapBenchmarkSourceSetPaths UP-TO-DATE
+> Task :app:generateBenchmarkResources UP-TO-DATE
+> Task :app:mergeBenchmarkResources UP-TO-DATE
+> Task :app:packageBenchmarkResources UP-TO-DATE
+> Task :app:parseBenchmarkLocalResources UP-TO-DATE
+> Task :app:createBenchmarkCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksBenchmark UP-TO-DATE
+> Task :app:processBenchmarkMainManifest UP-TO-DATE
+> Task :app:processBenchmarkManifest UP-TO-DATE
+> Task :app:processBenchmarkManifestForPackage UP-TO-DATE
+> Task :app:processBenchmarkResources UP-TO-DATE
+> Task :app:kspBenchmarkKotlin UP-TO-DATE
+> Task :app:compileBenchmarkKotlin UP-TO-DATE
+> Task :app:javaPreCompileBenchmark UP-TO-DATE
+> Task :app:compileBenchmarkJavaWithJavac UP-TO-DATE
+> Task :app:dexBuilderBenchmark UP-TO-DATE
+> Task :app:mergeBenchmarkGlobalSynthetics UP-TO-DATE
+> Task :app:checkBenchmarkDuplicateClasses UP-TO-DATE
+> Task :app:mergeBenchmarkStartupProfile UP-TO-DATE
+> Task :app:mergeExtDexBenchmark UP-TO-DATE
+> Task :app:mergeDexBenchmark UP-TO-DATE
+> Task :app:compileBenchmarkArtProfile UP-TO-DATE
+> Task :app:mergeBenchmarkShaders UP-TO-DATE
+> Task :app:compileBenchmarkShaders NO-SOURCE
+> Task :app:generateBenchmarkAssets UP-TO-DATE
+> Task :app:mergeBenchmarkAssets UP-TO-DATE
+> Task :app:compressBenchmarkAssets UP-TO-DATE
+> Task :app:extractBenchmarkVersionControlInfo UP-TO-DATE
+> Task :app:extractProguardFiles UP-TO-DATE
+> Task :app:generateBenchmarkLintVitalReportModel UP-TO-DATE
+> Task :app:lintVitalAnalyzeBenchmark UP-TO-DATE
+> Task :app:lintVitalReportBenchmark UP-TO-DATE
+> Task :app:lintVitalBenchmark
+> Task :app:processBenchmarkJavaRes UP-TO-DATE
+> Task :app:mergeBenchmarkJavaResource UP-TO-DATE
+> Task :app:optimizeBenchmarkResources UP-TO-DATE
+> Task :app:collectBenchmarkDependencies UP-TO-DATE
+> Task :app:sdkBenchmarkDependencyData UP-TO-DATE
+> Task :app:mergeBenchmarkJniLibFolders UP-TO-DATE
+> Task :app:mergeBenchmarkNativeLibs UP-TO-DATE
+> Task :app:stripBenchmarkDebugSymbols UP-TO-DATE
+> Task :app:validateSigningBenchmark UP-TO-DATE
+> Task :app:writeBenchmarkAppMetadata UP-TO-DATE
+> Task :app:writeBenchmarkSigningConfigVersions UP-TO-DATE
+> Task :app:packageBenchmark UP-TO-DATE
+> Task :app:createBenchmarkApkListingFileRedirect UP-TO-DATE
+> Task :benchmark:preBuild UP-TO-DATE
+> Task :benchmark:preBenchmarkBuild UP-TO-DATE
+> Task :benchmark:checkTestedAppObfuscationBenchmark UP-TO-DATE
+> Task :benchmark:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :benchmark:checkBenchmarkAarMetadata UP-TO-DATE
+> Task :benchmark:generateBenchmarkResValues UP-TO-DATE
+> Task :benchmark:mapBenchmarkSourceSetPaths UP-TO-DATE
+> Task :benchmark:generateBenchmarkResources UP-TO-DATE
+> Task :benchmark:mergeBenchmarkResources UP-TO-DATE
+> Task :benchmark:processBenchmarkManifest UP-TO-DATE
+> Task :benchmark:processBenchmarkResources UP-TO-DATE
+> Task :benchmark:compileBenchmarkKotlin UP-TO-DATE
+> Task :benchmark:javaPreCompileBenchmark UP-TO-DATE
+> Task :benchmark:compileBenchmarkJavaWithJavac NO-SOURCE
+> Task :benchmark:mergeBenchmarkShaders UP-TO-DATE
+> Task :benchmark:compileBenchmarkShaders NO-SOURCE
+> Task :benchmark:generateBenchmarkAssets UP-TO-DATE
+> Task :benchmark:mergeBenchmarkAssets UP-TO-DATE
+> Task :benchmark:compressBenchmarkAssets UP-TO-DATE
+> Task :benchmark:desugarBenchmarkFileDependencies UP-TO-DATE
+> Task :benchmark:dexBuilderBenchmark UP-TO-DATE
+> Task :benchmark:mergeBenchmarkGlobalSynthetics UP-TO-DATE
+> Task :benchmark:processBenchmarkJavaRes UP-TO-DATE
+> Task :benchmark:mergeBenchmarkJavaResource UP-TO-DATE
+> Task :benchmark:checkBenchmarkDuplicateClasses UP-TO-DATE
+> Task :benchmark:mergeExtDexBenchmark UP-TO-DATE
+> Task :benchmark:mergeLibDexBenchmark UP-TO-DATE
+> Task :benchmark:mergeProjectDexBenchmark UP-TO-DATE
+> Task :benchmark:mergeBenchmarkJniLibFolders UP-TO-DATE
+> Task :benchmark:mergeBenchmarkNativeLibs UP-TO-DATE
+> Task :benchmark:stripBenchmarkDebugSymbols UP-TO-DATE
+> Task :benchmark:validateSigningBenchmark UP-TO-DATE
+> Task :benchmark:writeBenchmarkSigningConfigVersions UP-TO-DATE
+> Task :benchmark:packageBenchmark UP-TO-DATE
+> Task :benchmark:createBenchmarkApkListingFileRedirect UP-TO-DATE
+
+> Task :benchmark:connectedBenchmarkAndroidTest
+Starting 2 tests on Mneme_Factorial_API_34_Pixel6(AVD) - 14
+
+Mneme_Factorial_API_34_Pixel6(AVD) - 14 Tests 0/2 completed. (0 skipped) (0 failed)
+Mneme_Factorial_API_34_Pixel6(AVD) - 14 Tests 1/2 completed. (0 skipped) (0 failed)
+Mneme_Factorial_API_34_Pixel6(AVD) - 14 Tests 2/2 completed. (0 skipped) (0 failed)
+Finished 2 tests on Mneme_Factorial_API_34_Pixel6(AVD) - 14
+
+BUILD SUCCESSFUL in 1m 56s
+80 actionable tasks: 2 executed, 78 up-to-date
