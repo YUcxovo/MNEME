@@ -1,0 +1,23 @@
+{
+  "schema_version": "android-factorial-session-v1",
+  "config_id": "cpu4_ram2gb",
+  "block": 3,
+  "sequence_position": 1,
+  "avd_name": "Mneme_Factorial_API_34_Pixel6",
+  "started_at_utc": "2026-07-27T17:53:40Z",
+  "repository_revision": "773cc2db5e4b88da2f4698c8a3fee37c8181ee62",
+  "branch": "feat/automatic-citation-graph-preparation",
+  "requested_cpu_cores": 4,
+  "requested_ram_mb": 2048,
+  "runtime_cpu_cores": 4,
+  "runtime_memory_kb": 2021096,
+  "runtime_page_size_bytes": 4096,
+  "screen_size": "1080x2400",
+  "screen_density_dpi": 420,
+  "android_system_image": "android-34/google_apis/x86_64",
+  "device_profile": "Pixel 6",
+  "configured_application_heap_mb": 228,
+  "cold_boot_and_wipe_data": true,
+  "external_backend_used": false,
+  "credentials_retained": false
+}

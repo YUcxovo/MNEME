@@ -1,0 +1,185 @@
+{
+  "all_transitions_passed": true,
+  "candidate_count": 8,
+  "fixture_id": "explicit-interest-correction-v1",
+  "passed_transitions": 4,
+  "production_function": "mneme.ai.recommendation.rank_candidates",
+  "state_count": 4,
+  "state_summaries": {
+    "add_quantum": {
+      "attention": {
+        "mean_rank": 1.5,
+        "mean_score": 0.624838,
+        "topic_reason_rate": 1.0
+      },
+      "databases": {
+        "mean_rank": 7.5,
+        "mean_score": 0.278684,
+        "topic_reason_rate": 0.0
+      },
+      "quantum": {
+        "mean_rank": 3.5,
+        "mean_score": 0.624838,
+        "topic_reason_rate": 1.0
+      },
+      "robotics": {
+        "mean_rank": 5.5,
+        "mean_score": 0.278684,
+        "topic_reason_rate": 0.0
+      }
+    },
+    "attention_only": {
+      "attention": {
+        "mean_rank": 1.5,
+        "mean_score": 0.970992,
+        "topic_reason_rate": 1.0
+      },
+      "databases": {
+        "mean_rank": 7.5,
+        "mean_score": 0.278684,
+        "topic_reason_rate": 0.0
+      },
+      "quantum": {
+        "mean_rank": 3.5,
+        "mean_score": 0.278684,
+        "topic_reason_rate": 0.0
+      },
+      "robotics": {
+        "mean_rank": 5.5,
+        "mean_score": 0.278684,
+        "topic_reason_rate": 0.0
+      }
+    },
+    "delete_robotics": {
+      "attention": {
+        "mean_rank": 1.5,
+        "mean_score": 0.970992,
+        "topic_reason_rate": 1.0
+      },
+      "databases": {
+        "mean_rank": 7.5,
+        "mean_score": 0.278684,
+        "topic_reason_rate": 0.0
+      },
+      "quantum": {
+        "mean_rank": 3.5,
+        "mean_score": 0.278684,
+        "topic_reason_rate": 0.0
+      },
+      "robotics": {
+        "mean_rank": 5.5,
+        "mean_score": 0.278684,
+        "topic_reason_rate": 0.0
+      }
+    },
+    "edit_quantum_to_robotics": {
+      "attention": {
+        "mean_rank": 1.5,
+        "mean_score": 0.624838,
+        "topic_reason_rate": 1.0
+      },
+      "databases": {
+        "mean_rank": 7.5,
+        "mean_score": 0.278684,
+        "topic_reason_rate": 0.0
+      },
+      "quantum": {
+        "mean_rank": 5.5,
+        "mean_score": 0.278684,
+        "topic_reason_rate": 0.0
+      },
+      "robotics": {
+        "mean_rank": 3.5,
+        "mean_score": 0.624838,
+        "topic_reason_rate": 1.0
+      }
+    }
+  },
+  "state_topics": {
+    "add_quantum": [
+      "attention",
+      "quantum"
+    ],
+    "attention_only": [
+      "attention"
+    ],
+    "delete_robotics": [
+      "attention"
+    ],
+    "edit_quantum_to_robotics": [
+      "attention",
+      "robotics"
+    ]
+  },
+  "transition_count": 4,
+  "transitions": [
+    {
+      "after_state": "add_quantum",
+      "before_state": "attention_only",
+      "candidate_topic": "quantum",
+      "expected_score_direction": "increase",
+      "mean_rank_after": 3.5,
+      "mean_rank_before": 3.5,
+      "mean_score_after": 0.624838,
+      "mean_score_before": 0.278684,
+      "passed": true,
+      "rank_delta": 0.0,
+      "reason_rate_delta": 1.0,
+      "score_delta": 0.346154,
+      "topic_reason_rate_after": 1.0,
+      "topic_reason_rate_before": 0.0,
+      "transition_id": "add_quantum"
+    },
+    {
+      "after_state": "edit_quantum_to_robotics",
+      "before_state": "add_quantum",
+      "candidate_topic": "quantum",
+      "expected_score_direction": "decrease",
+      "mean_rank_after": 5.5,
+      "mean_rank_before": 3.5,
+      "mean_score_after": 0.278684,
+      "mean_score_before": 0.624838,
+      "passed": true,
+      "rank_delta": 2.0,
+      "reason_rate_delta": -1.0,
+      "score_delta": -0.346154,
+      "topic_reason_rate_after": 0.0,
+      "topic_reason_rate_before": 1.0,
+      "transition_id": "edit_remove_quantum"
+    },
+    {
+      "after_state": "edit_quantum_to_robotics",
+      "before_state": "add_quantum",
+      "candidate_topic": "robotics",
+      "expected_score_direction": "increase",
+      "mean_rank_after": 3.5,
+      "mean_rank_before": 5.5,
+      "mean_score_after": 0.624838,
+      "mean_score_before": 0.278684,
+      "passed": true,
+      "rank_delta": -2.0,
+      "reason_rate_delta": 1.0,
+      "score_delta": 0.346154,
+      "topic_reason_rate_after": 1.0,
+      "topic_reason_rate_before": 0.0,
+      "transition_id": "edit_add_robotics"
+    },
+    {
+      "after_state": "delete_robotics",
+      "before_state": "edit_quantum_to_robotics",
+      "candidate_topic": "robotics",
+      "expected_score_direction": "decrease",
+      "mean_rank_after": 5.5,
+      "mean_rank_before": 3.5,
+      "mean_score_after": 0.278684,
+      "mean_score_before": 0.624838,
+      "passed": true,
+      "rank_delta": 2.0,
+      "reason_rate_delta": -1.0,
+      "score_delta": -0.346154,
+      "topic_reason_rate_after": 0.0,
+      "topic_reason_rate_before": 1.0,
+      "transition_id": "delete_robotics"
+    }
+  ]
+}

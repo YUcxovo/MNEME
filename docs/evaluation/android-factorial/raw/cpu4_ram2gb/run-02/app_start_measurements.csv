@@ -1,0 +1,41 @@
+track,scenario,iteration,launch_state,total_time_ms,wait_time_ms,success,outcome
+startup,cold_process,1,COLD,1815,1857,true,main_activity_wait_time_present
+startup,warm_task_resume,1,UNKNOWN (0),,130,true,main_activity_wait_time_present
+startup,cold_process,2,COLD,1873,1930,true,main_activity_wait_time_present
+startup,warm_task_resume,2,UNKNOWN (0),,160,true,main_activity_wait_time_present
+startup,cold_process,3,COLD,1518,1542,true,main_activity_wait_time_present
+startup,warm_task_resume,3,UNKNOWN (0),,28,true,main_activity_wait_time_present
+startup,cold_process,4,COLD,1246,1248,true,main_activity_wait_time_present
+startup,warm_task_resume,4,UNKNOWN (0),,71,true,main_activity_wait_time_present
+startup,cold_process,5,COLD,1384,1397,true,main_activity_wait_time_present
+startup,warm_task_resume,5,UNKNOWN (0),,109,true,main_activity_wait_time_present
+startup,cold_process,6,COLD,1062,1065,true,main_activity_wait_time_present
+startup,warm_task_resume,6,UNKNOWN (0),,148,true,main_activity_wait_time_present
+startup,cold_process,7,COLD,1142,1188,true,main_activity_wait_time_present
+startup,warm_task_resume,7,UNKNOWN (0),,80,true,main_activity_wait_time_present
+startup,cold_process,8,COLD,1289,1297,true,main_activity_wait_time_present
+startup,warm_task_resume,8,UNKNOWN (0),,93,true,main_activity_wait_time_present
+startup,cold_process,9,COLD,1007,1017,true,main_activity_wait_time_present
+startup,warm_task_resume,9,UNKNOWN (0),,136,true,main_activity_wait_time_present
+startup,cold_process,10,COLD,1097,1108,true,main_activity_wait_time_present
+startup,warm_task_resume,10,UNKNOWN (0),,44,true,main_activity_wait_time_present
+startup,cold_process,11,COLD,1668,1681,true,main_activity_wait_time_present
+startup,warm_task_resume,11,UNKNOWN (0),,86,true,main_activity_wait_time_present
+startup,cold_process,12,COLD,1458,1498,true,main_activity_wait_time_present
+startup,warm_task_resume,12,UNKNOWN (0),,47,true,main_activity_wait_time_present
+startup,cold_process,13,COLD,1459,1461,true,main_activity_wait_time_present
+startup,warm_task_resume,13,UNKNOWN (0),,88,true,main_activity_wait_time_present
+startup,cold_process,14,COLD,1308,1318,true,main_activity_wait_time_present
+startup,warm_task_resume,14,UNKNOWN (0),,141,true,main_activity_wait_time_present
+startup,cold_process,15,COLD,1908,1915,true,main_activity_wait_time_present
+startup,warm_task_resume,15,UNKNOWN (0),,75,true,main_activity_wait_time_present
+startup,cold_process,16,COLD,1674,1705,true,main_activity_wait_time_present
+startup,warm_task_resume,16,UNKNOWN (0),,77,true,main_activity_wait_time_present
+startup,cold_process,17,COLD,1326,1354,true,main_activity_wait_time_present
+startup,warm_task_resume,17,UNKNOWN (0),,92,true,main_activity_wait_time_present
+startup,cold_process,18,COLD,1294,1298,true,main_activity_wait_time_present
+startup,warm_task_resume,18,UNKNOWN (0),,131,true,main_activity_wait_time_present
+startup,cold_process,19,COLD,1274,1280,true,main_activity_wait_time_present
+startup,warm_task_resume,19,UNKNOWN (0),,73,true,main_activity_wait_time_present
+startup,cold_process,20,COLD,1247,1311,true,main_activity_wait_time_present
+startup,warm_task_resume,20,UNKNOWN (0),,123,true,main_activity_wait_time_present

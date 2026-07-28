@@ -1,0 +1,15 @@
+{
+    "schema_version": "live-core-android-environment-v1",
+    "device_manufacturer": "Google",
+    "device_model": "sdk_gphone64_x86_64",
+    "device_product": "sdk_gphone64_x86_64",
+    "android_sdk": 34,
+    "android_release": "14",
+    "build_fingerprint": "google/sdk_gphone64_x86_64/emu64xa:14/UE1A.230829.050/12077443:userdebug/dev-keys",
+    "available_processors": 4,
+    "max_heap_bytes": 201326592,
+    "screen_width_pixels": 1080,
+    "screen_height_pixels": 2209,
+    "screen_density_dpi": 420,
+    "is_emulator": true
+}

@@ -1,0 +1,33 @@
+state_id,active_topics,paper_id,candidate_topic,title,rank,score,reasons,topic_reason_present
+attention_only,attention,00000000-0000-0000-0000-000000000001,attention,Attention mechanisms for long documents,1,0.970992,Matches your topics: attention | Recently published,True
+attention_only,attention,00000000-0000-0000-0000-000000000002,attention,Efficient attention for language models,2,0.970992,Matches your topics: attention | Recently published,True
+attention_only,attention,00000000-0000-0000-0000-000000000003,quantum,Quantum algorithms for optimization,3,0.278684,Recently published,False
+attention_only,attention,00000000-0000-0000-0000-000000000004,quantum,Quantum learning with structured circuits,4,0.278684,Recently published,False
+attention_only,attention,00000000-0000-0000-0000-000000000005,robotics,Robotics planning under uncertainty,5,0.278684,Recently published,False
+attention_only,attention,00000000-0000-0000-0000-000000000006,robotics,Robotics control with learned dynamics,6,0.278684,Recently published,False
+attention_only,attention,00000000-0000-0000-0000-000000000007,databases,Databases for streaming analytics,7,0.278684,Recently published,False
+attention_only,attention,00000000-0000-0000-0000-000000000008,databases,Databases with adaptive indexing,8,0.278684,Recently published,False
+add_quantum,attention|quantum,00000000-0000-0000-0000-000000000001,attention,Attention mechanisms for long documents,1,0.624838,Recently published | Matches your topics: attention,True
+add_quantum,attention|quantum,00000000-0000-0000-0000-000000000002,attention,Efficient attention for language models,2,0.624838,Recently published | Matches your topics: attention,True
+add_quantum,attention|quantum,00000000-0000-0000-0000-000000000003,quantum,Quantum algorithms for optimization,3,0.624838,Recently published | Matches your topics: quantum,True
+add_quantum,attention|quantum,00000000-0000-0000-0000-000000000004,quantum,Quantum learning with structured circuits,4,0.624838,Recently published | Matches your topics: quantum,True
+add_quantum,attention|quantum,00000000-0000-0000-0000-000000000005,robotics,Robotics planning under uncertainty,5,0.278684,Recently published,False
+add_quantum,attention|quantum,00000000-0000-0000-0000-000000000006,robotics,Robotics control with learned dynamics,6,0.278684,Recently published,False
+add_quantum,attention|quantum,00000000-0000-0000-0000-000000000007,databases,Databases for streaming analytics,7,0.278684,Recently published,False
+add_quantum,attention|quantum,00000000-0000-0000-0000-000000000008,databases,Databases with adaptive indexing,8,0.278684,Recently published,False
+edit_quantum_to_robotics,attention|robotics,00000000-0000-0000-0000-000000000001,attention,Attention mechanisms for long documents,1,0.624838,Recently published | Matches your topics: attention,True
+edit_quantum_to_robotics,attention|robotics,00000000-0000-0000-0000-000000000002,attention,Efficient attention for language models,2,0.624838,Recently published | Matches your topics: attention,True
+edit_quantum_to_robotics,attention|robotics,00000000-0000-0000-0000-000000000005,robotics,Robotics planning under uncertainty,3,0.624838,Recently published | Matches your topics: robotics,True
+edit_quantum_to_robotics,attention|robotics,00000000-0000-0000-0000-000000000006,robotics,Robotics control with learned dynamics,4,0.624838,Recently published | Matches your topics: robotics,True
+edit_quantum_to_robotics,attention|robotics,00000000-0000-0000-0000-000000000003,quantum,Quantum algorithms for optimization,5,0.278684,Recently published,False
+edit_quantum_to_robotics,attention|robotics,00000000-0000-0000-0000-000000000004,quantum,Quantum learning with structured circuits,6,0.278684,Recently published,False
+edit_quantum_to_robotics,attention|robotics,00000000-0000-0000-0000-000000000007,databases,Databases for streaming analytics,7,0.278684,Recently published,False
+edit_quantum_to_robotics,attention|robotics,00000000-0000-0000-0000-000000000008,databases,Databases with adaptive indexing,8,0.278684,Recently published,False
+delete_robotics,attention,00000000-0000-0000-0000-000000000001,attention,Attention mechanisms for long documents,1,0.970992,Matches your topics: attention | Recently published,True
+delete_robotics,attention,00000000-0000-0000-0000-000000000002,attention,Efficient attention for language models,2,0.970992,Matches your topics: attention | Recently published,True
+delete_robotics,attention,00000000-0000-0000-0000-000000000003,quantum,Quantum algorithms for optimization,3,0.278684,Recently published,False
+delete_robotics,attention,00000000-0000-0000-0000-000000000004,quantum,Quantum learning with structured circuits,4,0.278684,Recently published,False
+delete_robotics,attention,00000000-0000-0000-0000-000000000005,robotics,Robotics planning under uncertainty,5,0.278684,Recently published,False
+delete_robotics,attention,00000000-0000-0000-0000-000000000006,robotics,Robotics control with learned dynamics,6,0.278684,Recently published,False
+delete_robotics,attention,00000000-0000-0000-0000-000000000007,databases,Databases for streaming analytics,7,0.278684,Recently published,False
+delete_robotics,attention,00000000-0000-0000-0000-000000000008,databases,Databases with adaptive indexing,8,0.278684,Recently published,False

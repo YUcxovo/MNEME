@@ -117,20 +117,6 @@
 \clearpage
 }
 
-\makeatletter
-% \appendix采用数字编号。
-\renewcommand{\appendix}{\par
-    \setcounter{chapter}{0}
-    \setcounter{section}{0}
-    \ctexset{chapter/number={\arabic{chapter}}}
-}
-% 使用 \appchapter 替代附录中的 \chapter 章节，附录中的章节不再放入目录。
-\newcommand{\appchapter}[1]{
-    \refstepcounter{chapter}
-    \SJTU@head*[Appendix  \thechapter]{#1 Appendix  \thechapter}
-}
-\makeatother
-
 {
 \ctexset{chapter={afterskip=26bp}}
 % 附录

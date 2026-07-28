@@ -1,0 +1,9 @@
+{
+  "command": "python tools/evaluation/run_explicit_interest_correction.py",
+  "fixture_sha256": "2d6f525883cfa3961fc0501a58ae4f6c75bcaf21f67d5efd0cbe34a23fbcfa33",
+  "generated_at_utc": "2026-07-27T22:05:52.884185+00:00",
+  "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+  "python": "3.12.3 (main, Jun 19 2026, 12:46:00) [GCC 13.3.0]",
+  "runner_sha256": "0404d7ff8d3e64fd13e99e8a35078946f1e02993e665cee47268e98cb09f44b2",
+  "scorer_sha256": "957194f1f2c95ed2dc359b9104f7323e2db22dacd9859d89dc98931bbfa4675a"
+}

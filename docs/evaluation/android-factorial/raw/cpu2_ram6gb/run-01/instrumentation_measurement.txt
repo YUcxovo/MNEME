@@ -1,0 +1,67 @@
+INSTRUMENTATION_STATUS: class=com.mneme.app.evaluation.E4StateMeasurementTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=4
+INSTRUMENTATION_STATUS: stream=
+com.mneme.app.evaluation.E4StateMeasurementTest:
+INSTRUMENTATION_STATUS: test=recordControlledStateResolutionAndPollingLatency
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.mneme.app.evaluation.E4StateMeasurementTest
+INSTRUMENTATION_STATUS: current=1
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=4
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=recordControlledStateResolutionAndPollingLatency
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.mneme.app.evaluation.E4EventSyncMeasurementTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=4
+INSTRUMENTATION_STATUS: stream=
+com.mneme.app.evaluation.E4EventSyncMeasurementTest:
+INSTRUMENTATION_STATUS: test=recordQueueFailureRetryAndDuplicateLatency
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.mneme.app.evaluation.E4EventSyncMeasurementTest
+INSTRUMENTATION_STATUS: current=2
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=4
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=recordQueueFailureRetryAndDuplicateLatency
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.mneme.app.ui.graph.E4GraphMeasurementTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=4
+INSTRUMENTATION_STATUS: stream=
+com.mneme.app.ui.graph.E4GraphMeasurementTest:
+INSTRUMENTATION_STATUS: test=recordReadyFallbackAndEmptyStateDisclosureReliability
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.mneme.app.ui.graph.E4GraphMeasurementTest
+INSTRUMENTATION_STATUS: current=3
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=4
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=recordReadyFallbackAndEmptyStateDisclosureReliability
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_STATUS: class=com.mneme.app.ui.graph.E4GraphMeasurementTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=4
+INSTRUMENTATION_STATUS: stream=
+INSTRUMENTATION_STATUS: test=recordBoundedRendererAndSelectionLatency
+INSTRUMENTATION_STATUS_CODE: 1
+INSTRUMENTATION_STATUS: class=com.mneme.app.ui.graph.E4GraphMeasurementTest
+INSTRUMENTATION_STATUS: current=4
+INSTRUMENTATION_STATUS: id=AndroidJUnitRunner
+INSTRUMENTATION_STATUS: numtests=4
+INSTRUMENTATION_STATUS: stream=.
+INSTRUMENTATION_STATUS: test=recordBoundedRendererAndSelectionLatency
+INSTRUMENTATION_STATUS_CODE: 0
+INSTRUMENTATION_RESULT: stream=
+
+Time: 205.075
+
+OK (4 tests)
+
+
+INSTRUMENTATION_CODE: -1

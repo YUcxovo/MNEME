@@ -1,0 +1,52 @@
+{
+  "schema_version": "android-factorial-design-v1",
+  "design": "2x2 factorial with four counterbalanced independent blocks",
+  "factors": {
+    "cpu_cores": [
+      2,
+      4
+    ],
+    "ram_mb": [
+      2048,
+      6144
+    ]
+  },
+  "controlled_environment": {
+    "avd_name": "Mneme_Factorial_API_34_Pixel6",
+    "android_system_image": "system-images/android-34/google_apis/x86_64/",
+    "device_profile": "Pixel 6",
+    "screen": "1080x2400 at 420 dpi",
+    "application_heap": "228 MiB",
+    "cold_boot_and_wipe_data_each_session": true,
+    "external_backend_used": false
+  },
+  "independent_blocks": 4,
+  "samples_per_session": 810,
+  "block_orders": [
+    [
+      "cpu2_ram2gb",
+      "cpu2_ram6gb",
+      "cpu4_ram6gb",
+      "cpu4_ram2gb"
+    ],
+    [
+      "cpu2_ram6gb",
+      "cpu4_ram2gb",
+      "cpu2_ram2gb",
+      "cpu4_ram6gb"
+    ],
+    [
+      "cpu4_ram2gb",
+      "cpu4_ram6gb",
+      "cpu2_ram6gb",
+      "cpu2_ram2gb"
+    ],
+    [
+      "cpu4_ram6gb",
+      "cpu2_ram2gb",
+      "cpu4_ram2gb",
+      "cpu2_ram6gb"
+    ]
+  ],
+  "interpretation_boundary": "Per-session summaries are the independent units; within-session samples are repeated measurements."
+}

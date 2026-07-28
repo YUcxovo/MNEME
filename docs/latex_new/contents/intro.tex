@@ -2,197 +2,264 @@
 
 \chapter{Introduction}
 
-\section{Background}
+\definecolor{MnemeNavy}{HTML}{17324D}
+\definecolor{MnemeBlue}{HTML}{2F6F8F}
+\definecolor{MnemeTeal}{HTML}{2D8C87}
+\definecolor{MnemeGold}{HTML}{C89445}
+\definecolor{MnemeGreen}{HTML}{4F8A5B}
 
-\subsection{Scientific Work after Search}
+\section{Background}
 
 Researchers rarely encounter a paper only once.
 A paper may first appear in a recommendation feed, later receive a revised preprint, become relevant to a new project, and finally serve as evidence in a technical decision.
-During this process, the reader must preserve at least three kinds of continuity.
-First, document continuity identifies which paper and revision supplied a statement.
-Second, evidential continuity connects a generated explanation to the text that supports it.
-Third, interest continuity records why a paper was selected and how later behavior should---or should not---change the system's view of the user's research interests.
+Work on a paper can therefore span discovery, rapid triage, close reading, and later reuse.
+The information needed at each stage differs: an abstract may support an initial decision, while a later argument may depend on methods or evidence in the full text.
+A revised preprint can also alter the text on which an earlier summary or note was based, so later reuse depends on knowing which version was read.
+The scholarly record is also an evolving network of publications, authors, institutions, and citations, so the value of a paper often emerges from its relation to other work and to a changing research question~\cite{fortunato2018science}.
+This activity is a form of sensemaking: the reader searches for a useful representation, encodes selected information into it, and revises that representation to answer task-specific questions~\cite{russell1993sensemaking}.
+Personal information management research also shows that people combine bookmarks, files, printed pages, and other keeping methods to support later reuse~\cite{jones2002keeping}.
+The resulting literature record is distributed across tools and sessions, and its usefulness depends on whether the reader can later reconstruct the context in which a paper was selected and understood.
 
-Retrieval-augmented generation (RAG) provides a useful foundation because it couples a generator to retrieved non-parametric memory~\cite{lewis2020rag}.
-Nevertheless, retrieval does not by itself prove that an answer is supported by the retrieved text.
-Citation-oriented evaluation therefore distinguishes answer quality from citation correctness and completeness~\cite{gao2023alce}.
-The distinction becomes more important for long scientific documents: language models can use evidence unevenly depending on where it appears in a long context~\cite{liu2024lost}, and chunk-based retrieval can trade global document structure for local factual detail~\cite{zhao2024longrag}.
+Retrieval-augmented generation (RAG) offers one approach to AI-assisted literature work by coupling a generator to retrieved non-parametric memory~\cite{lewis2020rag}.
+RAG makes external text available during generation and creates a path by which an explanation may be related to its source.
+Scientific papers remain demanding inputs because they are long, structured documents in which an argument may depend on material distributed across sections, figures, and equations.
+Language models can use evidence unevenly across a long context~\cite{liu2024lost}, while chunk-based retrieval can trade global document structure for local factual detail~\cite{zhao2024longrag}.
+Reading-interface research identifies a related locality problem from a human perspective: definitions needed for comprehension may appear in another section or paper, and position-sensitive access can reduce the effort required to recover them~\cite{head2021scholarphi}.
+Scientific reading consequently involves repeated movement between a concise explanation and the detailed evidence needed to assess it.
+The source paper, its internal structure, and the position of the supporting material all contribute to the meaning of an AI-assisted explanation.
+These characteristics make document structure and source location essential parts of the literature-reading context.
 
-Personalization introduces a second source of uncertainty.
-Opening, saving, skipping, or questioning a paper can be useful feedback, but no single event is a complete statement of research intent.
-Recent work on long-term recommendation describes silent engagement and disengagement as unpaired and potentially ambiguous signals~\cite{zhang2025unpaired}.
-Other work shows that editable natural-language user profiles can make recommendations more scrutable~\cite{ramos2024scrutable}.
-For MNEME, these observations imply that adaptive interest memory must be inspectable and correctable rather than represented as an invisible, authoritative embedding.
+Personalization offers another way to reduce the effort of following a large literature.
+Opening, saving, skipping, or questioning a paper can provide useful feedback, although no single event fully expresses research intent.
+Research on long-term recommendation has used continued engagement and silent disengagement as distinct feedback signals~\cite{zhang2025unpaired}.
+Editable natural-language user profiles provide another way for readers to inspect and revise the assumptions behind a recommendation~\cite{ramos2024scrutable}.
+The meaning of an interaction also depends on its setting: a paper may be opened for a course, a temporary collaboration, or a research direction that later changes.
+Explicit profile statements capture deliberate choices at a particular time, whereas behavior supplies continuing but less direct observations.
+Longitudinal personalization therefore draws on signals produced at different times and under changing research goals.
+Over time, the observable interaction history and the current estimate of interest remain distinct sources of information.
 
-The central thesis is consequently narrower than the title's term ``research agent'' may suggest.
-MNEME is not claimed to conduct autonomous science.
-It is designed as a mobile literature loop whose actions are bounded by versioned paper evidence, declared behavioral signals, and visible user controls.
-This framing turns a feature-rich application plan into a falsifiable research program.
-
-\subsection{Observed Workflow Friction}
-
-The project team used ten semi-structured interviews as formative evidence about this downstream workflow.
-The participants were students and early-stage researchers from machine learning and natural-language processing, computer vision, and program verification.
-The interviews were not designed to estimate population prevalence.
-Instead, they asked participants to recount recent search, triage, storage, recall, and verification episodes without first describing MNEME.
-The resulting observations repeatedly concerned four forms of discontinuity: excessive candidate volume, difficulty relocating previously encountered papers, fragmented personal organization, and uncertainty about unsupported AI summaries.
-Within this ten-person formative sample, eight participants described difficulty retrieving previously encountered papers, seven described excessive paper volume, seven described weak connections between papers and developing ideas, and five raised concerns about trusting AI-generated material without inspectable sources.
-These counts characterize the interviewed group only; they are used to prioritize design attention rather than to estimate the prevalence of each problem in the wider research community.
-These observations are reported as small-sample design evidence in Chapter~2 rather than as universal claims about researchers.
-
-The motivation for a mobile client follows from when these discontinuities occur.
-Triage, saving, sharing, and recalling papers are often interleaved with meetings, commuting, messages from collaborators, and short gaps between other tasks.
-A mobile interface can shorten the path from an alert to an inspectable paper record, but mobility also creates stricter constraints on attention, connectivity, screen area, and background execution.
-The value of a mobile research assistant therefore cannot be established merely by reproducing a desktop chatbot on a smaller display.
-The system must decide what information remains local, what work may be deferred, which evidence must stay one action away, and how stale or seeded content is distinguished from live content.
+Literature work can also continue beyond a desktop session.
+On a mobile device, a researcher may triage, save, share, or recall papers during a brief interval between other tasks.
+Such sessions are easily interrupted and may later resume under different network conditions.
+Mobile platforms must also account for offline data access and restrictions on persistent background work~\cite{androidOfflineFirst2026,androidWorkManager2026}.
+Information prepared by a remote service may arrive after the user has changed screens, while locally retained information may remain available when the network is absent.
+The client must consequently coordinate information that is produced at different times and may have different levels of freshness.
+The mobile setting therefore joins the cognitive problem of recovering research context with the platform problem of preserving state across delayed and interrupted operations.
+Taken together, these conditions make literature work longitudinal: the paper may change, explanations must remain connected to evidence, research interests evolve, and reading sessions may be interrupted and resumed.
 
 \section{Problem Statement}
 
-The central problem addressed in this thesis is \emph{continuous literature understanding}: preserving a usable and inspectable relationship among evolving papers, generated assistance, and evolving research interests across repeated sessions.
-The word ``continuous'' has three meanings.
-It refers to continuity across document revisions, because a summary or cited answer must identify the exact version from which it was derived.
-It refers to continuity across evidence transformations, because a retrieved passage, a generated claim, and the source action shown on the phone must describe the same evidential object.
-It also refers to continuity across user interactions, because a later recommendation should be explainable in terms of declared interests and bounded behavioral events rather than an opaque profile update.
+The central problem addressed in this thesis is \emph{continuous literature understanding}: preserving usable and inspectable links among changing paper versions, AI-generated summaries and answers, evolving research interests, and mobile reading state across repeated sessions.
+The problem comprises four related forms of continuity.
+Representation continuity keeps each derived artifact tied to the paper revision from which it was produced.
+Evidence continuity connects a generated claim to the source passage available for inspection.
+Interest continuity relates later recommendations to explicit preferences and recorded reading behavior.
+Interaction continuity preserves the selected paper and the status of its data when a mobile session is interrupted or resumed.
 
-This problem is not equivalent to paper discovery.
-A discovery engine may return a highly relevant paper and still leave the researcher to judge it, remember it, reconnect it to earlier work, and verify any machine-produced explanation.
-Nor is it equivalent to summarization.
-A fluent summary can reduce reading time while increasing epistemic risk if its claims cannot be traced to the current paper revision.
-Finally, the problem is not equivalent to generic personalization.
-Optimizing engagement without preserving signal semantics may cause temporary curiosity, course work, or accidental taps to become persistent research interests.
+These continuity requirements become important after a paper is discovered.
+Once a paper enters a researcher's workflow, it may be assessed, summarized, connected to related work, and revisited in later sessions.
+A useful summary must remain tied to its source revision and supporting evidence, while an interest model must distinguish persistent research intent from temporary or accidental interaction.
+The same paper may consequently participate in several later decisions, each of which depends on information recorded at an earlier stage.
+When paper identity, evidence, interest context, or visible interaction state is lost during a transition, a later output may appear plausible while referring to the wrong revision, unsupported text, an inaccurate account of the reader's intent, or unavailable data whose status is unclear.
 
-MNEME addresses the combined problem through a bounded loop:
-\emph{receive} new papers, \emph{read} a revision-aware representation, \emph{engage} through evidence-linked assistance, \emph{remember} explicit and behavioral signals, \emph{plan} a limited briefing, and \emph{connect} the current paper to a bounded citation neighborhood.
-The loop is successful only when the transitions remain inspectable.
-An answer that loses its evidence, a recommendation that hides its reason, or a graph that provides no clear next action breaks the loop even if the underlying component appears technically functional.
+Meeting these requirements raises four connected research challenges.
+The first technical challenge is revision-correct paper representation.
+A source document can change while summaries, chunks, embeddings, and citations remain attached to an older revision.
+A paper identifier alone does not reveal this difference.
+The difficulty extends beyond detecting that a new file exists, because each derived artifact has its own creation time, configuration, and dependence on the source text.
+An unchanged logical identifier can therefore refer to several evidential states over the lifetime of a paper.
+The challenge is to preserve a lineage from a logical paper to an observed revision and from that revision to every derived artifact, including the conditions under which an artifact becomes outdated.
+Without this lineage, later retrieval and generation cannot determine whether two apparently compatible artifacts were produced from the same evidence.
 
-Four connected technical challenges make this problem difficult.
-The first is revision-correct paper representation.
-A paper identifier is insufficient when its source document can change while summaries, chunks, embeddings, and citations remain attached to an older revision.
-The system must therefore preserve a lineage from a logical paper to an observed revision and from that revision to every derived artifact, invalidating or regenerating an artifact when its evidential basis changes.
-
-The second challenge is evidence-bounded assistance.
+The second technical challenge is evidence-bounded assistance.
+It must separate the presence of a citation from the support that the cited evidence provides.
 A generated answer may contain a valid paper identifier while one or more of its claims remain unsupported.
 Scientific claim-verification research makes the evidence unit explicit by pairing claims with rationale spans~\cite{wadden2020scifact}, and fine-grained attribution work shows why document-level identifiers alone make exact support difficult to inspect~\cite{huang2024grounded}.
-MNEME consequently separates identifier validity, evidence availability, claim--evidence consistency, and evidence coverage, and treats refusal as a valid outcome when the available text does not support an answer.
+Retrieval also introduces several possible failure points: no relevant passage may be found, a relevant passage may be omitted from the final context, or a generated claim may extend beyond the retrieved text.
+The challenge is to distinguish identifier validity, evidence availability, claim--evidence consistency, and evidence coverage, including cases in which the available text does not support an answer.
+This distinction is necessary because a syntactically valid citation marker provides weaker assurance than a source span that supports the associated claim.
 
-The third challenge is adaptive but inspectable interest memory.
-Opening, saving, skipping, and questioning a paper are incomplete and sometimes ambiguous expressions of intent.
-MNEME must combine explicit interests with bounded behavioral events without silently turning temporary curiosity or accidental interaction into a durable research preference.
-The user therefore needs to see why an interest changed and to correct or delete the corresponding state.
+The third technical challenge is adaptive but inspectable interest memory.
+It must interpret incomplete and sometimes ambiguous expressions of intent.
+Opening, saving, skipping, and questioning a paper differ in strength and duration: saving commonly indicates deliberate interest, while a single opening may reflect curiosity, an assignment, or an accidental action.
+Repeated events can provide additional evidence, although frequency alone does not resolve the context in which they occurred.
+The challenge is to combine explicit interests with bounded behavioral events while preserving a clear account of why an interest changed and allowing the corresponding state to be corrected or deleted.
+The resulting representation must therefore support adaptation without treating an inferred preference as an unquestionable statement of the user's research agenda.
 
-The fourth challenge is bounded mobile integration.
-Intermittent connectivity, restricted background execution, notification burden, and limited screen area can conceal evidence or stale state even when the server-side mechanism is correct.
-The mobile workflow must preserve paper identity, evidence access, and event semantics while visibly distinguishing live, cached, fixture, fallback, and error states.
-These challenges are dependent rather than isolated: revision errors can contaminate retrieval, duplicated mobile events can distort later ranking, and an interface that hides degraded operation can convert a recoverable limitation into a misleading research interaction.
+The fourth technical challenge is bounded mobile integration.
+It must preserve research context under intermittent connectivity, restricted background execution, and limited screen area.
+These conditions can conceal evidence or stale state even when the server-side mechanism is correct.
+Long-running preparation and graph operations may complete after the user has navigated elsewhere, and a retry may repeat an interaction that has already reached the server.
+Cached content can preserve useful access during failure, yet it can also mislead the reader when its origin and age are unclear.
+The challenge is to preserve paper identity, evidence access, and interaction meaning while communicating whether the displayed result is current, delayed, degraded, or unavailable.
+The challenges interact: revision errors can contaminate retrieval, duplicated mobile events can distort later ranking, and an interface that hides degraded operation can convert a recoverable limitation into a misleading research interaction.
+Solving any challenge in isolation therefore leaves the overall literature workflow vulnerable at the boundaries between components.
 
-The proposed workflow is organized around three reader-facing actions: read, remember, and plan.
-Reading begins with a paced digest rather than an unbounded result list and retains links from concise explanations to the relevant paper sections or figures.
-Remembering keeps saved and previously read papers retrievable while associating them with explicit topics and inspectable behavioral signals.
-Planning uses this durable state to assemble a limited briefing and to expose related work through a bounded graph instead of requiring the researcher to reconstruct relationships manually.
-These actions translate the interview findings into system behavior without treating the formative counts as effectiveness results.
+\subsection{Cross-Layer Continuity Model}
 
-The storyboard in Figure~\ref{fig:storyboard-source} makes this intended sequence concrete.
-An early-stage researcher first encounters an unmanageable set of candidate papers.
-A mobile notification then presents a deliberately limited weekly digest.
-The researcher opens one item, reads a concise explanation, and follows section- and figure-level links to inspect the evidence.
-After saving the paper, she can see its place in a personal research graph and later retrieve the paper and its supporting evidence during a group discussion.
-This sequence is a design scenario that connects the identified problems to proposed interactions; it is not evidence that the complete longitudinal workflow has already been achieved.
+The four challenges can be stated as continuity conditions over a single reading transition.
+Let the state at time \(t\) be
+\begin{equation}
+  X_t=(p,r,\mathcal{A},\mathcal{E},U,V),
+  \label{eq:continuity-state}
+\end{equation}
+where \(p\) is the logical paper, \(r\) its observed revision, \(\mathcal{A}\) the set of derived artifacts, \(\mathcal{E}\) the displayed claim--source links, \(U\) the explicit and behavioral preference state, and \(V\) the visible client state.
+A transition \(T_t:X_t\rightarrow X_{t+1}\) preserves continuity when four predicates hold:
+\begin{equation}
+  C(T_t)=C_R(T_t)\land C_E(T_t)\land C_U(T_t)\land C_I(T_t).
+  \label{eq:continuity-invariant}
+\end{equation}
+
+The representation predicate \(C_R\) requires the artifacts and source links used in a transition to retain a compatible \((p,r)\) lineage.
+The evidence predicate \(C_E\) requires each displayed source marker to resolve to evidence used for the associated claim.
+The preference predicate \(C_U\) requires a change in user state, together with a later recommendation reason, to be traceable to declared topics, recorded events, and the stated reference time.
+The interaction predicate \(C_I\) requires the selected paper identity and the availability of its data to remain visible across a client transition.
+A failure of any predicate identifies a specific break in continuity even when the other parts of the workflow remain operational.
+The conjunction is deliberately strict: success in one layer does not compensate for a lost paper revision, an unsupported claim, an untraceable preference change, or an ambiguous client state in another layer.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[
-    page=6,
-    width=0.94\textwidth,
-    trim=79bp 178bp 77bp 279bp,
-    clip
-  ]{figures/source_materials/design_specification.pdf}
-  \caption{Five-frame MNEME storyboard: paper overload, a paced mobile digest, source-linked reading, saving into a personal research graph, and later evidence-supported discussion.}
-  \label{fig:storyboard-source}
+  \begin{tikzpicture}[font=\sffamily\small,>=Latex]
+    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=5pt,minimum width=3.2cm,minimum height=0.85cm,align=center] (revision) at (-4.8,1.6) {Paper and revision\\identity \(C_R\)};
+    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,minimum width=3.2cm,minimum height=0.85cm,align=center] (artifact) at (0,1.6) {Derived artifacts\\and retrieved excerpts};
+    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,minimum width=3.2cm,minimum height=0.85cm,align=center] (evidence) at (4.8,1.6) {Displayed claims and\\source status \(C_E\)};
+    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=5pt,minimum width=3.2cm,minimum height=0.85cm,align=center] (events) at (-4.8,-1.25) {Declared interests and\\bounded events};
+    \node[draw=MnemeGold!80!black,fill=MnemeGold!8,rounded corners=5pt,minimum width=3.2cm,minimum height=0.85cm,align=center] (profile) at (0,-1.25) {Traceable preference\\state \(C_U\)};
+    \node[draw=MnemeNavy,fill=MnemeNavy!7,rounded corners=5pt,minimum width=3.2cm,minimum height=1.05cm,align=center] (client) at (4.8,-1.25) {Visible paper identity\\and availability \(C_I\)};
+    \draw[MnemeNavy,line width=0.9pt,->] (revision) -- (artifact);
+    \draw[MnemeNavy,line width=0.9pt,->] (artifact) -- (evidence);
+    \draw[MnemeNavy,line width=0.9pt,->] (events) -- (profile);
+    \draw[MnemeNavy,line width=0.9pt,->] (profile) -- (client);
+    \draw[MnemeNavy,line width=0.9pt,->] (evidence) -- (client);
+    \draw[MnemeNavy!65,dashed,line width=0.8pt,->] (revision.south) to[out=-55,in=145] (client.north);
+  \end{tikzpicture}
+  \caption{Dependency among the four continuity conditions. A reading transition depends on compatible paper identity, claim--source relations, traceable preference state, and visible interaction state.}
+  \label{fig:continuity-dependencies}
 \end{figure}
+\FloatBarrier
+
+\subsection{Research Questions}
+
+The continuity conditions translate the four challenges into the following
+research questions:
+
+\begin{description}[leftmargin=2.3cm,style=nextline]
+  \item[RQ1] How can a literature system preserve revision-correct paper identity and section-level provenance throughout ingestion and the creation of derived artifacts?
+  \item[RQ2] How can retrieval and generation be constrained so that readers can check paper-specific answers against retrieved source passages?
+  \item[RQ3] How can explicit interests and bounded behavioral signals update a user model while keeping each change inspectable and correctable?
+  \item[RQ4] Can these mechanisms be integrated into a mobile research loop that preserves paper identity, evidence access, and interaction meaning while clearly exposing live, cached, processing, and failure states?
+\end{description}
+
+The questions are coupled through the flow of paper identity, evidence, and user state across the system.
+RQ1 and RQ2 are linked because a claim can be checked against its source only after the paper revision and retrieved passage are fixed.
+RQ3 addresses how later interactions change recommendation state.
+RQ4 asks whether paper identity, evidence access, interaction meaning, and operational state remain clear when work crosses the backend and mobile client.
 
 \section{Existing Solutions and Their Drawbacks}
 
-\subsection{Search Engines and Reference Managers}
-
 Traditional literature workflows combine search engines, publisher sites, local folders, spreadsheets, and reference managers.
 These tools remain important because they provide broad coverage, familiar bibliographic records, and user-controlled collections.
-The formative interviews likewise show that participants already rely on Google Scholar, arXiv, Zotero, Mendeley, browser bookmarks, local folders, and personal notes.
-The limitation is not that these tools fail at their intended functions.
-It is that the user must manually preserve the path from discovery to later comprehension.
+Search services support query-based discovery, citation navigation, and alerts, while reference managers support bibliographic organization, annotation, synchronization, and citation export~\cite{googleScholarHelp2026,zoteroDocs2026,zoteroSync2026}.
+Together, they provide a reliable foundation for locating papers and maintaining a collection.
+The limitation appears at the transition from discovery to later comprehension, where the user must preserve context manually.
 Folders and tags can degrade into inconsistent archives; bibliographic records do not necessarily preserve claim-level reading context; and a paper found through one channel may be summarized or discussed in another without shared provenance.
+The later reader may recover the file and its citation metadata while still lacking the reason it mattered, the passage that supported an earlier conclusion, or the relationship between that conclusion and a newer revision.
+This category therefore addresses discovery and organization more directly than the continuity of interpretation across repeated sessions.
 
-\subsection{General-Purpose Language Models and Paper Assistants}
-
-General-purpose language models and paper-oriented assistants can summarize documents and answer questions with low interaction cost.
-RAG improves this workflow by supplying retrieved non-parametric context to generation~\cite{lewis2020rag}.
+General-purpose language models and paper-oriented assistants can summarize documents and answer questions about supplied text.
+RAG supports this workflow by supplying retrieved non-parametric context during generation~\cite{lewis2020rag}.
+For a reader, this interaction can shorten the path from a broad question to a candidate explanation and a potentially relevant passage.
 However, retrieval success, answer quality, citation validity, and claim support are distinct properties.
-ALCE makes citation correctness and completeness explicit rather than treating the presence of a citation marker as sufficient~\cite{gao2023alce}.
+ALCE evaluates citation correctness and completeness in addition to the presence of citation markers~\cite{gao2023alce}.
 SciFact similarly represents scientific verification using claims and evidence rationales~\cite{wadden2020scifact}.
-For MNEME, these findings rule out a weak definition of ``verified'' in which an answer merely contains a valid paper identifier.
-The interface must expose a passage-level path, and the evaluation must record unsupported, partially supported, and no-evidence cases.
-
-\subsection{Recommendation Feeds and Knowledge Graphs}
+Consequently, an assistant that displays a valid paper identifier can still leave the support for an individual claim unclear.
+Document updates introduce another dependency because an answer produced from one revision may remain readable after its source has changed.
+Paper assistants improve immediate access to document content, while longitudinal use also requires an explicit relationship among the source revision, retrieved passage, generated claim, and later display.
 
 Recommendation systems can reduce candidate volume, while citation graphs can reveal neighboring work.
-Yet both can become opaque.
-A recommendation score may conceal which explicit topic or behavior affected ranking, and a large graph may be visually impressive without helping a user choose a next paper.
-Research on scrutable profiles suggests that editable representations can support user inspection and correction~\cite{ramos2024scrutable}, while research on unpaired feedback warns that silence or disengagement does not have a single stable meaning~\cite{zhang2025unpaired}.
-The formative graph test in this project supplies a complementary interaction warning: only two of five prototype participants completed the related-paper graph task, although the graph concept itself attracted interest.
-The combined lesson is that adaptation and visualization must terminate in understandable actions and reversible state.
-
-\subsection{Unmet Combined Design Space}
+Implicit-feedback methods distinguish an observed action from the confidence with which it represents preference~\cite{hu2008implicit}, and temporal recommendation models account for changes in user preferences and item effects~\cite{koren2009temporal}.
+A recommendation score may nevertheless conceal which explicit topic or behavior affected ranking, and a large graph does not by itself help a reader choose a next paper.
+Research on scrutable profiles suggests that editable representations can support user inspection and correction~\cite{ramos2024scrutable}. Work on unpaired feedback shows how continued engagement and silent disengagement can provide positive and negative training signals without explicit paired feedback~\cite{zhang2025unpaired}.
+Citation-graph tools complement ranking by exposing relationships that are difficult to express as a query, including shared references and neighboring works~\cite{connectedPapersAbout2026}.
+Their usefulness still depends on selection and navigation: the reader needs to identify the current paper, understand what an edge represents, and continue from a selected node.
+These approaches still require an interaction design that makes adaptation understandable and turns graph relationships into clear paper-level actions.
+The remaining limitation concerns how ranking evidence, graph context, and later user actions are carried into the next reading session.
 
 Existing categories therefore solve valuable portions of the workflow, but their boundaries leave a combined gap.
 Search engines optimize discovery; reference managers organize records; language-model tools assist comprehension; recommender systems prioritize candidates; and graph tools expose relationships.
 Continuous literature understanding requires these portions to share identity, evidence, and user-state contracts.
-MNEME's research gap is not the absence of any one feature.
-It is the absence, within the supplied project scope, of an evaluated mobile loop in which exact-revision provenance, evidence-bounded claims, correctable interest memory, and bounded graph interaction are jointly visible.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[page=3,width=0.94\textwidth]{figures/source_materials/storymap_architecture.pdf}
-  \caption{Four product-facing capabilities used during early project framing. The thesis does not treat the feature list as the contribution; it derives the shared identity, evidence, adaptation, and integration problems that make the capabilities accountable.}
-  \label{fig:core-capabilities}
-\end{figure}
+The remaining research gap lies in the handoffs among these functions.
+An answer needs the same paper and revision identity established during preparation; a recommendation reason needs the interest state produced by earlier interactions; and a graph selection needs a stable route back to the selected paper.
+Without shared contracts, each component can succeed locally while the reader loses the context needed to inspect or resume the broader task.
+A system addressing the combined problem must therefore preserve this context whenever work passes from one function to another.
 
 \section{Proposed Solution}
 
-\subsection{Research Questions}
+\subsection{System Overview}
 
-The challenges lead to four research questions:
+MNEME is a mobile-native research agent that supports a bounded literature workflow from paper preparation to later retrieval.
+Here, a research agent coordinates paper preparation, evidence-linked reading, preference-aware briefing, and related-paper exploration while the researcher retains responsibility for interpretation and use.
+Its core technical idea is to preserve the information required to inspect and resume work when a reader moves between activities.
+The paper identifier and revision, source evidence, preference history, and client availability state therefore remain explicit throughout the workflow.
+These shared contracts give each component a defined responsibility while preserving the relationships on which later operations depend.
 
-\begin{description}[leftmargin=2.3cm,style=nextline]
-  \item[RQ1] How can a mobile-oriented literature system preserve revision-correct paper identity and section-level provenance during ingestion?
-  \item[RQ2] How can retrieval and generation be constrained so that scientific answers remain inspectable against retrieved paper evidence?
-  \item[RQ3] How can explicit interests and bounded implicit behavior update a user model without hiding or overstating what the system has learned?
-  \item[RQ4] Can these mechanisms be integrated into a usable mobile research loop within stated latency, reliability, and privacy boundaries?
-\end{description}
+When a paper enters the system, preparation records its logical identity and observed revision before producing sections, chunks, and other derived artifacts.
+Briefings present a limited set of candidates together with recommendation reasons.
+Opening a paper retains the same identity for summaries and question answering, where answers expose supporting source passages or report that the available evidence is insufficient.
+Explicit interests and recorded interactions update a traceable preference state.
+A citation neighborhood allows a selected node to lead back to the corresponding paper, while the mobile client distinguishes live, cached, processing, and failure states.
+The resulting sequence carries the context of a paper from its initial encounter into later reading and reuse.
 
-RQ2 and RQ3 are the primary questions.
-RQ1 supplies the evidence substrate on which RQ2 depends, while RQ4 tests whether the three mechanisms survive end-to-end integration.
+Figure~\ref{fig:core-capabilities} summarizes the proposed organization.
+The four capabilities remain useful as separate user actions, while their shared continuity contracts preserve the relationships needed when work moves from one capability to another.
+Revision-aware preparation supplies the identity and artifacts used by evidence-linked reading.
+Inspectable interest memory supplies the traceable preference state used by briefings, and bounded exploration returns the reader to a paper whose identity remains available to the other capabilities.
+The central block identifies the information shared across these capabilities: paper identity, evidence status, behavioral history, and visible client state.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[font=\sffamily\small,>=Latex]
+    \node[draw=MnemeBlue,fill=MnemeBlue!8,rounded corners=5pt,
+      minimum width=4.1cm,minimum height=1.05cm,align=center] (prepare) at (-4.3,1.7)
+      {\textbf{Revision-aware preparation}\\paper identity and derived artifacts};
+    \node[draw=MnemeTeal,fill=MnemeTeal!8,rounded corners=5pt,
+      minimum width=4.1cm,minimum height=1.05cm,align=center] (read) at (4.3,1.7)
+      {\textbf{Evidence-linked reading}\\summary, question, and source};
+    \node[draw=MnemeGold,fill=MnemeGold!10,rounded corners=5pt,
+      minimum width=4.1cm,minimum height=1.05cm,align=center] (remember) at (-4.3,-1.7)
+      {\textbf{Inspectable interest memory}\\explicit and behavioral signals};
+    \node[draw=MnemeGreen,fill=MnemeGreen!9,rounded corners=5pt,
+      minimum width=4.1cm,minimum height=1.05cm,align=center] (explore) at (4.3,-1.7)
+      {\textbf{Bounded exploration}\\briefing and citation neighborhood};
+    \node[draw=MnemeNavy,fill=MnemeNavy!7,rounded corners=6pt,
+      minimum width=3.6cm,minimum height=1.35cm,align=center,font=\sffamily\bfseries] (contracts) at (0,0)
+      {Shared continuity contracts\\identity, evidence, behavior, state};
+    \draw[MnemeNavy,line width=0.9pt,->] (contracts) -- (prepare);
+    \draw[MnemeNavy,line width=0.9pt,->] (contracts) -- (read);
+    \draw[MnemeNavy,line width=0.9pt,->] (contracts) -- (remember);
+    \draw[MnemeNavy,line width=0.9pt,->] (contracts) -- (explore);
+  \end{tikzpicture}
+  \caption{Four MNEME capabilities connected by shared contracts for paper identity, evidence, behavioral state, and mobile presentation.}
+  \label{fig:core-capabilities}
+\end{figure}
+\FloatBarrier
 
 \subsection{Contributions and Evaluation Approach}
 
-The first contribution is a provenance contract: each derived artifact is associated with a logical paper, a specific revision, a transformation configuration, and a content hash.
-The second contribution is an evidence-bounded assistance contract: answers are decomposed into claims, claims point to source spans, and verification distinguishes different failure types.
-The third contribution is a bounded adaptation contract: declared behavioral events update a time-decayed normalized representation while users can inspect or correct the resulting state.
-The fourth contribution is an integration and evaluation framework that connects these mechanisms to a mobile research workflow.
-Together, the evaluations examine revision isolation, evidence retrieval and citation support, controlled adaptation, and mobile reliability and usability.
-Each result is interpreted only at the scope established by its frozen inputs, software revision, configuration, and retained raw artifacts.
+The provenance contract associates each derived artifact with a logical paper, a specific revision, a transformation configuration, and a content hash.
+Evidence-bounded assistance links answer claims to source spans and distinguishes supported, partially supported, and unsupported outcomes.
+Interest adaptation applies declared behavioral events to a time-decayed normalized representation while retaining the information needed for inspection and correction.
+Mobile integration preserves selected paper identity, event meaning, and content availability across asynchronous operations and recovery.
+Together, these contributions supply stable evidence inputs, constrain generated assistance, maintain a traceable interest state, and keep the resulting state visible during interaction.
 
-\subsection{Scope and Claim Boundary}
-
-The available materials include a controlling thesis outline, product-level acceptance criteria, architecture and API designs, a story map, an interactive HTML prototype, UI/UX mockups, a customer-research report, a mid-term implementation report, a formative-usability presentation, and an inspected source repository with exact implementation snapshots.
-These sources support a fuller distinction than the earlier draft.
-The customer-research method and prototype outcomes are \observed{} but \limited{} because the local package does not include full transcripts or participant-level task tables.
-The mid-term report and inspected repository identify executable backend, API, and Android artifacts at stated cutoffs.
-The available Android measurements establish bounded behavior on the stated emulator and configuration, while the formative usability counts remain limited because participant-level timing and interaction records are unavailable.
-Accordingly, Chapters 2 and 3 distinguish historical design evidence from inspected implementation, Chapter 4 reports only retained measurements, and Chapter 5 does not generalize beyond those results.
+The evaluation is organized around the four technical challenges.
+Revision-isolation tests examine provenance; paper-specific question-answering experiments measure retrieval, citation support, and refusal behavior; controlled traces examine interest adaptation; and Android measurements assess mobile reliability and graph interaction.
+The ten-interview customer study and five-participant prototype study complement these technical evaluations by informing the requirements and interaction design.
+Software tests verify specified behavior, while controlled and live measurements characterize the implemented mechanisms under documented configurations.
 
 \subsection{Thesis Structure}
 
 Chapter 2 translates the four challenges into functional, non-functional, ethical, and interaction requirements.
-Chapter 3 defines the application design and the cross-cutting contracts that connect its features.
-Chapter 4 explains the implemented front-end and back-end mechanisms before reporting the retained testing results.
-Chapter 5 answers each research question at the strength permitted by the completed evidence.
+Chapter 3 presents the application architecture, algorithms, interfaces, and interaction design.
+Chapter 4 describes the implementation and reports the experimental and software-testing results.
+Chapter 5 discusses the findings, states the main conclusions, and identifies directions for future work.

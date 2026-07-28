@@ -14,17 +14,14 @@
     %
     % 标题
     %
-    zh / title           = {上海交通大学学位论文 \LaTeX{} 论文格式模板},
-    en / title           = {DISSERTATION TEMPLATE FOR BACHELOR 
-DEGREE OF ENGINEERING IN\\ 
-SHANGHAI JIAO TONG UNIVERSITY 
-},
+    zh / title           = {MNEME：面向持续文献理解的移动原生人工智能研究助手},
+    en / title           = {MNEME: A Mobile-Native AI Research Agent for Continuous Literature Understanding},
     %
     % 标题页标题
     %   可使用“\\”命令手动控制换行
     %
-    % zh / display-title   = {上海交通大学学位论文\\ \LaTeX{} 模板示例文档},
-    % en / display-title   = {A Sample Document \\ for \LaTeX-based SJTU Thesis Template},
+    zh / display-title   = {MNEME：面向持续文献理解的\\移动原生人工智能研究助手},
+    en / display-title   = {MNEME: A Mobile-Native AI Research Agent\\for Continuous Literature Understanding},
     %
     % 关键词
     %
@@ -33,13 +30,13 @@ SHANGHAI JIAO TONG UNIVERSITY
     %
     % 姓名
     %
-    zh / author          = {张三},
-    en / author          = {\textbf{Zhang San}},
+    zh / author          = {王瀚洋，赵恒，蒋睿宇，张轶凡},
+    en / author          = {\textbf{Hanyang Wang, Heng Zhao, Ruiyu Jiang, Yifan Zhang}},
     %
     % 指导教师
     %
-    zh / supervisor      = {李四},
-    en / supervisor      = {\textbf{Li Si}},
+    zh / supervisor      = {皮宜博},
+    en / supervisor      = {\textbf{Yibo Pi}},
     %
     % 副指导教师
     %
@@ -48,10 +45,10 @@ SHANGHAI JIAO TONG UNIVERSITY
     %
     % 学号
     %
-    id              = {
+    id                   = {
       \begin{tabular}[t]{@{}l}
-        1234567890, 1234567890, 1234567890, \\[-1ex]
-        1234567890, 1234567890, 1234567890%
+        522370910183, 522010910074,\\[-1ex]
+        522370910078, 522370910034
       \end{tabular}
     },
     %
@@ -59,27 +56,27 @@ SHANGHAI JIAO TONG UNIVERSITY
     %   本科生不需要填写
     %
     zh / degree          = {学士},
-    en / degree          = {Master of Engineering},
+    en / degree          = {Bachelor of Engineering},
     %
     % 专业
     %
-    zh / major           = {工业工程},
-    en / major           = {A Very Important Major},
+    zh / major           = {电子与计算机工程},
+    en / major           = {Electrical and Computer Engineering},
     %
     % 所属院系
     %
-    zh / department      = {机械与动力工程学院},
-    en / department      = {School of XXXXXXX},
+    zh / department      = {浦江国际学院},
+    en / department      = {SJTU Global College},
     %
     % 答辩日期
     %   使用 ISO 格式 (yyyy-mm-dd)；默认为当前时间
     %
-     date                 = {2024-06},
+     date                 = {2026-07},
     %
     % 标题页显示日期
     %   覆盖对应标题页的日期显示，原样输出
     %
-     zh / display-date    = {20XX 年 XX 月},
+     zh / display-date    = {2026 年 7 月},
     %
     % 资助基金
     %
@@ -133,12 +130,17 @@ SHANGHAI JIAO TONG UNIVERSITY
 
 % 确定浮动对象的位置，可以使用 [H]，强制将浮动对象放到这里（可能效果很差）
 % \usepackage{float}
+\usepackage{placeins}
 
 % 固定宽度的表格
 % \usepackage{tabularx}
 
 % 使用三线表：toprule，midrule，bottomrule。
 \usepackage{booktabs}
+\usepackage{colortbl}
+\setlength{\heavyrulewidth}{1pt}
+\setlength{\lightrulewidth}{0.7pt}
+\setlength{\cmidrulewidth}{0.5pt}
 
 % 表格中支持跨行
 \usepackage{multirow}
@@ -211,12 +213,23 @@ SHANGHAI JIAO TONG UNIVERSITY
 
 % Thesis-content helpers used by the migrated manuscript.
 \newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+\definecolor{MnemeTableNavy}{HTML}{17324D}
+\definecolor{MnemeTableRule}{HTML}{A9B6C2}
+\newcommand{\MnemeTableHeader}[1]{\textcolor{MnemeTableNavy}{\textbf{#1}}}
+\newcommand{\MnemeRowRule}{\specialrule{0.35pt}{0.35em}{0.35em}}
+\newcommand{\MnemeTableSetup}{%
+  \small
+  \setlength{\tabcolsep}{5pt}%
+  \renewcommand{\arraystretch}{1.18}%
+  \arrayrulecolor{MnemeTableRule}%
+}
+\AtBeginEnvironment{table}{\MnemeTableSetup}
+\AtBeginEnvironment{longtable}{\MnemeTableSetup}
 \newcommand{\implemented}{\textsc{Implemented}}
 \newcommand{\measured}{\textsc{Measured}}
 \newcommand{\observed}{\textsc{Observed}}
 \newcommand{\planned}{\textsc{Planned}}
 \newcommand{\limited}{\textsc{Limited}}
-\newcommand{\pending}{\textbf{Result pending}}
 \setlength{\emergencystretch}{1.5em}
 
 % 借用 ltxdoc 里面的几个命令方便写文档
@@ -225,6 +238,11 @@ SHANGHAI JIAO TONG UNIVERSITY
 
 % hyperref 宏包在最后调用
 \usepackage{hyperref}
+\hypersetup{
+  hidelinks,
+  pdfauthor={Hanyang Wang; Heng Zhao; Ruiyu Jiang; Yifan Zhang},
+  pdftitle={MNEME: A Mobile-Native AI Research Agent for Continuous Literature Understanding}
+}
 
 % E-mail
 \providecommand{\email}[1]{\href{mailto:#1}{\urlstyle{tt}\nolinkurl{#1}}}

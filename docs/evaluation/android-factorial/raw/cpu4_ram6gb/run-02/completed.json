@@ -1,0 +1,7 @@
+{
+  "schema_version": "android-factorial-completion-v1",
+  "completed_at_utc": "2026-07-27T17:53:38Z",
+  "expected_controlled_samples": 810,
+  "measurement_tests": 4,
+  "functional_tests": 0
+}

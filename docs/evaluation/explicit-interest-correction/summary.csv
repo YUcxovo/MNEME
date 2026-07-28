@@ -1,0 +1,5 @@
+transition_id,before_state,after_state,candidate_topic,expected_score_direction,mean_score_before,mean_score_after,score_delta,mean_rank_before,mean_rank_after,rank_delta,topic_reason_rate_before,topic_reason_rate_after,reason_rate_delta,passed
+add_quantum,attention_only,add_quantum,quantum,increase,0.278684,0.624838,0.346154,3.5,3.5,0.0,0.0,1.0,1.0,True
+edit_remove_quantum,add_quantum,edit_quantum_to_robotics,quantum,decrease,0.624838,0.278684,-0.346154,3.5,5.5,2.0,1.0,0.0,-1.0,True
+edit_add_robotics,add_quantum,edit_quantum_to_robotics,robotics,increase,0.278684,0.624838,0.346154,5.5,3.5,-2.0,0.0,1.0,1.0,True
+delete_robotics,edit_quantum_to_robotics,delete_robotics,robotics,decrease,0.624838,0.278684,-0.346154,3.5,5.5,2.0,1.0,0.0,-1.0,True

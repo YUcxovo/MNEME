@@ -1,15 +1,15 @@
 % !TEX root = ../main.tex
 
-\chapter{Android E4 Reproducibility}
-\label{app:android-e4}
+\chapter{Android Client Evaluation Reproducibility}
+\label{app:android-evaluation}
 
 \section{Environment and Protocol}
 
-The Android E4 measurements used an Android 14/API 34 \texttt{sdk\_gphone64\_x86\_64} emulator with four virtual processors and a 192~MiB application heap.
+The Android client measurements used an Android 14/API 34 \texttt{sdk\_gphone64\_\allowbreak x86\_64} emulator with four virtual processors and a 192~MiB application heap.
 The live-backend trace used the emulator's host-network route to a local backend.
 The authentication token was supplied to the instrumentation process at run time and was not retained in an artifact.
-The retained manifest binds these measurements to the evaluated Android source snapshot.
-This snapshot bounds the client results in Section~\ref{sec:e4-android}; it does not change the evidence status of the other evaluation tracks.
+The evaluation manifest records the Android build and measurement configuration.
+The client results in Section~\ref{sec:android-performance} apply to that configuration.
 
 Startup measurement discarded three cold/foreground launch pairs, then retained 20 cold process starts and 20 task foreground/resume operations.
 All retained operations returned a non-empty \texttt{WaitTime} field for the requested activity; the startup runner did not inspect rendered UI content.
@@ -18,16 +18,42 @@ Controlled state, graph, and event tests used separate warm-up iterations that w
 The graph experiment used deterministic payloads with 1, 12, 25, and 50 nodes.
 The live event loop performed five repetitions.
 
+\subsection{Factorial Resource Protocol}
+
+The resource-controlled experiment used the same Android~14/API~34 Google
+APIs x86\_64 image and Pixel~6 profile in all sessions.
+The screen was fixed at \(1080\times2400\) pixels and 420~dpi, and the
+application heap remained 228~MiB.
+The four configurations combined two or four virtual processor cores with
+2{,}048 or 6{,}144~MiB of emulator RAM.
+Four counterbalanced blocks changed the order of the configurations.
+Each of the sixteen sessions began from a wiped-data cold boot and produced a
+manifest, environment record, test output, emulator log, and measurement CSV
+files.
+
+The independent unit is one emulator session.
+Each session produced 810 repeated controlled samples, and the analysis first
+reduced each metric to one median per session.
+The four independent values in each factorial cell were then summarized by
+their median and quartiles.
+Finite bootstrap intervals enumerate all resamples of the four session
+summaries.
+CPU and RAM effects are block-level percentage changes between the two factor
+levels and are interpreted descriptively.
+The experiment excludes backend, retrieval, provider, and recommendation
+latency.
+
 \section{Metric Definitions}
 
 \begin{longtable}{P{3.7cm}P{10.4cm}}
-\caption{Android E4 metric definitions.}
-\label{tab:e4-metric-definitions}\\
+\caption{Android client metric definitions.}
+\label{tab:android-metric-definitions}\\
 \toprule
-Metric & Definition \\
+\MnemeTableHeader{Metric} & \MnemeTableHeader{Definition} \\
 \midrule
 Cold process start &
-Elapsed time from a forced process start to the expected first Android screen. \\
+Elapsed wait time from a forced process start until Android reports completion of the requested activity launch.
+The measurement does not inspect rendered UI content. \\
 \addlinespace
 Task foreground/resume &
 Elapsed wait time from requesting the existing task in the foreground.
@@ -41,8 +67,11 @@ Three-stage polling &
 Elapsed time until a controlled asynchronous job advances through three client-visible stages and reaches ready state under the production one-second polling schedule. \\
 \addlinespace
 Graph DOM-ready &
-Elapsed time from loading or updating the local graph page to its JavaScript readiness callback.
-The metric does not wait for force-layout convergence. \\
+Elapsed time from loading or updating the local graph page until the expected
+DOM nodes and renderer marker are observable.
+The new-WebView path includes Compose test-rule idle synchronization and can
+therefore be affected by an active force animation.
+The metric does not establish force-layout convergence. \\
 \addlinespace
 Selection callback &
 Elapsed time from selecting a graph node to receipt of the validated identifier in the native Android layer. \\
@@ -60,10 +89,10 @@ The p95 is the nearest-rank 95th percentile, so the maximum is reported for a fi
 \section{Sample Inventory}
 
 \begin{longtable}{P{4.2cm}P{1.8cm}P{2.7cm}P{3.7cm}}
-\caption{Retained sample inventory for the Android E4 evaluation.}
-\label{tab:e4-sample-inventory}\\
+\caption{Sample inventory for the Android client evaluation.}
+\label{tab:android-sample-inventory}\\
 \toprule
-Group & Samples & Conditions met & Included conditions \\
+\MnemeTableHeader{Group} & \MnemeTableHeader{Samples} & \MnemeTableHeader{Conditions met} & \MnemeTableHeader{Included conditions} \\
 \midrule
 Startup and resume & 40 & 40 & 20 cold starts; 20 foreground/resume operations \\
 State and polling & 160 & 160 & five state conditions at 30 trials; ten polling trials \\
@@ -78,6 +107,25 @@ Existing graph/app-flow tests & 11 & 11 & includes Open Paper and restored selec
 \bottomrule
 \end{longtable}
 
+\begin{table}[htbp]
+\centering
+\caption{Sample inventory for the Android resource-controlled experiment.}
+\label{tab:android-factorial-inventory}
+\begin{tabular}{P{2.8cm}P{2.0cm}P{2.1cm}P{2.7cm}P{3.0cm}}
+\toprule
+\MnemeTableHeader{Configuration} & \MnemeTableHeader{Independent sessions} & \MnemeTableHeader{Controlled samples} & \MnemeTableHeader{Successful samples} & \MnemeTableHeader{Functional tests in block 1} \\
+\midrule
+2 cores / 2~GiB & 4 & 3{,}240 & 3{,}240 & 11 of 11 \\
+2 cores / 6~GiB & 4 & 3{,}240 & 3{,}240 & 11 of 11 \\
+4 cores / 2~GiB & 4 & 3{,}240 & 3{,}240 & 11 of 11 \\
+4 cores / 6~GiB & 4 & 3{,}240 & 3{,}240 & 11 of 11 \\
+\midrule
+Total & 16 & 12{,}960 & 12{,}960 & 44 of 44 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
 \section{Success Conditions and Retained Artifacts}
 
 A cold or foreground/resume launch succeeds when \texttt{am start -W} returns a non-empty wait-time record for the requested activity.
@@ -91,8 +139,8 @@ An event trial succeeds when the local queue and reservation state match the exp
 After a retryable failure, the batch must return to pending state.
 After success, accepted and duplicate counts must account for the full batch.
 For the live trace, each repetition must queue three events, recover from the injected failure, upload three new identifiers, recognize all three on replay, and return a live-origin briefing to the client.
-Digest entry count and preference-model version are recorded as outcomes rather than success conditions.
+Briefing entry count and preference-model version are recorded as outcomes and do not determine trial success.
 
 The retained evaluation package contains direct comma-separated measurements, an environment record, a run manifest without the authentication token, connected Android test XML, machine-readable summaries, and the vector figures used in Chapter~4.
-The five live digests contain zero entries and retain preference-model version 1.
+The five live briefing responses contain zero entries and retain preference-model version 1.
 Those values remain part of the reproducibility record because they bound the event-loop conclusion.

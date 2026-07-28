@@ -1,0 +1,16 @@
+metric,metric_label,factor,independent_blocks,median_percent_change,q1_percent_change,q3_percent_change,bootstrap95_low,bootstrap95_high,direction
+cold_start_p50_ms,Cold process start,CPU,4,-38.63,-42.87,-36.694,-52.046,-34.426,lower_latency
+cold_start_p50_ms,Cold process start,RAM,4,-13.703,-14.901,-12.886,-16.269,-12.665,lower_latency
+cold_start_p50_ms,Cold process start,CPUxRAM,4,10.89,7.044,15.027,3.409,19.532,higher_latency
+warm_resume_p50_ms,Task foreground / resume,CPU,4,-14.149,-21.234,-8.532,-31.773,-2.399,lower_latency
+warm_resume_p50_ms,Task foreground / resume,RAM,4,-9.845,-13.726,-6.622,-16.914,-5.405,lower_latency
+warm_resume_p50_ms,Task foreground / resume,CPUxRAM,4,46.093,22.876,71.972,15.197,87.635,higher_latency
+graph_50_cold_p50_ms,50-node new WebView,CPU,4,2882.06,2804.064,2963.78,2739.664,3039.354,higher_latency
+graph_50_cold_p50_ms,50-node new WebView,RAM,4,-0.076,-0.133,2.834,-0.253,11.513,lower_latency
+graph_50_cold_p50_ms,50-node new WebView,CPUxRAM,4,5.559,2.725,8.325,1.619,9.225,higher_latency
+graph_50_warm_p50_ms,50-node existing WebView,CPU,4,-9.695,-10.981,-7.085,-11.887,-2.205,lower_latency
+graph_50_warm_p50_ms,50-node existing WebView,RAM,4,-0.376,-2.906,2.266,-6.865,6.562,lower_latency
+graph_50_warm_p50_ms,50-node existing WebView,CPUxRAM,4,6.725,2.512,11.021,0.272,13.51,higher_latency
+graph_50_select_p50_ms,50-node selection callback,CPU,4,-4.552,-6.637,-3.932,-12.841,-2.126,lower_latency
+graph_50_select_p50_ms,50-node selection callback,RAM,4,-0.894,-2.101,0.224,-4.235,2.089,lower_latency
+graph_50_select_p50_ms,50-node selection callback,CPUxRAM,4,-0.085,-2.097,1.943,-7.737,7.629,lower_latency

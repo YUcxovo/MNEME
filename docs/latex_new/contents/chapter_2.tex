@@ -4,16 +4,14 @@
 \definecolor{ChapterTwoBlue}{HTML}{2F6F8F}
 \definecolor{ChapterTwoTeal}{HTML}{2D8C87}
 \definecolor{ChapterTwoGold}{HTML}{C89445}
-\newcommand{\ChapterTwoRowRule}{\specialrule{0.35pt}{0.35em}{0.35em}}
 
 \chapter{Design Specification}
 
-This chapter translates the customer-research evidence into requirements for
-MNEME.  The formative study combines interviews, affinity mapping, customer
-profile synthesis, and competitor analysis with a small computing-focused
-sample.  The resulting evidence supports the design decisions within that
-scope.  Chapter~3 develops the system and interface design, and Chapter~4
-reports implementation and testing.
+MNEME's design requirements draw on ten interviews with students and
+researchers in computing-related fields, followed by affinity mapping,
+customer-profile synthesis, and competitor analysis.  The findings provide
+formative evidence for the system and interface design developed in
+Chapter~3.  Chapter~4 examines the corresponding implementation and tests.
 
 \section{Customer Requirements}
 
@@ -29,20 +27,22 @@ personalization.
 \subsection{User Interview Questionnaire}
 
 The questionnaire was designed to elicit recent behavior before participants
-were shown the proposed application.  This order reduced feature-led responses
-and kept the discussion focused on existing research practice.  The eleven
-open-ended questions covered research context, reading frequency, current
-tools, a recent discovery episode, information overload, paper selection,
-storage, recall failure, relationships among papers, and trust in
-AI-generated summaries and answers.  The complete instrument appears in
-Appendix~\ref{app:interview}.
+were shown the proposed application.  This order was intended to limit
+feature-led responses and keep the discussion focused on existing research
+practice.  The eleven
+open-ended questions began with the participant's research context, reading
+frequency, and current tools.  They then examined a recent discovery episode,
+paper selection under information overload, storage and recall, relationships
+among papers, and trust in AI-generated summaries and answers.  The complete
+instrument appears in Appendix~\ref{app:interview}.
 
 The sequence moved from general context to specific episodes.  Questions such
 as ``Tell me about the last time you found an important paper'' asked
 participants to describe concrete decisions and breakdowns.  Interviewers used
 neutral follow-up prompts, including ``What happened next?'', ``What made that
-difficult?'', and ``How did it affect your work?''.  These prompts helped
-separate observed workflow problems from reactions to a proposed feature.
+difficult?'', and ``How did it affect your work?''.  These prompts were
+intended to distinguish existing workflow problems from reactions to a
+proposed feature.
 
 The instrument served three design purposes.  Questions about discovery and
 selection identified the information needed for rapid triage.  Questions about
@@ -62,13 +62,13 @@ make a generated summary or answer sufficiently trustworthy to use in research.
 The study therefore covers the full path from first encounter to later
 verification and recall.
 
-The instrument did not include a product pitch, ranking of proposed features,
-or forced choice among interface concepts.  This boundary is important for the
-interpretation of the results.  A participant's mention of lost papers, manual
-source checking, or fragmented notes arose before a corresponding MNEME feature
-was described.  The interviews support the existence of these workflow
-problems within the sample.  They do not establish demand for the final
-interface or measure the effectiveness of the implemented system.
+The instrument focused on participants' current research practice.  Product
+pitches, feature rankings, and forced choices among interface concepts were
+excluded, so mentions of lost papers, manual source checking, and fragmented
+notes arose before any corresponding MNEME feature was described.  The
+interviews therefore provide formative evidence of these workflow problems
+within the sample.  Product demand and implementation effectiveness require
+separate evidence.
 
 \subsection{Customer Interviews}
 
@@ -103,11 +103,11 @@ different tools.
 Triage began with the paper itself.  Seven participant records mention reading
 the abstract, and five mention figures or tables.  Venue or journal reputation
 and familiarity with an author or research group each appear in four records;
-availability of code appears in three.  This ordering influenced the mobile
-information hierarchy.  The paper card gives priority to title, authorship,
-category, a concise account, and a recommendation reason, while the paper page
-provides the longer method, claim, and source information needed after the
-initial decision.
+availability of code appears in three.  This ordering informed the required
+mobile information hierarchy.  The specification gives priority to title,
+authorship, category, a concise account, and a recommendation reason on the
+paper card, while reserving longer method, claim, and source information for
+the paper page after the initial decision.
 
 Differences in publication culture did not remove the common downstream
 problem.  The machine-learning and computer-vision participants described
@@ -122,16 +122,16 @@ Paper volume was a recurring problem, which led to the requirement for a
 limited briefing with an intelligible reason for each selection.  Recovery
 failures created a second requirement: stable paper identity and reading
 context must persist across the application even when the reader remembers an
-idea but not its title, author, or storage location.  Participants who used AI
+idea and has forgotten its title, author, or storage location.  Participants who used AI
 assistance also described manual source checking as necessary.  Summaries and
 answers consequently need evidence actions close to the claims they qualify.
 
-The study provides formative evidence for this design.  The sample is small,
-non-random, and concentrated in computing-related disciplines.  The analysis
-used interview notes converted into observation statements; no transcript-level
-coding protocol was applied.  Counts in the following subsection describe
-coded observation units and cannot support population-level prevalence
-estimates.
+The study provides formative evidence for this design from ten participants in
+computing-related disciplines.  Interview notes were converted into
+observation statements and used to prioritize requirements within this sample.
+The sample was small and non-random, and the analysis did not use a
+transcript-level coding protocol.  Counts in the following subsection
+therefore describe coded observation units within the study.
 
 \subsection{Affinity Map}
 
@@ -141,10 +141,16 @@ top-level groups: Pain Points, Current Solutions, Trust in AI, and Wishes.  The
 affinity map contains 36 pain-point notes, 74 current-solution notes, 21
 trust-related notes, and 2 wish notes.  A participant could contribute several
 notes to one group, so these totals describe the coding structure and do not
-represent numbers of participants.  Figure~\ref{fig:affinity-map} presents the
-four themes across six enlarged panels.  Pain Points and Current Solutions are
-divided into two panels each so that the individual observations remain
-legible.
+represent numbers of participants.  Color indicates coding depth in the
+panels: green identifies a top-level group when it is retained in the crop,
+pink and blue identify successive thematic clusters, and yellow boxes contain
+observation statements.  Labels P1--P10 identify participants.  Numbers in
+group boxes report coded-note totals, while terminal counts in observation
+boxes report how many coded observations support that statement.
+Figures~\ref{fig:affinity-map}, \ref{fig:affinity-current-solutions}, and
+\ref{fig:affinity-trust} present the four themes across six enlarged panels.
+Pain Points and Current Solutions are divided into two panels each so that the
+individual observations remain legible.
 
 \begin{figure}[!htbp]
   \centering
@@ -189,31 +195,30 @@ The distinction between recovery and storage is useful for design.  Storage
 answers the question of whether a file or record was retained.  Recovery asks
 whether the user can reconstruct enough identity and context to locate it
 later.  A folder can satisfy the first condition while failing the second.
-MNEME therefore uses stable paper identity across the briefing, detail,
-question, cache, and graph views.  The design also retains recommendation
-reasons and source context, which provide additional retrieval cues when a
-title or author has been forgotten.
+The resulting specification requires stable paper identity across the
+briefing, detail, question, cache, and graph views.  It also requires
+recommendation reasons and source context to remain available as additional
+retrieval cues when a title or author has been forgotten.
 
 The Current Solutions cluster shows that participants already combine several
 specialized tools.  Search services support discovery, reference managers
 retain bibliographic records, folders store documents, and note systems retain
 personal interpretation.  Transitions between these tools require manual
-work.  MNEME therefore concentrates on the transitions from recommendation to
-reading, from generated explanation to source evidence, and from a paper to a
-small related-paper neighborhood.
+work.  The design scope therefore concentrates on the transitions from
+recommendation to reading, from generated explanation to source evidence, and
+from a paper to a small related-paper neighborhood.
 
 The Current Solutions group is the largest at 74 notes.  Its size does not
 indicate satisfaction with one existing product.  The group is large because
 participants combined separate practices to complete the workflow.  The coding
 scheme assigns 28 notes to discovery channels, 13 to management and note tools,
 and 33 to decisions about whether a paper deserves attention.  Existing search
-and reference tools remain part of the workflow.  MNEME preserves canonical
-paper links and focuses on a mobile handoff from a bounded recommendation to
-evidence-linked reading and later retrieval.
+and reference tools remain part of the workflow.  The resulting requirements
+call for canonical paper links to be preserved and define a mobile handoff from
+a bounded recommendation to evidence-linked reading and later retrieval.
 
 \enlargethispage{2\baselineskip}
 \begin{figure}[p]
-  \ContinuedFloat
   \centering
   \begin{subfigure}{0.98\textwidth}
     \centering
@@ -228,7 +233,7 @@ evidence-linked reading and later retrieval.
     \includegraphics[width=\textwidth]{figures/chapter2_affinity_solutions_right.png}
     \caption{Signals used to decide whether a paper is worth reading.}
   \end{subfigure}
-  \caption{Affinity map panels (continued): Current Solutions. The notes show
+  \caption{Affinity map panels: Current Solutions. The notes show
   that participants combined search, human referrals, reference managers,
   personal notes, and paper-level triage signals.}
   \label{fig:affinity-current-solutions}
@@ -238,8 +243,8 @@ evidence-linked reading and later retrieval.
 The Trust in AI cluster emphasizes inspectability.  Participants wanted to
 check important statements against the source paper and expressed concern
 about confident answers without visible support.  This finding leads to
-source-linked summaries, evidence-bearing question answering, and distinct
-states for missing, partial, and available evidence.
+requirements for source-linked summaries, evidence-bearing question answering,
+and distinct states for missing, partial, and available evidence.
 
 Within the 21 trust-related notes, 13 belong to the traceability subtheme.
 Five participant records ask for the exact section, figure, or page; three
@@ -261,13 +266,14 @@ signal, provided that its meaning is stated clearly.  Treating these questions
 separately prevents a valid paper link from being presented as proof that every
 sentence in a generated response is supported.
 
-These distinctions determine the order of interaction.  A concise summary or
-answer appears first, followed by the location and excerpt used as evidence.
+These distinctions determine the specified order of interaction.  A concise
+summary or answer appears first, followed by the location and excerpt used as
+evidence.
 The reader can then open the source when the claim matters to the current task.
-If the available material is incomplete, the interface reports insufficient
-evidence and keeps the original paper action available.  The same sequence
-works on a small screen because detailed evidence is disclosed after the paper
-and claim have already been identified.
+If the available material is incomplete, the interface must report
+insufficient evidence and keep the original paper action available.  This
+sequence is intended for a small screen, where detailed evidence is disclosed
+after the paper and claim have already been identified.
 
 The Wishes group contains only two observation notes and therefore receives
 less weight than the larger clusters.  Both notes ask for a durable reading or
@@ -279,7 +285,6 @@ expressed through stable paper identity, retained reading context, and a
 visible path back to evidence.
 
 \begin{figure}[!htbp]
-  \ContinuedFloat
   \centering
   \begin{subfigure}{0.98\textwidth}
     \centering
@@ -295,7 +300,7 @@ visible path back to evidence.
     \includegraphics[width=\textwidth]{figures/chapter2_affinity_wishes.png}
     \caption{Explicit request for a durable reading and knowledge system.}
   \end{subfigure}
-  \caption{Affinity map panels (continued): Trust in AI and Wishes. Traceable
+  \caption{Affinity map panels: Trust in AI and Wishes. Traceable
   source support is the dominant trust condition in the recorded observations.}
   \label{fig:affinity-trust}
 \end{figure}
@@ -308,11 +313,10 @@ changing body of literature and already uses several discovery and storage
 tools.  The user alternates between short triage sessions and deeper reading.
 The central goal is to maintain a defensible working understanding of a topic
 while new papers appear and earlier papers become difficult to recover.  The
-profile prioritizes relevant suggestions and traceable evidence.  It also
-requires low setup cost and compatibility with existing sources.  Because the
-proposed service adapts recommendations over time, the design also provides a
-way to correct inaccurate personalization.  The correction mechanism was
-introduced as a product safeguard.
+profile prioritizes relevant suggestions, traceable evidence, low setup cost,
+and compatibility with existing sources.  Because recommendations adapt over
+time, the reader also needs a way to inspect and correct inaccurate
+personalization.
 
 Four participant-level counts help define the profile without turning it into
 a population estimate.  Eight of ten participants reported difficulty
@@ -329,8 +333,9 @@ This mode favors a small set of candidates, visible reasons, abstract-level
 context, and one clear action.  In a longer session, the user needs structured
 method and result information, source access, question answering, and
 connections to related work.  A single dense screen would serve both modes
-poorly.  The design therefore moves from briefing card to paper detail and
-opens Q\&A and the graph from an already identified paper.
+poorly.  The specification therefore separates the two modes by moving from a
+briefing card to paper detail and placing Q\&A and graph actions on an already
+identified paper.
 
 The profile assumes prior tools remain part of the workflow.
 Canonical arXiv links let the user return to the original source, while stable
@@ -374,16 +379,16 @@ The three verbs describe a repeated process.  \emph{Read} covers initial
 triage, structured paper detail, and access to evidence.  \emph{Remember}
 covers stable paper identity, retained reading context, and explicit interests.
 \emph{Plan} covers the next briefing and the related-paper neighborhood.
-Updates influence subsequent briefings, while the reason shown for an earlier
-recommendation remains unchanged.
+The specification requires updates to influence subsequent briefings while
+preserving the reason shown for an earlier recommendation.
 
 Table~\ref{tab:customer-requirements} converts this profile into observable
 product requirements.  The table describes reader-visible outcomes and leaves
 mechanism and measurement to Chapters~3 and~4.  Four needs follow directly
 from the interviews: controlling paper volume, recovering prior work, checking
-generated content, and exploring related papers.  Personalization control and
-mobile continuity are product safeguards introduced by the adaptive and mobile
-design.
+generated content, and exploring related papers.  Personalization control
+protects the reader from inaccurate inferred preferences, while mobile
+continuity preserves the workflow during interruption and connectivity loss.
 
 \begingroup
 \small
@@ -410,31 +415,31 @@ Produce a bounded briefing and retain the factors that contributed to each
 recommendation. &
 Each paper appears with stable metadata, a concise description, and an
 understandable recommendation reason. \\
-\ChapterTwoRowRule
+\MnemeRowRule
 \textbf{Recover prior work} &
 Use stable paper identity across the briefing, paper detail, question
 answering, local storage, and graph. &
 Returning to a paper preserves its identity and reading context across screens
 and temporary loss of connectivity. \\
-\ChapterTwoRowRule
+\MnemeRowRule
 \textbf{Verify generated content} &
 Associate summaries and answers with the retrieved source material used to
 produce them. &
 The reader can open supporting evidence and can recognize an unsupported or
 incomplete answer. \\
-\ChapterTwoRowRule
+\MnemeRowRule
 \textbf{Correct personalization (safeguard)} &
 Keep explicit interests editable and make behavioral updates bounded and
 inspectable. &
 The reader can understand why a paper was selected and can correct an
 inaccurate preference. \\
-\ChapterTwoRowRule
+\MnemeRowRule
 \textbf{Explore related work} &
 Provide a bounded citation neighborhood with a clear selected state and a
 direct paper action. &
 The reader can select a related node, inspect its relationship, and open the
 paper while preserving graph context. \\
-\ChapterTwoRowRule
+\MnemeRowRule
 \textbf{Continue on mobile (safeguard)} &
 Preserve essential content locally and expose live, cached, processing,
 fallback, empty, and error states. &
@@ -454,11 +459,11 @@ answering, and graph views.
 
 Privacy and user control apply across the requirements.  A reading history can
 reveal unpublished directions, course work, collaborators, and professional
-priorities.  The design therefore limits the reading data collected for
-personalization, keeps explicit interests editable, and presents recommendation
-reasons in terms a reader can inspect.  Data export, deletion, retention, and
-multi-user authorization require further study and are outside the present
-customer research.
+priorities.  The requirements therefore call for minimizing the reading data
+collected for personalization, keeping explicit interests editable, and
+presenting recommendation reasons in terms a reader can inspect.  Data export,
+deletion, retention, and multi-user authorization require further study and
+are outside the present customer research.
 
 Evidence communication is another cross-cutting requirement.  The interface
 must communicate uncertainty without relying on color alone.  Live and cached
@@ -470,16 +475,15 @@ checking is required.
 The mobile interface must also support accessibility and bounded attention.
 Core actions need a text label and a stable touch target.  Briefing cards should
 present one primary action, while source and graph actions appear after the
-paper identity is established.  Briefings and graph neighborhoods are bounded
-so that the interface remains legible on a small screen.  Assistive-technology
-testing with participants remains future work.
+paper identity is established.  Briefings and graph neighborhoods should
+remain bounded so that the interface is legible on a small screen.
+Assistive-technology testing with participants remains future work.
 
 These requirements define the intended experience and its safety boundaries.
-They do not establish implementation or user benefit.  Chapter~3 explains the
-architecture, interfaces, and controls selected to satisfy them.
-Chapter~4 reports the corresponding software and performance evidence.  The
-five-participant prototype study used to refine the interaction design is
-presented under Usability Testing in Chapter~3.
+Chapter~3 explains the architecture, interfaces, and controls selected to
+satisfy them, including the five-participant prototype study used to refine the
+interaction design.  Chapter~4 reports the corresponding implementation,
+software, and performance evidence.
 
 \section{Competitor Analysis}
 
@@ -512,84 +516,83 @@ separate evaluation of the answer and its cited evidence.
 \begin{center}
 \captionof{table}{Comparison of literature-support systems by workflow capability.}
 \label{tab:competitor-categories}
-\footnotesize
+\MnemeTableSetup
 \setlength{\tabcolsep}{3.2pt}
-\renewcommand{\arraystretch}{1.30}
-\begin{tabular}{|P{2.45cm}|P{2.05cm}|P{2.25cm}|P{2.15cm}|P{1.85cm}|P{1.65cm}|}
-\hline
+\begin{tabular}{@{}P{2.45cm}P{2.05cm}P{2.25cm}P{2.15cm}P{1.85cm}P{1.65cm}@{}}
+\toprule[1pt]
 \textcolor{ChapterTwoNavy}{\textbf{System}} &
 \textcolor{ChapterTwoNavy}{\textbf{Full-text input}} &
 \textcolor{ChapterTwoNavy}{\textbf{Evidence support}} &
 \textcolor{ChapterTwoNavy}{\textbf{Persistent context}} &
 \textcolor{ChapterTwoNavy}{\textbf{Proactive delivery}} &
 \textcolor{ChapterTwoNavy}{\textbf{Mobile form}} \\
-\hline
+\midrule[0.7pt]
 Google Scholar / arXiv &
 Linked / hosted papers &
 Original records &
 Search / version scoped &
 Alerts / feeds &
 Web \\
-\hline
+\MnemeRowRule
 Semantic Scholar &
 Partial full text &
 Supporting statements &
 Library / feed scoped &
 Research feed &
 Web \\
-\hline
+\MnemeRowRule
 Elicit / Consensus &
 Corpus dependent &
 Citation-linked output &
 Project / library scoped &
---- &
+N/A &
 Web \\
-\hline
+\MnemeRowRule
 SciSpace / NotebookLM &
 Uploaded / corpus sources &
 Source-linked output &
 Workspace scoped &
---- &
+N/A &
 Web; mobile varies \\
-\hline
+\MnemeRowRule
 Zotero / Mendeley &
 Stored PDFs &
 Documents / annotations &
 Persistent library &
---- &
+N/A &
 Reader / client \\
-\hline
+\MnemeRowRule
 Connected Papers &
 Seed graph &
 Similarity relations &
 Graph scoped &
---- &
+N/A &
 Web \\
-\hline
+\MnemeRowRule
 General LLM chat &
 User / web supplied &
 Tool dependent &
 Conversation / workspace &
 Tool dependent &
 Chat interface \\
-\hline
+\MnemeRowRule
 \textcolor{ChapterTwoNavy}{\textbf{MNEME specification}} &
 \textcolor{ChapterTwoNavy}{\textbf{Section-aware}} &
 \textcolor{ChapterTwoNavy}{\textbf{Source check}} &
 \textcolor{ChapterTwoNavy}{\textbf{Steerable context}} &
 \textcolor{ChapterTwoNavy}{\textbf{Scheduled briefing}} &
 \textcolor{ChapterTwoNavy}{\textbf{Android}} \\
-\hline
+\bottomrule[1pt]
 \end{tabular}
 \par\vspace{0.4em}
 \begin{minipage}{0.98\textwidth}
 \footnotesize
-A dash indicates that the capability was not identified as a primary part of
-the product within the scope of this comparison.
+\textnormal{N/A} indicates that the capability was not identified as a primary
+part of the product within the scope of this comparison.
 \end{minipage}
 \end{center}
 
-Search and discovery services provide the broadest entry point.  Google Scholar
+Search and discovery services provide a broad entry point.  Google Scholar
 supports relevance- and date-oriented search, links to available full text,
 related-paper and cited-by navigation, citation export, and email alerts for
 queries, authors, and citations \cite{googleScholarHelp2026}.  arXiv has a
@@ -597,13 +600,14 @@ different role: it hosts author-submitted research articles and makes them
 openly accessible \cite{arxivAnnual2023}.
 Semantic Scholar extends discovery with a personal library, folder-based
 Research Feeds, alerts, short paper summaries, and limited paper question
-answering with supporting statements \cite{semanticScholarProduct2026}.  These
-capabilities preserve more state than a single result page.  Their persistent
-objects remain search queries, library folders, alerts, and feeds.  A later
+answering with supporting statements \cite{semanticScholarProduct2026}.
+Within this comparison, these capabilities preserve more state than a single
+result page.  Their persistent objects remain search queries, library folders,
+alerts, and feeds.  A later
 reading session may still require the reader to re-establish how a generated
 explanation, a saved paper, and a related-paper view belong to the same task.
 
-AI literature assistants cover more of the interpretation stage.  Elicit
+AI literature assistants support interpretation tasks.  Elicit
 offers semantic paper search, question-specific abstract summaries,
 configurable extraction columns, filtering, and export to formats used by
 reference managers \cite{elicitHelp2026}.  Consensus combines academic search
@@ -612,35 +616,35 @@ papers or collections \cite{consensusHelp2026}.  SciSpace provides search,
 paper organization, PDF question answering, and citation export
 \cite{scispaceHelp2026}.  NotebookLM answers over a selected set of uploaded
 sources and exposes quotations that navigate back to their source context
-\cite{notebookLMHelp2026}.  Visible evidence is therefore an established
-capability in this category.  The design question for MNEME concerns continuity:
+\cite{notebookLMHelp2026}.  Several tools in this category expose visible evidence.
+The design question for MNEME concerns continuity:
 whether the same paper identity, recommendation reason, evidence state, and
 reading action remain connected when the reader moves from a briefing into
 paper detail, question answering, and related work.
 
-Reference managers provide the strongest baseline for durable personal
-collections.  Zotero synchronizes item metadata, notes, tags, links, and
+Reference managers are designed to maintain personal collections.  Zotero
+synchronizes item metadata, notes, tags, links, and
 optional attachment files across devices \cite{zoteroSync2026}.  Its PDF reader
 connects highlights and notes to citations and can return the reader to the
-annotated page \cite{zoteroDocs2026}.  These capabilities directly support
-long-term retention and formal academic writing.  The interviews show that
+annotated page \cite{zoteroDocs2026}.  These capabilities support ongoing
+collection management and formal academic writing.  The interviews show that
 later recovery also depends on the quality of the maintained structure.  That
 structure can become inconsistent, and the remembered cue may be an idea rather
-than a title, author, folder, or tag.  MNEME complements this role with a
-bounded incoming briefing, a stored reason for each recommendation, and a path
-from generated content to the paper.  Bibliography preparation and document
-citation remain within reference-manager workflows.
+than a title, author, folder, or tag.  The MNEME specification complements this
+role with a bounded incoming briefing, a stored reason for each recommendation,
+and a path from generated content to the paper.  Bibliography preparation and
+document citation remain within reference-manager workflows.
 
 Citation-graph tools address exploration around a known paper.  Connected
 Papers constructs a force-directed similarity graph from co-citation and
 bibliographic coupling.  Nearby nodes can therefore be topically related even
 when one paper does not directly cite the other \cite{connectedPapersAbout2026}.
-This distinction matters for interpretation: visual proximity can represent a
-similarity measure, a direct citation, or another modeled relation depending on
-the tool.  MNEME uses a bounded neighborhood whose edges are labelled for the
-relationship exposed by the backend.  The mobile view retains a selected node
-and a direct paper action so that exploration returns to reading without losing
-the current graph context.
+This distinction matters for interpretation.  In Connected Papers, visual
+proximity represents modeled similarity and does not encode direct citation.
+MNEME therefore specifies a bounded neighborhood whose edges must identify the
+relationship supplied with the graph data.  The mobile view must retain a
+selected node and a direct paper action so that exploration returns to reading
+without losing the current graph context.
 
 General chat systems provide broad language interaction and can accept pasted,
 uploaded, or retrieved sources.  Their source controls, workspace persistence,
@@ -649,40 +653,39 @@ therefore treats these capabilities as tool dependent.  For a literature
 workflow, a general conversation also leaves several choices to the user: which
 paper revision is in scope, which source supports a statement, which reading
 state should persist, and how a related paper becomes part of a later briefing.
-MNEME reduces this flexibility by beginning from a paper object with a canonical
-identifier and by limiting question answering to the evidence associated with
-that paper.
+The MNEME specification narrows these choices by requiring a canonical paper
+object and paper-scoped evidence for question answering.
 
 The main gap appears at the handoffs between capable tools.  A researcher can
 discover a paper through Google Scholar or Semantic Scholar, save it to a
 reference manager, upload it to an AI assistant, and open a separate graph
 around it.  Each stage can succeed while the researcher repeatedly reconstructs
 paper identity, purpose, evidence, and personal context.  The interview results
-show why these handoffs matter: participants used several effective tools and
+show why these handoffs matter: participants used several established tools and
 still reported lost papers, deteriorating organization, and manual source
 checking.  A combined workflow must preserve the state carried across the
 handoffs.  Placing the existing functions on one screen alone would leave this
 problem unresolved.
 
-This comparison leads to six concrete design consequences.  First, canonical
-paper identity must remain stable across discovery, briefing, detail, question
-answering, local storage, and graph views.  Second, the briefing must remain
-small enough for triage and must record an intelligible recommendation reason.
-Third, generated text must expose accessible supporting material and an
-explicit insufficient-evidence state.  Fourth, persistent personalization must
-remain correctable by the reader.  Fifth, graph exploration must be bounded and
-must preserve the selected paper and its relationship.  Sixth, the mobile
-application must distinguish live, cached, processing, fallback, and failure
-states.  These consequences correspond to the customer requirements in
-Table~\ref{tab:customer-requirements} and define the design developed in
-Chapter~3.
+This comparison leads to requirements at each handoff in the reading workflow.
+Canonical paper identity must remain stable across discovery, briefing, detail,
+question answering, local storage, and graph views.  The briefing must remain
+small enough for triage and record an intelligible recommendation reason, while
+generated text must expose accessible supporting material and an explicit
+insufficient-evidence state.
+
+Persistent personalization must remain correctable by the reader.  Graph
+exploration must preserve the selected paper and its relationship within a
+bounded neighborhood.  The mobile application must also distinguish live,
+cached, processing, fallback, and failure states.  These requirements
+correspond to Table~\ref{tab:customer-requirements} and define the design
+developed in Chapter~3.
 
 The MNEME row in Table~\ref{tab:competitor-categories} summarizes this design
-scope.  MNEME accepts a narrower role than a general search engine, a complete
-reference manager, or an unrestricted chat system.  Its briefing is bounded,
-its question answering is paper-specific, and its graph is limited for mobile
-interaction.  The intended benefit is continuity across those stages.
-Controlled comparisons of search coverage, language quality, bibliography
-management, or overall research productivity would require separate
-head-to-head studies.  Chapter~4 evaluates the implemented MNEME workflow
-within its stated scope.
+scope.  It specifies a bounded briefing, paper-specific question answering,
+and a mobile-oriented graph to connect triage, reading, evidence inspection,
+and related-work exploration.  This role complements general search engines
+and reference managers.  Chapter~4 evaluates the implemented workflow;
+broader comparisons of search coverage, language quality, bibliography
+management, and research productivity remain suitable subjects for dedicated
+head-to-head studies.

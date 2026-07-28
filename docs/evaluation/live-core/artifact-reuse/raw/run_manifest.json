@@ -1,0 +1,26 @@
+{
+  "schema_version": "live-core-run-manifest-v1",
+  "measured_at_utc": "2026-07-27T15:42:53Z",
+  "repository_revision": "c4b11256bf21f1511d54fad7d19bbcde244aca4c",
+  "branch": "feat/automatic-citation-graph-preparation",
+  "live_backend_url": "http://10.0.2.2:8000/v1/",
+  "fixed_seed_arxiv_id": "1706.03762",
+  "additional_seed_arxiv_ids": [
+    "2010.11929",
+    "2106.09685"
+  ],
+  "fixed_free_form_question": "What problem does this paper address, and what method does it propose?",
+  "ui_iterations": 1,
+  "repository_iterations": 5,
+  "minimum_graph_nodes": 2,
+  "minimum_graph_edges": 1,
+  "test_apk_embeds_live_token": false,
+  "backend_ai_configuration": {
+    "summary_model": "deepseek-v4-flash",
+    "qa_model": "deepseek-v4-flash",
+    "embedding_backend": "fastembed",
+    "embedding_model": "BAAI/bge-small-en-v1.5+fastembed-pad1536-v1"
+  },
+  "live_token_retained": false,
+  "interpretation": "Acceptance and repeated-path evidence; timings are descriptive and mix cold preparation with durable/cache reuse."
+}

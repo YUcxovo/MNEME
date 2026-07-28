@@ -4,79 +4,113 @@
 
 \section{Discussions}
 
-The central question of this thesis is whether a mobile literature assistant can preserve continuity across changing papers, generated evidence, and changing user interests.
-The current evidence supports a qualified answer.
-The system design and inspected implementation establish mechanisms for preserving identity, evidence scope, event semantics, and device-visible state at the stated cutoff.
-They do not yet establish final quality across a representative document corpus, question set, longitudinal behavior set, and device study.
-The discussion therefore answers each research question by separating what the mechanism establishes from what its evaluation must still determine.
+This thesis demonstrates how a mobile literature assistant can preserve continuity across changing papers, generated assistance, and evolving research interests.
+The completed system maintains explicit identities for papers, revisions, evidence, behavioral events, and mobile presentation states, and the evaluations verify these mechanisms under documented configurations.
+The experiments also identify the empirical boundaries that guide further validation.
 
-For revision-correct representation, the design and inspected implementation separate logical paper identity from revision identity and carry revision, content hash, transformation configuration, and lineage into derived artifacts.
-Revision-scoped chunks and the retrieval-isolation test establish that the mechanism is executable and that the tested Q\&A boundary does not mix revisions.
-The retained evidence does not establish parser structure quality, invalidation completeness, recovery rates, or performance across a diverse scientific-document corpus, so these properties remain outside the conclusion.
+RQ1 concerned revision-correct paper identity and section-level provenance.
+The data model separates a logical paper from each observed revision and propagates revision identity, content hashes, and transformation configuration to derived artifacts.
+Deterministic preparation and idempotent jobs make repeated processing reproducible, while revision-scoped retrieval prevents a question about one revision from drawing chunks from another.
+The corresponding software tests establish the implemented isolation property.
+They leave parser structure quality, stale-artifact invalidation, and recovery performance across diverse scientific layouts as open empirical questions.
 
-For evidence-bounded assistance, the design decomposes answers into claims and distinguishes identifier validity, evidence availability, consistency, and coverage.
-It defines scoped retrieval, resolvable source spans, and abstention.
-The literature supports the need for these distinctions~\cite{gao2023alce,es2024ragas,huang2024grounded,niu2024ragtruth}.
-The retained software evidence establishes the presence of these controls but does not establish a general improvement in retrieval or citation quality.
+RQ2 asked how retrieval and generation can remain inspectable against paper evidence.
+The implemented pipeline restricts retrieval to one paper revision, combines dense similarity with a fixed lexical reranker, refuses generation below an evidence threshold, validates citation markers, and reports a bounded source-match state.
+In the fifteen-case live evaluation, all answered cases contained a verified citation and passed the lexical source-match rule.
+None of the twelve answerable questions was falsely refused, while two of the three unanswerable cases followed the specified refusal-marker protocol.
+Dense retrieval reached the designated section in 4 of 12 answerable cases.
+This gap shows that a supported answer may draw on a different section from the passage selected by the case author, particularly when central claims recur in abstracts and introductions.
+The current evaluation reports both outcomes, preserving the weaker section-placement result alongside successful source matching.
 
-For adaptive interest memory, the design combines explicit interests, bounded implicit-event semantics, a time-decayed normalized behavioral representation, inspectable recommendation reasons, and user correction.
-The available artifacts do not establish improvements in ranking, diversity, longitudinal adaptation, or user control, and the conclusion is therefore limited to the implemented and inspected mechanism.
+The model-tier comparison adds an operational result to RQ2.
+The flagship and mid-tier routes both produced citations for every answered case, but the mid-tier route emitted no required refusal marker on the three unanswerable cases in the reported run.
+The same mid tier satisfied all measured structural criteria for seven paper summaries, with mean lexical claim support of 0.95 compared with 0.94 for the flagship tier, while reducing measured cost from \$0.921 to \$0.140.
+These results support task-specific routing under the measured criteria: the mid tier is suitable for structurally checked summarization, whereas the current evidence favors the flagship route for grounded question answering.
+Human comparison is still required to evaluate explanatory quality, and lexical source matching cannot establish semantic entailment or scientific truth.
 
-For bounded mobile integration, the Android implementation and prototype demonstrate that the intended workflow can be represented as mobile interactions with local cache, recoverable event delivery, and a bounded graph boundary.
-The executed Android subset provides measured software evidence on one Android~14 emulator: all retained startup/resume trials, controlled state transitions, graph ready/selection samples, and controlled event stages met their defined success conditions, while a five-run live trace confirmed duplicate-aware event ingestion and client-loop reachability.
-The supplied presentation reports that participants completed the digest, evidence, Q\&A, and preference tasks more often than the graph task.
-Because participant-level records and a physical-device matrix are absent, the usability evidence is \observed{}/\limited{} and the measured device result is restricted to the stated emulator/configuration.
-Notification benefit, privacy behavior, recommendation adaptation, and graph-redesign usefulness remain unestablished.
+RQ3 concerned adaptation from explicit interests and bounded behavioral evidence.
+The proposed model uses exposure-qualified negative feedback, separate positive and negative centroids, temporal decay, per-paper saturation, evidence confidence, and deterministic recommendation reasons.
+Across eleven applicable controlled traces, its mean nDCG@5 of 0.92 was close to the recency-only baseline of 0.92.
+Its reciprocal rank was 0.94, compared with 0.88 for the recency-only and earlier single-timescale baselines.
+Mechanism-level comparisons showed the intended response to recent positive evidence, exposed negative feedback, unexposed skips, repeated interaction with one paper, and duplicate replay.
+Per-paper saturation increased nDCG@5 from 0.51 to 0.73 in the repeated-paper trace, and duplicate replay produced no score change.
+The separate explicit-correction experiment exercised topic addition, replacement, and deletion with eight equal-age candidates. All four directional checks passed: adding a topic changed its score and reason, while replacement and deletion changed the affected topic group's mean rank by two positions and removed obsolete match reasons.
+The scenario set supports the mechanics and failure protections of the model.
+It produced no independent aggregate ranking gain for dual-timescale decay or confidence gating; real-user preference accuracy and long-term benefit remain questions for longitudinal evaluation.
 
-Taken together, the contributions and limitations define a deliberately narrow claim envelope.
-The first contribution is a revision-aware data and job model that makes paper-derived state attributable and recoverable.
-The second is an evidence-bounded assistance contract that distinguishes retrieved evidence, marker validity, limited source matching, and refusal.
-The third is a versioned behavioral contract and auditable recommendation baseline whose reasons derive from the same signals used in scoring.
-The fourth is a mobile integration design that separates live, cached, fixture, fallback, and error states while returning bounded events to the server.
-The fifth is an evaluation framework that maps these contributions to revision, evidence, adaptation, and mobile-system measurements and prevents software tests from being reported as research effectiveness.
+RQ4 addressed whether the integrated mobile workflow preserves paper identity, evidence access, and interaction meaning while exposing live, cached, processing, and failure states.
+The Android baseline recorded 810 successful controlled measurements spanning startup, state transitions, polling, graph rendering and selection, and event synchronization.
+A separate \(2\times2\) CPU and RAM experiment recorded 12{,}960 successful controlled samples across sixteen independent cold-boot sessions.
+All 25 stages in the five-repetition live event trace also met their success conditions, including retry after an injected failure, duplicate-aware ingestion, and client readback.
+The complete seed-to-reading path produced a five-paper briefing, opened paper detail, answered a free-form question with sources, rendered a multi-node citation graph, and opened a selected neighboring paper.
+Two additional arXiv seeds completed the seed-to-graph path, providing limited evidence that the integration was not confined to the original seed.
 
-The same evidence-first standard limits the claim envelope.
-The ten customer interviews and five prototype sessions are formative, small, and concentrated in computing-related contexts.
-Full transcripts, consent artifacts, participant-level usability tables, and final retest records are unavailable in the local package.
-The 15-case Q\&A fixture is an engineering seed rather than a benchmark.
-The current source-matching verifier measures lexical overlap, not semantic entailment or scientific truth.
-Behavior-v1 uses hand-specified weights and ambiguous proxies rather than longitudinally validated intent.
-No retained evidence supports a claim about representative document diversity, answer quality at benchmark scale, longitudinal recommendation benefit, a physical-device matrix, or post-redesign participant performance.
-Consequently, the thesis supports an implementation-grounded design contribution and bounded mobile measurements, but not a general claim that MNEME improves research productivity or understanding.
+The mobile measurements also identify where time is spent.
+In the baseline Android~14 configuration, cold process start had a median of 2.77~s, while foreground/resume had a median of 134~ms.
+An existing WebView reached graph DOM readiness in 83.0--112~ms at 1--50 nodes, compared with 140--454~ms for a newly created WebView.
+In the resource-controlled experiment, moving from two to four virtual cores reduced cold-start latency by a descriptive median of 38.6\% across four counterbalanced blocks, and moving from 2 to 6~GiB reduced it by 13.7\%.
+Existing-WebView update and native selection medians differed by only a few milliseconds between the four configurations.
+The stable reused-WebView and selection measurements support the reported resource comparison.
+The new-WebView timer exhibited a synchronization-sensitive five-second mode under the four-core settings and was therefore retained in the record while excluded from CPU-effect interpretation.
+The generation-inclusive live trace spent 22.4~s preparing the briefing and 24.3~s answering the question; a later trace with reusable backend artifacts took 4.7~s and 0.9~s for the same stages.
+The two traces are separate acceptance observations under different reuse conditions.
+Together, they show that provider inference and artifact preparation account for much more waiting time than the client state transitions in the recorded paths.
+
+The formative prototype study complements the software measurements.
+All five participants completed the briefing, source, and cited-Q\&A tasks; four completed interest editing, and two completed graph exploration.
+The graph result led to a visible instruction, persistent selected-node state, relation context, and a stable \emph{Open Paper} action.
+Software tests cover these changes, and participant retesting remains future work.
+The five-person sample, moderated prompts, fixed prototype content, and absence of participant-level timing and interaction records limit the study to design-stage observations.
+
+The combined evidence supports four contributions.
+The revision-aware data and job model makes paper-derived artifacts attributable to a defined source state.
+The assistance pipeline gives retrieved evidence, refusal, and source matching explicit interfaces and failure outcomes.
+The behavioral model makes event semantics, confidence, and recommendation reasons replayable and inspectable.
+The Android client carries these properties through cached state, asynchronous polling, duplicate-safe event delivery, and bounded graph interaction.
+Together, the evaluations combine 533 backend tests, controlled mechanism
+traces, fifteen live question-answering cases, 13{,}770 Android controlled
+samples across the baseline and factorial studies, and live integration
+paths. Anomalous and failed outcomes are retained where they define the
+interpretation.
+
+The completed evaluation defines a clear scope for the conclusions.
+The document-processing evaluation does not cover a stratified corpus of scientific layouts and revisions.
+The question set contains fifteen manually curated cases, and its source-match metric is lexical.
+The behavior scenarios are designed tests with hand-specified relevance judgments.
+The client measurements use one Android version, device profile, and emulator host, and the usability study contains five participants.
+Longitudinal recommendation benefit, representative answer quality, physical-device variability, and research-productivity effects define the next stages of evaluation.
 
 \section{Main Conclusions}
 
-This thesis began from a downstream literature problem: after a paper has been found, researchers must still judge it, remember it, reconnect it to later work, and verify machine-produced explanations.
-MNEME addresses this problem as an accountable mobile loop rather than as an autonomous scientist.
-The loop receives and prepares changing papers, produces source-linked assistance, records explicit and bounded behavioral signals, assembles a versioned briefing, and exposes a limited citation neighborhood on Android.
+MNEME addresses the work that follows paper discovery: deciding what deserves attention, preserving what has been read, inspecting machine-generated explanations, and reconnecting related papers over time.
+Its central method is a continuous mobile reading loop whose paper identities, evidence references, behavioral signals, and visible states share explicit contracts.
 
-The main technical result at the present cutoff is the alignment of four contracts.
-Revision identity and artifact lineage protect document continuity.
-Scoped retrieval, explicit source items, refusal, and limited verification protect evidence continuity.
-Versioned events, an auditable scorer, and editable interests protect preference continuity.
-Room persistence, WorkManager recovery, bounded graph state, and visible content origins carry those properties into the mobile workflow.
-The reported formative study indicates that digest, source, and cited-Q\&A paths were discoverable for the five participants, while graph interaction required a clearer next action.
+The completed evaluation shows that the implemented mechanisms operate together in the recorded environment.
+Revision-scoped retrieval preserves the tested paper-version boundary.
+The fifteen-case question evaluation produced cited, source-matched answers for every answered case, avoided false refusal on all twelve answerable cases, and followed the specified refusal protocol in two of three unanswerable cases.
+The controlled behavior evaluation confirmed the intended effects of exposure gating, negative feedback, per-paper saturation, and duplicate-safe replay; reciprocal rank improved while aggregate nDCG remained close to the recency baseline.
+The Android experiments demonstrated cache restoration, asynchronous polling, multi-node graph interaction, duplicate-safe event synchronization, and a live seed-to-reading path.
 
-The evidence does not justify a uniformly positive answer to all four research questions.
-It establishes that the mechanisms can be specified, implemented, and tested at software level, and that the retained Android path operates within the reported emulator and live-service boundaries.
-MNEME is therefore most defensible as an implementation-grounded research system with bounded mobile evidence.
-Its central lesson is that an AI literature assistant should not be judged by fluent output or feature count alone: its paper versions must remain identifiable, its generated claims inspectable, its behavioral adaptation correctable, and its failures visible.
+The evidence supports an implementation-grounded system contribution with bounded empirical results.
+General claims about research productivity, long-term recommendation quality, and scientific answer correctness require broader longitudinal and human evaluation.
+The main lesson is that an AI literature assistant needs inspectable boundaries around paper versions, retrieved evidence, inferred interests, and degraded mobile state.
+Those boundaries make every output state available for systematic evaluation and improvement.
 
 \section{Outlook}
 
-The first priority is an immutable final repository, build, configuration, and corpus freeze.
-A broader revision study should then measure paper identity, parser quality, stale-artifact invalidation, recovery, and latency on a stratified scientific-document set.
-An evidence-quality study should execute a frozen question suite, add human claim--evidence judgments, compare retrieval and verification ablations, and report refusal, latency, and cost separately.
-A longitudinal adaptation study should collect exposure-aware temporal event sequences, compare explicit-only, recency-based, and behavioral models, and test stability, diversity, and user correction.
-A mobile follow-up should complete live briefing refresh and notification behavior, execute a physical-device reliability matrix, retain participant-level task records, and repeat the graph task on the revised connected build.
+Document processing should be evaluated on a stratified collection of scientific PDFs covering multiple disciplines, layouts, revision histories, and degraded files.
+The study should measure section recovery, chunk attribution, invalidation after revision, failure recovery, and processing latency.
 
-A second research phase should broaden disciplines, document layouts, revision patterns, and longitudinal duration.
-Privacy work should test deletion, correction, export, and retention behavior rather than treating data minimization as a design statement.
-Semantic support checking may replace or augment lexical source matching only after calibration against human labels.
-Graph work can examine concept and author layers after the bounded citation interaction is validated.
+Evidence-grounded assistance requires a larger question set with human claim--evidence judgments.
+Future evaluation should compare retrieval and verification ablations, calibrate refusal thresholds, and measure semantic support in addition to lexical source matching.
+The cheaper model route should be reconsidered for question answering after its refusal behavior is corrected and retested.
 
-Stretch features such as autonomous multi-hop research, voice input, camera OCR, shared team lists, reference-manager export, and on-device language models should follow the core evidence chain.
-They broaden capability but do not repair missing evidence for provenance, support, adaptation, or mobile reliability.
-The project should therefore prioritize claim closure before feature expansion.
+Interest adaptation requires longitudinal evidence.
+A study with real reading histories should compare explicit-only, recency-based, and behavioral models while measuring relevance, diversity, stability, and the effect of user correction.
+The hand-specified weights and time constants should be treated as hypotheses for that study.
+
+Mobile evaluation should add physical devices with different performance and memory profiles, retain participant-level interaction records, and repeat the graph task after the implemented redesign.
+Accessibility testing, notification behavior across Android versions, privacy controls for deletion and export, and longer offline periods also require direct evaluation.
+Concept and author graph layers can be examined after the bounded paper graph has been validated with users.
 
 \clearpage
