@@ -93,18 +93,7 @@ class RoomSkeletalCache(
                     ),
                 ),
             )
-            database.userPrefsDao().upsert(
-                UserPrefsEntity(
-                    userId = DEMO_USER_CACHE_ID,
-                    topicsJson = json.encodeToString(preferences.topics),
-                    keywordsJson = json.encodeToString(preferences.followedAuthors),
-                    notificationsEnabled = true,
-                    updatedAtEpochMillis =
-                        preferences.updatedAt?.toEpochMillis(refreshedAtEpochMillis)
-                            ?: refreshedAtEpochMillis,
-                    lastSyncedAtEpochMillis = refreshedAtEpochMillis,
-                ),
-            )
+            database.userPrefsDao().upsert(preferences.toEntity(refreshedAtEpochMillis, json))
             database.cacheMetadataDao().upsert(
                 CacheMetadataEntity(lastSuccessfulRefreshAtEpochMillis = refreshedAtEpochMillis),
             )
@@ -214,6 +203,21 @@ private fun PaperDto.toEntity(
         pdfUrl = pdfUrl,
         processingStatus = processingStatus,
         updatedAtEpochMillis = updatedAt.toEpochMillis(lastSyncedAtEpochMillis),
+        lastSyncedAtEpochMillis = lastSyncedAtEpochMillis,
+    )
+
+private fun PreferencesDto.toEntity(
+    lastSyncedAtEpochMillis: Long,
+    json: Json,
+): UserPrefsEntity =
+    UserPrefsEntity(
+        userId = RoomSkeletalCache.DEMO_USER_CACHE_ID,
+        topicsJson = json.encodeToString(topics),
+        keywordsJson = json.encodeToString(followedAuthors),
+        notificationsEnabled = true,
+        updatedAtEpochMillis =
+            updatedAt?.toEpochMillis(lastSyncedAtEpochMillis)
+                ?: lastSyncedAtEpochMillis,
         lastSyncedAtEpochMillis = lastSyncedAtEpochMillis,
     )
 

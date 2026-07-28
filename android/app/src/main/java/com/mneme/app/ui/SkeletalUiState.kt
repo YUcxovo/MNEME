@@ -75,6 +75,18 @@ sealed interface GraphUiState {
     ) : GraphUiState
 }
 
+sealed interface InterestEditUiState {
+    data object Idle : InterestEditUiState
+
+    data object Saving : InterestEditUiState
+
+    data object Saved : InterestEditUiState
+
+    data class Error(
+        val message: String,
+    ) : InterestEditUiState
+}
+
 internal fun QaUiState.submittedQuestion(): String? =
     when (this) {
         QaUiState.Idle -> null
