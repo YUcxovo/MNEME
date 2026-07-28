@@ -1,0 +1,17 @@
+{
+  "schema_version": "android-formal-event-sync-environment-v1",
+  "collected_at_utc": "2026-07-28T21:16:45Z",
+  "emulator": {
+    "serial": "emulator-5554",
+    "android_api": 34,
+    "android_release": "14",
+    "model": "sdk_gphone64_x86_64",
+    "manufacturer": "Google",
+    "boot_id": "8747201b-22af-4576-a378-d9487980b2f3",
+    "webview_version": "113.0.5672.136",
+    "webview_description": "  Current WebView package (name, version): (com.google.android.webview, 113.0.5672.136)"
+  },
+  "host": {
+    "loadavg": "6.61 2.64 2.32 23/1787 279214"
+  }
+}
