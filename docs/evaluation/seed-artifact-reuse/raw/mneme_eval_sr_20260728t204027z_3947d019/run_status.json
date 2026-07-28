@@ -1,0 +1,6 @@
+{
+  "schema_version": "seed-artifact-reuse-run-status-v1",
+  "status": "failed",
+  "stage": "android_build",
+  "recorded_at_utc": "2026-07-28T20:41:58Z"
+}

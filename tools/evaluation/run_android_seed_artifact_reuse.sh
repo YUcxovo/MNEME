@@ -440,7 +440,7 @@ webview_provider="$(
 webview_provider="${webview_provider:-not-reported}"
 host_logical_cpus="$(nproc)"
 host_memory_kib="$(awk '/^MemTotal:/{print $2; exit}' /proc/meminfo)"
-host_load_average="$(awk '{print $1\",\"$2\",\"$3}' /proc/loadavg)"
+host_load_average="$(awk '{print $1 "," $2 "," $3}' /proc/loadavg)"
 host_kernel="$(uname -srmo)"
 
 jq -n \
