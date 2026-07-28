@@ -1131,10 +1131,11 @@ The graph experiment recorded 320 retained timings, and every expected
 resource, node-count, and WebView-state cell validated two of two sessions.
 Table~\ref{tab:android-graph-visual-state} presents the session-level
 summaries. Across the displayed cells, the median endpoint was
-87.63--189.27~ms for a new WebView and 51.30--92.38~ms for an existing
-WebView. The reused-WebView median was lower in all sixteen
-resource-by-node cells. This provides latency evidence in favor of reuse under
-the measured sessions; memory and lifecycle costs were not evaluated.
+87.63--189.27~ms for a new WebView and 51.30--92.38~ms for the reused phase.
+The reused-WebView phase followed the new-WebView phase and had a lower median
+in all sixteen resource-by-node cells. This repeated within-session pattern
+supports reuse in the measured implementation. The fixed phase order keeps
+reuse coupled to second-render warm state, and memory cost was not measured.
 
 \begin{table}[htbp]
 \centering
