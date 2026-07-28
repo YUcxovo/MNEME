@@ -42,8 +42,16 @@ RQ4 addressed whether the integrated mobile workflow preserves paper identity, e
 The Android resource experiment retained 80 startup-and-recovery timings and
 320 graph timings across eight separately cold-booted emulator sessions. All
 startup, recovery, and graph validation checks passed.
+First initialization from each of three fixed arXiv seeds displayed five live
+papers. Seed-to-briefing latency ranged from 28.46 to 41.73~s, with a median
+of 36.50~s.
+Ten three-event synchronization batches retained their pending state after
+database reopening and an HTTP~503 response. The isolated backend accepted all 30 unique
+events on first submission and identified all 30 replays as duplicates; the
+replayed local rows also reached the synchronized state.
 The complete device path then produced a five-paper briefing, opened paper detail, returned a source-linked answer, rendered a multi-node citation graph, and opened a selected neighboring paper.
-Two further arXiv seeds completed the seed-to-graph path. These repetitions provide limited evidence beyond the original seed, rather than a general claim about all papers.
+Two further arXiv seeds completed the seed-to-graph path, giving three fixed
+seeds with a completed briefing and multi-node graph.
 
 The mobile measurements also identify where time is spent.
 Across the four Android~14 resource conditions, the cached cold-launch median
@@ -51,7 +59,7 @@ ranged from 0.84 to 1.47~s, while foreground recovery ranged from 66.68 to
 93.96~ms. Four virtual cores were associated with lower startup and recovery
 medians in both counterbalanced blocks. Additional RAM was associated with
 lower cached cold-launch medians, while its foreground-recovery direction was
-mixed. A graph displayed again in the same WebView had a lower endpoint than
+mixed. A graph displayed again in the same WebView had a lower session median than
 its first display in all sixteen matched resource-by-node comparisons. The graph
 measurements rose from one to twelve nodes and then followed no monotonic
 pattern through 25 and 50 nodes. These results describe the controlled
@@ -60,8 +68,12 @@ emulator sessions on one host.
 The formative prototype study complements the software measurements.
 All five participants completed the briefing, source, and cited-Q\&A tasks; four completed interest editing, and two completed graph exploration.
 The graph result led to a visible instruction, persistent selected-node state, relation context, and a stable \emph{Open Paper} action.
-Software tests cover these changes, and participant retesting remains future work.
-The five-person sample, moderated prompts, fixed prototype content, and absence of participant-level timing and interaction records limit the study to design-stage observations.
+Software tests verify node selection, \emph{Open Paper} navigation, and
+selection restoration. The visible instruction and relation context are
+implemented design responses, and participant retesting remains future work.
+The study provides design-stage observations from five participants under
+moderated prompts and fixed prototype content. Participant-level timing and
+interaction records were not collected.
 
 The combined evidence supports four contributions.
 The revision-aware data and job model makes paper-derived artifacts attributable to a defined source state.
@@ -89,7 +101,8 @@ Revision-scoped retrieval preserves the tested paper-version boundary.
 The fifteen-case question evaluation produced cited, source-matched answers for every answered case, avoided false refusal on all twelve answerable cases, and followed the specified refusal protocol in two of three unanswerable cases.
 The controlled behavior evaluation confirmed the intended effects of exposure gating, negative feedback, per-paper saturation, and duplicate-safe replay; reciprocal rank improved while aggregate nDCG remained close to the recency baseline.
 The Android experiments demonstrated cached briefing restoration, asynchronous
-polling, multi-node graph interaction, and a live seed-to-reading path.
+polling, file-backed event retention and duplicate-safe upload, multi-node graph
+interaction, and five-paper briefings for all three measured seeds.
 
 The evidence supports an implementation-grounded system contribution with bounded empirical results.
 General claims about research productivity, long-term recommendation quality, and scientific answer correctness require broader longitudinal and human evaluation.
