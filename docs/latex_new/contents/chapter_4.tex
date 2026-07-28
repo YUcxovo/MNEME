@@ -612,8 +612,10 @@ For every measured group, warm-up iterations were run and discarded before sampl
 Instrumentation tests wrote one record per measured operation, and a separate analysis program validated the expected sample counts and success fields before computing any summary statistic.
 All 810 controlled samples and all 25 live-backend stages in this baseline experiment met their stated success conditions.
 
-A second Android experiment varied emulated CPU and RAM in a \(2\times2\) factorial design.
-It compared two and four virtual processor cores at 2 and 6~GiB of emulator RAM while holding Android~14, the Pixel~6 profile, the Google APIs x86\_64 image, screen size, density, application heap, build, host, and measurement code fixed.
+A second Android experiment examined the effect of emulated processor and memory resources through a \(2\times2\) factorial design.
+It compared two and four virtual processor cores at 2 and 6~GiB of emulator RAM, providing lower- and higher-resource conditions for both factors.
+The Android~14 Pixel~6 emulator and the application build remained unchanged across configurations.
+All runs used the same host and measurement procedure.
 Four counterbalanced blocks produced four independent wiped-data cold-boot sessions for each configuration.
 Each session contained 810 repeated controlled samples. The analysis summarized them by a per-session median, preserving the emulator session as the independent unit.
 The analysis therefore uses four independent session summaries per cell.
