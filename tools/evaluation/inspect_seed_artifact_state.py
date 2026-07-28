@@ -60,7 +60,8 @@ def guarded_environment(pair_id: str) -> dict[str, Any]:
     database_name = parsed.path.removeprefix("/")
     if parsed.scheme not in {"postgresql", "postgres"}:
         raise RuntimeError("Inspector requires a PostgreSQL database URL.")
-    if parsed.hostname not in LOCAL_HOSTS:
+    local_unix_socket = parsed.hostname is None and not parsed.netloc
+    if parsed.hostname not in LOCAL_HOSTS and not local_unix_socket:
         raise RuntimeError("Inspector refuses a non-local PostgreSQL host.")
     if not database_name.startswith(DISPOSABLE_DATABASE_PREFIX):
         raise RuntimeError(
