@@ -1,0 +1,9 @@
+WARNING: Running on Emulator
+Benchmark is running on an emulator, which is not representative of
+real user devices. Use a physical device to benchmark. Emulator
+benchmark improvements might not carry over to a real user's
+experience (or even regress real device performance).
+
+MnemeStartupBenchmark_foregroundResume
+timeToInitialDisplayMs   [min  65.4](file://MnemeStartupBenchmark_foregroundResume_iter004_2026-07-28-20-26-06.perfetto-trace),   [median 102.3](file://MnemeStartupBenchmark_foregroundResume_iter003_2026-07-28-20-25-58.perfetto-trace),   [max 141.3](file://MnemeStartupBenchmark_foregroundResume_iter000_2026-07-28-20-25-36.perfetto-trace)
+Traces: Iteration [0](file://MnemeStartupBenchmark_foregroundResume_iter000_2026-07-28-20-25-36.perfetto-trace) [1](file://MnemeStartupBenchmark_foregroundResume_iter001_2026-07-28-20-25-44.perfetto-trace) [2](file://MnemeStartupBenchmark_foregroundResume_iter002_2026-07-28-20-25-51.perfetto-trace) [3](file://MnemeStartupBenchmark_foregroundResume_iter003_2026-07-28-20-25-58.perfetto-trace) [4](file://MnemeStartupBenchmark_foregroundResume_iter004_2026-07-28-20-26-06.perfetto-trace) [5](file://MnemeStartupBenchmark_foregroundResume_iter005_2026-07-28-20-26-13.perfetto-trace)

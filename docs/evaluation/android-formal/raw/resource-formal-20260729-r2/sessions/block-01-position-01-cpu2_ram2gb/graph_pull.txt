@@ -1,0 +1,1 @@
+/sdcard/Android/data/com.mneme.app/files/e4-evaluation/./: 2 files pulled, 0 skipped. 0.1 MB/s (5971 bytes in 0.043s)
