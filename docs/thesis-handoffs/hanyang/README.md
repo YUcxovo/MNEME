@@ -10,7 +10,7 @@ text.
 
 | Target | Integration owner | Material supplied here |
 | --- | --- | --- |
-| Chapter 3: Design and Implementation | Ruiyu (`@YUcxovo`) | Android state architecture, UI/UX rationale, graph interaction boundary, and design-stage usability evidence |
+| Chapter 3: App Design | Ruiyu (`@YUcxovo`) | Android state architecture, UI/UX rationale, graph interaction boundary, and design-stage usability evidence |
 | Chapter 4: Evaluation | Yifan (`@YifanZhang2026`) | Android E4 protocol, measured results, analysis, limitations, and sample thesis prose |
 
 Hanyang (`@whyseagull`) remains the contact for questions about the Android
@@ -26,6 +26,14 @@ measurements and the intended UI behavior.
 - [`result-traceability.md`](result-traceability.md) maps every numerical claim
   in the sample writing to a retained artifact and records the permitted
   interpretation.
+- [`feature-acceptance-results.md`](feature-acceptance-results.md) supplies the
+  supervisor-requested product-level acceptance table with screenshot or raw
+  test evidence for every row.
+- [`ui-ux-course-assets/`](ui-ux-course-assets/) contains direct page exports
+  of the original UI/UX flow, usability results, and design adjustments for
+  Chapter 3.
+- [`ui-ux-product-flow/`](ui-ux-product-flow/) contains the real integrated
+  Android product-flow screenshots for Chapter 4.
 
 ## Canonical evidence
 

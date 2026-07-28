@@ -94,6 +94,28 @@ responds to the main difficulty observed in the formative usability study:
 participants could see the graph but did not always understand what action to
 take next.
 
+### Supervisor-requested course visuals
+
+The original UI/UX flow, usability tasks, findings, and design-adjustment
+slides are stored in:
+
+`docs/thesis-handoffs/hanyang/ui-ux-course-assets/`
+
+These are direct page exports from the submitted course work. Chapter 3 should
+use them without redrawing their content. The recommended order is:
+
+1. full flow overview;
+2. onboarding-to-digest flow;
+3. read-ask-connect flow;
+4. usability tasks and expected outcomes;
+5. task-completion results and qualitative findings;
+6. design adjustments and final prototype screens.
+
+The figures should be accompanied by prose that explains the flow and the
+connection between each finding and design change. The Android product
+screenshots belong in Chapter 4 and are stored separately under
+`ui-ux-product-flow/`.
+
 ### Formative usability evidence
 
 The design-stage usability study involved five participants and five tasks.

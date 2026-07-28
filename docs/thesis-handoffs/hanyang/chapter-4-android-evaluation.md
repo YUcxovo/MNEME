@@ -30,6 +30,32 @@ These questions concern client reliability and interaction. They do not test
 the semantic quality of retrieved papers, generated answers, recommendations,
 or graph construction.
 
+## Supervisor-requested product-flow visuals
+
+The retained Android screenshots are stored in:
+
+`docs/thesis-handoffs/hanyang/ui-ux-product-flow/`
+
+The detailed product-level acceptance table is stored in:
+
+`docs/thesis-handoffs/hanyang/feature-acceptance-results.md`
+
+The directory README records the capture environment, data path, and suggested
+figure groups. The Chapter 4 front-end development discussion should use the
+individual screenshots to present the complete implemented flow:
+
+1. user-entered arXiv seed, processing, and multi-paper briefing;
+2. paper detail, structured summary, and citation exploration;
+3. node selection and graph-to-paper navigation;
+4. open question, processing, cited answer, and source inspection;
+5. explicit-interest editing, persistence, and briefing refresh;
+6. cached offline content and recovery to the live backend.
+
+Each figure group should be introduced before it appears and interpreted
+afterwards. The screenshots are product results from the live integrated
+session. The static prototype images in Chapter 3 remain design artifacts and
+should not be presented as the final Android implementation.
+
 ## Experimental design
 
 ### Environment

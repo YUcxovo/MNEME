@@ -28,6 +28,14 @@ the thesis body.
   - SHA-256:
     `4e63e423a91db69bde6750bfbe21376120b5c5eaa457dcb88b33b98275f5cfa8`
   - Cross-check for the Read-Remember-Plan framing and project scope.
+- `VE441_slides (2).pdf`
+  - SHA-256:
+    `78a6066b9c23c6991833dea58cbebf6f7fd01bf24721972db21b8b363de9eb84`
+  - Pages 4-6: customer profile, prominent pain points, and preferences/trust.
+  - Page 8: Read-Remember-Plan value proposition.
+  - Page 9: five-frame storyboard.
+  - Pages 11-14: competitive landscape, competitor profiles, and comparison
+    matrix.
 
 ## Study counts
 
@@ -47,38 +55,44 @@ several notes and may appear in several participant-level findings.
 
 ## Figure provenance
 
-The six `chapter2_affinity_*.png` files are lossless panels extracted from
-page 3 of `Thesis_Design_Specification (1).pdf`. Cropping enlarges the printed
-text and does not alter note text, participant codes, or tallies.
+The three affinity-map panels used in the chapter are direct crops of the
+course affinity map. Cropping enlarges the printed text and does not alter
+note text, participant codes, or tallies. The other affinity-map crops remain
+in the repository but are not rendered in the revised chapter.
 
 - `chapter2_affinity_pain_left.png`:
-  `1f8ed9d913565b91d8a96ef7eb24ea1d14fcabe925e07461c462abbb35d7dcc0`
+  `f8a7e6acd56bf2a96c21ce2a62177213857ad14eba3ec8c7247032efe66d18f7`
 - `chapter2_affinity_pain_right.png`:
-  `030a71bdb1efb40df7ad26dc35a42fe4545d70e005e33f5c9a7b0b1703f282d0`
-- `chapter2_affinity_solutions_left.png`:
-  `ab711418f3262a5078d24cb8bceedc78ed7c7e804703e094132f71f800d3a786`
-- `chapter2_affinity_solutions_right.png`:
-  `ca64c2175db8951559e0cd6a637f20ce693f3a0aac79613c3b2b8d27a8ec516d`
+  `ff66b7586acc75270d0763dbe31a8b33bded65b2fc054cdb924fa9fe0200b558`
 - `chapter2_affinity_trust.png`:
-  `1c3adb4271f28a9a5a548940d577df133d4b779f204a34fb8a597b7ca941769a`
-- `chapter2_affinity_wishes.png`:
-  `02a4002c23d95c8c21006c9fced840ebe899b026de81bc46db72fc6f3f0b605f`
+  `7ae36b6702b9c2e2320b5f49a8964cc890a6e180fb56b5cfbc7c98590f82491d`
 
-`chapter2_profile_findings.png` visualizes the four retained
-participant-level counts. Its editable source is
-`figures/src/chapter2_profile_findings.svg`.
+The pain-point summary is a content crop from page 5 of a 300-dpi export of
+`VE441_slides (2).pdf`. Only the table is retained; the slide title, page
+number, and the introductory sentence above the table are excluded.
 
-- PNG:
-  `cfba041c91ae177f72be453354c8b4aa17fe915d6e3123dc4c03f243a7a8460d`
-- SVG:
-  `e921c5486b5bd0dc0213d640e2a9a7679d7f193b5603aa84288d4936ecd04bac`
+- `chapter2_customer_profile-05.png`:
+  `c5ce4e15d69f0b2264a6c8045fc68cd792e4c8d8aeb355ac1f61cba9da0936cf`
 
-`chapter2_storyboard.jpg` is the storyboard extracted from page 6 of the
-design specification. It is a historical design artifact and is not
-implementation or effectiveness evidence.
+The storyboard is a content crop from a 300-dpi page export of
+`VE441_slides (2).pdf`. Unused outer margins were removed for thesis layout.
+No frame, label, value, or relationship was regenerated.
 
-- JPEG:
-  `b55d75a28cca63c3f350003cb526b5aae5c426ebacd8a7dcb45962800830bb43`
+- `chapter2_value-09.png`:
+  `636b344c0fafe75c815ecc0173c1ef230c124779a274f323216a7ae13af8a4d3`
+
+The competitor matrix is a content crop from page 14 of the same 300-dpi
+slide export. Only the table is retained; the slide title, page number, and
+the explanatory sentence below the table are excluded.
+
+- `chapter2_competitor-14.png`:
+  `d6a8a660d7c811e5eb2a377766bcddb4c4122670443fc3655544aebdfaabacb4`
+
+`chapter2_profile_findings.png` and `chapter2_storyboard.jpg` are retained as
+historical assets but are no longer referenced by the chapter. Customer-profile,
+value-proposition, and competitor text reuse the verified course content
+directly in thesis prose. The competitor feature matrix and storyboard are
+retained as visual design artifacts rather than full-slide screenshots.
 
 ## Competitor source boundary
 

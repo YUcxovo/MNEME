@@ -85,6 +85,192 @@ Device-level results were collected on Android~14 under the baseline and resourc
 The study varies CPU and RAM within one emulation host.
 Physical-device validation and notification-permission testing across additional Android versions remain future work.
 
+\subsection{Implemented Product Flow}
+\label{subsec:implemented-product-flow}
+
+The implemented application connects onboarding, reading, evidence inspection,
+preference correction, and recovery through one mobile flow. The screens in
+this subsection were recorded while the Android client was connected to the
+running backend and its persistent data services. Chapter~3 presents the
+controlled prototype used during design; the following figures present the
+product state returned through the integrated path.
+
+Figure~\ref{fig:android-seed-flow} begins with a user-supplied arXiv paper. Once
+the link is accepted, the interface exposes a preparation state until the
+initial library is ready. The resulting briefing presents five papers with
+their bibliographic identity and primary reading actions. This sequence makes
+the boundary between user input, backend preparation, and the first readable
+result visible.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.255\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/02-seed-entered.png}
+    \caption{Seed accepted.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.255\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/03-seed-processing.png}
+    \caption{Visible preparation.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.255\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/05-live-briefing-paper-list.png}
+    \caption{Five-paper briefing.}
+  \end{subfigure}
+  \caption{Seed onboarding and initial briefing. A user-supplied arXiv paper
+  enters a visible preparation state before the live five-paper briefing is
+  displayed.}
+  \label{fig:android-seed-flow}
+\end{figure}
+
+Opening a briefing item leads to the structured paper view. The overview,
+claims, method, limitations, source action, question interface, and citation
+graph remain attached to the selected paper. Figure~\ref{fig:android-reading-graph}
+shows the transition from paper detail to a six-paper citation neighbourhood.
+Selecting a neighbouring node highlights it and exposes the action that opens
+the neighbour through the ordinary paper-detail route.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.255\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/06-paper-detail-top.png}
+    \caption{Paper detail.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.255\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/08-multi-node-citation-graph.png}
+    \caption{Citation neighbourhood.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.255\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/09-graph-selected-node.png}
+    \caption{Selected neighbour.}
+  \end{subfigure}
+  \caption{Paper reading and citation exploration. The selected paper opens as
+  a structured record, and the citation view retains the selected node and
+  its \emph{Open Paper} action.}
+  \label{fig:android-reading-graph}
+\end{figure}
+
+The same paper-centred route continues after graph selection.
+Figure~\ref{fig:android-graph-paper} shows the structured claim view and the
+neighbouring paper reached from the graph. Both screens use the same paper
+detail structure, so graph exploration continues directly into reading through
+a common route.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.34\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/07-paper-summary-claims.png}
+    \caption{Structured claims and source actions.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.34\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/10-open-selected-paper.png}
+    \caption{Neighbour opened as a paper detail.}
+  \end{subfigure}
+  \caption{The structured paper view is shared by briefing items and papers
+  opened from the citation graph.}
+  \label{fig:android-graph-paper}
+\end{figure}
+
+Question answering also continues from the selected paper.
+Figure~\ref{fig:android-qa-flow} follows a free-form question from composition
+through processing to a cited answer and the associated source card. Paper
+identity remains visible throughout the interaction, and the evidence action
+provides a direct route from the generated answer to the supplied source
+passage.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.21\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/11-paper-question-composer.png}
+    \caption{Free-form question.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.21\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/13-question-processing.png}
+    \caption{Processing state.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.21\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/14-cited-answer.png}
+    \caption{Cited answer.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.21\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/15-answer-source-evidence.png}
+    \caption{Supporting source.}
+  \end{subfigure}
+  \caption{Evidence-linked question answering from question composition to
+  inspection of the source associated with the returned answer.}
+  \label{fig:android-qa-flow}
+\end{figure}
+
+Explicit interests give the reader a direct way to correct later briefing
+inputs. Figure~\ref{fig:android-interest-flow} shows an added topic, persistence
+through the backend, completion of the refresh, and the subsequent briefing.
+The edit and refresh remain a single visible sequence, while the returned
+briefing keeps the updated topics available for inspection.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.21\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/16-interest-profile.png}
+    \caption{Interest profile.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.21\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/17-interest-topic-added.png}
+    \caption{Topic added.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.21\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/18-interest-refresh-completed.png}
+    \caption{Refresh completed.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.21\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/19-briefing-after-interest-update.png}
+    \caption{Updated briefing.}
+  \end{subfigure}
+  \caption{Explicit-interest correction, persistence, and the following
+  briefing refresh.}
+  \label{fig:android-interest-flow}
+\end{figure}
+
+Recovery preserves the screen structure used by the live path.
+Figure~\ref{fig:android-recovery-flow} shows the retained briefing while the
+backend is unavailable and the same workflow after connectivity is restored.
+The visible origin changes from cached to live while the paper list and its
+reading actions remain available.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.34\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/21-offline-cached-briefing.png}
+    \caption{Cached offline briefing.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.34\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/22-live-recovery-after-offline.png}
+    \caption{Restored live briefing.}
+  \end{subfigure}
+  \caption{Offline and live recovery. Retained content remains readable with
+  its cached origin and returns to a live-backend state after connectivity is
+  restored.}
+  \label{fig:android-recovery-flow}
+\end{figure}
+
+\FloatBarrier
+
 \section{Back-end Development}
 
 The backend is a Python/FastAPI service.
@@ -462,27 +648,148 @@ The interest editor was exercised as one complete device path. The test edited a
 Feature acceptance maps the acceptance criteria of Chapter~3 to executable checks.
 Table~\ref{tab:feature-acceptance} summarizes the main user-facing tasks, their expected outcomes, and the recorded results. Performance measurements are reported separately in Section~\ref{sec:android-performance}.
 
-\begin{table}[htbp]
-\centering
-\footnotesize
+\begingroup
+\scriptsize
 \setlength{\tabcolsep}{2pt}
+\renewcommand{\arraystretch}{1.10}
+\begin{longtable}{P{1.75cm}P{2.15cm}P{2.35cm}P{3.45cm}P{1.00cm}}
 \caption{Feature acceptance results for the integrated mobile workflow.}
-\label{tab:feature-acceptance}
-\begin{tabular}{P{2.0cm}P{2.45cm}P{2.55cm}P{3.65cm}c}
+\label{tab:feature-acceptance}\\
 \toprule
-\MnemeTableHeader{Feature} & \MnemeTableHeader{Test task} & \MnemeTableHeader{Expected result} & \MnemeTableHeader{Actual result} & \MnemeTableHeader{Status} \\
+\MnemeTableHeader{Feature} & \MnemeTableHeader{Test task} &
+\MnemeTableHeader{Expected result} & \MnemeTableHeader{Actual result} &
+\MnemeTableHeader{Status} \\
 \midrule
-Offline disclosure & Reopen a stored briefing without network access & Show cached content and identify its origin & Cached offline state appeared in all 30 controlled trials & Pass \\
-Paper preparation & Poll a paper-processing job until completion & Show processing before the paper becomes ready & The three-stage transition completed in all 10 controlled trials & Pass \\
-Evidence-linked Q\&A & Ask the fixed question and open an answer source & Display an answer with evidence status and a working source action & Both retained live UI traces returned source-linked answers and opened the source & Pass \\
-Citation graph & Select a neighboring paper, open it, and return & Preserve selection and restore the graph interaction & All 11 graph and application-flow tests passed & Pass \\
-Event synchronization & Retry an interrupted upload and replay the same identifiers & Deliver queued events once and acknowledge duplicates & All 30 controlled trials per queue stage passed; five live repetitions accepted three new events and marked the replay as duplicate & Pass \\
+\endfirsthead
+\caption[]{Feature acceptance results for the integrated mobile workflow
+(continued).}\\
+\toprule
+\MnemeTableHeader{Feature} & \MnemeTableHeader{Test task} &
+\MnemeTableHeader{Expected result} & \MnemeTableHeader{Actual result} &
+\MnemeTableHeader{Status} \\
+\midrule
+\endhead
 \bottomrule
-\end{tabular}
-\normalsize
-\end{table}
+\endfoot
+Seed onboarding &
+Enter a valid arXiv URL on first launch &
+Accept the seed and expose the start action &
+The link was accepted and the start action became available &
+Pass \\
+\MnemeRowRule
+Paper preparation &
+Start the seed workflow &
+Show processing until preparation completes &
+The preparation state remained visible before the briefing appeared &
+Pass \\
+\MnemeRowRule
+Initial briefing &
+Complete preparation from an empty database &
+Display five prepared candidate papers &
+The live briefing contained five papers prepared from the seed &
+Pass \\
+\MnemeRowRule
+Paper detail &
+Open a paper from the briefing &
+Preserve identity and show the paper record &
+The selected paper opened with metadata, overview, and reading actions &
+Pass \\
+\MnemeRowRule
+Structured summary &
+Inspect the selected paper &
+Show claims, method, limitations, source access, and next actions &
+The specified summary sections and paper actions were visible &
+Pass \\
+\MnemeRowRule
+Citation graph &
+Open the graph for the selected paper &
+Render the backend citation neighbourhood &
+The graph displayed six papers and five directed citations &
+Pass \\
+\MnemeRowRule
+Graph selection &
+Select a non-centre node &
+Retain selection and enable a paper action &
+The node remained highlighted and \emph{Open Paper} became available &
+Pass \\
+\MnemeRowRule
+Graph-to-paper navigation &
+Open the selected neighbouring node &
+Use the ordinary paper-detail route &
+The neighbouring paper opened as a standard paper detail &
+Pass \\
+\MnemeRowRule
+Question entry &
+Enter a free-form paper question &
+Preserve the question and expose submission &
+The entered question remained visible and could be submitted &
+Pass \\
+\MnemeRowRule
+Question processing &
+Submit the free-form question &
+Show a visible processing state &
+The in-progress state remained visible until completion &
+Pass \\
+\MnemeRowRule
+Cited answer &
+Complete the question request &
+Display an answer with evidence markers &
+The returned answer contained inline citations and evidence status &
+Pass \\
+\MnemeRowRule
+Evidence inspection &
+Open an answer source &
+Show the source location and paper action &
+The evidence card displayed the passage and source-paper action &
+Pass \\
+\MnemeRowRule
+Interest editing &
+Add a research topic &
+Keep the edit visible before persistence &
+The new topic appeared in the editable interest list &
+Pass \\
+\MnemeRowRule
+Interest persistence &
+Save the profile and refresh &
+Persist the edit and complete refresh &
+The save and recommendation refresh completed successfully &
+Pass \\
+\MnemeRowRule
+Interest-to-briefing loop &
+Return after the preference update &
+Display a briefing under the updated topics &
+The briefing showed the updated topics and newly ranked catalogue papers &
+Pass \\
+\MnemeRowRule
+Offline recovery &
+Reopen the briefing while the API is unavailable &
+Show retained content and identify its origin &
+The complete cached briefing remained available with an offline disclosure &
+Pass \\
+\MnemeRowRule
+Live recovery &
+Restore the API after offline use &
+Refresh the same workflow from the backend &
+The briefing returned to a live-backend state &
+Pass \\
+\MnemeRowRule
+Event synchronization &
+Queue, retry, and replay event identifiers &
+Preserve pending events, upload once, and acknowledge duplicates &
+All controlled stages passed; five live repetitions accepted three new
+identifiers and marked all three replays as duplicates &
+Pass \\
+\end{longtable}
+\endgroup
 
-The table records only checks with retained test output or live traces. For the literature-representation features, the decisive backend check is revision isolation: an API test asserts that question answering scoped to one paper revision cannot retrieve chunks belonging to another. Idempotent re-preparation is covered by deterministic chunking and content-hash tests.
+The table follows the product path shown in
+Figures~\ref{fig:android-seed-flow}--\ref{fig:android-recovery-flow}. Each row
+records an executed action with a retained screenshot, connected-device test,
+or raw measurement. For the literature-representation features, the decisive
+backend check is revision isolation: an API test asserts that question
+answering scoped to one paper revision cannot retrieve chunks belonging to
+another. Idempotent re-preparation is covered by deterministic chunking and
+content-hash tests.
 
 For the assistance features, acceptance rests on refusal and verification behavior.
 Tests cover refusal below the evidence threshold and through the model-side insufficient-evidence marker, citation-marker validation against the evidence list, and the source-match labeling of answers.
@@ -501,28 +808,11 @@ Asynchronous job visibility was verified by the three-stage paper-preparation po
 The event-loop trace above covers transport. A separate live-core acceptance evaluation carried one preregistered seed paper and one fixed free-form question through the complete seed-to-reading path against a running backend configured with its recorded production AI stack. Summarization and question answering used a live provider model with local \texttt{fastembed} embeddings, and the exact inputs and non-secret model configuration were retained with the raw results.
 The first instrumented UI trace completed all eight required stages. The seed produced a briefing of exactly five papers labeled live, the same briefing was restored from the client cache labeled cached, an opened paper presented its stored summary, and the free-form question returned a live-origin answer carrying four sources with a partial source-match label. The answer's source callback and the paper's arXiv source both opened. A six-node, five-edge citation graph rendered live around a briefing paper, and selecting a neighbor led to its ordinary paper-detail path.
 
-Figure~\ref{fig:live-android-path} shows three user-facing states recorded during completed live-backend executions. The briefing explains why a paper was selected after an interest update, the question-answering screen exposes the evidence status and source locations, and the graph retains the selected paper together with the action that opens its detail view.
-
-\begin{figure}[htbp]
-\centering
-\begin{subfigure}[t]{0.31\textwidth}
-  \centering
-  \includegraphics[width=\linewidth]{mneme_live_interest_refresh.png}
-  \caption{Updated-interest briefing.}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.31\textwidth}
-  \centering
-  \includegraphics[width=\linewidth]{../evaluation/live-core/artifact-reuse/raw/live_ui_qa.png}
-  \caption{Source-linked answer evidence.}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.31\textwidth}
-  \centering
-  \includegraphics[width=\linewidth]{../evaluation/live-core/artifact-reuse/raw/live_ui_graph_neighbor_selected.png}
-  \caption{Selected graph node and open action.}
-\end{subfigure}
-\caption{Android states from completed live-backend paths: refreshed recommendations, evidence-linked question answering, and citation-graph exploration.}
-\label{fig:live-android-path}
-\end{figure}
+The corresponding user-facing states are shown in
+Figures~\ref{fig:android-reading-graph}, \ref{fig:android-qa-flow}, and
+\ref{fig:android-interest-flow}. Together they show the selected graph node,
+source-linked answer, explicit-interest update, and the paper actions used by
+the recorded live path.
 
 A later instrumented trace repeated the same visible path after the backend had retained the paper artifacts and could reuse cached provider completions. The seed response still came from the live backend, and all required UI stages succeeded again. Five further repetitions exercised the application data layer, network mapping, and cache handling without measuring Compose interaction; every required stage succeeded. Timing differences between these conditions are discussed under Performance Testing rather than treated as feature-acceptance criteria.
 

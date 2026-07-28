@@ -203,20 +203,61 @@ The contract also limits what a response status means. A healthy API process is 
 \section{UI/UX Design}
 \label{sec:ui-ux-design}
 
-The initial user interface and user experience (UI/UX) design gives the research briefing a central position because it is the point at which recurring discovery becomes a reading decision. Figure~\ref{fig:ui-flow} shows the information architecture used for the formative prototype. Onboarding establishes a small explicit profile and one seed paper; the briefing supports triage; paper detail supports structured understanding; and question answering and graph exploration extend from a paper whose identity is already visible. Search and interest editing remain available without interrupting the primary path.
+The initial user interface and user experience (UI/UX) design gives the research briefing a central position because it is the point at which recurring discovery becomes a reading decision. Figure~\ref{fig:ui-flow} shows the information architecture developed for the formative prototype. Onboarding establishes a small explicit profile and one seed paper; the briefing supports triage; paper detail supports structured understanding; and question answering and graph exploration extend from a paper whose identity is already visible. Search and interest editing remain available without interrupting the primary path.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.98\textwidth]{chapter3_ui_flow.png}
-  \caption{Initial mobile information architecture used to organize the formative prototype. Network-dependent screens share explicit processing, origin, empty, and failure states.}
+  \includegraphics[width=\textwidth]{figures/chapter3_course_ui_flow_overview.png}
+  \caption{Original UI/UX flow from onboarding and seed selection to briefing,
+  paper-centred reading, cited question answering, and related-work
+  exploration.}
   \label{fig:ui-flow}
 \end{figure}
 
 Onboarding uses progressive disclosure. Asking for a small number of topics and one known paper is enough to explain the personalization model without presenting a lengthy settings form before the product has shown value. The interest view remains available after onboarding because an inferred result must be correctable. This follows human--AI interaction guidance that a system should communicate its capabilities and support correction when its interpretation is wrong~\cite{amershi2019guidelines}.
 
-The briefing is designed for comparison rather than close reading. Each card presents identity, a short description, relevance context, and a concise reason before the primary open action. The reason appears beside the ranked item because it is most useful at the decision point. Paper detail then increases information density and separates overview, claims, method, and limitations. Source actions remain close to the generated material they qualify. Position-sensitive reading assistance similarly benefits from presenting supporting context where the reader encounters the unfamiliar content~\cite{head2021scholarphi}.
+The briefing supports comparison, while paper detail supports close reading.
+Each card presents identity, a short description, relevance context, and a
+concise reason before the primary open action. The reason appears beside the
+ranked item because it is most useful at the decision point. Paper detail then
+increases information density and separates overview, claims, method, and
+limitations. Source actions remain close to the generated material they
+qualify. Position-sensitive reading assistance similarly benefits from
+presenting supporting context where the reader encounters the unfamiliar
+content~\cite{head2021scholarphi}.
 
-The question screen inherits the selected paper rather than asking the reader to restate its scope. Answer text and cited excerpts form one inspection unit. An insufficient-evidence response occupies the ordinary answer region so that it cannot be confused with a network error. Figure~\ref{fig:prototype-reading} shows the initial prototype states used during the moderated sessions. The images contain controlled fixture content and establish the tested interaction design; they are not screenshots of model execution or evidence of the final Android implementation.
+The question screen inherits the selected paper, preserving its scope without
+requiring the reader to enter it again. Answer text and cited excerpts form one
+inspection unit. An insufficient-evidence response occupies the ordinary
+answer region so that it remains distinct from a network error.
+Figure~\ref{fig:prototype-reading} shows the initial prototype states used
+during the moderated sessions. The images use controlled fixture content to
+establish the tested interaction design. Chapter~4 presents the final Android
+implementation.
+
+Figure~\ref{fig:ui-flow-detail} enlarges the two main parts of the original
+flow. The first part moves from welcome and topic selection through the seed
+paper to the first briefing. The second begins with a briefing item and
+branches into structured reading, cited question answering, citation
+exploration, search, and interest correction. These branches remain attached
+to the selected paper or research profile, preserving the task context when
+the reader returns to the briefing.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{subfigure}[t]{0.96\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/chapter3_course_ui_flow_onboarding.png}
+    \caption{Onboarding, seed input, and the first briefing.}
+  \end{subfigure}\\[0.8em]
+  \begin{subfigure}[t]{0.96\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/chapter3_course_ui_flow_reading.png}
+    \caption{Briefing, paper reading, cited questions, and related work.}
+  \end{subfigure}
+  \caption{Detailed segments of the original mobile interaction flow.}
+  \label{fig:ui-flow-detail}
+\end{figure}
 
 \begin{figure}[htbp]
   \centering
@@ -248,7 +289,14 @@ The graph posed a different interaction problem. Spatial proximity alone does no
   \label{fig:prototype-graph}
 \end{figure}
 
-Operational state is part of the interface rather than a hidden technical condition. A restored briefing retains its content and identifies its cached origin when refresh fails. Processing and retryable failure use different messages and actions. Colour supports this distinction but does not carry it alone; labels, icons, selection outlines, and action placement provide redundant cues. Scalable text, semantic descriptions, predictable back navigation, and a native selected-node summary form the accessibility requirements. The formative study addressed discoverability of the principal flow, not accessibility with assistive technologies.
+Operational state is expressed directly in the interface. A restored briefing
+retains its content and identifies its cached origin when refresh fails.
+Processing and retryable failure use different messages and actions. Colour
+supports this distinction together with labels, icons, selection outlines, and
+action placement. Scalable text, semantic descriptions, predictable back
+navigation, and a native selected-node summary form the accessibility
+requirements. The formative study focused on discoverability of the principal
+flow; evaluation with assistive technologies remains future work.
 
 \section{Usability Testing}
 \label{sec:usability-testing}
@@ -285,35 +333,83 @@ The five tasks corresponded to transitions in the story map: understanding why a
   \normalsize
 \end{table}
 
-Unaided binary task completion was the primary measure. Qualitative notes were used to identify the source of a failure but were not converted into a numerical scale after the study. With five participants, the purpose was to identify concentrated interaction problems and guide revision, not to estimate a population success rate. The analysis reports counts and limits its conclusions to discoverability under the moderated prompts.
+Unaided binary task completion was the primary measure. Qualitative notes were
+used to identify the source of a failure and remained descriptive. With five
+participants, the study was designed to identify concentrated interaction
+problems and guide revision. The analysis therefore reports task counts and
+interprets them as observations of discoverability under the moderated
+prompts.
 
 \subsection{Usability Tests and Results}
 \label{subsec:usability-results}
 
-Figure~\ref{fig:usability-results} reports the recorded completion counts. All five participants completed briefing triage (T1), source inspection (T2), and cited question inspection (T3). Two completed the graph transition (T4), and four saved a preference change (T5). In total, 21 of 25 participant--task attempts met their success criterion, a descriptive proportion of 84\%. The task-level distribution is more informative than the aggregate because it identifies where the initial interaction design failed.
+Figure~\ref{fig:usability-results} reports the recorded completion counts. All five participants completed briefing triage (T1), source inspection (T2), and cited question inspection (T3). Two completed the graph transition (T4), and four saved a preference change (T5). In total, 21 of 25 participant--task attempts met their success criterion, a descriptive proportion of 84\%. The task-level distribution is more informative than the aggregate because it identifies where the initial interaction design required revision.
 
 \begin{figure}[htbp]
   \centering
-  \begin{tikzpicture}[font=\sffamily\small]
-    \draw[MnemeNavy,line width=0.9pt,->] (0.7,0) -- (9.0,0);
-    \draw[MnemeNavy,line width=0.9pt,->] (0.7,0) -- (0.7,5.8);
-    \foreach \y in {0,1,2,3,4,5}{\draw[MnemeNavy!25] (0.62,\y) -- (8.7,\y); \node[left,text=MnemeInk] at (0.55,\y) {\y};}
-    \foreach \x/\task/\score/\colour in {1.7/T1/5/MnemeGreen,3.25/T2/5/MnemeGreen,4.8/T3/5/MnemeGreen,6.35/T4/2/MnemeRed,7.9/T5/4/MnemeGold}{\fill[\colour!75] (\x-0.45,0) rectangle (\x+0.45,\score); \draw[\colour!90!black,line width=0.7pt] (\x-0.45,0) rectangle (\x+0.45,\score); \node[above,font=\bfseries,text=MnemeInk] at (\x,\score) {\score/5}; \node[below,font=\bfseries,text=MnemeInk] at (\x,-0.18) {\task};}
-    \node[rotate=90,font=\bfseries,text=MnemeInk] at (-0.15,2.8) {Participants meeting criterion};
-    \node[align=center,font=\scriptsize,text=MnemeInk] at (1.7,-0.85) {Briefing};
-    \node[align=center,font=\scriptsize,text=MnemeInk] at (3.25,-0.85) {Source};
-    \node[align=center,font=\scriptsize,text=MnemeInk] at (4.8,-0.85) {Cited Q\&A};
-    \node[align=center,font=\scriptsize,text=MnemeInk] at (6.35,-0.85) {Graph};
-    \node[align=center,font=\scriptsize,text=MnemeInk] at (7.9,-0.85) {Interests};
-  \end{tikzpicture}
-  \caption{Observed task completion in the formative prototype study (\(n=5\)). Each bar shows the number of participants who met the corresponding criterion.}
+  \includegraphics[width=\textwidth]{figures/chapter3_course_usability_completion.png}
+  \caption{Observed task completion in the formative prototype study
+  (\(n=5\)). The graph task produced the largest completion drop.}
   \label{fig:usability-results}
 \end{figure}
 
 The 15 completions across T1--T3 indicate that the prompted reading path was discoverable in the prototype. Participants could move from a recommendation to paper detail, locate a source-oriented summary path, and inspect the cited evidence associated with an answer. Session notes also suggested that evidence access deserved a stronger visual cue. The revised design therefore places source labels and citation actions beside the generated content they qualify instead of treating verification as a secondary destination.
 
-Graph exploration produced the clearest problem. Three participants did not infer which elements were selectable or how selection led to another paper. The adjusted design adds a short instruction above the canvas, a persistent selected-node state, explicit relationship context, and a visible \emph{Open Paper} action. These changes address the observed ambiguity in action and consequence. They were not evaluated in a second participant study, so the present result establishes the rationale for the redesign, not an improvement in usability. Functional verification of selection and navigation in Chapter~4 answers a different question and must not be interpreted as user-study evidence.
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/chapter3_course_usability_findings.png}
+  \caption{Qualitative observations from the formative sessions. Visible
+  evidence supported confidence, while verification and graph actions required
+  stronger cues.}
+  \label{fig:usability-findings}
+\end{figure}
+
+\subsection{UI/UX Design Adjustments}
+\label{subsec:ui-ux-adjustments}
+
+The design adjustments retain the interactions that participants completed
+reliably and strengthen the two transitions that caused uncertainty.
+Figure~\ref{fig:ui-design-adjustments} links each observation to a concrete
+interface decision. The briefing remains the home screen, and its paper card,
+match context, and primary open action are preserved. Source labels and
+citation actions move closer to summaries and answers. Preference editing
+remains one action from the briefing so that an irrelevant recommendation can
+lead directly to correction of the explicit profile.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/chapter3_course_design_adjustments.png}
+  \caption{UI/UX adjustments derived from the formative study: retained
+  briefing structure, more visible source actions, explicit graph selection,
+  and a nearby preference entry point.}
+  \label{fig:ui-design-adjustments}
+\end{figure}
+
+Graph exploration produced the clearest problem. Three participants did not
+infer which elements were selectable or how selection led to another paper.
+The adjusted design adds a short instruction above the canvas, a persistent
+selected-node state, explicit relationship context, and a visible
+\emph{Open Paper} action. These changes are reported as design responses to
+the observed ambiguity in action and consequence. Chapter~4 verifies that
+selection and navigation follow this specification; a follow-up participant
+study would measure the usability effect of the revision.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/chapter3_course_graph_adjustment.png}
+  \caption{Graph-specific adjustment from the usability result: an instruction,
+  persistent selected-node state, relationship context, and a visible
+  \emph{Open Paper} action.}
+  \label{fig:graph-design-adjustment}
+\end{figure}
 
 One participant did not complete the interest-editing task. The observation indicated that the controls were understandable after discovery but insufficiently prominent from the briefing. The adjusted design therefore keeps preference editing one action away from the briefing and gives it an explicit settings entry. This change also supports correction of personalization: when a reason appears irrelevant, the reader can inspect and edit explicit interests without abandoning the reading task.
 
-Taken together, the sessions support a narrow formative conclusion. The initial prototype exposed a legible path through briefing, paper reading, source inspection, and paper-scoped questioning, while graph discoverability required substantial revision and interest controls required a clearer entry point. The study does not establish the effectiveness of the revised graph, general usability across researcher populations, or accessibility in use. Those questions require a new participant protocol with the revised interface, retained participant characteristics, and task-level measurements. The application implementation and final-product interface are described separately in Chapter~4 so that the design evidence in this chapter is not confused with implementation evidence.
+Taken together, the sessions support a focused formative conclusion. The
+initial prototype exposed a legible path through briefing, paper reading,
+source inspection, and paper-scoped questioning. Graph discoverability
+required substantial revision, and interest controls required a clearer entry
+point. The results explain the design adjustments shown above. Broader
+usability, accessibility, and the effect of the revised graph require a new
+participant protocol using the implemented interface. Chapter~4 presents that
+implementation and its functional verification.
