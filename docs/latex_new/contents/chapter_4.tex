@@ -438,7 +438,7 @@ For eligible event \(i\), let \(b_i\) denote its signed base weight, \(m_i\) its
 \begin{equation}
   m_i=0.5+\frac{\log(1+d_i/30)}{\log 11},
   \qquad
-  g(\Delta_i)=0.70\,2^{-\Delta_i/14}+0.30\,2^{-\Delta_i/60}.
+  g(\Delta_i)=0.70\cdot 2^{-\Delta_i/14}+0.30\cdot 2^{-\Delta_i/60}.
   \label{eq:behavior-temporal-weight}
 \end{equation}
 A missing duration gives \(m_i=1\), and a non-open event also uses unit duration multiplier. The effective signed evidence is \(\widetilde{w}_i=b_i m_i g(\Delta_i)\); observations older than 180 days contribute no profile evidence. The logarithmic transform lets reading time refine an open without allowing passive dwell time to outweigh an explicit save or share. Combining a 14-day and a 60-day half-life preserves sensitivity to recent changes while retaining a smaller persistent component. These fixed, replayable parameters define the configuration evaluated in this study.
