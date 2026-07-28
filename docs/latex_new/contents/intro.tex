@@ -64,7 +64,7 @@ When paper identity, evidence, interest context, or visible interaction state is
 
 Meeting these requirements raises four connected research challenges.
 
-\textbf{Challenge 1: revision-correct paper representation.}
+The first challenge is revision-correct paper representation.
 A source document can change while summaries, chunks, embeddings, and citations remain attached to an older revision.
 A paper identifier alone does not reveal this difference.
 The difficulty extends beyond detecting that a new file exists, because each derived artifact has its own creation time, configuration, and dependence on the source text.
@@ -72,23 +72,20 @@ An unchanged logical identifier can therefore refer to several evidential states
 The challenge is to preserve a lineage from a logical paper to an observed revision and from that revision to every derived artifact, including the conditions under which an artifact becomes outdated.
 Without this lineage, later retrieval and generation cannot determine whether two apparently compatible artifacts were produced from the same evidence.
 
-\textbf{Challenge 2: evidence-bounded assistance.}
-It must separate the presence of a citation from the support that the cited evidence provides.
+The second challenge is evidence-bounded assistance, which requires the system to separate the presence of a citation from the support that the cited evidence provides.
 A generated answer may contain a valid paper identifier while one or more of its claims remain unsupported.
 Scientific claim-verification research makes the evidence unit explicit by pairing claims with rationale spans~\cite{wadden2020scifact}, and fine-grained attribution work shows why document-level identifiers alone make exact support difficult to inspect~\cite{huang2024grounded}.
 Retrieval also introduces several possible failure points: no relevant passage may be found, a relevant passage may be omitted from the final context, or a generated claim may extend beyond the retrieved text.
 The challenge is to distinguish identifier validity, evidence availability, claim--evidence consistency, and evidence coverage, including cases in which the available text does not support an answer.
 This distinction is necessary because a syntactically valid citation marker provides weaker assurance than a source span that supports the associated claim.
 
-\textbf{Challenge 3: adaptive but inspectable interest memory.}
-It must interpret incomplete and sometimes ambiguous expressions of intent.
+The third challenge is to maintain an adaptive but inspectable interest memory from incomplete and sometimes ambiguous expressions of intent.
 Opening, saving, skipping, and questioning a paper differ in strength and duration: saving commonly indicates deliberate interest, while a single opening may reflect curiosity, an assignment, or an accidental action.
 Repeated events can provide additional evidence, although frequency alone does not resolve the context in which they occurred.
 The challenge is to combine explicit interests with bounded behavioral events while preserving a clear account of why an interest changed and allowing the corresponding state to be corrected or deleted.
 The resulting representation must therefore support adaptation without treating an inferred preference as an unquestionable statement of the user's research agenda.
 
-\textbf{Challenge 4: bounded mobile integration.}
-It must preserve research context under intermittent connectivity, restricted background execution, and limited screen area.
+The fourth challenge is bounded mobile integration, which must preserve research context under intermittent connectivity, restricted background execution, and limited screen area.
 These conditions can conceal evidence or stale state even when the server-side mechanism is correct.
 Long-running preparation and graph operations may complete after the user has navigated elsewhere, and a retry may repeat an interaction that has already reached the server.
 Cached content can preserve useful access during failure, yet it can also mislead the reader when its origin and age are unclear.
@@ -201,17 +198,15 @@ The central block identifies the information shared across these capabilities: p
 \end{figure}
 \FloatBarrier
 
-\subsection{Contributions}
-
+The work makes four connected contributions.
 The provenance contract associates each derived artifact with a logical paper, a specific revision, a transformation configuration, and a content hash.
 Evidence-bounded assistance links answer claims to source spans and distinguishes supported, partially supported, and unsupported outcomes.
 Interest adaptation applies declared behavioral events to a time-decayed normalized representation while retaining the information needed for inspection and correction.
 Mobile integration preserves selected paper identity, event meaning, and content availability across asynchronous operations and recovery.
 Together, these contributions supply stable evidence inputs, constrain generated assistance, maintain a traceable interest state, and keep the resulting state visible during interaction.
 
-\subsection{Thesis Structure}
-
-Chapter 2 translates the four challenges into functional, non-functional, ethical, and interaction requirements.
-Chapter 3 presents the application architecture, algorithms, interfaces, and interaction design.
-Chapter 4 describes the implementation and reports the experimental and software-testing results.
+The remainder of the thesis develops and evaluates this proposal in sequence.
+Chapter 2 translates the four challenges into customer requirements and relates them to existing alternatives through competitor analysis.
+Chapter 3 presents the storymap and core features, feature acceptance criteria, high-level engine and API design, the initial UI/UX design, and the formative usability study that informed subsequent interface changes.
+Chapter 4 documents the front-end and back-end implementation, including the implemented technical methods, and reports feature-acceptance, performance, backend, and usability-testing results.
 Chapter 5 discusses the findings, states the main conclusions, and identifies directions for future work.
