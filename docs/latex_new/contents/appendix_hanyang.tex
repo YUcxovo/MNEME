@@ -5,43 +5,91 @@
 
 \section{Environment and Protocol}
 
-The Android client measurements used an Android 14/API 34 \texttt{sdk\_gphone64\_\allowbreak x86\_64} emulator with four virtual processors and a 192~MiB application heap.
-The live-backend trace used the emulator's host-network route to a local backend.
-The authentication token was supplied to the instrumentation process at run time and was not retained in an artifact.
-The evaluation manifest records the Android build and measurement configuration.
-The client results in Section~\ref{sec:android-performance} apply to that configuration.
+The Android client measurements use an Android~14/API~34 Google APIs
+x86\_64 emulator with a Pixel~6 device profile. The device profile, display
+configuration, Android image, WebView package, host CPU affinity, application
+build, and measurement code remain fixed within the resource experiment. The
+seed-preparation and event-synchronization experiments connect the emulator
+to disposable local backend services through the emulator host-network route.
+Authentication values are supplied at run time and excluded from the retained
+artifacts.
 
-Startup measurement discarded three cold/foreground launch pairs, then retained 20 cold process starts and 20 task foreground/resume operations.
-All retained operations returned a non-empty \texttt{WaitTime} field for the requested activity; the startup runner did not inspect rendered UI content.
-Android classified nine as hot starts and returned \texttt{UNKNOWN (0)} for eleven, so their latency distribution uses the retained wait-time field and is not treated as a 20-sample confirmed hot-start distribution.
-Controlled state, graph, and event tests used separate warm-up iterations that were not included in the reported samples.
-The graph experiment used deterministic payloads with 1, 12, 25, and 50 nodes.
-The live event loop performed five repetitions.
+The resource protocol starts one wiped-data, cold-booted emulator process for
+each session. Within a session, the startup benchmark seeds a deterministic
+five-paper briefing into the production Room schema. Each launch scenario
+records six native Macrobenchmark observations. The first observation remains
+in the raw Android output as the protocol warm-up, while observations two to
+six form the five analyzed values. The graph experiment uses deterministic
+payloads with 1, 12, 25, and 50 nodes. Node count increases in the first block
+and decreases in the second. For each node count, the protocol retains five
+new-and-reused WebView pairs after one complete warm-up pair.
+For \(N=1,12,25,50\), the payload generator constructs respectively
+0, 16, 36, and 73 directed edges. Each node after the first points to its
+predecessor, and every even-indexed node from index two adds one edge to the
+node seven positions ahead modulo \(N\). Node and edge identities and topology
+remain fixed across sessions; only the WebView state and emulator resource
+allocation vary.
 
-\subsection{Factorial Resource Protocol}
+\subsection{Resource-Controlled Protocol}
 
-The resource-controlled experiment used the same Android~14/API~34 Google
+The resource-controlled experiment uses the same Android~14/API~34 Google
 APIs x86\_64 image and Pixel~6 profile in all sessions.
-The screen was fixed at \(1080\times2400\) pixels and 420~dpi, and the
-application heap remained 228~MiB.
-The four configurations combined two or four virtual processor cores with
+The four configurations combine two or four virtual processor cores with
 2{,}048 or 6{,}144~MiB of emulator RAM.
-Four counterbalanced blocks changed the order of the configurations.
-Each of the sixteen sessions began from a wiped-data cold boot and produced a
-manifest, environment record, test output, emulator log, and measurement CSV
-files.
+The first block uses the order 2-core/2-GiB, 2-core/6-GiB,
+4-core/6-GiB, and 4-core/2-GiB. The second block reverses this order. The
+design contains two sessions per configuration and eight sessions in total.
 
-The independent unit is one emulator session.
-Each session produced 810 repeated controlled samples, and the analysis first
-reduced each metric to one median per session.
-The four independent values in each factorial cell were then summarized by
-their median and quartiles.
-Finite bootstrap intervals enumerate all resamples of the four session
-summaries.
-CPU and RAM effects are block-level percentage changes between the two factor
-levels and are interpreted descriptively.
-The experiment excludes backend, retrieval, provider, and recommendation
-latency.
+The analysis unit is one emulator session. Five retained observations first
+form one median for each metric within a session. Both session medians in a
+resource condition are then reported together with their median, minimum,
+maximum, and range. Within each block, the CPU comparison measures the
+percentage change from two to four cores at each RAM level, while the RAM
+comparison measures the change from 2 to 6~GiB at each CPU level. More
+formally, let \(L_{c,r}\) denote a block's session-median latency with \(c\)
+CPU cores and \(r\)~GiB of RAM. The CPU effect at RAM level \(r\) is
+\(100(L_{4,r}/L_{2,r}-1)\%\), and the RAM effect at CPU level \(c\) is
+\(100(L_{c,6}/L_{c,2}-1)\%\). The descriptive CPU-by-RAM interaction is
+\(100[(L_{4,6}/L_{4,2})/(L_{2,6}/L_{2,2})-1]\%\).
+The design provides a controlled comparison on one host; it does not estimate
+population-level hardware effects. The resource experiment excludes backend,
+retrieval, provider, and recommendation latency.
+
+\subsection{Seed-Preparation Protocol}
+
+The seed experiment uses arXiv:1706.03762, arXiv:2010.11929, and
+arXiv:2106.09685. Each seed defines one paired comparison. The first condition
+uses a new disposable PostgreSQL database, an empty document store, a dedicated
+Redis instance and queue, and cleared Android application data. The reuse
+condition keeps the same backend services and prepared artifacts while
+clearing the Android application data again. Timing starts immediately before
+the seed submission action and ends when a five-paper briefing and its
+live-source disclosure are visible.
+Because metadata, PostgreSQL, Redis, provider, document-store, and
+operating-system state are retained together, this contrast describes their
+aggregate reuse and supports no attribution to a single cache.
+
+The paired conditions must return the same five unique paper identifiers in
+the same order. After each timed path, three consecutive inspections must
+return the same all-succeeded job fingerprint, with no queued, running, or
+failed job. Every returned paper must have a stored version, summary, and
+chunks. The job identities, attempt counts, paper records, artifact checksums,
+database and Redis endpoints, queue and document-store locations, source and
+application identities, device, and host must match between the first and
+reuse snapshots. The three paired values are reported individually and by
+their median, minimum, maximum, and range.
+
+\subsection{Event-Synchronization Protocol}
+
+The event experiment uses ten batches containing thirty globally unique event
+identifiers. A batch passes through five ordered stages: insertion into
+the production file-backed Room database, database close and reopen, a real
+HTTP~503 response from a controlled server, upload to an isolated
+FastAPI/PostgreSQL backend, and replay of the same identifiers from a new
+file-backed local database. Only the named operation is timed in each stage.
+Validation, database preparation, and artifact collection occur outside the
+timing interval. The design yields ten values for each stage, summarized by
+success count, median, minimum, maximum, and range.
 
 \section{Metric Definitions}
 
@@ -52,75 +100,72 @@ latency.
 \MnemeTableHeader{Metric} & \MnemeTableHeader{Definition} \\
 \midrule
 Cold process start &
-Elapsed wait time from a forced process start until Android reports completion of the requested activity launch.
-The measurement does not inspect rendered UI content. \\
+AndroidX Macrobenchmark \texttt{timeToFullDisplayMs} from a forced process
+start until the application reports the cached five-paper briefing as fully
+drawn. \\
 \addlinespace
 Task foreground/resume &
-Elapsed wait time from requesting the existing task in the foreground.
-Success requires a non-empty activity wait-time record; Android's hot-start classifier is recorded separately. \\
+AndroidX Macrobenchmark \texttt{timeToInitialDisplayMs} from bringing the
+existing task to the foreground until its initial display. The test also
+checks the cached five-paper marker and the continued process and activity
+identities. \\
 \addlinespace
-Controlled state transition &
-Elapsed time from delivering a deterministic fixture result to the expected ViewModel state.
-This excludes live network time and display-frame latency. \\
-\addlinespace
-Three-stage polling &
-Elapsed time until a controlled asynchronous job advances through three client-visible stages and reaches ready state under the production one-second polling schedule. \\
-\addlinespace
-Graph DOM-ready &
-Elapsed time from loading or updating the local graph page until the expected
-DOM nodes and renderer marker are observable.
-The new-WebView path includes Compose test-rule idle synchronization and can
-therefore be affected by an active force animation.
-The metric does not establish force-layout convergence. \\
-\addlinespace
-Selection callback &
-Elapsed time from selecting a graph node to receipt of the validated identifier in the native Android layer. \\
+Graph visual-state ready &
+Elapsed time from submitting a graph payload until the expected DOM nodes and
+edges have been created, at least one layout tick has occurred, and the
+renderer has reported the first validated visual state. The metric does not
+measure final force-layout convergence. \\
 \addlinespace
 Event stage latency &
-Elapsed time for the named queue, retry, replay, upload, or readback operation.
-Controlled and live stages are summarized separately. \\
+Elapsed time for one named queue, reopen, HTTP-failure, live-upload, or
+duplicate-replay operation over a three-event batch. \\
 \addlinespace
-Median and p95 &
-The median is the sample median.
-The p95 is the nearest-rank 95th percentile, so the maximum is reported for a five-sample live stage. \\
+Seed-to-briefing latency &
+Elapsed time from the seed submission action until the live five-paper
+briefing and its source disclosure are visible. \\
+\addlinespace
+Descriptive summaries &
+The sample median, minimum, maximum, and max-minus-min range. Individual paired
+seed values and the two session medians in each resource condition are also
+retained. \\
 \bottomrule
 \end{longtable}
 
 \section{Sample Inventory}
 
-\begin{longtable}{P{4.2cm}P{1.8cm}P{2.7cm}P{3.7cm}}
-\caption{Sample inventory for the Android client evaluation.}
+\begin{longtable}{P{4.2cm}P{2.2cm}P{2.9cm}P{3.1cm}}
+\caption{Protocol sample inventory for the Android client evaluation.}
 \label{tab:android-sample-inventory}\\
 \toprule
-\MnemeTableHeader{Group} & \MnemeTableHeader{Samples} & \MnemeTableHeader{Conditions met} & \MnemeTableHeader{Included conditions} \\
+\MnemeTableHeader{Group} & \MnemeTableHeader{Analysis units} &
+\MnemeTableHeader{Retained timings} & \MnemeTableHeader{Conditions} \\
 \midrule
-Startup and resume & 40 & 40 & 20 cold starts; 20 foreground/resume operations \\
-State and polling & 160 & 160 & five state conditions at 30 trials; ten polling trials \\
-Graph timing & 400 & 400 & ready and selection; four sizes; new and existing WebView \\
-Graph-state disclosure & 90 & 90 & ready, fallback, and empty; 30 trials each \\
-Controlled event sync & 120 & 120 & queue, failure, retry, and replay; 30 trials each \\
-\midrule
-Controlled total & 810 & 810 & five result groups reported separately in Chapter~4 \\
-\addlinespace
-Live-backend stages & 25 & 25 & five stages in each of five repetitions \\
-Existing graph/app-flow tests & 11 & 11 & includes Open Paper and restored selection \\
+Startup and recovery & 8 emulator sessions & 80 & five cold and five
+foreground timings per session \\
+Graph rendering & 8 emulator sessions & 320 & four node sizes, two WebView
+states, five retained pairs \\
+Seed preparation and reuse & 3 paired seeds & 6 & first preparation and
+reuse-eligible backend state \\
+Event synchronization & 10 event batches & 50 & five ordered stages per
+three-event batch \\
 \bottomrule
 \end{longtable}
 
 \begin{table}[htbp]
 \centering
-\caption{Sample inventory for the Android resource-controlled experiment.}
+\caption{Protocol sample inventory for the Android resource-controlled experiment.}
 \label{tab:android-factorial-inventory}
-\begin{tabular}{P{2.8cm}P{2.0cm}P{2.1cm}P{2.7cm}P{3.0cm}}
+\begin{tabular}{P{3.0cm}P{2.4cm}P{3.2cm}P{3.2cm}}
 \toprule
-\MnemeTableHeader{Configuration} & \MnemeTableHeader{Independent sessions} & \MnemeTableHeader{Controlled samples} & \MnemeTableHeader{Successful samples} & \MnemeTableHeader{Functional tests in block 1} \\
+\MnemeTableHeader{Configuration} & \MnemeTableHeader{Sessions} &
+\MnemeTableHeader{Startup timings} & \MnemeTableHeader{Graph timings} \\
 \midrule
-2 cores / 2~GiB & 4 & 3{,}240 & 3{,}240 & 11 of 11 \\
-2 cores / 6~GiB & 4 & 3{,}240 & 3{,}240 & 11 of 11 \\
-4 cores / 2~GiB & 4 & 3{,}240 & 3{,}240 & 11 of 11 \\
-4 cores / 6~GiB & 4 & 3{,}240 & 3{,}240 & 11 of 11 \\
+2 cores / 2~GiB & 2 & 20 & 80 \\
+2 cores / 6~GiB & 2 & 20 & 80 \\
+4 cores / 2~GiB & 2 & 20 & 80 \\
+4 cores / 6~GiB & 2 & 20 & 80 \\
 \midrule
-Total & 16 & 12{,}960 & 12{,}960 & 44 of 44 \\
+Total & 8 & 80 & 320 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -128,19 +173,40 @@ Total & 16 & 12{,}960 & 12{,}960 & 44 of 44 \\
 
 \section{Success Conditions and Retained Artifacts}
 
-A cold or foreground/resume launch succeeds when \texttt{am start -W} returns a non-empty wait-time record for the requested activity.
-This condition does not inspect rendered UI content.
-A content-state trial succeeds when the ViewModel exposes the expected content origin or retryable error.
-A polling trial succeeds when all three processing stages are observed in order and the paper reaches ready state.
-A graph trial succeeds when the page reports ready and the selected identifier reaches the native client.
-Ready, fallback, and empty tests additionally require the corresponding reader-visible disclosure.
+A cached cold launch succeeds when the benchmark records a positive
+fully-drawn time after the five-paper cached briefing has been displayed. A
+foreground recovery succeeds when a positive initial-display time is recorded
+and the expected paper count and content source are present while the process
+and activity identifiers remain unchanged. Each session must contain exactly
+five analyzed values for both launch scenarios, obtained from the prescribed
+AndroidX metrics, and both benchmark tasks must complete successfully.
 
-An event trial succeeds when the local queue and reservation state match the expected stage.
-After a retryable failure, the batch must return to pending state.
-After success, accepted and duplicate counts must account for the full batch.
-For the live trace, each repetition must queue three events, recover from the injected failure, upload three new identifiers, recognize all three on replay, and return a live-origin briefing to the client.
-Briefing entry count and preference-model version are recorded as outcomes and do not determine trial success.
+A graph timing succeeds when the renderer reaches the first validated visual
+state with the expected node and edge counts. The recorded WebView state must
+match the new or reused phase. Validation also requires the ascending node
+order in the first block, the descending order in the second, positive
+durations, complete pairs, matching render and paired-WebView identifiers, and
+the full set of observations in each session.
 
-The retained evaluation package contains direct comma-separated measurements, an environment record, a run manifest without the authentication token, connected Android test XML, machine-readable summaries, and the vector figures used in Chapter~4.
-The five live briefing responses contain zero entries and retain preference-model version 1.
-Those values remain part of the reproducibility record because they bound the event-loop conclusion.
+A seed pair succeeds when both conditions display exactly five live papers in
+the same order. The settled backend state must contain successful jobs and the
+required summary, version, and chunk artifacts for all five papers. Job
+identities, attempt counts, and artifact checksums must remain equal across the
+pair.
+
+An event batch succeeds when all three identifiers are pending after the queue
+write and database reopen, remain pending with one recorded attempt after the
+HTTP~503 response, become synchronized after the live upload, and are
+recognized as three duplicates on replay. The controlled server must receive
+the expected three-event request body. The live backend must report three
+accepted and zero duplicate identifiers on the first upload, followed by zero
+accepted and three duplicate identifiers when a new local database replays the
+same UUIDs. The three replayed events must also reach the locally synchronized
+state.
+
+The evaluation record retains raw timing rows, native Macrobenchmark output,
+graph test output, environment records, non-secret configuration manifests,
+machine-readable summaries, and the figures generated from validated data.
+An unsuccessful acquisition remains under its original run identifier and is
+excluded from the formal summary. The runner performs no automatic retry; a
+new acquisition uses a new run identifier.
