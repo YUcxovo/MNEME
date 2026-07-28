@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added Android explicit-interest editing with validated add, edit, and delete actions,
+  frozen-contract preference persistence, briefing refresh, failure recovery, and retained
+  client evaluation runners.
 - Added Android citation-graph exploration with frozen API binding, a local d3 v7 WebView
   renderer, persistent node selection, and paper-detail navigation.
 - Added contract-aligned Android behavioral-event capture for visible paper impressions,
