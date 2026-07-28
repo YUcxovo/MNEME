@@ -1,0 +1,11 @@
+{
+  "api_request_duration_ms": 26718.259,
+  "candidate_source": "citation_graph",
+  "duration_ms": 28458.372,
+  "paper_count": 5,
+  "paper_ids": "9a5f6db5-24df-4c31-80af-b1c36119764e;619bf8d4-ca5c-456d-9047-59f69dee2a34;23be5347-5e66-4d32-8588-ea2d15353220;68779d08-847b-46bd-bc99-aaae7d9bee6e;d32265e1-1158-4a9e-bd1a-b4c591ffa75d",
+  "passed": true,
+  "schema_version": "seed-first-initialization-trial-validation-v1",
+  "seed_arxiv_id": "1706.03762",
+  "trial_id": "trial_01"
+}

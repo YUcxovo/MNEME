@@ -1,0 +1,9 @@
+{
+  "schema_version": "seed-first-initialization-trial-status-v1",
+  "status": "passed",
+  "stage": "trial_01_immediate_validation",
+  "reason": null,
+  "recorded_at_utc": "2026-07-28T21:33:45Z",
+  "measurement_invocations": 1,
+  "automatic_retry_performed": false
+}
