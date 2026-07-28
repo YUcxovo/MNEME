@@ -16,6 +16,7 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -100,53 +101,59 @@ fun MnemeApp(
 ) {
     val onboardingState by viewModel.onboardingState.collectAsStateWithLifecycle()
     val snapshot = viewModel.collectUiSnapshot()
-    when (val current = onboardingState) {
-        OnboardingUiState.Checking ->
-            Box(
-                modifier = modifier.fillMaxSize().testTag("briefing-restore-loading"),
-                contentAlignment = Alignment.Center,
-            ) {
-                LoadingState(message = stringResource(R.string.briefing_restore_loading))
-            }
-        OnboardingUiState.AwaitingSeed ->
-            SeedOnboardingScreen(
-                initialReference = "",
-                errorMessage = null,
-                onSubmit = viewModel::initializeFromSeed,
-                modifier = modifier,
-            )
-        is OnboardingUiState.Loading ->
-            Box(
-                modifier = modifier.fillMaxSize().testTag("seed-onboarding-loading"),
-                contentAlignment = Alignment.Center,
-            ) {
-                LoadingState(message = stringResource(R.string.onboarding_loading))
-            }
-        is OnboardingUiState.Error ->
-            SeedOnboardingScreen(
-                initialReference = current.arxivReference,
-                errorMessage = current.message,
-                onSubmit = viewModel::initializeFromSeed,
-                modifier = modifier,
-            )
-        OnboardingUiState.Ready ->
-            MnemeAppScaffold(
-                snapshot = snapshot,
-                actions =
-                    MnemeUiActions(
-                        refreshBriefing = viewModel::refreshBriefing,
-                        recordPaperImpressions = viewModel.behavioralEvents::recordPaperImpressions,
-                        recordPaperOpened = viewModel.behavioralEvents::recordPaperOpened,
-                        requestPaper = { paperId -> viewModel.loadPaper(paperId) },
-                        retryPaper = { paperId -> viewModel.loadPaper(paperId, force = true) },
-                        requestQa = viewModel::askQuestion,
-                        requestGraph = { paperId -> viewModel.loadGraph(paperId) },
-                        retryGraph = { paperId -> viewModel.loadGraph(paperId, force = true) },
-                        saveInterests = viewModel::saveInterests,
-                    ),
-                onOpenSource = onOpenSource,
-                modifier = modifier,
-            )
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        contentColor = MaterialTheme.colorScheme.onBackground,
+    ) {
+        when (val current = onboardingState) {
+            OnboardingUiState.Checking ->
+                Box(
+                    modifier = modifier.fillMaxSize().testTag("briefing-restore-loading"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LoadingState(message = stringResource(R.string.briefing_restore_loading))
+                }
+            OnboardingUiState.AwaitingSeed ->
+                SeedOnboardingScreen(
+                    initialReference = "",
+                    errorMessage = null,
+                    onSubmit = viewModel::initializeFromSeed,
+                    modifier = modifier,
+                )
+            is OnboardingUiState.Loading ->
+                Box(
+                    modifier = modifier.fillMaxSize().testTag("seed-onboarding-loading"),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    LoadingState(message = stringResource(R.string.onboarding_loading))
+                }
+            is OnboardingUiState.Error ->
+                SeedOnboardingScreen(
+                    initialReference = current.arxivReference,
+                    errorMessage = current.message,
+                    onSubmit = viewModel::initializeFromSeed,
+                    modifier = modifier,
+                )
+            OnboardingUiState.Ready ->
+                MnemeAppScaffold(
+                    snapshot = snapshot,
+                    actions =
+                        MnemeUiActions(
+                            refreshBriefing = viewModel::refreshBriefing,
+                            recordPaperImpressions =
+                                viewModel.behavioralEvents::recordPaperImpressions,
+                            recordPaperOpened = viewModel.behavioralEvents::recordPaperOpened,
+                            requestPaper = { paperId -> viewModel.loadPaper(paperId) },
+                            retryPaper = { paperId -> viewModel.loadPaper(paperId, force = true) },
+                            requestQa = viewModel::askQuestion,
+                            requestGraph = { paperId -> viewModel.loadGraph(paperId) },
+                            retryGraph = { paperId -> viewModel.loadGraph(paperId, force = true) },
+                            saveInterests = viewModel::saveInterests,
+                        ),
+                    onOpenSource = onOpenSource,
+                    modifier = modifier,
+                )
+        }
     }
 }
 
