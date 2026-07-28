@@ -116,7 +116,11 @@ from urllib.parse import urlparse
 
 local_hosts = {"localhost", "127.0.0.1", "::1"}
 postgres = urlparse(os.environ["POSTGRES_ADMIN_URL"])
-if postgres.scheme not in {"postgresql", "postgres"} or postgres.hostname not in local_hosts:
+local_unix_socket = postgres.hostname is None and not postgres.netloc
+if (
+    postgres.scheme not in {"postgresql", "postgres"}
+    or (postgres.hostname not in local_hosts and not local_unix_socket)
+):
     raise SystemExit("PostgreSQL admin URL must target a local PostgreSQL server.")
 if postgres.path in {"", "/"}:
     raise SystemExit("PostgreSQL admin URL must name a maintenance database.")
@@ -133,7 +137,11 @@ import os
 from urllib.parse import urlsplit, urlunsplit
 
 parts = urlsplit(os.environ["URL_VALUE"])
-print(urlunsplit((parts.scheme, parts.netloc, "/" + os.environ["DATABASE_NAME"], "", "")))
+database = os.environ["DATABASE_NAME"]
+if parts.netloc:
+    print(urlunsplit((parts.scheme, parts.netloc, "/" + database, "", "")))
+else:
+    print(f"{parts.scheme}:///{database}")
 PY
 }
 
