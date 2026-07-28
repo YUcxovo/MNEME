@@ -615,12 +615,13 @@ The behavior-model database migration was additionally exercised in both directi
 
 The Android suite uses JUnit-based unit tests for ViewModel and repository
 logic, Compose UI tests for screen behavior, and Gradle-orchestrated static
-analysis with ktlint, detekt, and Android lint. The performance evaluation
-contains four focused groups: visible response and recovery, citation-graph
-rendering, emulator-resource sensitivity, and event synchronization. Visible
-response and recovery covers cached launch, foreground return, and a paired
-live-backend seed-to-briefing measurement under first and reuse-eligible
-conditions. Each timed operation has a defined endpoint and success condition.
+analysis with ktlint, detekt, and Android lint. The client performance
+evaluation covers application startup, foreground recovery, citation-graph
+display, and event synchronization. Startup, recovery, and graph display are
+also measured under four controlled CPU-and-RAM allocations. A separate
+end-to-end timing records the first five-paper briefing produced from each of
+three seed papers. Each timed operation has a defined endpoint and success
+condition.
 Raw observations are retained, and the analysis checks the expected sample
 count and success fields before calculating summaries. The small samples from
 one host are reported through the individual values, success counts, medians,
@@ -631,8 +632,8 @@ an Android~14 (API~34) Pixel~6 emulator. The resource experiment combines two
 and four virtual processors with 2 and 6~GiB of emulator RAM. Two blocks use
 opposite configuration orders, giving two separately cold-booted sessions per
 resource condition. Each benchmark method records six observations of its
-own: the first is retained as a warm-up and the following five form the
-analyzed sample. A cached cold
+own: the first remains in the raw record as a warm-up, and the following five
+form the analyzed sample. A cached cold
 launch ends when the five-paper briefing has been drawn. Foreground recovery
 uses AndroidX's initial-display metric and requires the same process, activity,
 and cached briefing to remain active.
@@ -645,32 +646,35 @@ The session is the analysis unit: repeated observations first form one session
 median, and the two session medians in each resource condition are retained in
 the summary.
 
-The seed-preparation experiment uses three fixed arXiv seeds. For each seed,
-the first condition starts with an empty disposable backend and cleared
-Android application data. The paired reuse condition preserves the backend
-state and clears the Android data again. Timing begins immediately before
-seed submission and ends when the five-paper briefing and its live-source
-disclosure are visible. The analysis requires the same ordered paper
-identifiers in both conditions.
-Snapshots taken after each condition must show the same settled job identities
-and attempt counts, together with matching checksums for the stored paper
-versions, summaries, and chunks.
+The seed-initialization experiment uses three fixed arXiv seeds. Each
+observation starts with cleared Android application data, a new user, an empty
+PostgreSQL database, a new Redis instance, and empty document storage. Host
+caches and live external-provider conditions remain in their current state.
+Timing begins immediately before seed submission and ends when the interface
+displays five papers identified as live backend content. Validation checks five
+unique paper identifiers, matches their displayed order against the stored
+briefing, confirms that the input seed is present, and records the processing
+status, paper version, summary, chunks, jobs, and stored files for every
+displayed paper.
 
 Event synchronization is measured in ten batches of three newly generated
-event identifiers. Every batch writes the events to the production
-file-backed Room database, closes and reopens the database, receives a real
-HTTP~503 response from a controlled server, uploads the pending events to an
-isolated backend, and replays the same identifiers. The success conditions
+event identifiers. Every batch writes the events to the application's
+file-backed Room database, closes and reopens the database, receives an
+HTTP~503 response from a controlled local server, uploads the pending events
+to an isolated backend, and replays the same identifiers. The success conditions
 cover queue persistence, pending state after the retryable failure, acceptance
 of the new identifiers, and duplicate recognition during replay. Validation
-and database setup are kept outside the timing boundary for each stage.
+and database setup are kept outside the timing boundary for each stage. The
+upload following the HTTP~503 response is an explicit synchronization attempt,
+so this protocol measures state preservation through the failure and the next
+client request.
 
 Three research-evaluation harnesses measure behavioral ranking, explicit-interest correction, and grounded assistance.
 The behavior model is evaluated with twelve deterministic synthetic traces spanning cold start, stable interest, recent interest shift, exposed and unexposed negative feedback, repeated interactions with one paper, contradictory feedback, incomplete embedding coverage, and duplicate replay.
 Four headline systems, recency only, explicit-topic matching with recency, the earlier signed single-timescale profile, and the confidence-calibrated contrastive model of Section~\ref{subsec:backend-behavior}, invoke the production aggregation and recommendation functions. Five single-mechanism ablations use the same functions.
 Ranking quality is measured with graded nDCG@5, Recall@5, and reciprocal rank. The cold-start trace defines no relevance judgments and is excluded, leaving eleven applicable traces. Paired differences carry fixed-seed percentile bootstrap intervals over 10{,}000 resamples and are interpreted descriptively because the scenarios were designed for mechanism coverage and were not sampled from a user population.
 
-The explicit-interest experiment isolates direct correction from behavioral inference. Its frozen fixture contains eight synthetic candidates, two each for attention, quantum computing, robotics, and databases, with publication time held constant. The production ranking function evaluates four successive profiles: attention alone; attention with quantum added; quantum replaced by robotics; and robotics deleted. One record is retained for every candidate and state, including rank, score, reasons, and the presence of the expected topic-match reason. Four transition checks state the expected score direction before analysis. API tests separately replace the stored topic list and request the next recommended digest, while repository tests verify normalization, persistence, and rejection of a digest older than the preference update.
+The explicit-interest experiment isolates direct correction from behavioral inference. Its frozen fixture contains eight synthetic candidates, two each for attention, quantum computing, robotics, and databases, with publication time held constant. The production ranking function evaluates four successive profiles: attention alone; attention with quantum added; quantum replaced by robotics; and robotics deleted. One record is retained for every candidate and state, including rank, score, reasons, and the presence of the expected topic-match reason. Four transition checks state the expected score direction before analysis. API tests separately replace the stored topic list and request the next recommended digest, while client data-layer tests verify normalization, persistence, and rejection of a digest older than the preference update.
 
 The grounded-assistance harness drives the deployed retrieval and answer pipeline over the fifteen pinned fixtures described under Back-end Development.
 Its live flagship run used Claude Opus~4.8 (\nolinkurl{claude-opus-4-8}) with prompt version \texttt{qa-v2}, top-eight retrieval with two context anchors, rerank to four evidence chunks, a 0.25 evidence threshold, a 512-token output cap, and local \texttt{fastembed} embeddings. The 384-dimension vectors are L2-normalized and zero-padded into the 1{,}536-dimension store, which leaves cosine ordering unchanged.
@@ -678,7 +682,14 @@ The complete configuration is stored with the evaluation record, and every compl
 
 \subsection{UI Testing}
 
-The client's visible-state machinery was exercised in controlled trials that deliver deterministic results to the ViewModel layer and verify the resulting state and disclosure label.
+The client's visible-state machinery was exercised through connected-device
+instrumentation on the Android~14 emulator. Each content-state scenario used
+three warm-up iterations followed by 30 retained trials. Timing begins when
+the state-producing ViewModel action or construction begins and ends when the
+expected observable state and content-origin disclosure are present. The graph
+disclosure measurement likewise used three warm-ups and 30 retained Compose UI
+trials per status, timed from a graph-state update until the corresponding
+status label appeared in the UI semantics tree.
 Five content-state conditions each completed 30 of 30 trials with the expected
 outcome: a live seed transition, a cached-briefing ViewModel transition, a
 cached offline disclosure, a cached server-failure disclosure, and an
@@ -691,7 +702,7 @@ Interactive graph behavior was verified by the graph and app-flow suite, which p
 Together, these results establish the tested graph presentation, selection, navigation, and restoration behaviors.
 The formative five-participant usability study that motivated the graph's redesign is design-stage evidence and is reported in Chapter~3.
 
-The interest editor was exercised as one complete device path. The test edited an existing topic, removed another, added a new topic, saved the profile, navigated away, and returned to the interest screen. The updated topics remained visible after the round trip. Repository tests additionally cover canonical server values, preservation of followed authors, local caching, refresh ordering, and failure without a false local success state.
+The interest editor was exercised as one complete device path. The test edited an existing topic, removed another, added a new topic, saved the profile, navigated away, and returned to the interest screen. The updated topics remained visible after the round trip. Client data-layer tests additionally cover canonical server values, preservation of followed authors, local caching, refresh ordering, and a failed save that leaves the last confirmed local state unchanged.
 
 \subsection{Acceptance Testing for Features}
 
@@ -729,14 +740,14 @@ Pass \\
 \MnemeRowRule
 Paper preparation &
 Start the seed workflow &
-Show processing until preparation completes &
+Show processing until five candidates are returned &
 The preparation state remained visible before the briefing appeared &
 Pass \\
 \MnemeRowRule
 Initial briefing &
 Complete preparation from an empty database &
-Display five prepared candidate papers &
-The live briefing contained five papers prepared from the seed &
+Display five live candidate papers &
+The live briefing contained five candidates selected from the seed &
 Pass \\
 \MnemeRowRule
 Paper detail &
@@ -826,20 +837,23 @@ Pass \\
 Event synchronization &
 Queue, retry, and replay event identifiers &
 Preserve pending events, upload once, and acknowledge duplicates &
-All controlled stages passed; five live repetitions accepted three new
-identifiers and marked all three replays as duplicates &
+Ten of ten batches retained three pending events through database reopening
+and HTTP~503; the isolated backend accepted 30 unique identifiers and
+classified all 30 replays as duplicates &
 Pass \\
 \end{longtable}
 \endgroup
 
 The table follows the product path shown in
-Figures~\ref{fig:android-seed-flow}--\ref{fig:android-recovery-flow}. Each row
-records an executed action with a retained screenshot, connected-device test,
-or raw measurement. For the literature-representation features, the decisive
-backend check is revision isolation: an API test asserts that question
-answering scoped to one paper revision cannot retrieve chunks belonging to
-another. Idempotent re-preparation is covered by deterministic chunking and
-content-hash tests.
+Figures~\ref{fig:android-seed-flow}--\ref{fig:android-recovery-flow}. The
+onboarding, reading, question-answering, and graph rows were exercised in the
+end-to-end device path. Controlled connected-device trials cover the recovery
+rows; the interest-editor device test and API loop cover preference editing;
+and the ten-batch protocol covers event synchronization. For the
+literature-representation features, the decisive backend check is revision
+isolation: an API test asserts that question answering scoped to one paper
+revision cannot retrieve chunks belonging to another. Idempotent
+re-preparation is covered by deterministic chunking and content-hash tests.
 
 For the assistance features, acceptance rests on refusal and verification behavior.
 Tests cover refusal below the evidence threshold and through the model-side insufficient-evidence marker, citation-marker validation against the evidence list, and the source-match labeling of answers.
@@ -848,32 +862,40 @@ The evaluation harness carries its own contract tests for fixture pinning, readi
 
 For explicit-interest correction, an API-level closed-loop test first requested a briefing under an attention topic, replaced the stored topic with robotics, and requested another briefing. The top result changed from the attention candidate to the robotics candidate, and the deterministic reason changed from an attention match to a robotics match. This test establishes the route-level propagation of the update. The controlled scoring experiment reported below measures the corresponding candidate-level changes across addition, replacement, and deletion.
 
-For the interaction loop, acceptance was measured end to end.
-In controlled trials isolating the client queue from network variability, 30 of 30 trials each succeeded for the durable queue write, the injected retryable failure, the subsequent retry, and the duplicate replay.
-A live trace then exercised the same client coordinator against a running backend in five repetitions: each queued three new events, recovered from an injected retryable failure, uploaded the batch, replayed the same identifiers, and read a briefing back through the standard client data path.
-Every upload accepted three new identifiers, every replay was acknowledged as a duplicate, and every readback returned live-backend content carrying preference-model version~1, the profile version deployed when the trace was recorded.
-The digest returned during this trace was empty because the evaluation database held no paper inside the active fourteen-day briefing window; the trace therefore demonstrates the reachability and duplicate safety of the full cross-layer path, while recommendation content itself is exercised by the scorer tests described above.
+For the interaction loop, ten sequential three-event batches exercised the
+file-backed client queue and an isolated backend. Every batch preserved its
+pending events after the Room database was closed and reopened, kept them
+pending after an HTTP~503 response, and synchronized them on the next explicit
+attempt. The first uploads accepted all 30 unique identifiers, while replaying
+the same identifiers from new local databases produced 30 duplicate
+acknowledgements and locally synchronized rows. The backend contained exactly
+30 events after the experiment. These results establish persistence across
+database reopening, pending-state preservation after a retryable response,
+upload on the next explicit request, and idempotent replay for the tested
+three-event batches.
 Asynchronous job visibility was verified by the three-stage paper-preparation polling flow, which completed in 10 of 10 trials.
 
-The event-loop trace above covers transport. A separate live-core acceptance evaluation carried one preregistered seed paper and one fixed free-form question through the complete seed-to-reading path against a running backend configured with its recorded production AI stack. Summarization and question answering used a live provider model with local \texttt{fastembed} embeddings, and the exact inputs and non-secret model configuration were retained with the raw results.
-The first instrumented UI trace completed all eight required stages. The seed produced a briefing of exactly five papers labeled live, the same briefing was restored from the client cache labeled cached, an opened paper presented its stored summary, and the free-form question returned a live-origin answer carrying four sources with a partial source-match label. The answer's source callback and the paper's arXiv source both opened. A six-node, five-edge citation graph rendered live around a briefing paper, and selecting a neighbor led to its ordinary paper-detail path.
+An end-to-end acceptance test connected the Android client to the running
+backend and used arXiv:1706.03762 as the initial paper. The backend returned
+five candidates and the client displayed them as live content. The same briefing
+was restored from the local cache, an opened paper displayed its stored
+summary, and a free-form question returned an answer with four source links.
+The source action and the paper's arXiv action both opened successfully. The
+paper also produced a six-node, five-edge citation graph, from which a selected
+neighbour opened through the standard paper-detail route.
 
 The corresponding user-facing states are shown in
-Figures~\ref{fig:android-reading-graph}, \ref{fig:android-qa-flow}, and
-\ref{fig:android-interest-flow}. Together they show the selected graph node,
-source-linked answer, explicit-interest update, and the paper actions used by
-the recorded live path.
+Figures~\ref{fig:android-reading-graph} and~\ref{fig:android-qa-flow}. They show
+the selected graph node, source-linked answer, and paper actions used in the
+test.
 
-A second instrumented trace began with the backend paper records already
-present and repeated the eight-stage visible path successfully. Five
-additional data-layer repetitions then exercised live loading, network
-mapping, and cache updates; all five completed.
-
-The fixed-seed protocol was extended to two additional arXiv seeds so that the same client contract was exercised beyond the initial \emph{Attention Is All You Need} seed (arXiv:1706.03762).
-Each seed independently requested a five-paper briefing, loaded a depth-two graph for the first returned paper, selected a non-centre node, and opened that paper through the standard detail path. Both paths succeeded. Seed \texttt{2010.11929} produced a six-node, five-edge graph and completed in 48{,}058.1~ms, including 48{,}022.0~ms of preparation. Seed \texttt{2106.09685} produced a seven-node, six-edge graph and completed in 46{,}597.5~ms, including 46{,}560.6~ms of preparation. Thus, briefing preparation accounted for more than 99.9\% of the measured total in both observations, while loading the prepared graph and opening a neighbor together took less than 40~ms.
-
-Together, the fixed-seed traces show that the client, API contracts, stored paper artifacts, AI pipeline, and citation-graph interaction completed the recorded live paths under the documented configurations.
-These acceptance traces establish cross-layer completion; recommendation relevance, scientific answer correctness, and graph-neighborhood usefulness are evaluated separately or left for future user studies.
+The same seed-to-graph path was exercised with
+arXiv:\nolinkurl{2010.11929} and arXiv:\nolinkurl{2106.09685}. Each seed
+produced a five-paper briefing and a multi-node citation graph, and a selected
+neighbouring paper opened through the standard detail route. The main path
+connects onboarding, reading, assistance, and graph navigation. The two
+additional paths extend the verified onboarding-to-graph sequence to two other
+seeds.
 
 The controlled behavior evaluation examines whether each interest-continuity mechanism defined in Section~\ref{subsec:backend-behavior} produces its specified effect when driven through the production scoring functions.
 Tables~\ref{tab:behavior-ranking} and~\ref{tab:behavior-paired} report the headline ranking results and the paired comparisons.
@@ -1121,8 +1143,8 @@ controlled emulator conditions.
 \caption{Session-median latency across the four emulator resource conditions.
 The startup panels use fully drawn cached cold launches and foreground
 recovery; the graph panels show the 50-node endpoint for new and reused
-WebViews. Cross markers show the two separately cold-booted session medians in
-each condition; connected circular markers show their median.}
+WebViews. Cross and plus markers identify the separately cold-booted sessions
+from Blocks~1 and~2; connected circular markers show their median.}
 \label{fig:android-resource-interactions}
 \end{figure}
 
@@ -1211,14 +1233,14 @@ the median, minimum--maximum, and range in milliseconds.}
 For all four resource conditions and both WebView states, the one-node
 endpoint was below the 12-, 25-, and 50-node endpoints. Seven of the eight
 resource-by-WebView sequences were non-monotonic from 12 to 50 nodes; the
-exception was the reused WebView at two cores and 6~GiB. The measurements
-therefore show a step between the one-node and larger payloads, but they do
-not identify its cause or establish a per-node scaling law. CPU and RAM
-comparisons also changed direction across node sizes and blocks.
+exception was the reused WebView at two cores and 6~GiB. The measurements show
+a clear step from one node to the larger payloads and no consistent ordering
+among 12, 25, and 50 nodes. CPU and RAM comparisons also changed direction
+across node sizes and blocks.
 Figure~\ref{fig:android-graph-scaling} retains the two session medians in every
-cell. The endpoint verifies the expected DOM nodes and edges, at least one
-layout tick, and the first validated visual state; it does not measure final
-force-layout convergence or graph-algorithm quality.
+cell. The endpoint captures the expected DOM nodes and edges after at least one
+layout tick. Final force-layout convergence and graph-algorithm quality lie
+outside this renderer measurement.
 
 \begin{figure}[htbp]
 \centering
@@ -1228,6 +1250,108 @@ new and reused WebViews. Connected circular markers show the median of the two
 session medians; cross and plus markers show the two retained session medians.}
 \label{fig:android-graph-scaling}
 \end{figure}
+
+\subsubsection{Seed-to-Briefing Latency}
+
+The seed-initialization experiment measured one first initialization for each
+of three fixed arXiv seeds after clearing Android, PostgreSQL, Redis, document
+storage, and user state. All three trials displayed a live briefing
+containing five unique papers, and the displayed order matched the briefing
+stored by the backend. Each trial obtained its candidates through the citation
+graph path. Table~\ref{tab:android-seed-initialization} reports the elapsed time
+from seed submission to the visible five-paper briefing.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{5.0pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Seed-to-briefing latency after clearing client and backend stores for
+three fixed arXiv papers.}
+\label{tab:android-seed-initialization}
+\begin{tabular}{lclr}
+\toprule
+\MnemeTableHeader{Seed paper} &
+\MnemeTableHeader{Candidate path} &
+\MnemeTableHeader{Visible result} &
+\MnemeTableHeader{Latency (s)} \\
+\midrule
+arXiv:1706.03762 & Citation graph & Five live papers & 28.46 \\
+arXiv:2010.11929 & Citation graph & Five live papers & 41.73 \\
+arXiv:2106.09685 & Citation graph & Five live papers & 36.50 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\FloatBarrier
+
+The three observed latencies had a median of 36.50~s, a minimum of 28.46~s,
+a maximum of 41.73~s, and a range of 13.27~s. The retained endpoint state
+contained a stored paper version, a summary, and a non-empty chunk set for
+every displayed paper. Ten of the fifteen papers were in the ready state;
+five were already available in the briefing while an embedding job continued.
+The measured endpoint is the visible live briefing; the remaining embedding
+jobs continue in the background.
+
+\subsubsection{Event Synchronization Latency}
+
+The event-synchronization experiment retained 50 valid timings from ten
+sequential three-event batches. Each batch completed the five ordered stages
+defined in the testing protocol. Table~\ref{tab:android-event-sync} reports the
+stage summaries. Queue insertion had a median of 4.24~ms, and closing and
+reopening the file-backed Room database took a median of 7.94~ms. The
+controlled HTTP~503 request completed in a median of 13.39~ms while preserving
+all three events as pending. Uploading a new batch to the isolated backend had
+a median of 26.22~ms, and replaying the same identifiers had a median of
+17.76~ms.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{6.0pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Event-synchronization latency for ten sequential three-event batches.
+Values are milliseconds.}
+\label{tab:android-event-sync}
+\begin{tabular}{lrrrrr}
+\toprule
+\MnemeTableHeader{Stage} &
+\MnemeTableHeader{Successful} &
+\MnemeTableHeader{Median} &
+\MnemeTableHeader{Minimum} &
+\MnemeTableHeader{Maximum} &
+\MnemeTableHeader{Range} \\
+\midrule
+Queue write & 10/10 & 4.24 & 2.99 & 8.71 & 5.72 \\
+Room reopen & 10/10 & 7.94 & 6.13 & 9.48 & 3.34 \\
+HTTP~503 response & 10/10 & 13.39 & 10.13 & 43.37 & 33.24 \\
+Backend upload & 10/10 & 26.22 & 19.83 & 49.19 & 29.36 \\
+Duplicate replay & 10/10 & 17.76 & 15.14 & 32.07 & 16.93 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:android-event-sync} shows every retained timing together with
+the stage median. In all ten batches, the queue and reopened database contained
+the same three pending identifiers. The HTTP~503 stage recorded one failed
+attempt and retained the pending state. The following backend upload returned
+three accepted and zero duplicate identifiers, and replay from a new local
+database returned zero accepted and three duplicate identifiers. The replayed
+rows also reached the synchronized state locally. The backend therefore stored
+30 unique events after receiving 30 first submissions and 30 replays.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.94\textwidth]{figures/mneme_e4_event_sync_latency.png}
+\caption{Latency of the five event-synchronization stages. Blue points show
+the ten retained three-event batches, and red lines show the stage medians.}
+\label{fig:android-event-sync}
+\end{figure}
+
+Each stage reports the elapsed time of its own operation. The ten batches ran
+sequentially on one emulator against one disposable backend. Database
+reopening covers a close-and-reopen cycle of the file-backed queue. After the
+controlled failure, the test issues the next synchronization request
+explicitly.
 
 On the backend side, the behavior model's in-process cost was measured with 1{,}536-dimensional vectors, five warm-up executions, and thirty recorded repetitions per scale, with inputs generated outside the timed region and output checksums verified on every repetition; Table~\ref{tab:behavior-performance} reports the distributions and Figure~\ref{fig:behavior-performance} their growth across scales.
 At the largest scale of 4{,}096 events and 1{,}000 candidates, median aggregation and ranking latencies were 115.97~ms and 197.23~ms.

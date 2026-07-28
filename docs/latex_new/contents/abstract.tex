@@ -8,9 +8,9 @@
 
 五名参与者的形成性测试中，推荐论文打开、来源核验和带引用问答均达到 5/5 完成。图谱探索观察形成了节点提示、持续选中、关系说明和“打开论文”等改进。
 
-系统评价覆盖行为建模、证据受限问答和 Android 客户端。十一组受控行为轨迹中，模型的平均 nDCG@5 为 0.92，时效性基线为 0.92；平均倒数排名从 0.88 提高到 0.94。机制实验验证了暴露门控、负向反馈、单篇论文饱和和重复事件幂等性。十五个实时问答案例中，所有返回的答案均包含通过词汇来源检查的引用，十二个可回答案例均未被错误拒答。Android 资源评价在八个分别冷启动的模拟器会话中保留了 80 个启动与恢复计时和 320 个图谱计时，全部通过协议校验。系统还完成了从种子论文到五篇论文简报、论文详情、自由问答和多节点引文图的实时流程。
+系统评价覆盖行为建模、证据受限问答和 Android 客户端。十一组受控行为轨迹中，模型的平均 nDCG@5 为 0.92，时效性基线为 0.92；平均倒数排名从 0.88 提高到 0.94。机制实验验证了暴露门控、负向反馈、单篇论文饱和和重复事件幂等性。十五个实时问答案例中，所有返回的答案均包含通过词汇来源检查的引用，十二个可回答案例均未被错误拒答。Android 资源评价在八个分别冷启动的模拟器会话中保留了 80 个启动与恢复计时和 320 个图谱计时；每次启动、恢复和图谱试验均达到预先定义的状态与内容条件。三个固定种子的首次初始化均显示了五篇实时论文，从提交到简报可见用时 28.46--41.73 秒，中位数为 36.50 秒。十组三事件同步批次在数据库重新打开和 HTTP~503 响应后保持待同步状态；隔离后端接收了 30 个唯一事件，并将随后提交的 30 个相同标识符识别为重复事件。系统还完成了从种子论文到五篇论文简报、论文详情、自由问答和多节点引文图的实时流程。
 
-本文贡献了一套连接论文版本、来源证据、行为记忆和移动状态的系统方法，并提供可复现实验证据。评价限于所报告的问答案例、受控轨迹和单一 Android 模拟器环境，词汇来源检查衡量局部文本支持。在此范围内，MNEME 验证了事件传递和移动交互闭环的可靠执行。
+本文贡献了一套连接论文版本、来源证据、行为记忆和移动状态的系统方法，并提供可复现实验证据。评价限于所报告的问答案例、受控轨迹和单一 Android 模拟器环境，词汇来源检查衡量局部文本支持。在此范围内，MNEME 验证了重复安全的事件上传和可检查的移动工作流。
 \end{abstract}
 
 {
@@ -24,8 +24,8 @@ This thesis designs and implements MNEME, a mobile-native AI research assistant 
 
 A formative study with five participants recorded 5/5 completion for opening a recommended paper, verifying a source, and using cited question answering. Graph observations led to clearer node guidance, persistent selection, relationship explanations, and a visible Open Paper action.
 
-Across eleven controlled behavior traces, the model maintained mean nDCG@5 relative to a recency baseline (0.92 versus 0.92) while increasing mean reciprocal rank from 0.88 to 0.94. Mechanism tests confirmed exposure gating, negative feedback, per-paper saturation, and duplicate-event idempotency. In fifteen live question-answering cases, every returned answer contained citations that passed the lexical source check, and none of the twelve answerable cases was falsely refused. The Android resource evaluation retained 80 startup-and-recovery timings and 320 graph timings across eight separately cold-booted emulator sessions; all protocol checks passed. The system also completed a live workflow from a seed paper to a five-paper briefing, paper detail, free-form question answering, and a multi-node citation graph.
+Across eleven controlled behavior traces, the model maintained mean nDCG@5 relative to a recency baseline (0.92 versus 0.92) while increasing mean reciprocal rank from 0.88 to 0.94. Mechanism tests confirmed exposure gating, negative feedback, per-paper saturation, and duplicate-event idempotency. In fifteen live question-answering cases, every returned answer contained citations that passed the lexical source check, and none of the twelve answerable cases was falsely refused. The Android resource evaluation retained 80 startup-and-recovery timings and 320 graph timings across eight separately cold-booted emulator sessions; every startup, recovery, and graph trial met its defined state and content checks. First initialization from each of three fixed seeds displayed five live papers in 28.46--41.73~s, with a median of 36.50~s. Ten three-event synchronization batches remained pending through database reopening and an HTTP~503 response; the isolated backend accepted all 30 unique events and identified all 30 subsequent replays as duplicates. The system also completed a live workflow from a seed paper to a five-paper briefing, paper detail, free-form question answering, and a multi-node citation graph.
 
-The contribution is an implemented method connecting paper revision identity, source evidence, behavioral memory, and visible mobile state, supported by reproducible evaluation evidence. The evaluation covers the stated question set, controlled traces, and one Android emulator environment; lexical source checking measures local textual support. Within this scope, MNEME demonstrates reliable event delivery and an inspectable mobile workflow.
+The contribution is an implemented method connecting paper revision identity, source evidence, behavioral memory, and visible mobile state, supported by reproducible evaluation evidence. The evaluation covers the stated question set, controlled traces, and one Android emulator environment; lexical source checking measures local textual support. Within this scope, MNEME demonstrates duplicate-safe event upload and an inspectable mobile workflow.
 \end{abstract}
 }

@@ -9,7 +9,7 @@ The Android client measurements use an Android~14/API~34 Google APIs
 x86\_64 emulator with a Pixel~6 device profile. The device profile, display
 configuration, Android image, WebView package, host CPU affinity, application
 build, and measurement code remain fixed within the resource experiment. The
-seed-preparation and event-synchronization experiments connect the emulator
+seed-initialization and event-synchronization experiments connect the emulator
 to disposable local backend services through the emulator host-network route.
 Authentication values are supplied at run time and excluded from the retained
 artifacts.
@@ -51,40 +51,35 @@ CPU cores and \(r\)~GiB of RAM. The CPU effect at RAM level \(r\) is
 \(100(L_{4,r}/L_{2,r}-1)\%\), and the RAM effect at CPU level \(c\) is
 \(100(L_{c,6}/L_{c,2}-1)\%\). The descriptive CPU-by-RAM interaction is
 \(100[(L_{4,6}/L_{4,2})/(L_{2,6}/L_{2,2})-1]\%\).
-The design provides a controlled comparison on one host; it does not estimate
-population-level hardware effects. The resource experiment excludes backend,
-retrieval, provider, and recommendation latency.
+The design provides a controlled comparison among four emulator allocations
+on one host. Its timed boundary covers Android launch, foreground return, and
+graph display.
 
-\subsection{Seed-Preparation Protocol}
+\subsection{Seed-Initialization Protocol}
 
 The seed experiment uses arXiv:1706.03762, arXiv:2010.11929, and
-arXiv:2106.09685. Each seed defines one paired comparison. The first condition
-uses a new disposable PostgreSQL database, an empty document store, a dedicated
-Redis instance and queue, and cleared Android application data. The reuse
-condition keeps the same backend services and prepared artifacts while
-clearing the Android application data again. Timing starts immediately before
-the seed submission action and ends when a five-paper briefing and its
-live-source disclosure are visible.
-Because metadata, PostgreSQL, Redis, provider, document-store, and
-operating-system state are retained together, this contrast describes their
-aggregate reuse and supports no attribution to a single cache.
+arXiv:2106.09685. Each measurement begins with a new disposable PostgreSQL
+database, an empty document store, a dedicated Redis instance and queue, a new
+user, and cleared Android application data. Timing starts immediately before
+the seed submission action and ends when the Android interface displays a
+five-paper briefing identified as live backend content.
+The fresh condition applies to Android, PostgreSQL, Redis, document storage,
+queue, and user state. Host caches and live external-provider conditions
+remain in their current state.
 
-The paired conditions must return the same five unique paper identifiers in
-the same order. After each timed path, three consecutive inspections must
-return the same all-succeeded job fingerprint, with no queued, running, or
-failed job. Every returned paper must have a stored version, summary, and
-chunks. The job identities, attempt counts, paper records, artifact checksums,
-database and Redis endpoints, queue and document-store locations, source and
-application identities, device, and host must match between the first and
-reuse snapshots. The three paired values are reported individually and by
-their median, minimum, maximum, and range.
+Each seed is measured once through the ordinary application and backend path.
+Validation requires five unique paper identifiers, the same ordering in the
+stored briefing, and a backend record for the input seed. The processing,
+version, summary, chunk, job, and file state associated with every displayed
+paper is retained with the measurement. The three observations are reported
+individually and summarized by their median, minimum, maximum, and range.
 
 \subsection{Event-Synchronization Protocol}
 
 The event experiment uses ten batches containing thirty globally unique event
 identifiers. A batch passes through five ordered stages: insertion into
-the production file-backed Room database, database close and reopen, a real
-HTTP~503 response from a controlled server, upload to an isolated
+the application's file-backed Room database, database close and reopen, an
+HTTP~503 response from a controlled local server, upload to an isolated
 FastAPI/PostgreSQL backend, and replay of the same identifiers from a new
 file-backed local database. Only the named operation is timed in each stage.
 Validation, database preparation, and artifact collection occur outside the
@@ -113,11 +108,11 @@ identities. \\
 Graph visual-state ready &
 Elapsed time from submitting a graph payload until the expected DOM nodes and
 edges have been created, at least one layout tick has occurred, and the
-renderer has reported the first validated visual state. The metric does not
-measure final force-layout convergence. \\
+renderer has reported the first validated visual state. Force-layout
+convergence continues after this endpoint. \\
 \addlinespace
 Event stage latency &
-Elapsed time for one named queue, reopen, HTTP-failure, live-upload, or
+Elapsed time for one named queue, reopen, HTTP-failure, backend-upload, or
 duplicate-replay operation over a three-event batch. \\
 \addlinespace
 Seed-to-briefing latency &
@@ -125,8 +120,8 @@ Elapsed time from the seed submission action until the live five-paper
 briefing and its source disclosure are visible. \\
 \addlinespace
 Descriptive summaries &
-The sample median, minimum, maximum, and max-minus-min range. Individual paired
-seed values and the two session medians in each resource condition are also
+The sample median, minimum, maximum, and max-minus-min range. Individual seed
+values and the two session medians in each resource condition are also
 retained. \\
 \bottomrule
 \end{longtable}
@@ -144,8 +139,8 @@ Startup and recovery & 8 emulator sessions & 80 & five cold and five
 foreground timings per session \\
 Graph rendering & 8 emulator sessions & 320 & four node sizes, two WebView
 states, five retained pairs \\
-Seed preparation and reuse & 3 paired seeds & 6 & first preparation and
-reuse-eligible backend state \\
+Seed initialization & 3 seeds & 3 & one initialization after clearing client
+and backend stores per seed \\
 Event synchronization & 10 event batches & 50 & five ordered stages per
 three-event batch \\
 \bottomrule
@@ -158,7 +153,7 @@ three-event batch \\
 \begin{tabular}{P{3.0cm}P{2.4cm}P{3.2cm}P{3.2cm}}
 \toprule
 \MnemeTableHeader{Configuration} & \MnemeTableHeader{Sessions} &
-\MnemeTableHeader{Startup timings} & \MnemeTableHeader{Graph timings} \\
+\MnemeTableHeader{Startup and recovery timings} & \MnemeTableHeader{Graph timings} \\
 \midrule
 2 cores / 2~GiB & 2 & 20 & 80 \\
 2 cores / 6~GiB & 2 & 20 & 80 \\
@@ -188,15 +183,15 @@ order in the first block, the descending order in the second, positive
 durations, complete pairs, matching render and paired-WebView identifiers, and
 the full set of observations in each session.
 
-A seed pair succeeds when both conditions display exactly five live papers in
-the same order. The settled backend state must contain successful jobs and the
-required summary, version, and chunk artifacts for all five papers. Job
-identities, attempt counts, and artifact checksums must remain equal across the
-pair.
+A seed initialization succeeds when the interface displays exactly five unique
+papers identified as live backend content. The corresponding backend state
+must contain the same ordered briefing and input seed, together with the
+processing status, paper version, summary, chunks, jobs, and stored files for
+all five papers.
 
 An event batch succeeds when all three identifiers are pending after the queue
 write and database reopen, remain pending with one recorded attempt after the
-HTTP~503 response, become synchronized after the live upload, and are
+HTTP~503 response, become synchronized after the isolated-backend upload, and are
 recognized as three duplicates on replay. The controlled server must receive
 the expected three-event request body. The live backend must report three
 accepted and zero duplicate identifiers on the first upload, followed by zero
@@ -204,9 +199,25 @@ accepted and three duplicate identifiers when a new local database replays the
 same UUIDs. The three replayed events must also reach the locally synchronized
 state.
 
-The evaluation record retains raw timing rows, native Macrobenchmark output,
-graph test output, environment records, non-secret configuration manifests,
-machine-readable summaries, and the figures generated from validated data.
-An unsuccessful acquisition remains under its original run identifier and is
-excluded from the formal summary. The runner performs no automatic retry; a
-new acquisition uses a new run identifier.
+The retained evaluation material contains raw timing rows, native
+Macrobenchmark output, graph test output, environment records, non-secret
+configuration, machine-readable summaries, and figures generated from the
+validated observations.
+
+All three seed initializations satisfied the five-paper success condition.
+The elapsed times were 28.46~s for arXiv:1706.03762, 41.73~s for
+arXiv:2010.11929, and 36.50~s for arXiv:2106.09685. Their median was
+36.50~s, with a minimum of 28.46~s, a maximum of 41.73~s, and a range of
+13.27~s. All three runs used citation-graph candidates. The retained endpoint
+state contained one or more versions, one summary, and a non-empty chunk set
+for every displayed paper. Ten displayed papers were ready, and five were
+available as partial records while one embedding job for each remained in
+progress.
+
+All ten retained event batches satisfied the five stage-specific success
+conditions, yielding 50 valid timing rows. The 30 identifiers used for the
+initial uploads were globally unique. The isolated backend contained 30 events
+after the experiment, with ten records each for paper impression, paper open,
+and question asked. First submission accepted all 30 identifiers, and replay
+recognized all 30 as duplicates while the corresponding local rows reached the
+synchronized state.
