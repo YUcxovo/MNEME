@@ -698,9 +698,12 @@ for block_index in "${!BLOCK_ORDERS[@]}"; do
                 tr -d '\r'
         )"
         webview_package="$(
-            "$ADB" -s "$current_serial" shell cmd webviewupdate getCurrentWebViewPackage 2>&1 |
+            "$ADB" -s "$current_serial" shell dumpsys webviewupdate |
+                awk -F': ' '/Current WebView package/ {print $2; exit}' |
                 tr -d '\r'
         )"
+        [[ -n "$webview_package" ]] ||
+            fail "The active WebView package could not be read from webviewupdate."
         [[ "$runtime_cpu_cores" -eq "$cpu_cores" ]] ||
             fail "Guest nproc=$runtime_cpu_cores, expected $cpu_cores."
         if [[ "$ram_mb" -eq 2048 ]]; then

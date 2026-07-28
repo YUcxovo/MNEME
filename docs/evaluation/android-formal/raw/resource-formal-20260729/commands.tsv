@@ -1,0 +1,3 @@
+scope	started_at_utc	completed_at_utc	exit_status	command
+build	2026-07-28T19:56:26Z	2026-07-28T19:57:49Z	0	timeout 20m /home/why/Project/ece441/mid_report/MNEME-e4-formal/android/gradlew -p /home/why/Project/ece441/mid_report/MNEME-e4-formal/android --no-daemon --no-configuration-cache -PMNEME_API_BASE_URL=http://127.0.0.1:9/v1/ -PMNEME_DEMO_TOKEN= ktlintCheck detekt lintDebug testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleBenchmark :benchmark:assembleBenchmark
+emulator_start	2026-07-28T19:57:49Z	2026-07-28T19:57:49Z	0	taskset -c 4-11 /home/why/Android/Sdk/emulator/emulator -avd Mneme_Factorial_API_34_Pixel6 -cores 2 -memory 2048 -wipe-data -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
