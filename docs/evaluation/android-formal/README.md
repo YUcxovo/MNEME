@@ -156,11 +156,12 @@ Do not run another emulator, Gradle build, or performance experiment in
 parallel. Do not manually delete or edit a session directory during
 acquisition.
 
-Every measurement and environment-inspection command has a `.txt`
-stdout/stderr record and a row in `commands.tsv`. Each session retains its
-source revision, script and APK hashes, emulator PID and serial, unique boot
-ID, requested and observed resources, build fingerprint, WebView package,
-host load/memory snapshots, raw Macrobenchmark artifacts, and graph artifacts.
+Every timed measurement and analysis command has a `.txt` stdout/stderr record
+and a row in `commands.tsv`. Dedicated top-level and session files retain the
+host and guest environment observations. Each session also retains its source
+revision, script and APK hashes, emulator PID and serial, unique boot ID,
+requested and observed resources, build fingerprint, WebView package, host
+load/memory snapshots, raw Macrobenchmark artifacts, and graph artifacts.
 
 If a benchmark or session step fails, the runner retains available output,
 pulls any available device artifacts, and writes `failed.json`. It does not
@@ -189,7 +190,8 @@ The analyzer treats each separately cold-booted session as the analysis unit:
 5. graph-latency curves retain the two session medians at each node count.
 
 Outputs include CSV tables, a machine-readable JSON summary, and graph/resource
-figures. With only two sessions per cell, the analyzer does not calculate p95,
-confidence intervals, significance tests, or population-level hardware
-effects. The results support descriptive comparison on the recorded host and
-emulator configuration.
+figures. In the figures, `x` and `+` identify Block 1 and Block 2 session
+medians, respectively. With only two sessions per cell, the analyzer does not
+calculate p95, confidence intervals, significance tests, or population-level
+hardware effects. The results support descriptive comparison on the recorded
+host and emulator configuration.

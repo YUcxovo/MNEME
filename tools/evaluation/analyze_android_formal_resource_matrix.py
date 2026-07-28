@@ -996,6 +996,7 @@ def plot_resource_interactions(
     output_dir: Path,
 ) -> None:
     import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
 
     metrics = (
         ("cached_cold_ms", "Cached cold start"),
@@ -1003,25 +1004,35 @@ def plot_resource_interactions(
         ("graph_new_50_ms", "50-node new WebView"),
         ("graph_reused_50_ms", "50-node reused WebView"),
     )
+    cpu_colors = {2: "#2E5EAA", 4: "#146C73"}
+    block_markers = {1: "x", 2: "+"}
     figure, axes = plt.subplots(2, 2, figsize=(9.8, 7.4))
     for axis, (metric, title) in zip(axes.flat, metrics, strict=True):
-        for cpu_cores, color in ((2, "#2E5EAA"), (4, "#146C73")):
+        for cpu_cores, color in cpu_colors.items():
             cell_medians: list[float] = []
             for ram_mb in (2048, 6144):
+                cell_summaries = sorted(
+                    (
+                        summary
+                        for summary in summaries
+                        if summary.cpu_cores == cpu_cores
+                        and summary.ram_mb == ram_mb
+                    ),
+                    key=lambda summary: summary.block,
+                )
                 cell_values = [
-                    metric_map(summary)[metric]
-                    for summary in summaries
-                    if summary.cpu_cores == cpu_cores and summary.ram_mb == ram_mb
+                    metric_map(summary)[metric] for summary in cell_summaries
                 ]
                 cell_medians.append(statistics.median(cell_values))
-                axis.scatter(
-                    [ram_mb // 1024] * len(cell_values),
-                    cell_values,
-                    color=color,
-                    alpha=0.55,
-                    marker="x",
-                    s=35,
-                )
+                for summary in cell_summaries:
+                    axis.scatter(
+                        ram_mb // 1024,
+                        metric_map(summary)[metric],
+                        color=color,
+                        alpha=0.65,
+                        marker=block_markers[summary.block],
+                        s=42,
+                    )
             axis.plot(
                 [2, 6],
                 cell_medians,
@@ -1035,8 +1046,37 @@ def plot_resource_interactions(
         axis.set_ylabel("Session median latency (ms)")
         axis.set_xticks([2, 6])
         axis.grid(axis="y")
-        axis.legend(frameon=False)
-    figure.tight_layout()
+    legend_handles = [
+        Line2D(
+            [0],
+            [0],
+            color=color,
+            marker="o",
+            linewidth=1.8,
+            label=f"{cpu_cores} CPU cores",
+        )
+        for cpu_cores, color in cpu_colors.items()
+    ]
+    legend_handles.extend(
+        Line2D(
+            [0],
+            [0],
+            color="#4B5960",
+            marker=marker,
+            linestyle="None",
+            markersize=7,
+            label=f"Block {block}",
+        )
+        for block, marker in block_markers.items()
+    )
+    figure.legend(
+        handles=legend_handles,
+        frameon=False,
+        ncol=4,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.015),
+    )
+    figure.tight_layout(rect=(0, 0, 1, 0.95))
     save_figure(figure, output_dir, "resource_interactions")
 
 
