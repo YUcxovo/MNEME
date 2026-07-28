@@ -89,6 +89,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   catalog papers when the configured recent-candidate window is empty.
 - Accepted numeric Semantic Scholar external identifiers while retaining string validation
   for arXiv identities, matching the provider's live response format.
+- Applied the Mneme theme content color to first-run and blocking onboarding
+  states so their title and status text remain readable in dark mode.
 - Restored the last complete Room-backed briefing after an Android process restart instead
   of requesting the seed paper again; fresh installs and cleared app data still onboard.
 - Preserved logical reading order for multi-column PDFs, added bounded overview evidence to
