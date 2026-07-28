@@ -4,6 +4,7 @@ import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.local.SkeletalCache
 import com.mneme.app.data.network.MnemeApiException
 import com.mneme.app.data.network.MnemeRemoteDataSource
+import com.mneme.app.data.network.PreferenceUpdateDto
 import com.mneme.app.data.network.QUESTION_MAX_LENGTH
 import com.mneme.app.data.network.QuestionDto
 import com.mneme.app.data.network.RemoteResource
@@ -37,6 +38,8 @@ interface SkeletalDataRepository {
 
     suspend fun loadBriefing(): BriefingUiModel
 
+    suspend fun updateInterests(topics: List<String>): BriefingUiModel
+
     suspend fun loadPaper(paperId: String): PaperContentResult
 
     suspend fun refreshPaper(
@@ -53,14 +56,20 @@ interface SkeletalDataRepository {
 }
 
 class ControlledFixtureDataRepository : SkeletalDataRepository {
+    private var topics = SeededSkeletalContentRepository.briefing().interests
+
     override suspend fun restoreBriefing(): BriefingUiModel = loadBriefing()
 
-    override suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel {
-        val briefing = SeededSkeletalContentRepository.briefing()
-        return briefing
+    override suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel = loadBriefing()
+
+    override suspend fun loadBriefing(): BriefingUiModel = currentBriefing()
+
+    override suspend fun updateInterests(topics: List<String>): BriefingUiModel {
+        this.topics = normalizeTopics(topics)
+        return loadBriefing()
     }
 
-    override suspend fun loadBriefing(): BriefingUiModel = SeededSkeletalContentRepository.briefing()
+    private fun currentBriefing(): BriefingUiModel = SeededSkeletalContentRepository.briefing().copy(interests = topics)
 
     override suspend fun loadPaper(paperId: String): PaperContentResult =
         SeededSkeletalContentRepository.paper(paperId)?.let(PaperContentResult::Ready)
@@ -141,6 +150,36 @@ class NetworkSkeletalDataRepository(
             cache.getBriefing()?.toBriefing() ?: throw error
         }
 
+    override suspend fun updateInterests(topics: List<String>): BriefingUiModel {
+        val normalized = normalizeTopics(topics)
+        val current = remote.getPreferences()
+        val updated =
+            remote.updatePreferences(
+                PreferenceUpdateDto(
+                    topics = normalized,
+                    followedAuthors = current.followedAuthors,
+                ),
+            )
+        val digest =
+            when (val result = remote.generateRecommendedDigest()) {
+                is RemoteResource.Ready -> result.value
+                is RemoteResource.Accepted ->
+                    throw ContentPendingException(
+                        "The updated research briefing is still being prepared. Try saving again shortly.",
+                    )
+            }
+        val refreshedAt = nowEpochMillis()
+        cache.storeBriefing(updated, digest, refreshedAt)
+        return digest.toBriefing(
+            interests = updated.topics,
+            disclosure =
+                disclosure(
+                    ContentOrigin.LIVE_BACKEND,
+                    "Recommendations use your updated research interests.",
+                ),
+        )
+    }
+
     override suspend fun loadPaper(paperId: String): PaperContentResult =
         try {
             val paper = remote.getPaper(paperId)
@@ -220,6 +259,28 @@ class NetworkSkeletalDataRepository(
         const val GRAPH_NODE_LIMIT = 50
     }
 }
+
+internal fun normalizeTopics(topics: List<String>): List<String> {
+    require(topics.size <= MAX_INTEREST_TOPICS) {
+        "No more than $MAX_INTEREST_TOPICS research interests are allowed."
+    }
+    val normalized = mutableListOf<String>()
+    val seen = mutableSetOf<String>()
+    topics.forEach { topic ->
+        val trimmed = topic.trim()
+        require(trimmed.isNotEmpty()) { "Research interests cannot be blank." }
+        require(trimmed.length <= MAX_INTEREST_LENGTH) {
+            "Each research interest must not exceed $MAX_INTEREST_LENGTH characters."
+        }
+        if (seen.add(trimmed.lowercase())) {
+            normalized += trimmed
+        }
+    }
+    return normalized
+}
+
+private const val MAX_INTEREST_TOPICS = 100
+private const val MAX_INTEREST_LENGTH = 100
 
 class ContentPendingException(
     message: String,
