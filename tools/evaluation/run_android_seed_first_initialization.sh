@@ -559,7 +559,7 @@ DEVICE_BOOT_ID="$device_boot_id" \
 WEBVIEW_PROVIDER="$webview_provider" \
 HOST_CPUS="$(nproc)" \
 HOST_MEMORY_KIB="$(awk '/^MemTotal:/{print $2; exit}' /proc/meminfo)" \
-HOST_LOAD="$(awk '{print $1 \",\" $2 \",\" $3}' /proc/loadavg)" \
+HOST_LOAD="$(awk '{print $1 "," $2 "," $3}' /proc/loadavg)" \
 HOST_KERNEL="$(uname -srmo)" \
 MANIFEST_PATH="$run_dir/run_manifest.json" \
 python3 - <<'PY'
