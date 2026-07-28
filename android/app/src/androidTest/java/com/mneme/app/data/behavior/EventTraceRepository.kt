@@ -25,6 +25,8 @@ internal class EventTraceRepository : SkeletalDataRepository {
 
     override suspend fun loadBriefing(): BriefingUiModel = briefing()
 
+    override suspend fun updateInterests(topics: List<String>): BriefingUiModel = briefing().copy(interests = topics)
+
     override suspend fun loadPaper(paperId: String): PaperContentResult = PaperContentResult.Ready(paperDetail())
 
     override suspend fun refreshPaper(

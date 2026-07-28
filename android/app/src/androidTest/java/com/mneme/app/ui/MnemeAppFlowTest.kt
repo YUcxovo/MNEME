@@ -16,6 +16,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import com.mneme.app.data.behavior.BehavioralEventTracker
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.repository.ControlledFixtureDataRepository
@@ -104,6 +105,52 @@ class MnemeAppFlowTest {
         composeRule.onNodeWithTag("nav-briefing").performClick()
         composeRule.onNodeWithTag("briefing-screen").assertIsDisplayed()
         composeRule.onNodeWithTag("nav-briefing").assertIsSelected()
+    }
+
+    @Test
+    fun interests_addEditRemoveSaveAndRemainVisibleAfterNavigation() {
+        val viewModel = MnemeViewModel(ControlledFixtureDataRepository())
+        composeRule.setContent {
+            MnemeTheme {
+                MnemeApp(viewModel = viewModel, onOpenSource = {})
+            }
+        }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Attention Is All You Need").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithTag("nav-interests").performClick()
+        composeRule.onNodeWithTag("interests-screen").assertIsDisplayed()
+        composeRule
+            .onNodeWithTag("interest-topic-0")
+            .performTextReplacement("Programming languages")
+        composeRule.onNodeWithTag("interest-remove-1").performClick()
+        composeRule.onNodeWithTag("interests-screen").performScrollToNode(
+            hasTestTag("interest-new-topic"),
+        )
+        composeRule
+            .onNodeWithTag("interest-new-topic")
+            .performTextInput("AI for software engineering")
+        composeRule.onNodeWithTag("interest-add").assertIsEnabled().performClick()
+        composeRule.onNodeWithTag("interests-screen").performScrollToNode(
+            hasTestTag("interest-save"),
+        )
+        composeRule.onNodeWithTag("interest-save").assertIsEnabled().performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule
+                .onAllNodesWithText("Interests saved and recommendations refreshed.")
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+
+        composeRule.onNodeWithTag("nav-briefing").performClick()
+        composeRule.onNodeWithTag("nav-interests").performClick()
+        composeRule
+            .onNodeWithTag("interest-topic-0")
+            .assertTextContains("Programming languages")
+        composeRule
+            .onNodeWithTag("interest-topic-2")
+            .assertTextContains("AI for software engineering")
     }
 
     @Test
