@@ -1,0 +1,7 @@
+{
+  "schema_version": "seed-artifact-reuse-run-status-v1",
+  "status": "failed",
+  "stage": "pair_03_first",
+  "recorded_at_utc": "2026-07-28T21:03:40Z",
+  "reason": "The acquisition was stopped after pair_01 violated the preregistered same-paper reuse condition because the upstream candidate source changed."
+}

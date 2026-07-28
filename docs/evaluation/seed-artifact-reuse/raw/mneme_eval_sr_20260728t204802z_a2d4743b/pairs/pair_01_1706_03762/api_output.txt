@@ -1,0 +1,29 @@
+INFO:     Started server process [262798]
+INFO:     Waiting for application startup.
+{"environment": "testing", "version": "0.1.0", "event": "application_started", "level": "info", "timestamp": "2026-07-28T20:48:06.354537Z"}
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+{"http_status": 200, "duration_ms": 1.141, "event": "request_completed", "request_id": "5e2b4b0f-bc58-4a93-902c-c397acd3f26f", "http_path": "/v1/health", "http_method": "GET", "level": "info", "timestamp": "2026-07-28T20:48:06.948233Z"}
+INFO:     127.0.0.1:54916 - "GET /v1/health HTTP/1.1" 200 OK
+HTTP Request: GET https://export.arxiv.org/api/query?id_list=1706.03762&max_results=1 "HTTP/1.1 200 OK"
+HTTP Request: GET https://api.semanticscholar.org/graph/v1/paper/ARXIV%3A1706.03762?fields=externalIds%2Creferences.externalIds "HTTP/1.1 429 "
+HTTP Request: GET https://api.semanticscholar.org/graph/v1/paper/ARXIV%3A1706.03762?fields=externalIds%2Creferences.externalIds "HTTP/1.1 200 OK"
+HTTP Request: GET https://export.arxiv.org/api/query?id_list=1705.04304%2C1705.03122%2C1703.03906%2C1703.03130%2C1703.10722&max_results=5 "HTTP/1.1 200 OK"
+{"seed_arxiv_id": "1706.03762", "paper_count": 5, "reference_edges": 20, "citation_edges": 0, "event": "seed_graph_candidates_prepared", "request_id": "8bffb85b-2e5a-4fd8-b25d-80e271f3b3c9", "http_path": "/v1/onboarding/seed", "http_method": "POST", "level": "info", "timestamp": "2026-07-28T20:48:12.270397Z"}
+{"seed_arxiv_id": "1706.03762", "category": "cs.CL", "paper_count": 5, "candidate_source": "citation_graph", "event": "seed_initialization_completed", "request_id": "8bffb85b-2e5a-4fd8-b25d-80e271f3b3c9", "http_path": "/v1/onboarding/seed", "http_method": "POST", "level": "info", "timestamp": "2026-07-28T20:48:43.268765Z"}
+{"http_status": 200, "duration_ms": 34252.146, "event": "request_completed", "request_id": "8bffb85b-2e5a-4fd8-b25d-80e271f3b3c9", "http_path": "/v1/onboarding/seed", "http_method": "POST", "level": "info", "timestamp": "2026-07-28T20:48:43.279780Z"}
+INFO:     127.0.0.1:54930 - "POST /v1/onboarding/seed HTTP/1.1" 200 OK
+HTTP Request: GET https://export.arxiv.org/api/query?id_list=1706.03762&max_results=1 "HTTP/1.1 200 OK"
+HTTP Request: GET https://api.semanticscholar.org/graph/v1/paper/ARXIV%3A1706.03762?fields=externalIds%2Creferences.externalIds "HTTP/1.1 429 "
+HTTP Request: GET https://api.semanticscholar.org/graph/v1/paper/ARXIV%3A1706.03762?fields=externalIds%2Creferences.externalIds "HTTP/1.1 429 "
+HTTP Request: GET https://api.semanticscholar.org/graph/v1/paper/ARXIV%3A1706.03762?fields=externalIds%2Creferences.externalIds "HTTP/1.1 429 "
+{"seed_arxiv_id": "1706.03762", "error_type": "SemanticScholarHTTPError", "event": "seed_graph_candidates_unavailable", "request_id": "78074d9c-3290-4c2b-986b-cd6d37d1e7a6", "http_path": "/v1/onboarding/seed", "http_method": "POST", "level": "warning", "timestamp": "2026-07-28T20:48:53.710094Z"}
+HTTP Request: GET https://export.arxiv.org/api/query?search_query=cat%3Acs.CL&start=0&max_results=8&sortBy=submittedDate&sortOrder=descending "HTTP/1.1 200 OK"
+{"seed_arxiv_id": "1706.03762", "category": "cs.CL", "paper_count": 5, "candidate_source": "same_category_fallback", "event": "seed_initialization_completed", "request_id": "78074d9c-3290-4c2b-986b-cd6d37d1e7a6", "http_path": "/v1/onboarding/seed", "http_method": "POST", "level": "info", "timestamp": "2026-07-28T20:50:12.627536Z"}
+{"http_status": 200, "duration_ms": 83786.172, "event": "request_completed", "request_id": "78074d9c-3290-4c2b-986b-cd6d37d1e7a6", "http_path": "/v1/onboarding/seed", "http_method": "POST", "level": "info", "timestamp": "2026-07-28T20:50:12.633741Z"}
+INFO:     127.0.0.1:39980 - "POST /v1/onboarding/seed HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+{"event": "application_stopped", "level": "info", "timestamp": "2026-07-28T20:50:15.764143Z"}
+INFO:     Application shutdown complete.
+INFO:     Finished server process [262798]

@@ -1,0 +1,14 @@
+INFO:     Started server process [267458]
+INFO:     Waiting for application startup.
+{"environment": "testing", "version": "0.1.0", "event": "application_started", "level": "info", "timestamp": "2026-07-28T20:51:24.864590Z"}
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+{"http_status": 200, "duration_ms": 1.189, "event": "request_completed", "http_method": "GET", "request_id": "6a51303b-c40e-4941-b8f0-e0963b0b7476", "http_path": "/v1/health", "level": "info", "timestamp": "2026-07-28T20:51:25.844099Z"}
+INFO:     127.0.0.1:46116 - "GET /v1/health HTTP/1.1" 200 OK
+HTTP Request: GET https://export.arxiv.org/api/query?id_list=2106.09685&max_results=1 "HTTP/1.1 200 OK"
+HTTP Request: GET https://api.semanticscholar.org/graph/v1/paper/ARXIV%3A2106.09685?fields=externalIds%2Creferences.externalIds "HTTP/1.1 200 OK"
+HTTP Request: GET https://export.arxiv.org/api/query?id_list=2106.10199%2C2106.04647%2C2105.01029%2C2104.08691%2C2103.10385&max_results=5 "HTTP/1.1 200 OK"
+{"seed_arxiv_id": "2106.09685", "paper_count": 5, "reference_edges": 20, "citation_edges": 0, "event": "seed_graph_candidates_prepared", "http_method": "POST", "request_id": "4ea8db86-2bd4-4f7e-91b4-42c50da6c35c", "http_path": "/v1/onboarding/seed", "level": "info", "timestamp": "2026-07-28T20:51:31.785605Z"}
+INFO:     Shutting down
+INFO:     Waiting for connections to close. (CTRL+C to force quit)
+INFO:     Finished server process [267458]
