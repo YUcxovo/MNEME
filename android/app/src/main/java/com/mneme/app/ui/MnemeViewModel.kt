@@ -42,6 +42,10 @@ class MnemeViewModel(
     private val _graphState = MutableStateFlow<GraphUiState>(GraphUiState.Idle)
     val graphState: StateFlow<GraphUiState> = _graphState.asStateFlow()
 
+    private val _interestEditState =
+        MutableStateFlow<InterestEditUiState>(InterestEditUiState.Idle)
+    val interestEditState: StateFlow<InterestEditUiState> = _interestEditState.asStateFlow()
+
     private var paperLoadJob: Job? = null
     private var qaLoadJob: Job? = null
     private var graphLoadJob: Job? = null
@@ -74,6 +78,25 @@ class MnemeViewModel(
     fun refreshBriefing() {
         viewModelScope.launch {
             _homeState.updateFrom(repository, showLoading = true)
+        }
+    }
+
+    fun saveInterests(topics: List<String>) {
+        viewModelScope.launch {
+            _interestEditState.value = InterestEditUiState.Saving
+            try {
+                _homeState.value = HomeUiState.Content(repository.updateInterests(topics))
+                _interestEditState.value = InterestEditUiState.Saved
+            } catch (error: IllegalArgumentException) {
+                _interestEditState.value =
+                    InterestEditUiState.Error(
+                        error.message ?: "The research interests are invalid.",
+                    )
+            } catch (error: IOException) {
+                _interestEditState.value = InterestEditUiState.Error(error.toUserMessage())
+            } catch (error: SerializationException) {
+                _interestEditState.value = InterestEditUiState.Error(error.toUserMessage())
+            }
         }
     }
 
