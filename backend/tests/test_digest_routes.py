@@ -11,10 +11,12 @@ from httpx import ASGITransport, AsyncClient, Response
 
 from mneme.api.dependencies.ai import get_digest_repository
 from mneme.api.dependencies.auth import Principal, require_principal
+from mneme.api.dependencies.catalog import get_preference_repository
 from mneme.api.errors import register_error_handlers
 from mneme.api.middleware import request_context_middleware
 from mneme.api.routes.digests import get_request_settings
 from mneme.api.routes.digests import router as digests_router
+from mneme.api.routes.preferences import router as preferences_router
 from mneme.core.config import Settings
 from mneme.db.dependencies import get_session
 from mneme.models.digest import Digest, DigestEntry, DigestType
@@ -26,6 +28,7 @@ from mneme.repositories.digests import (
     DigestRepository,
     encode_digest_cursor,
 )
+from mneme.repositories.preferences import PreferenceSnapshot
 from mneme.services.recommendation import RecommendedDigestService
 
 USER_ID = UUID("00000000-0000-0000-0000-000000000111")
@@ -142,6 +145,29 @@ class FakeSession:
         self.commits += 1
 
 
+class FakePreferenceMutationRepository:
+    """Preference API fake sharing state with the recommendation repository."""
+
+    def __init__(self, preference: UserPreference) -> None:
+        self.preference = preference
+
+    async def get_preferences(self, user_id: UUID) -> PreferenceSnapshot:
+        assert user_id == USER_ID
+        return PreferenceSnapshot.from_model(self.preference)
+
+    async def replace_preferences(
+        self,
+        user_id: UUID,
+        *,
+        topics: list[str],
+        followed_authors: list[str],
+    ) -> PreferenceSnapshot:
+        assert user_id == USER_ID
+        self.preference.explicit_topics = list(topics)
+        self.preference.followed_authors = list(followed_authors)
+        return PreferenceSnapshot.from_model(self.preference)
+
+
 def _application(repository: FakeDigestRepository) -> FastAPI:
     async def principal_override() -> Principal:
         return Principal(user_id=USER_ID)
@@ -166,6 +192,20 @@ def _application(repository: FakeDigestRepository) -> FastAPI:
     return application
 
 
+def _preference_closed_loop_application(
+    digest_repository: FakeDigestRepository,
+    preference_repository: FakePreferenceMutationRepository,
+) -> FastAPI:
+    application = _application(digest_repository)
+
+    async def preference_repository_override() -> FakePreferenceMutationRepository:
+        return preference_repository
+
+    application.include_router(preferences_router, prefix="/v1")
+    application.dependency_overrides[get_preference_repository] = preference_repository_override
+    return application
+
+
 async def _post(application: FastAPI) -> Response:
     transport = ASGITransport(app=application)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
@@ -181,6 +221,12 @@ async def _get(
     transport = ASGITransport(app=application)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         return await client.get(path, headers=headers)
+
+
+async def _put(application: FastAPI, path: str, payload: object) -> Response:
+    transport = ASGITransport(app=application)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        return await client.put(path, json=payload)
 
 
 def _stored_digest() -> Digest:
@@ -358,6 +404,45 @@ def test_topic_matching_paper_outranks_unrelated_one() -> None:
     entries = response.json()["entries"]
     assert entries[0]["paper"]["title"] == "Attention transformers revisited"
     assert "attention" in entries[0]["recommendation_reason"]
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_explicit_preference_update_changes_next_digest_ranking_and_reason() -> None:
+    papers = [
+        _paper("Attention transformers revisited", age_days=1),
+        _paper("Robotics planning under uncertainty", age_days=1),
+    ]
+    preferences = UserPreference(
+        user_id=USER_ID,
+        explicit_topics=["attention"],
+        followed_authors=[],
+        model_version=1,
+        updated_at=NOW,
+    )
+    digest_repository = FakeDigestRepository(papers=papers, preferences=preferences)
+    application = _preference_closed_loop_application(
+        digest_repository,
+        FakePreferenceMutationRepository(preferences),
+    )
+
+    before = asyncio.run(_post(application))
+    update = asyncio.run(
+        _put(
+            application,
+            "/v1/users/me/preferences",
+            {"topics": ["robotics"], "followed_authors": []},
+        )
+    )
+    after = asyncio.run(_post(application))
+
+    assert before.status_code == 200
+    assert update.status_code == 200
+    assert update.json()["topics"] == ["robotics"]
+    assert before.json()["entries"][0]["paper"]["title"] == "Attention transformers revisited"
+    assert "attention" in before.json()["entries"][0]["recommendation_reason"]
+    assert after.json()["entries"][0]["paper"]["title"] == "Robotics planning under uncertainty"
+    assert "robotics" in after.json()["entries"][0]["recommendation_reason"]
 
 
 @pytest.mark.base
