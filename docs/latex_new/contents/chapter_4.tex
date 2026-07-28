@@ -45,7 +45,7 @@ The citation graph is the one control that leaves the Compose toolkit.
 It is rendered by a locally bundled D3 visualization inside a WebView, so no network fetch is required for the visualization itself, while node selection is mirrored back into native state through a JavaScript bridge.
 Before a graph is serialized for the WebView, the client validates unique node identities, the presence of the centre node, and the absence of dangling edges; the return bridge accepts only an identifier present in the displayed graph and posts the selection to the Android main thread.
 The native side therefore remains the single source of truth for the current selection, which enables the persistent ``open paper'' action, a distinct selected-node style, and the selection-restoration behavior verified under UI Testing.
-Graph size is bounded at fifty nodes by the client request contract, keeping both rendering cost and user orientation manageable on a phone screen.
+Graph size is bounded at fifty nodes by the client request contract, limiting the amount of graph content presented on a phone screen.
 
 Interest management uses standard Material list and editing controls, reachable from the briefing surface, through which explicit topics can be added, edited, and removed. The screen validates the draft locally and sends the complete topic list through the preference endpoint. The client preserves the independent followed-author list and immediately requests a recommended briefing from the canonical preference response. The updated preferences and briefing are stored together after that briefing returns. A successful state is shown only after this sequence completes; a failed request leaves the draft available for correction or retry. This sequence connects the visible edit to the recommendation path while leaving previously generated briefings unchanged.
 Status and error surfaces reuse a small set of shared components, so the disclosure vocabulary described above looks identical wherever it appears.
@@ -71,7 +71,7 @@ Persistence is provided by Room with explicit schema migrations; briefing and pa
 Background work is scheduled through WorkManager~\cite{androidWorkManager2026}, which owns periodic refresh and recovers interrupted work after process death; the durable event queue is drained by this machinery, and a reserved event returns to the pending state when its worker is interrupted.
 Local notifications announce newly generated briefings, and first-run onboarding derives an initial arXiv category from a seed paper, preparing an initial set of papers through the backend pipeline before the first briefing is shown.
 
-Paper resolution gives each route a single active load, so a late response for a previously selected paper cannot replace the newly selected one. Algorithm~\ref{alg:mobile-paper-resolution} states the implemented procedure realizing the origin-disclosure states designed in Chapter~3; the three-stage polling behavior it produces is measured under Performance Testing.
+Paper resolution gives each route a single active load, so a late response for a previously selected paper cannot replace the newly selected one. Algorithm~\ref{alg:mobile-paper-resolution} states the implemented procedure realizing the origin-disclosure states designed in Chapter~3; the three-stage polling behavior it produces is verified under Acceptance Testing.
 
 \begin{algorithm}[htbp]
   \caption{Origin-aware mobile paper resolution}
@@ -88,7 +88,7 @@ Paper resolution gives each route a single active load, so a late response for a
   \eIf{the representation is ready}{Render live content\;}{Enter a retryable error state with the safe public message\;}
 \end{algorithm}
 
-Device-level results were collected on Android~14 under the baseline and resource-controlled emulator configurations described under Testing Tool.
+Device-level results were collected on Android~14 under the resource-controlled emulator configurations described under Testing Tool.
 The study varies CPU and RAM within one emulation host.
 Physical-device validation and notification-permission testing across additional Android versions remain future work.
 
@@ -1060,15 +1060,16 @@ Together, the tier studies support different routing choices for the two evaluat
 
 \subsubsection{Application Startup and Foreground Recovery}
 
-All eight cold-booted emulator sessions completed the startup and foreground
-recovery protocol. Each resource condition therefore contains two validated
-session medians, and each session median summarizes five retained native
-Macrobenchmark observations. Table~\ref{tab:android-resource-startup} reports
-the observed values. Cached cold-launch medians ranged from 838.13 to
-1{,}467.13~ms across the four resource conditions. Foreground recovery was
-shorter in every condition, with medians from 66.68 to 93.96~ms. These
-endpoints correspond to a fully drawn cached five-paper briefing and a return
-to the same process, activity, and briefing state.
+The validated resource dataset contains eight separately cold-booted emulator
+sessions that completed the startup and foreground-recovery protocol. Each
+resource condition therefore contains two validated session medians, and each
+session median summarizes five retained native Macrobenchmark observations.
+Table~\ref{tab:android-resource-startup} reports the observed values. Cached
+cold-launch medians ranged from 838.13 to 1{,}467.13~ms across the four
+resource conditions. Foreground-recovery medians ranged from 66.68 to
+93.96~ms. The two metrics end at a fully drawn cached five-paper briefing and
+the initial display after returning to the same process, activity, and
+briefing state, respectively.
 
 \begin{table}[htbp]
 \centering
@@ -1131,11 +1132,12 @@ The graph experiment recorded 320 retained timings, and every expected
 resource, node-count, and WebView-state cell validated two of two sessions.
 Table~\ref{tab:android-graph-visual-state} presents the session-level
 summaries. Across the displayed cells, the median endpoint was
-87.63--189.27~ms for a new WebView and 51.30--92.38~ms for the reused phase.
-The reused-WebView phase followed the new-WebView phase and had a lower median
-in all sixteen resource-by-node cells. This repeated within-session pattern
-supports reuse in the measured implementation. The fixed phase order keeps
-reuse coupled to second-render warm state, and memory cost was not measured.
+87.63--189.27~ms when the graph was first displayed in a new WebView and
+51.30--92.38~ms when the same WebView displayed the graph again. The
+subsequent display had a lower median in all sixteen resource-by-node cells.
+This comparison represents the application's normal first-display and
+subsequent-display sequence; the second measurement also uses an already
+initialized renderer.
 
 \begin{table}[htbp]
 \centering
