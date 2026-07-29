@@ -4,9 +4,8 @@
 
 \section{Discussions}
 
-This thesis demonstrates how a mobile literature assistant can preserve continuity across changing papers, generated assistance, and evolving research interests.
-The completed system maintains explicit identities for papers, revisions, evidence, behavioral events, and mobile presentation states, and the evaluations verify these mechanisms under documented configurations.
-The experiments also identify the empirical boundaries that guide further validation.
+MNEME preserves continuity across changing papers, generated assistance, and evolving research interests by maintaining explicit identities for papers, revisions, evidence, behavioral events, and mobile presentation states.
+The evaluations examine these mechanisms under documented configurations and delimit what can be concluded from them.
 
 RQ1 concerned revision-correct paper identity and section-level provenance.
 The data model separates a logical paper from each observed revision and propagates revision identity, content hashes, and transformation configuration to derived artifacts.
@@ -24,8 +23,8 @@ The current evaluation reports both outcomes, preserving the weaker section-plac
 
 The model-tier comparison adds an operational result to RQ2.
 The flagship and mid-tier routes both produced citations for every answered case, but the mid-tier route emitted no required refusal marker on the three unanswerable cases in the reported run.
-The same mid tier satisfied all measured structural criteria for seven paper summaries, with mean lexical claim support of 0.95 compared with 0.94 for the flagship tier, while reducing measured cost from \$0.921 to \$0.140.
-These results support task-specific routing under the measured criteria: the mid tier is suitable for structurally checked summarization, whereas the current evidence favors the flagship route for grounded question answering.
+The same mid tier met the measured structural criteria on all seven evaluated papers, with mean lexical claim support of 0.95 compared with 0.94 for the flagship tier, while reducing measured cost from \$0.921 to \$0.140.
+These results support task-specific routing within the evaluated cases: the mid tier met the summary structure and lexical-support criteria, whereas the current evidence favors the flagship route for grounded question answering.
 Human comparison is still required to evaluate explanatory quality, and lexical source matching cannot establish semantic entailment or scientific truth.
 
 RQ3 concerned adaptation from explicit interests and bounded behavioral evidence.
@@ -75,7 +74,7 @@ The study provides design-stage observations from five participants under
 moderated prompts and fixed prototype content. Participant-level timing and
 interaction records were not collected.
 
-The combined evidence supports four contributions.
+The evidence bears differently on the four contributions.
 The revision-aware data and job model makes paper-derived artifacts attributable to a defined source state.
 The assistance pipeline gives retrieved evidence, refusal, and source matching explicit interfaces and failure outcomes.
 The behavioral model makes event semantics, confidence, and recommendation reasons replayable and inspectable.
@@ -84,7 +83,7 @@ The evidence comes from complementary forms of testing rather than one aggregate
 Recorded outcomes are retained with the success predicates and measurement
 boundaries needed to interpret them.
 
-The completed evaluation defines a clear scope for the conclusions.
+Several features of the evaluation bound the conclusions.
 The document-processing evaluation does not cover a stratified corpus of scientific layouts and revisions.
 The question set contains fifteen manually curated cases, and its source-match metric is lexical.
 The behavior scenarios are designed tests with hand-specified relevance judgments.
@@ -96,7 +95,7 @@ Longitudinal recommendation benefit, representative answer quality, physical-dev
 MNEME addresses the work that follows paper discovery: deciding what deserves attention, preserving what has been read, inspecting machine-generated explanations, and reconnecting related papers over time.
 Its central method is a continuous mobile reading loop whose paper identities, evidence references, behavioral signals, and visible states share explicit contracts.
 
-The completed evaluation shows that the implemented mechanisms operate together in the recorded environment.
+Under the recorded conditions, the mechanisms operated through the same mobile literature workflow.
 Revision-scoped retrieval preserves the tested paper-version boundary.
 The fifteen-case question evaluation produced cited, source-matched answers for every answered case, avoided false refusal on all twelve answerable cases, and followed the specified refusal protocol in two of three unanswerable cases.
 The controlled behavior evaluation confirmed the intended effects of exposure gating, negative feedback, per-paper saturation, and duplicate-safe replay; reciprocal rank improved while aggregate nDCG remained close to the recency baseline.
@@ -104,10 +103,10 @@ The Android experiments demonstrated cached briefing restoration, asynchronous
 polling, file-backed event retention and duplicate-safe upload, multi-node graph
 interaction, and five-paper briefings for all three measured seeds.
 
-The evidence supports an implementation-grounded system contribution with bounded empirical results.
+The evidence supports a system contribution with bounded empirical results.
 General claims about research productivity, long-term recommendation quality, and scientific answer correctness require broader longitudinal and human evaluation.
-The main lesson is that an AI literature assistant needs inspectable boundaries around paper versions, retrieved evidence, inferred interests, and degraded mobile state.
-Those boundaries make every output state available for systematic evaluation and improvement.
+An AI literature assistant therefore needs inspectable boundaries around paper versions, retrieved evidence, inferred interests, and degraded mobile state.
+Such boundaries make each reported output state available for systematic evaluation and improvement.
 
 \section{Outlook}
 
