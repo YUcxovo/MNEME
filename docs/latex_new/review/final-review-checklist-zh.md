@@ -2,8 +2,8 @@
 
 本清单综合以下约束：
 
-- 教授对两组 thesis draft 的现场反馈；
-- `final_thesis/GENERAL_AGENTS.md` 与官方 thesis template；
+- 教授对两轮 thesis draft 的现场反馈，尤其是最新的逐页结构、UI/UX、Backend、Testing 与实验真实性意见；
+- `GENERAL_AGENTS.md`、`THESIS_HINTS.md` 与 `MNEME/docs/latex_new/` 中导师调整后的 thesis template；
 - MNEME 前期 proposal、slides、mid-term report、设计材料和实验材料；
 - 项目已经确认的写作、事实边界与实验诚信原则。
 
@@ -15,12 +15,12 @@
 
 - [ ] 以最新 `docs` 论文为唯一正文基线。
 - [ ] 发生冲突时依次采用：教授反馈与官方模板、原始实验与运行证据、当前实现、已核实的课程材料、论文大纲、其他当前文档、历史 proposal/report/slides、通用写作建议。
-- [ ] 教授明确要求复用既有课程作业时，直接使用原作业页面、原图或高清截图；不得以统一风格、美化或重排为由重新生成替代图表。
+- [ ] 教授明确要求复用既有课程作业时，直接使用原作业页面、原图、可编辑源文件或高清截图；不得仅为统一风格、美化或重排而生成内容替代图。
 - [ ] 对冲突作出记录并说明处理依据，不静默选用更方便的材料。
 - [ ] 每轮只处理一种问题：结构、事实、实验、语言、引用或排版。
 - [ ] 修改前确认该段属于谁的事实范围。
 - [ ] 修改后重新阅读完整段落及其前后段，避免局部修改破坏上下文。
-- [ ] 将每项实质性陈述识别为 Historical Design、Observed、Implemented、Measured、Planned 或 Limited，不在行文中暗中提升证据等级。
+- [ ] 将每项实质性陈述在内部识别为 Historical Design、Observed、Implemented、Measured、Outside Scope 或 Limited，不把这些内部标签写进正文，也不暗中提升证据等级。
 - [ ] 所有新增数字先核对原始 CSV、JSON、测试报告或参与者记录。
 - [ ] 所有新增技术描述先核对实际实现和公开接口。
 - [ ] 最终由作者逐章人工确认，不能仅依赖自动检查。
@@ -31,7 +31,7 @@
 
 以下任一项未通过，论文不能提交。
 
-- [ ] 正文严格保留官方模板规定的章节和一级、二级标题。
+- [ ] 官方模板已有的 chapter、section 和 subsection 名称、层级与顺序，以及封面、摘要、目录、附录等必要结构均不被删改、合并、拆分或重排；模板中的示例或引导占位文字由正式论文内容替换，并只在原有结构内部按需增加少量、实质性的下级小标题。
 - [ ] 论文标题严格使用 “MNEME: A Mobile-Native AI Research Agent for Continuous Literature Understanding”。
 - [ ] 主体论文使用英文，中文仅出现在模板要求的中文或双语位置。
 - [ ] Background、Problem Statement、Existing Solutions、Proposed Solution 的顺序正确。
@@ -44,10 +44,11 @@
 - [ ] 全文不存在 branch、commit、PR、issue、merge、milestone 或内部协作过程。
 - [ ] 全文不存在“之前讨论过”“proposal 中写过”“根据本地材料”“earlier draft”等元讨论。
 - [ ] 全文不存在尚未完成却被写成已经完成的 feature 或实验。
-- [ ] 其他成员负责的实验数字未经其确认时不被修改或重新解释。
+- [ ] 每项工程事实和实验结果均由对应 domain owner 从原始证据确认；其他成员只能指出疑点，不能代替负责人认证真实性。
 - [ ] 所有结论的强度均不超过实验和引用能够支持的范围。
 - [ ] 每项主要 technical challenge 至少对应一项真实、保留且边界明确的实验结果。
 - [ ] Abstract、Testing Results、结果表和 Main Conclusions 只使用已经完成的证据。
+- [ ] 正文、图表、附录、摘要和致谢中均不存在成员分工、负责人姓名、sign-off 请求或写作协作说明。
 - [ ] LaTeX 能够从干净环境完整编译，正文、参考文献、图表和附录均正常生成。
 
 ---
@@ -71,17 +72,16 @@
 ## 3. 模板与篇幅
 
 - [ ] 标题、章节名称和组织顺序与官方模板一致。
-- [ ] 不自行增加会改变模板主结构的新章节。
-- [ ] 必要的小标题服务于内容组织，不形成大量空洞 subsection。
-- [ ] 官方模板标题作为通常的层级上限；额外低层级标题只用于含有多个连贯段落、需要独立引用的实质内容。
-- [ ] 不使用连续的 `subsubsection`、`\paragraph` 或粗体段首标签把正文写成笔记。
+- [ ] 不新增会改变模板主结构、替代模板已有标题或重新定义章节任务的新 chapter、section 或 subsection。
+- [ ] 当原有一节确实过长、内部包含多个完整且相对独立的论证单元时，可以增加少量下级小标题；每个新增标题都应承载多段连贯正文或一个完整的方法/实验单元，而不是只带领一小段。
+- [ ] 优先使用连贯段落和自然过渡；不连续堆叠 `subsubsection`、`\paragraph` 或粗体段首标签，不把每个观点、参数、图表或实验步骤都单独做成标题。
 - [ ] 英文摘要基本填满一页，内容自然，不靠重复或放大字号补齐。
-- [ ] 正文从 Introduction 到 Conclusion 目标约 100 页。
+- [ ] 最终成稿以约 100 个 compiled pages 为整体目标而非硬性逐章配额；正文、附录和模板前后置部分的比例服务于论证与可读性。
 - [ ] 页数增长来自技术解释、实验方法、结果分析、文献讨论和限制。
 - [ ] 不用重复文字、超大图片、空白页或无意义表格填充篇幅。
 - [ ] `Main Conclusions` 保持简洁，目标约一页。
 - [ ] `Discussions` 承担深入解释、限制和研究问题回应。
-- [ ] `Outlook` 简洁陈述真正尚未完成的工作。
+- [ ] `Outlook` 简洁陈述有学术意义的后续研究、扩展和更广验证，不写工程 backlog、尚待合并功能或未完成任务。
 
 ---
 
@@ -109,12 +109,14 @@
 - [ ] 先介绍科研文献发现、阅读、验证和管理的实际背景。
 - [ ] 传统工作方式、现有工具和移动场景的关系解释充分。
 - [ ] 读者在看到 MNEME 专有术语前已经理解研究背景。
-- [ ] Background 有足够篇幅，教授建议约两页或更充分。
+- [ ] Background 为问题建立必要背景，但不为了页数重复产品和技术介绍。
 - [ ] 不在开头直接堆叠未解释的技术挑战或系统模块。
 
 ### Problem Statement
 
 - [ ] 问题陈述清楚回答“具体困难是什么”和“为什么值得解决”。
+- [ ] Problem Statement 采用 Problem → developed Challenge paragraphs → Research Questions 的顺序，整体约两页而非继续扩张。
+- [ ] Problem Statement 不以公式开场，不提前报告访谈数据、系统结果或 Evaluation Approach。
 - [ ] 每项 technical challenge 都有现实动机和技术原因。
 - [ ] challenge 数量由证据决定，不为形成整齐列表而强行拆分。
 - [ ] challenge 与后续方法和实验能够一一对应。
@@ -157,6 +159,7 @@
 - [ ] 删除或解释重复、无意义的 ABCD 类标签。
 - [ ] 图中文字在正常 PDF 缩放下清晰可读。
 - [ ] 图片使用当前能够获得的最高分辨率。
+- [ ] 只保留两至三张最有解释力的 affinity-map 图，并优先使用课程作业中的原图或忠实高清截取，而不是重新生成同义图。
 - [ ] 正文解释主要模式，不能只放图。
 
 ### Customer Profile and Value Proposition
@@ -165,6 +168,7 @@
 - [ ] 人数和观察次数区分清楚。
 - [ ] Value proposition 与实际问题和需求对应。
 - [ ] Storyboard 以读者能够理解的故事顺序说明产品设想。
+- [ ] Value Proposition 和 Storyboard 优先复用已核实的课程作业内容，并在不改变模板主结构的前提下放入最合适的既有 section；若内容较长，可使用少量实质性下级小标题组织。
 - [ ] 图注不提 proposal、slides 或材料来源。
 
 ### Competitor Analysis
@@ -186,6 +190,7 @@
 - [ ] 正文解释 story map 的阅读方式。
 - [ ] feature 与用户需求和后续 acceptance criteria 相连。
 - [ ] 不将 story map 当作实现完成度证据。
+- [ ] 主文只展开 core features，Storymap and Features 保持约两页的解释尺度，不恢复完整功能目录。
 
 ### Acceptance Criteria
 
@@ -199,9 +204,9 @@
 - [ ] 架构图清楚展示客户端、后端、数据与 AI 流程。
 - [ ] 解释各层责任及跨层数据流。
 - [ ] 技术 challenge 与所提出的机制明确对应。
-- [ ] 需要算法说明的地方使用公式、伪代码或 Algorithm 环境。
+- [ ] Chapter 3 只保留 high-level architecture、design trade-offs 与 public boundaries；算法、公式、伪代码、参数、队列内部和 runtime mechanics 移至 Chapter 4 Back-end Development。
 - [ ] 流程图中的框不是大段正文的替代品。
-- [ ] 架构说明包含关键失败路径和恢复路径。
+- [ ] 架构说明只交代影响用户可见设计的失败状态和边界，不展开底层恢复实现。
 
 ### API Design
 
@@ -219,6 +224,7 @@
 - [ ] 截图中的文字、按钮和状态能够看清。
 - [ ] 设计选择与访谈或 usability finding 对应。
 - [ ] 不把设计修改写成已经证明的可用性提升。
+- [ ] 叙事明确形成 Initial UI/UX Design → formative testing → identified problems → design adjustments；真实 App Development 与 Final Product UI 放在 Chapter 4 Front-end Development。
 
 ### Usability Testing
 
@@ -242,6 +248,10 @@
 - [ ] feature 有实际实现证据后才能写成实现。
 - [ ] 算法、架构、状态机和跨层流程有足够技术深度。
 - [ ] 关键机制的输入、输出、边界条件和失败模式得到解释。
+- [ ] 公式、伪代码、流程图、表格与正文按解释需要组合使用；伪代码是允许且有助于表达多样性的算法说明形式，但必须由前置动机、符号/输入输出说明和后续解释承接，不能替代正文论证或变成参数清单。
+- [ ] 每段伪代码与实现或正式设计一致，具有清晰 caption/label，并在正文中被引用和解释；无需为了形式统一而把所有算法都改写成同一种表示。
+- [ ] Front-end Development 展示并解释真实最终产品 UI，不以静态 prototype 代替最终应用截图。
+- [ ] Back-end Development 接收从 Chapter 3 移出的算法、公式、实现流程、接口机制和参数；导师口头建议的约 10–20 页是合理深度参考，不是填充配额。
 
 ### Testing Tool and Protocol
 
@@ -261,6 +271,7 @@
 - [ ] 负面结果、失败案例和 null result 如实保留。
 - [ ] 不用“all tests passed”替代具体条件和样本数量。
 - [ ] 不把代码覆盖率当作语义正确性的证明。
+- [ ] Feature acceptance 与 Performance Testing 分开；验收表至少包含 Feature、Test task、Expected result、Actual result 和 Status，并能追溯到截图或运行记录。
 
 ### Android and UI Evaluation
 
@@ -278,11 +289,12 @@
 - [ ] Android 配置矩阵不用于未经控制的 CPU、RAM 或 API 因果比较。
 - [ ] CPU×RAM 实验以独立 session 为分析单位。
 - [ ] session 内重复测量不被当作独立设备样本。
-- [ ] E4-E 用户研究未执行时，不出现其结果或暗示。
+- [ ] 未执行的最终产品后续用户研究不出现结果或完成暗示；正文也不出现其内部实验代号。
 
 ### Other Members' Evaluation
 
 - [ ] AI/RAG、recommendation 和 graph algorithm 结果由对应负责人确认。
+- [ ] Android 架构、UI、设备配置和移动实验由 Android domain owner 确认；backend/data/behavior/graph-platform 事实由相应 backend owner 确认。
 - [ ] 不修改其他成员仍在运行的实验数据。
 - [ ] 不用我们的 Android 结果补足其他模块缺失的质量结论。
 - [ ] 跨模块结论明确指出每个证据来自哪一类实验。
@@ -297,7 +309,7 @@
 - [ ] warm-up 的处理在实验设计中预先说明。
 - [ ] 缓存、持久化产物和 provider completion reuse 得到披露。
 - [ ] 单次 UI trace 写成 acceptance observation，`n=1` 不报告 p95。
-- [ ] `n=5` 的 p95 等于最大值时能够正确解释。
+- [ ] 小样本 p95 等于最大值时能够正确解释，不用 percentile 营造不存在的统计稳定性。
 - [ ] 不把不同实验条件的结果直接合并计算平均值。
 - [ ] 不在小样本上进行无意义的显著性推断。
 - [ ] 观察性结果使用 “observed”“indicates”“suggests”等有限措辞。
@@ -305,6 +317,8 @@
 - [ ] 结果不好、没有单调趋势或置信区间跨零时如实报告。
 - [ ] 推荐、回答和图谱内容质量没有经过评价时不声称其有效。
 - [ ] 用户研究结果不推广到一般人群。
+- [ ] Provider model、token、latency 和 cost 由 AI domain owner 依据原始调用记录确认；模型存在或价格网页可访问不等于该次实验真实发生。
+- [ ] Modeled cost estimate 与 measured spend 明确分开；若保留估算，必须给出有访问日期的一手价格、token accounting、调用路径假设、四舍五入规则和可复算脚本，否则删除。
 
 ---
 
@@ -336,6 +350,7 @@
 - [ ] 重要外部主张已核对来源中的具体段落或页码，不能只核对标题、摘要或书目信息。
 - [ ] 不使用只与关键词相关、但不支持该结论的文献。
 - [ ] 网页引用包含有效 URL 和访问日期。
+- [ ] 动态产品名称、功能、模型标识和价格在提交前重新核验，避免沿用已更名产品或过期定价。
 - [ ] DOI、arXiv、会议版本和期刊版本不混写。
 - [ ] 同一篇工作的版本信息保持一致。
 - [ ] 参考文献列表中没有正文未引用的无关条目。
@@ -345,7 +360,8 @@
 
 ## 12. Figures
 
-- [ ] 优先使用仓库、slides、proposal 和 thesis materials 中真实图像。
+- [ ] 导师指定复用的 affinity map、value proposition、storyboard 与 UI/UX 课程材料优先使用原图、原页面或忠实高清截取；不得用生成式重绘替代原始作业证据。
+- [ ] 系统架构、算法流程和实验结果图必须来自真实设计/实现或可复算数据，不使用生成图代替证据。
 - [ ] 图像采用可获得的最高分辨率。
 - [ ] PDF 中的图中文字在正常阅读尺寸下清晰。
 - [ ] 亲和图、story map、架构图、流程图和实验图均有实际解释作用。
@@ -367,7 +383,7 @@
 ## 13. Tables
 
 - [ ] 只在精确比较、映射或多维结果确有需要时使用表格。
-- [ ] 不因“减少表格”而删除必要的 milestone、requirements 或结果表。
+- [ ] 不因“减少表格”而删除必要的 requirements、feature-acceptance 或结果表；milestone 不得进入正式论文。
 - [ ] 不用表格重复正文已经清楚说明的简单信息。
 - [ ] 使用 booktabs 或同等清晰的视觉结构。
 - [ ] 行组之间有小标题、空行或适当横线。
@@ -393,6 +409,7 @@
 - [ ] 段落之间存在明确逻辑关系。
 - [ ] 相邻章节有自然过渡。
 - [ ] 不反复总结刚刚已经说过的内容。
+- [ ] 正文以完整、连贯的学术段落推进；bullet list 仅用于确实可枚举且比 prose 更清楚的内容，不用项目符号代替论证。
 
 ---
 
@@ -466,9 +483,9 @@
 - [ ] Discussions 与 Main Conclusions 先回答“本文做到了什么”，再用简洁、具体的文字限定“证据支持到哪里”。
 - [ ] Main Conclusions 只总结已经得到证据支持的贡献。
 - [ ] Main Conclusions 约一页，不重复全部实验表格。
-- [ ] Outlook 只包含真正未来的工作。
+- [ ] Outlook 只包含有学术意义的 future work，不使用内部实验代号或工程待办清单。
 - [ ] 未实现 feature 不被包装为完成的贡献。
-- [ ] E4-E 用户研究明确保留为 future work。
+- [ ] 未执行的最终产品用户研究只作为更广验证方向，不以内部实验代号出现。
 - [ ] 不在 Conclusion 首次引入新实验或新算法。
 - [ ] Conclusion 不出现项目管理、仓库或协作信息。
 
@@ -484,6 +501,7 @@
 - [ ] 参与者隐私和匿名化要求得到满足。
 - [ ] 未经明确授权，不向外部服务上传未公开论文、私人笔记、参与者记录或完整语料。
 - [ ] 未收集的数据不以空模板暗示已经存在。
+- [ ] Appendix 同样不得出现 commits、branches、milestones、成员分工、负责人姓名、sign-off 或进度记录。
 
 ---
 
@@ -564,6 +582,7 @@
 - [ ] 干净编译最终 PDF。
 - [ ] 逐页视觉检查。
 - [ ] 各技术负责人确认其事实和实验。
+- [ ] 负责人确认必须对应到 source/configuration/raw output/computation，而不是只回复“看起来没问题”。
 - [ ] 所有定量结论和跨模块解释至少经过第二位相关成员人工核对。
 - [ ] Hanyang 完成统一阅读体验审查。
 - [ ] 全体作者阅读并承担最终文本责任。
