@@ -59,9 +59,12 @@ and the audit at `1a604b3`); token counts assume ~4 characters per token.
 
 ## Figures this snapshot supports
 
-One paper summary ~$0.100 (opus-4-8) / ~$0.020 (haiku-4-5) /
+One paper summary ~$0.101 (opus-4-8) / ~$0.020 (haiku-4-5) /
 ~$0.0024 (deepseek-v4-flash); one grounded answer ~$0.028 / ~$0.006 /
 ~$0.0006; one paper embedded ~$0.0003; ~50 opus summaries or ~180 opus Q&A
-calls exhaust the $5 daily cap; ~250 haiku summaries fit; a full 15-case
-evaluation run ~$0.34 (opus) vs ~$0.07 (haiku). All derivations are in the
-companion script and are estimates, not measured spend.
+calls exhaust the $5 daily cap (exact quotients 49, 179, and 248 for the
+~250 haiku summaries); a full 15-case evaluation run ~$0.33 (opus) vs
+~$0.07 (haiku). Every figure is rounded once from the script's exact
+result, never recomputed from a rounded intermediate, so the evaluation-run
+figure is $0.33 rather than 12 x the rounded $0.028. All derivations are in
+the companion script and are estimates, not measured spend.

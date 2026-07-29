@@ -337,7 +337,7 @@ Reranking uses an interpretable lexical blend. For a question \(q\) and candidat
 Semantic proximity remains dominant, and lexical overlap supplies a task-specific correction without adding another learned model. Ties break on the original retrieval order, and the top four chunks become evidence; anchors outside that set are appended without displacing question-specific evidence.
 
 Generation is refused before any model call when no evidence reaches a minimum score of 0.25; the model may itself decline through a designated insufficient-evidence marker, and both paths return the same fixed refusal answer, so refusal is a single, recognizable outcome for the client.
-After generation, citation verification checks every bracketed marker against the evidence list. Markers outside the list are dropped, and each cited excerpt is compared with the claim sentences that carry its marker.
+After generation, citation verification checks every bracketed marker against the evidence list. A marker outside that list produces no verified citation record and therefore cannot be presented to the reader as evidence, while the generated answer text is returned unchanged. Each remaining cited excerpt is compared with the claim sentences that carry its marker.
 A citation counts as source-matched when at least 30\% of the claim's content words appear in the cited chunk, and answers are labeled matched, partially matched, or insufficient.
 Retrieved context can coexist with unsupported or contradictory generation~\cite{niu2024ragtruth}, and following the distinction drawn in citation-quality research~\cite{gao2023alce}, this mechanism performs retrieved-source matching. It verifies lexical anchoring in retrieved text and does not establish semantic entailment or scientific correctness.
 
@@ -354,7 +354,7 @@ Algorithm~\ref{alg:qa-evidence} combines these stages into the implemented proce
   \If{the evidence is empty or its best score is below \(\tau\)}{\Return the fixed insufficient-evidence response\;}
   Generate an answer from the selected, numbered excerpts\;
   \If{the answer is empty or contains no usable marker}{\Return the fixed insufficient-evidence response\;}
-  Discard invalid markers and measure local support for the remaining citations\;
+  Emit citation records only for in-range markers and measure local support for each\;
   Assign \emph{matched}, \emph{partial}, or \emph{insufficient} from the valid-marker and overlap checks\;
   \Return the answer, valid source records, and assigned state\;
 \end{algorithm}
@@ -630,7 +630,9 @@ Ranking quality is measured with graded nDCG@5, Recall@5, and reciprocal rank. T
 The explicit-interest experiment isolates direct correction from behavioral inference. Its frozen fixture contains eight synthetic candidates, two each for attention, quantum computing, robotics, and databases, with publication time held constant. The production ranking function evaluates four successive profiles: attention alone; attention with quantum added; quantum replaced by robotics; and robotics deleted. One record is retained for every candidate and state, including rank, score, reasons, and the presence of the expected topic-match reason. Four transition checks state the expected score direction before analysis. API tests separately replace the stored topic list and request the next recommended digest, while repository tests verify normalization, persistence, and rejection of a digest older than the preference update.
 
 The grounded-assistance harness drives the deployed retrieval and answer pipeline over the fifteen pinned fixtures described under Back-end Development.
-Its live flagship run used Claude Opus~4.8 (\nolinkurl{claude-opus-4-8}) with prompt version \texttt{qa-v2}, top-eight retrieval with two context anchors, rerank to four evidence chunks, a 0.25 evidence threshold, a 512-token output cap, and local \texttt{fastembed} embeddings. The 384-dimension vectors are L2-normalized and zero-padded into the 1{,}536-dimension store, which leaves cosine ordering unchanged.
+Three settings determine how much evidence the live flagship run could use: retrieval returned the top eight chunks together with two context anchors, reranking narrowed them to four evidence chunks, and generation proceeded only when the leading evidence score reached 0.25.
+Generation used Claude Opus~4.8 (\nolinkurl{claude-opus-4-8}) under prompt version \texttt{qa-v2} with a 512-token output cap, and embeddings came from the local \texttt{fastembed} model \nolinkurl{BAAI/bge-small-en-v1.5}.
+Its 384-dimension vectors are L2-normalized and then zero-padded to fill the 1{,}536-dimension column of the shared vector store. The appended zeros contribute nothing to any dot product and leave the vector norms unchanged, so the retrieval order matches that of a native 384-dimension index.
 The complete configuration is stored with the evaluation record, and every completion in the reported run was generated live with no cached contribution.
 
 \subsection{UI Testing}
@@ -1228,11 +1230,12 @@ Provider latency sits on top of this local computation.
 In the live graded runs of Tables~\ref{tab:qa-eval} and~\ref{tab:qa-tiers}, mean end-to-end pipeline latency was 4{,}699~ms on the flagship route and 3{,}422~ms on the mid tier. Generation contributed most of that time; retrieval, reranking, and citation verification together contributed roughly 80~ms.
 
 Model cost is treated as a first-class performance dimension alongside latency, because a continuously running assistant is constrained as much by provider spend as by response time.
-The cost analysis covers the summarization worker, grounded question answering, query embedding, and batched chunk embedding. Recommendation scoring reuses stored vectors and makes no provider call. Unit costs are estimated from provider list prices under the deployed input and output caps.
+The cost analysis covers the summarization worker, grounded question answering, query embedding, and batched chunk embedding. Recommendation scoring reuses stored vectors and makes no provider call. Unit costs are estimated under the deployed input and output caps from the standard non-batch provider list prices reviewed on 2026-07-26. Those prices are \$5 and \$25 per million input and output tokens for Claude Opus~4.8 and \$1 and \$5 for Claude Haiku~4.5~\cite{anthropicPricing2026}, \$0.14 and \$0.28 for the cache-miss rates of DeepSeek~V4 Flash~\cite{deepseekPricing2026}, and \$0.02 per million input tokens for \nolinkurl{text-embedding-3-small}~\cite{openaiEmbeddingSmall2026}.
 The estimates assume the deployed caps: summary input bounded at roughly 15{,}000 tokens with a 1{,}024-token output, and question answering built from about six 450-token evidence chunks with a 512-token output.
 Table~\ref{tab:unit-economics} reports the resulting unit costs across the three configured provider tiers.
-One paper summary on the default flagship route costs an estimated \$0.10, one grounded answer roughly \$0.028, and embedding a full paper roughly \$0.0003. Under these assumptions, embedding costs about 90 to 330 times less than the two generation operations.
-Against the default \$5 daily budget, a bulk-ingestion day of about fifty summaries (or roughly 180 answers) can exhaust the cap on the flagship tier, whereas the mid tier accommodates roughly 250 summaries per day, and a full fifteen-case evaluation run is estimated at \$0.34 versus \$0.07 across the two tiers.
+One paper summary on the default flagship route costs an estimated \$0.101, one grounded answer roughly \$0.028, and embedding a full paper roughly \$0.0003. Under these assumptions, embedding costs about 90 to 330 times less than the two generation operations.
+Against the default \$5 daily budget, a bulk-ingestion day of about fifty summaries (or roughly 180 answers) can exhaust the cap on the flagship tier, whereas the mid tier accommodates roughly 250 summaries per day, and a full fifteen-case evaluation run is estimated at \$0.33 versus \$0.07 across the two tiers.
+The daily capacities are approximate: the exact quotients are 49 flagship summaries, 179 flagship answers, and 248 mid-tier summaries.
 
 \begin{table}[htbp]
 \centering
@@ -1242,17 +1245,17 @@ Against the default \$5 daily budget, a bulk-ingestion day of about fifty summar
 \toprule
 \MnemeTableHeader{Operation} & \MnemeTableHeader{Flagship tier} & \MnemeTableHeader{Mid tier} & \MnemeTableHeader{Budget tier} \\
 \midrule
-One paper summary & \$0.100 & \$0.020 & \$0.0024 \\
+One paper summary & \$0.101 & \$0.020 & \$0.0024 \\
 One grounded answer & \$0.028 & \$0.006 & \$0.0006 \\
 One paper embedded & \$0.0003 & \$0.0003 & \$0.0003 \\
-Fifteen-case evaluation run & \$0.34 & \$0.07 & N/A \\
+Fifteen-case evaluation run & \$0.33 & \$0.07 & N/A \\
 \addlinespace
 Summaries per \$5 day & $\sim$50 & $\sim$250 & N/A \\
 \bottomrule
 \end{tabular}
 \end{table}
 The cost analysis identifies bulk summarization as the largest modeled expense. The structural comparison above supports using the mid tier for that task under the measured criteria, while the refusal results support retaining the flagship route for question answering at present.
-All dollar figures in Table~\ref{tab:unit-economics} are estimates derived from a dated price snapshot with a companion recomputation script. The live evaluations provide measured comparisons: the flagship question-answering run cost \$0.326 compared with the \$0.34 estimate, and the mid-tier run cost \$0.054 compared with \$0.07. Per-paper summarization cost \$0.132 on the flagship tier compared with the \$0.100 estimate and \$0.020 on the mid tier, matching its estimate.
+All dollar figures in Table~\ref{tab:unit-economics} are estimates derived from the dated price snapshot cited above with a companion recomputation script. Each printed figure is rounded once from the script's exact result rather than recomputed from rounded intermediates, so the evaluation-run estimate is \$0.33 rather than twelve times the rounded \$0.028 per answer. The live evaluations provide measured comparisons: the flagship question-answering run cost \$0.326 compared with the \$0.33 estimate, and the mid-tier run cost \$0.054 compared with \$0.07. Per-paper summarization cost \$0.132 on the flagship tier compared with the \$0.101 estimate and \$0.020 on the mid tier, matching its estimate.
 Measured spend at scale remains available from the per-completion cost telemetry.
 
 The results establish the measured behavior of the implemented system across client recovery, graph interaction, preference correction, event synchronization, grounded assistance, and provider routing.
