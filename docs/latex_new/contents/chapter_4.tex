@@ -1096,32 +1096,24 @@ briefing state, respectively.
 \begin{table}[htbp]
 \centering
 \small
-\setlength{\tabcolsep}{3.5pt}
+\setlength{\tabcolsep}{7.0pt}
 \renewcommand{\arraystretch}{1.12}
-\caption{Startup and recovery latency by emulator resource condition. Each
-summary contains two validated session medians; each session median contains
-five retained observations. Values are median [minimum--maximum], followed by
-the range, in milliseconds.}
+\caption{Median startup and recovery latency by emulator resource condition,
+in milliseconds.}
 \label{tab:android-resource-startup}
-\resizebox{\linewidth}{!}{%
-\begin{tabular}{cccrr}
+\begin{tabular}{ccrr}
 \toprule
 \MnemeTableHeader{CPU cores} &
 \MnemeTableHeader{RAM (GiB)} &
-\MnemeTableHeader{Validated} &
-\MnemeTableHeader{Cached cold launch} &
-\MnemeTableHeader{Foreground recovery} \\
+\MnemeTableHeader{Cached cold launch (ms)} &
+\MnemeTableHeader{Foreground recovery (ms)} \\
 \midrule
-2 & 2 & 2/2 & 1{,}467.13 [1{,}425.16--1{,}509.10]; 83.94
-            & 93.96 [89.55--98.37]; 8.83 \\
-2 & 6 & 2/2 & 1{,}309.55 [1{,}252.20--1{,}366.90]; 114.70
-            & 85.31 [74.60--96.02]; 21.42 \\
-4 & 2 & 2/2 & 1{,}031.32 [957.41--1{,}105.23]; 147.82
-            & 66.68 [65.81--67.55]; 1.75 \\
-4 & 6 & 2/2 & 838.13 [835.71--840.56]; 4.84
-            & 71.80 [69.03--74.57]; 5.54 \\
+2 & 2 & 1{,}467.13 & 93.96 \\
+2 & 6 & 1{,}309.55 & 85.31 \\
+4 & 2 & 1{,}031.32 & 66.68 \\
+4 & 6 & 838.13 & 71.80 \\
 \bottomrule
-\end{tabular}}
+\end{tabular}
 \normalsize
 \end{table}
 
@@ -1163,68 +1155,34 @@ initialized renderer.
 
 \begin{table}[htbp]
 \centering
-\scriptsize
-\setlength{\tabcolsep}{2.8pt}
-\renewcommand{\arraystretch}{1.15}
-\caption{Citation-graph visual-state latency. Every row contains two of two
-validated session medians. Within each node-count cell, the three lines give
-the median, minimum--maximum, and range in milliseconds.}
+\small
+\setlength{\tabcolsep}{4.8pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Median citation-graph visual-state latency by emulator resource
+condition, WebView state, and node count, in milliseconds.}
 \label{tab:android-graph-visual-state}
 \resizebox{\linewidth}{!}{%
-\begin{tabular}{ccclrrrr}
+\begin{tabular}{cccrrrr}
 \toprule
 \MnemeTableHeader{CPU} &
 \MnemeTableHeader{RAM} &
 \MnemeTableHeader{WebView} &
-\MnemeTableHeader{Validated} &
 \MnemeTableHeader{1 node} &
 \MnemeTableHeader{12 nodes} &
 \MnemeTableHeader{25 nodes} &
 \MnemeTableHeader{50 nodes} \\
 \midrule
-2 & 2 & New & 2/2 &
-\shortstack{104.31\\96.65--111.97\\15.32} &
-\shortstack{184.40\\184.13--184.68\\0.55} &
-\shortstack{189.27\\179.81--198.73\\18.93} &
-\shortstack{171.66\\153.49--189.83\\36.35} \\
-2 & 2 & Reused & 2/2 &
-\shortstack{52.10\\52.07--52.13\\0.06} &
-\shortstack{77.02\\72.38--81.66\\9.28} &
-\shortstack{75.41\\63.03--87.79\\24.76} &
-\shortstack{82.90\\82.75--83.06\\0.32} \\
+2 & 2 & New & 104.31 & 184.40 & 189.27 & 171.66 \\
+2 & 2 & Reused & 52.10 & 77.02 & 75.41 & 82.90 \\
 \addlinespace
-2 & 6 & New & 2/2 &
-\shortstack{111.93\\111.15--112.70\\1.55} &
-\shortstack{183.43\\178.92--187.93\\9.01} &
-\shortstack{184.59\\184.16--185.01\\0.84} &
-\shortstack{177.15\\167.08--187.23\\20.15} \\
-2 & 6 & Reused & 2/2 &
-\shortstack{54.01\\53.89--54.14\\0.25} &
-\shortstack{66.40\\56.45--76.36\\19.91} &
-\shortstack{67.25\\62.52--71.99\\9.47} &
-\shortstack{92.38\\87.86--96.91\\9.05} \\
+2 & 6 & New & 111.93 & 183.43 & 184.59 & 177.15 \\
+2 & 6 & Reused & 54.01 & 66.40 & 67.25 & 92.38 \\
 \addlinespace
-4 & 2 & New & 2/2 &
-\shortstack{93.76\\92.97--94.56\\1.59} &
-\shortstack{163.29\\155.66--170.92\\15.26} &
-\shortstack{182.07\\178.83--185.32\\6.49} &
-\shortstack{167.14\\165.92--168.36\\2.44} \\
-4 & 2 & Reused & 2/2 &
-\shortstack{55.30\\50.60--60.00\\9.40} &
-\shortstack{57.54\\53.71--61.38\\7.67} &
-\shortstack{75.88\\67.72--84.05\\16.34} &
-\shortstack{69.30\\68.99--69.60\\0.61} \\
+4 & 2 & New & 93.76 & 163.29 & 182.07 & 167.14 \\
+4 & 2 & Reused & 55.30 & 57.54 & 75.88 & 69.30 \\
 \addlinespace
-4 & 6 & New & 2/2 &
-\shortstack{87.63\\81.25--94.00\\12.75} &
-\shortstack{176.96\\170.10--183.82\\13.72} &
-\shortstack{183.90\\178.72--189.09\\10.38} &
-\shortstack{165.39\\164.00--166.77\\2.77} \\
-4 & 6 & Reused & 2/2 &
-\shortstack{51.30\\50.33--52.26\\1.94} &
-\shortstack{80.92\\78.69--83.15\\4.47} &
-\shortstack{73.38\\63.70--83.06\\19.36} &
-\shortstack{74.48\\66.68--82.28\\15.60} \\
+4 & 6 & New & 87.63 & 176.96 & 183.90 & 165.39 \\
+4 & 6 & Reused & 51.30 & 80.92 & 73.38 & 74.48 \\
 \bottomrule
 \end{tabular}}
 \normalsize
