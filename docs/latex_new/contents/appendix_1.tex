@@ -49,6 +49,8 @@ Q11 & trust and verification expectations & source-linked summaries, cited Q\&A,
 \chapter{Product-Level Acceptance Criteria}
 \label{app:acceptance}
 
+This appendix records the normative criteria that guided the system design. It does not report test outcomes. Chapter~4 identifies the criteria exercised in the integrated mobile workflow and records their expected and actual results in Table~\ref{tab:feature-acceptance}; a criterion absent from that table must not be read as having passed. Notification delivery is excluded because it was not part of the retained acceptance experiment.
+
 \section{Paper Ingestion and Preparation}
 
 \begin{itemize}
@@ -66,7 +68,6 @@ Q11 & trust and verification expectations & source-linked summaries, cited Q\&A,
   \item Given an interest profile, a generated briefing contains a ranked, bounded list drawn from the available recent papers.
   \item Every entry retains a generation snapshot, score components, and a human-readable reason derived from the same components used for ranking.
   \item Accepted behavioral events are versioned, deduplicated, and bounded by declared semantics before they affect later ranking.
-  \item When push delivery is enabled, one newly available briefing identity produces at most one notification inside the configured window, and permission denial does not block in-app access.
 \end{itemize}
 
 \section{Source-Linked Summaries}

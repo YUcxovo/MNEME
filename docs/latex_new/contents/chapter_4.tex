@@ -17,7 +17,7 @@ Document and model processing remain on the server, while the client discloses t
 \subsection{Design Pattern}
 
 The client follows the Model--View--ViewModel pattern with a repository layer between ViewModels and data sources.
-Compose screens are pure functions of observable UI state; ViewModels own that state and reduce it from repository results; repositories mediate between Retrofit/OkHttp network services and Room persistence, while WorkManager invokes repository operations for background work.
+Compose screens are pure functions of observable UI state; ViewModels own that state and reduce it from repository results; and repositories mediate between Retrofit/OkHttp network services and Room persistence. WorkManager invokes the event-synchronization coordinator when recorded interactions are ready for upload.
 Two properties motivated this choice.
 State transitions become unit-testable without an emulator because the controlled state experiments reported under Testing Results drive the ViewModel reducers directly with deterministic inputs.
 The repository also provides one decision point for offline and degraded paths: it determines whether a screen receives live content, cached content, or an actionable error, and carries the outcome in the state object.
@@ -58,18 +58,16 @@ Routes that require context carry typed arguments such as the paper identity. Th
 
 Two navigation behaviors are central to the evaluation.
 Returning from a paper opened out of the graph restores the previous graph
-selection, so exploration context survives the round trip. Background refresh
-and notification entry points land on the briefing surface with state restored
-from the local cache when the process has been killed in the interim. The
-startup experiment measures the time to draw that cached briefing after a cold
-process start and the time to redisplay it when the existing task returns to
-the foreground.
+selection, so exploration context survives the round trip. A cold process
+start reconstructs the briefing surface from the local cache, while bringing
+an existing task back to the foreground preserves its current state. The
+startup experiment measures these two paths separately.
 
 \subsection{Other Aspects}
 
 Persistence is provided by Room with explicit schema migrations; briefing and paper caches carry offline metadata and retention policies.
-Background work is scheduled through WorkManager~\cite{androidWorkManager2026}, which owns periodic refresh and recovers interrupted work after process death; the durable event queue is drained by this machinery, and a reserved event returns to the pending state when its worker is interrupted.
-Local notifications announce newly generated briefings, and first-run onboarding derives an initial arXiv category from a seed paper, preparing an initial set of papers through the backend pipeline before the first briefing is shown.
+Behavioral-event upload uses a unique WorkManager request with a network constraint and exponential retry~\cite{androidWorkManager2026}. The worker delegates to the synchronization coordinator that reserves queued rows, returns retryable uploads to the pending state, and applies accepted or duplicate acknowledgements. The evaluated briefing path uses explicit foreground refresh; scheduled briefing delivery and notification behavior are outside the evidence reported in this thesis.
+First-run onboarding derives an initial arXiv category from a seed paper and prepares an initial set of papers through the backend pipeline before the first briefing is shown.
 
 Paper resolution gives each route a single active load, so a late response for a previously selected paper cannot replace the newly selected one. Algorithm~\ref{alg:mobile-paper-resolution} states the implemented procedure realizing the origin-disclosure states designed in Chapter~3; the three-stage polling behavior it produces is verified under Acceptance Testing.
 
