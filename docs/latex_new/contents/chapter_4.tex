@@ -682,22 +682,6 @@ The complete configuration is stored with the evaluation record, and every compl
 
 \subsection{UI Testing}
 
-The client's visible-state machinery was exercised through connected-device
-instrumentation on the Android~14 emulator. Each content-state scenario used
-three warm-up iterations followed by 30 retained trials. Timing begins when
-the state-producing ViewModel action or construction begins and ends when the
-expected observable state and content-origin disclosure are present. The graph
-disclosure measurement likewise used three warm-ups and 30 retained Compose UI
-trials per status, timed from a graph-state update until the corresponding
-status label appeared in the UI semantics tree.
-Five content-state conditions each completed 30 of 30 trials with the expected
-outcome: a live seed transition, a cached-briefing ViewModel transition, a
-cached offline disclosure, a cached server-failure disclosure, and an
-invalid-cache error. The three citation-graph disclosure states (ready,
-fallback, and empty) likewise each completed 30 of 30 trials, with median
-transition latencies of 97.11, 103.38, and 66.28~ms respectively.
-The trials reached the specified disclosure state in every recorded condition.
-
 Interactive graph behavior was verified by the graph and app-flow suite, which passed 11 of 11 tests, including node selection through the WebView bridge, navigation to a selected paper through the persistent open action, and restoration of the previous selection after returning from paper detail.
 Together, these results establish the tested graph presentation, selection, navigation, and restoration behaviors.
 The formative five-participant usability study that motivated the graph's redesign is design-stage evidence and is reported in Chapter~3.
