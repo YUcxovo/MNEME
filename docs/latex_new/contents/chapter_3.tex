@@ -355,6 +355,8 @@ Figure~\ref{fig:usability-results} reports the recorded completion counts. All f
 
 The 15 completions across T1--T3 indicate that the prompted reading path was discoverable in the prototype. Participants could move from a recommendation to paper detail, locate a source-oriented summary path, and inspect the cited evidence associated with an answer. Session notes also suggested that evidence access deserved a stronger visual cue. The revised design therefore places source labels and citation actions beside the generated content they qualify instead of treating verification as a secondary destination.
 
+Figure~\ref{fig:usability-findings} summarizes the qualitative observations that informed this revision, including the value participants placed on visible evidence and the uncertainty they encountered around verification and graph actions.
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=\textwidth]{figures/chapter3_course_usability_findings.png}
@@ -363,6 +365,8 @@ The 15 completions across T1--T3 indicate that the prompted reading path was dis
   stronger cues.}
   \label{fig:usability-findings}
 \end{figure}
+
+\FloatBarrier
 
 \subsection{UI/UX Design Adjustments}
 \label{subsec:ui-ux-adjustments}
@@ -385,6 +389,8 @@ lead directly to correction of the explicit profile.
   \label{fig:ui-design-adjustments}
 \end{figure}
 
+\FloatBarrier
+
 Graph exploration produced the clearest problem. Three participants did not
 infer which elements were selectable or how selection led to another paper.
 The adjusted design adds a short instruction above the canvas, a persistent
@@ -392,7 +398,7 @@ selected-node state, explicit relationship context, and a visible
 \emph{Open Paper} action. These changes are reported as design responses to
 the observed ambiguity in action and consequence. Chapter~4 verifies that
 selection and navigation follow this specification; a follow-up participant
-study would measure the usability effect of the revision.
+study would measure the usability effect of the revision. Figure~\ref{fig:graph-design-adjustment} shows how the revised controls make the selection and navigation path explicit.
 
 \begin{figure}[htbp]
   \centering
@@ -403,13 +409,8 @@ study would measure the usability effect of the revision.
   \label{fig:graph-design-adjustment}
 \end{figure}
 
-One participant did not complete the interest-editing task. The observation indicated that the controls were understandable after discovery but insufficiently prominent from the briefing. The adjusted design therefore keeps preference editing one action away from the briefing and gives it an explicit settings entry. This change also supports correction of personalization: when a reason appears irrelevant, the reader can inspect and edit explicit interests without abandoning the reading task.
+\FloatBarrier
 
-Taken together, the sessions support a focused formative conclusion. The
-initial prototype exposed a legible path through briefing, paper reading,
-source inspection, and paper-scoped questioning. Graph discoverability
-required substantial revision, and interest controls required a clearer entry
-point. The results explain the design adjustments shown above. Broader
-usability, accessibility, and the effect of the revised graph require a new
-participant protocol using the implemented interface. Chapter~4 presents that
-implementation and its functional verification.
+One participant did not complete the interest-editing task. The observation indicated that the controls were understandable after discovery but insufficiently prominent from the briefing. The adjusted design therefore keeps preference editing one action away from the briefing and gives it an explicit settings entry. Keeping the entry nearby also gives the reader a practical correction path: when a recommendation reason appears irrelevant, the explicit interests can be inspected and edited without abandoning the reading task.
+
+The sessions support a deliberately limited formative conclusion. Under the moderated tasks, participants could follow the main path through briefing, paper reading, source inspection, and paper-scoped questioning. Graph discoverability required substantial revision, and interest controls required a clearer entry point. These observations explain the design adjustments above, but they do not establish the usability of the revised graph. Broader usability and accessibility claims require a new participant protocol using the implemented interface.

@@ -4,7 +4,7 @@ This file is a non-rendered evidence ledger for contents/chapter_3.tex. It recor
 
 ## Source snapshot
 
-- Second-supervisor design-scope revision baseline: 9ef8fca. The revised chapter preserves the exact template hierarchy, retains design-level architecture and formative evidence, and moves algorithms, equations, parameter catalogues, and runtime implementation details to the non-rendered transfer package at `thesis_revison/TEMP_CONTENT.md`.
+- Second-supervisor design-scope revision baseline: 9ef8fca. The revised chapter preserves every supplied template heading and its order, uses only a small number of substantive lower-level headings within that structure, retains design-level architecture and formative evidence, and moves implementation-level methods to the non-rendered transfer package at `thesis_revison/TEMP_CONTENT.md`.
 - Chapter source baseline inspected for this revision: 17da6785217510728bc39ee324bdcc23e5441456.
 - Android/UI handoff and implementation snapshot inspected for the state, navigation, and graph-interaction revision: 4c1e53310f7e989ceab1ba4186faef7d4617665c.
 - Behavior-model source snapshot inspected for the revised interest-memory design: 0a21abd847a09db172edf680b12dd56b07e1e3a7.
@@ -100,4 +100,4 @@ This file is a non-rendered evidence ledger for contents/chapter_3.tex. It recor
 - Process health is not described as database, Redis, or provider health.
 - The usability findings are formative, task-specific, and not evidence of model, ranking, runtime, or redesign effectiveness.
 - The graph adjustments were not tested in a second participant study. Chapter 3 reports the observed problem and resulting design change only; Chapter 4 functional tests must not be used to claim improved usability.
-- Chapter 3 contains no algorithm, equation, pseudocode, model-weight table, backend implementation procedure, final-product screenshot, or performance result. The implementation-level material is preserved in `CH3-OUT-001` through `CH3-OUT-006` for owner-local Chapter 4 integration.
+- Chapter 3 contains no algorithm, equation, pseudocode, model-weight table, backend implementation procedure, final-product screenshot, or performance result because its role is App Design. This allocation does not prohibit pseudocode elsewhere: Chapter 4 may use it when an algorithm benefits from a precise, readable account supported by connected prose. The implementation-level material is preserved in `CH3-OUT-001` through `CH3-OUT-006` for owner-local Chapter 4 integration.
