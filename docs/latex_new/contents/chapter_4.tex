@@ -475,12 +475,12 @@ The profile also estimates how much influence its behavioral evidence should rec
 \end{equation}
 This construction requires both evidence mass and diversity, while incomplete embedding coverage reduces confidence directly. Repeated engagement with one paper can strengthen its support but cannot immediately grant the behavioral component its full nominal weight. Missing embeddings do not delete raw observations; they remain available for a later deterministic replay.
 
-Recommendation keeps explicit preference and inferred behavior as separate components. For candidate paper \(p\) with embedding \(v_p\), the contrastive affinity compares alignment with the positive and negative centroids:
+Recommendation keeps explicit preference and inferred behavior as separate components. For non-degenerate compatible vectors, let \(c(u,v)=\operatorname{clip}_{[0,1]}\!\left(u^{\mathsf T}v/(\lVert u\rVert_2\lVert v\rVert_2)\right)\); a degenerate or absent channel contributes zero. This non-negative similarity convention matches the scorer, in which negative cosine values do not count as positive alignment. For candidate paper \(p\) with embedding \(v_p\), the contrastive affinity is
 \begin{equation}
-  A(p)=\operatorname{clip}_{[0,1]}\!\left(0.5+0.5\left[\cos(u^+,v_p)-\cos(u^-,v_p)\right]\right).
+  A(p)=\operatorname{clip}_{[0,1]}\!\left(0.5+0.5\left[c(u^+,v_p)-c(u^-,v_p)\right]\right).
   \label{eq:behavior-affinity}
 \end{equation}
-An absent channel contributes zero cosine similarity. If \(T(p)\) is explicit-topic match and \(F(p)=2^{-d/7}\) is recency for publication age \(d\), define component values \((x_T,x_B,x_F)=(T(p),A(p),F(p))\) and nominal weights \((\alpha_T,\alpha_B,\alpha_F)=(0.45,0.35C,0.20)\). For the set \(\mathcal{K}(p)\) of available components, the implemented score is
+If \(T(p)\) is explicit-topic match and \(F(p)=2^{-d/7}\) is recency for publication age \(d\), define component values \((x_T,x_B,x_F)=(T(p),A(p),F(p))\) and nominal weights \((\alpha_T,\alpha_B,\alpha_F)=(0.45,0.35C,0.20)\). For the set \(\mathcal{K}(p)\) of available components, the implemented score is
 \begin{equation}
   S(p)=\frac{\sum_{k\in\mathcal{K}(p)}\alpha_k x_k}{\sum_{k\in\mathcal{K}(p)}\alpha_k}.
   \label{eq:recommendation-score}
@@ -503,7 +503,7 @@ Algorithm~\ref{alg:behavior-ranking} separates the replayable computation from i
   Apply the saturation functions in Equation~\ref{eq:behavior-saturation} per paper\;
   Construct \(u^+\) and \(u^-\) from compatible embeddings and compute confidence \(C\)\;
   \ForEach{candidate \(p\in P\)}{
-    Compute \(S(p)\) from the available topic, behavioral, and recency components\;
+    Compute clamped positive and negative similarities, affinity \(A(p)\), and score \(S(p)\)\;
     Derive a reason only from components that participated in \(S(p)\)\;
   }
   \Return candidates ordered by score and stable paper identity, with confidence and evidence counts\;
@@ -555,7 +555,7 @@ The public graph service currently supplies persisted citation edges and no keyw
 Citation edges are damped by the inverse logarithm of the target's citation in-degree, reducing the influence of ubiquitously cited papers on layout and ranking.
 A bounded best-first expansion from the requested center paper selects the neighborhood by cumulative edge weight, so a truncated result retains the highest-weight paths reached from the center.
 Surviving nodes receive cluster identities from a weighted adaptation of label propagation, a local community-detection method in which nodes repeatedly adopt labels supported by their neighbours~\cite{raghavan2007label}, using deterministic tie-breaking and at most ten update rounds; the grouping is a presentation aid, not a semantic topic ground truth. Rank scores come from weighted degree centrality normalized to the unit interval.
-The public route bounds traversal depth at two and the node limit at 200, and the client's request contract asks for at most fifty nodes. These limits bound the graph passed to the device, and a chronological citation-only view with a disclosed algorithm status is the deterministic fallback when enrichment fails.
+The public route bounds traversal depth at two and the node limit at 200, and the client's request contract asks for at most fifty nodes. These limits bound the graph passed to the device. If enrichment fails, the service keeps the centre first, preserves the repository's returned node order up to the requested limit, retains citation edges between those nodes, and discloses the fallback status.
 
 Algorithm~\ref{alg:citation-graph} states the construction.
 
@@ -573,7 +573,7 @@ Algorithm~\ref{alg:citation-graph} states the construction.
     Resolve ties deterministically and stop when no label changes\;
   }
   Rank nodes by normalized weighted degree while preserving \(p_0\) as the centre\;
-  \If{enrichment fails}{Construct a bounded chronological view and set status to \emph{fallback}\;}
+  \If{enrichment fails}{Keep the centre first, preserve repository order up to \(L\), retain induced citation edges, and set status to \emph{fallback}\;}
   \Return selected papers, directed edges, community labels, ranks, and status\;
 \end{algorithm}
 
