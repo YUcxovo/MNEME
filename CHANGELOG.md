@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 ### Added
 
 - Added separate public liveness and bounded PostgreSQL/Redis readiness probes with safe dependency-status responses.
+- Added a bounded SQL-backed `platform-operations-v1` JSON report for jobs, papers, parse quality, and briefing generation without raw failure diagnostics.
 - Added citation-backed seed onboarding that resolves five arXiv neighbors, persists their
   real Semantic Scholar edges, prepares the seed and returned papers, and preserves the
   existing same-category briefing as an explicit provider-unavailable fallback.
