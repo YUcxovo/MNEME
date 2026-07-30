@@ -10,8 +10,11 @@ import pytest
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from mneme.api.dependencies.auth import Principal
 from mneme.api.errors import ApiError
-from mneme.api.routes import onboarding_support
+from mneme.api.routes import onboarding, onboarding_support
+from mneme.api.schemas.onboarding import SeedInitializationRequest
+from mneme.core.config import Settings
 from mneme.models.job import JobStatus
 from mneme.models.paper import ProcessingStatus
 from mneme.services.arxiv.ingestion import ArxivObservedRevision
@@ -22,6 +25,22 @@ class FailingQueue:
 
     async def enqueue_job(self, *_args: object, **_kwargs: object) -> None:
         raise RuntimeError("sensitive broker diagnostics")
+
+
+class InternallyFailingArxivClient:
+    """Client fake that raises an unrelated implementation ValueError."""
+
+    def __init__(self, _settings: Settings) -> None:
+        pass
+
+    async def __aenter__(self) -> "InternallyFailingArxivClient":
+        return self
+
+    async def __aexit__(self, *_args: object) -> None:
+        return None
+
+    async def fetch_by_id(self, _arxiv_id: str) -> None:
+        raise ValueError("sensitive internal state")
 
 
 class FakeJobRepository:
@@ -100,3 +119,21 @@ def test_failed_seed_pipeline_returns_stable_public_error() -> None:
     assert raised.value.code == "seed_initialization_failed"
     assert raised.value.details is None
     session.rollback.assert_awaited_once()
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_internal_value_error_is_not_misclassified_as_invalid_input(monkeypatch) -> None:
+    monkeypatch.setattr(onboarding, "ArxivClient", InternallyFailingArxivClient)
+
+    with pytest.raises(ValueError, match="sensitive internal state"):
+        asyncio.run(
+            onboarding.initialize_from_seed(
+                SeedInitializationRequest(arxiv_reference="2607.01234"),
+                Principal(user_id=uuid4()),
+                FailingQueue(),
+                Settings(_env_file=None),
+                AsyncMock(spec=AsyncSession),
+            )
+        )

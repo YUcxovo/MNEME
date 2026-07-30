@@ -129,8 +129,6 @@ async def initialize_from_seed(
                 candidate_result = await ingestion.persist_feed_detailed(candidate_feed)
     except ApiError:
         raise
-    except ValueError as error:
-        raise ApiError(status.HTTP_400_BAD_REQUEST, "invalid_arxiv_reference", str(error)) from None
     except (ArxivClientError, ArxivParseError) as error:
         logger.warning("seed_arxiv_fetch_failed", error_type=type(error).__name__)
         raise ApiError(

@@ -11,6 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from pydantic.json_schema import SkipJsonSchema
+from redis.exceptions import RedisError
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -54,6 +55,7 @@ def register_error_handlers(application: FastAPI) -> None:
     application.add_exception_handler(RequestValidationError, handle_validation_error)
     application.add_exception_handler(StarletteHTTPException, handle_http_error)
     application.add_exception_handler(SQLAlchemyError, handle_database_error)
+    application.add_exception_handler(RedisError, handle_redis_error)
     application.add_exception_handler(Exception, handle_unexpected_error)
 
 
@@ -137,7 +139,21 @@ async def handle_database_error(request: Request, exception: Exception) -> JSONR
         "database_request_failed",
         request_id=_request_id(request),
         exception_type=type(exception).__name__,
-        exc_info=exception,
+    )
+    return _error_response(
+        request,
+        status.HTTP_503_SERVICE_UNAVAILABLE,
+        "service_unavailable",
+        "A required service is temporarily unavailable.",
+    )
+
+
+async def handle_redis_error(request: Request, exception: Exception) -> JSONResponse:
+    """Hide Redis diagnostics behind the stable dependency-failure response."""
+    logger.error(
+        "redis_request_failed",
+        request_id=_request_id(request),
+        exception_type=type(exception).__name__,
     )
     return _error_response(
         request,
@@ -154,7 +170,6 @@ async def handle_unexpected_error(request: Request, exception: Exception) -> JSO
         "unhandled_request_error",
         request_id=request_id,
         exception_type=type(exception).__name__,
-        exc_info=exception,
     )
     return _error_response(
         request,
