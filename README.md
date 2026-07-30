@@ -25,9 +25,11 @@ Retrofit/OkHttp, frozen-contract DTOs, a production ViewModel, summary-job polli
 Room-backed fallback with explicit data source labels. A blank Android demo token
 deliberately selects the existing controlled fixture instead. Supported live interactions
 are queued locally and uploaded through the frozen event contract, and paper details expose
-the bounded citation graph. Seed onboarding now prefers five arXiv-resolvable citation
-neighbors and persists their real edges before returning the briefing, so a selected
-briefing paper can open the prepared multi-node neighborhood. The original same-category
+the bounded citation graph. Paper details also expose Save and Share actions through that
+durable event path, while repeated questions reuse the backend's paper-scoped conversation
+identity and remain visible as one ordered session. Seed onboarding now prefers five
+arXiv-resolvable citation neighbors and persists their real edges before returning the
+briefing, so a selected briefing paper can open the prepared multi-node neighborhood. The original same-category
 selection remains the fallback when provider graph data is unavailable. Background digest
 refresh and production authentication remain outside the Android integration. The backend
 also provides explicit Semantic Scholar graph synchronization for other local papers,
