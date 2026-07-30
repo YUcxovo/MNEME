@@ -117,6 +117,17 @@ uv run python -m mneme.cli.recompute_behavior --user-id <user-uuid>
 
 The command stores no raw vector in its output; it reports safe model identity, confidence, channel availability, and aggregate evidence counts. A missing configured or stored user returns a stable exit status, and infrastructure errors do not expose database details.
 
+## Inspect platform operations
+
+Generate one bounded, read-only JSON snapshot from durable PostgreSQL state:
+
+```bash
+uv run python -m mneme.cli.report_platform
+uv run python -m mneme.cli.report_platform --window-hours 48 --failed-limit 10
+```
+
+The `platform-operations-v1` payload reports windowed job creation and execution attempts, current queued/running work, undispatched and expired dispatch leases, durable worker-stage failures, paper processing and latest-revision parse quality, and digest generation. `--window-hours` is bounded to 1--720, `--dispatch-lease-seconds` to 1--86400, and `--failed-limit` to 0--100. Recent failures expose only job identity, stage, stable error code, attempt count, and timestamps; raw worker diagnostics and idempotency keys are never selected. Redis enqueue rejection is represented by structured logs and currently undispatched work, not mislabeled as a historical database counter.
+
 Controlled behavior evaluation is offline and requires no PostgreSQL, Redis, provider, or user data. From `backend/`, use `uv run python -m mneme.cli.evaluate_behavior --output /tmp/mneme-behavior-evaluation` for an exploratory run. The retained clean-tree workflow, fixture, metrics, plots, and claim boundaries are documented in `docs/evaluation/behavior/README.md`.
 
 ## Pipeline and artifacts
