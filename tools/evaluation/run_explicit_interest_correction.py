@@ -28,7 +28,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--fixture",
         type=Path,
-        default=ROOT / "docs/evaluation/explicit-interest-correction/fixture.json",
+        default=ROOT / "tools/evaluation/fixtures/explicit_interest_correction.json",
     )
     parser.add_argument(
         "--output",
