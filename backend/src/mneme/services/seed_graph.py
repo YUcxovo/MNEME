@@ -124,14 +124,17 @@ class SeedGraphCandidateService:
     ) -> tuple[ArxivPaperRecord, ...]:
         """Resolve provider-ordered metadata without discarding neighbors after one 429."""
         records_by_id: dict[str, ArxivPaperRecord] = {}
+        last_error: Exception | None = None
         batch_size = library_size
         for start in range(0, len(candidate_ids), batch_size):
             batch = candidate_ids[start : start + batch_size]
             try:
-                feed = await self._arxiv_client.fetch_by_ids(batch)
+                records = (await self._arxiv_client.fetch_by_ids(batch)).records
             except (ArxivClientError, ArxivParseError, ValueError):
-                feed = await self._resolve_batch_individually(batch)
-            for record in feed.records:
+                records, batch_error = await self._resolve_batch_individually(batch)
+                if batch_error is not None:
+                    last_error = batch_error
+            for record in records:
                 if record.arxiv_id in batch:
                     records_by_id.setdefault(record.arxiv_id, record)
             selected = tuple(
@@ -139,27 +142,30 @@ class SeedGraphCandidateService:
             )[:library_size]
             if len(selected) == library_size:
                 return selected
-        return tuple(
+        selected = tuple(
             records_by_id[arxiv_id] for arxiv_id in candidate_ids if arxiv_id in records_by_id
         )[:library_size]
+        if last_error is not None:
+            raise SeedGraphMetadataUnavailable(
+                "arXiv citation-neighbor metadata remained unavailable after retry"
+            ) from last_error
+        return selected
 
-    async def _resolve_batch_individually(self, batch: tuple[str, ...]) -> ArxivFeed:
+    async def _resolve_batch_individually(
+        self,
+        batch: tuple[str, ...],
+    ) -> tuple[tuple[ArxivPaperRecord, ...], Exception | None]:
         """Retry a failed batch as single-paper requests on the same rate-limited client."""
-        records = []
+        records: list[ArxivPaperRecord] = []
+        last_error: Exception | None = None
         for arxiv_id in batch:
             try:
                 feed = await self._arxiv_client.fetch_by_ids((arxiv_id,))
             except (ArxivClientError, ArxivParseError, ValueError) as error:
-                raise SeedGraphMetadataUnavailable(
-                    "arXiv citation-neighbor metadata remained unavailable after retry"
-                ) from error
+                last_error = error
+                continue
             records.extend(record for record in feed.records if record.arxiv_id == arxiv_id)
-        return ArxivFeed(
-            records=tuple(records),
-            total_results=len(records),
-            start_index=0,
-            items_per_page=len(records),
-        )
+        return tuple(records), last_error
 
     async def persist(
         self,

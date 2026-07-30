@@ -163,6 +163,48 @@ def test_discovery_recovers_failed_batch_with_single_requests(
 
 @pytest.mark.base
 @pytest.mark.pipeline
+def test_discovery_uses_later_neighbor_after_one_single_request_fails() -> None:
+    candidate_ids = tuple(f"1705.0000{index}" for index in range(1, 7))
+
+    async def exercise():
+        arxiv = MagicMock(spec=ArxivClient)
+        arxiv.fetch_by_ids = AsyncMock(
+            side_effect=[
+                ArxivHTTPError(429),
+                ArxivHTTPError(429),
+                *(_feed(arxiv_id) for arxiv_id in candidate_ids[1:5]),
+                _feed(candidate_ids[5]),
+            ]
+        )
+        semantic = MagicMock(spec=SemanticScholarClient)
+        semantic.fetch_paper_references = AsyncMock(
+            return_value=(
+                _provider(SEED_ID, paper_id="s2-seed"),
+                tuple(
+                    _provider(arxiv_id, paper_id=f"ref-{index}")
+                    for index, arxiv_id in enumerate(candidate_ids, start=1)
+                ),
+            )
+        )
+        semantic.fetch_neighbors = AsyncMock(return_value=())
+
+        result = await SeedGraphCandidateService(
+            cast(ArxivClient, arxiv),
+            cast(SemanticScholarClient, semantic),
+        ).discover(SEED_ID, library_size=5, neighbor_limit=10)
+        return result, arxiv
+
+    result, arxiv = asyncio.run(exercise())
+    assert [record.arxiv_id for record in result.feed.records] == list(candidate_ids[1:])
+    assert arxiv.fetch_by_ids.await_args_list == [
+        call(candidate_ids[:5]),
+        *(call((arxiv_id,)) for arxiv_id in candidate_ids[:5]),
+        call((candidate_ids[5],)),
+    ]
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
 def test_discovery_fails_explicitly_when_neighbor_metadata_remains_unavailable() -> None:
     candidate_ids = tuple(f"1705.0000{index}" for index in range(1, 6))
 
