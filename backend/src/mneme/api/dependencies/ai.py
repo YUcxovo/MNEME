@@ -1,6 +1,7 @@
 """Shared dependencies for AI endpoints."""
 
-from typing import Annotated, Protocol
+import asyncio
+from typing import Annotated, Protocol, cast
 
 from arq import create_pool
 from fastapi import Depends, Request
@@ -26,6 +27,38 @@ class TaskQueue(Protocol):
     async def enqueue_job(self, function: str, *args: object, **kwargs: object) -> object:
         """Queue one background job."""
         ...
+
+
+class ApplicationTaskQueue:
+    """Resolve the application ARQ pool only when work must be dispatched."""
+
+    def __init__(self, request: Request) -> None:
+        self._request = request
+
+    async def enqueue_job(
+        self,
+        function: str,
+        *args: object,
+        **kwargs: object,
+    ) -> object:
+        """Create or reuse the shared pool, then enqueue one job."""
+        state = self._request.app.state
+        pool = getattr(state, "arq_pool", None)
+        if pool is None:
+            lock = getattr(state, "arq_pool_lock", None)
+            if lock is None:
+                lock = asyncio.Lock()
+                state.arq_pool_lock = lock
+            async with lock:
+                pool = getattr(state, "arq_pool", None)
+                if pool is None:
+                    settings: Settings = state.settings
+                    pool = await create_pool(
+                        create_arq_redis_settings(settings),
+                        default_queue_name=settings.arq_queue_name,
+                    )
+                    state.arq_pool = pool
+        return await cast(TaskQueue, pool).enqueue_job(function, *args, **kwargs)
 
 
 def get_llm_service(request: Request) -> LLMService:
@@ -54,16 +87,8 @@ def get_embedding_service(request: Request) -> EmbeddingService:
 
 
 async def get_task_queue(request: Request) -> TaskQueue:
-    """Return the lazily created application-scoped ARQ enqueue pool."""
-    pool = getattr(request.app.state, "arq_pool", None)
-    if pool is None:
-        settings: Settings = request.app.state.settings
-        pool = await create_pool(
-            create_arq_redis_settings(settings),
-            default_queue_name=settings.arq_queue_name,
-        )
-        request.app.state.arq_pool = pool
-    return pool
+    """Return a request-bound queue that connects only when enqueueing work."""
+    return ApplicationTaskQueue(request)
 
 
 async def get_artifact_repository(
