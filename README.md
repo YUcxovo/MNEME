@@ -17,13 +17,7 @@ Engineering sources of truth:
 - [`docs/adr/0003-behavior-v2.md`](docs/adr/0003-behavior-v2.md) -- confidence-calibrated contrastive behavior model
 - [`docs/evaluation/behavior/README.md`](docs/evaluation/behavior/README.md) -- controlled behavior evaluation and claim boundary
 
-Current implementation status (2026-07-24): `dev` contains the merged backend/data and
-AI platform through Milestone 3, plus the live skeletal Android path. The backend
-includes the v0.1 relational schema, demo-token authentication, arXiv metadata and
-revision-safe document ingestion, durable jobs, provider-routed summarization,
-section-aware chunking, embeddings, pgvector retrieval, single-paper Q&A,
-recommendation/digest services, scheduling, recovery, caching, budget controls, and
-deterministic evaluation and end-to-end coverage.
+Current implementation status (2026-07-30): the checkout contains the backend/data and AI platform through Milestone 3, the live skeletal Android path, and Ruiyu's Milestone 4 platform-hardening units. In addition to the v0.1 relational schema, ingestion, durable jobs, provider-routed AI pipeline, retrieval, Q&A, recommendations, graph, behavior, scheduling, caching, and evaluation, the backend now has separate liveness/readiness probes, safe dependency-failure mapping, lazy ARQ dispatch connections, bounded database pools, a SQL-backed operations report, and expanded cross-layer integration coverage.
 
 This checkout connects seed-paper onboarding -> Android briefing -> paper summary ->
 single-paper Q&A -> arXiv source flow to those implemented REST APIs. It adds
@@ -412,20 +406,20 @@ Production:  https://<domain>/v1
 
 | Method | Path | Purpose | Current status |
 |--------|------|---------|----------------|
-| `GET`  | `/v1/health` | Service health (no auth) | Implemented on `dev` |
+| `GET`  | `/v1/health` | Service health (no auth) | Implemented |
 | `GET`  | `/v1/health/ready` | PostgreSQL and Redis readiness (no auth) | Implemented |
-| `GET`  | `/v1/papers` | Cursor-paginated papers | Implemented on `dev` |
-| `GET`  | `/v1/papers/{paper_id}` | Get paper detail; `paper_id` is an internal UUID | Implemented on `dev` |
-| `GET`  | `/v1/papers/{paper_id}/summary` | Ready revision summary or `202` durable job | Implemented on `dev` |
-| `GET`  | `/v1/digests` | Cursor-paginated Research Briefings | Implemented on `dev` |
-| `POST` | `/v1/digests/recommended` | Get or synchronously generate a manual recommended briefing | Implemented on `dev` |
-| `POST` | `/v1/qa/ask` | Submit a single-paper RAG question | Implemented on `dev` |
-| `POST` | `/v1/events` | Batch-upload behavioral tracking events | Implemented on this branch |
-| `GET`  | `/v1/graph/{paper_id}` | Get a bounded paper-citation ego graph | Implemented on this branch |
-| `GET`  | `/v1/users/me/preferences` | Get current user's interest preferences | Implemented on `dev` |
-| `PUT`  | `/v1/users/me/preferences` | Replace explicit topics and followed authors | Implemented on `dev` |
-| `POST` | `/v1/onboarding/seed` | Prepare a complete five-paper briefing from one arXiv seed | Implemented on `dev` |
-| `GET`  | `/v1/jobs/{job_id}` | Poll durable asynchronous job state | Implemented on `dev` |
+| `GET`  | `/v1/papers` | Cursor-paginated papers | Implemented |
+| `GET`  | `/v1/papers/{paper_id}` | Get paper detail; `paper_id` is an internal UUID | Implemented |
+| `GET`  | `/v1/papers/{paper_id}/summary` | Ready revision summary or `202` durable job | Implemented |
+| `GET`  | `/v1/digests` | Cursor-paginated Research Briefings | Implemented |
+| `POST` | `/v1/digests/recommended` | Get or synchronously generate a manual recommended briefing | Implemented |
+| `POST` | `/v1/qa/ask` | Submit a single-paper RAG question | Implemented |
+| `POST` | `/v1/events` | Batch-upload behavioral tracking events | Implemented |
+| `GET`  | `/v1/graph/{paper_id}` | Get a bounded paper-citation ego graph | Implemented |
+| `GET`  | `/v1/users/me/preferences` | Get current user's interest preferences | Implemented |
+| `PUT`  | `/v1/users/me/preferences` | Replace explicit topics and followed authors | Implemented |
+| `POST` | `/v1/onboarding/seed` | Prepare a complete five-paper briefing from one arXiv seed | Implemented |
+| `GET`  | `/v1/jobs/{job_id}` | Poll durable asynchronous job state | Implemented |
 
 ### Detailed Endpoint Specifications
 
