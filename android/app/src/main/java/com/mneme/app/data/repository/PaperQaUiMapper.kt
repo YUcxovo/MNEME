@@ -63,12 +63,17 @@ internal fun CachedPaper.toCachedDetail(): PaperContentResult.Ready =
 internal fun AnswerDto.toQa(
     paper: CachedPaper,
     question: String,
+    requestedConversationId: String? = null,
 ): QaUiModel {
     if (citations.any { citation -> citation.paperId != paper.id }) {
         throw SerializationException("A Q&A citation points to a different paper.")
     }
+    if (requestedConversationId != null && conversationId != requestedConversationId) {
+        throw SerializationException("The backend changed the active Q&A conversation.")
+    }
     return QaUiModel(
         paperId = paper.id,
+        conversationId = conversationId,
         question = question,
         answer = answer,
         disclosure =

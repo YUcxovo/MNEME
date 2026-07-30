@@ -2,6 +2,7 @@
 
 package com.mneme.app.ui
 
+import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,14 +20,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -41,7 +41,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.demo.SkeletalContentRepository
@@ -79,18 +78,27 @@ internal data class MnemeUiSnapshot(
     val qa: QaUiState,
     val graph: GraphUiState,
     val interestEdit: InterestEditUiState,
+    val savedPaperIds: Set<String>,
 )
 
-private data class MnemeUiActions(
+internal data class MnemeUiActions(
     val refreshBriefing: () -> Unit,
     val recordPaperImpressions: (List<String>) -> Unit,
     val recordPaperOpened: (String) -> Unit,
     val requestPaper: (String) -> Unit,
     val retryPaper: (String) -> Unit,
+    val openQa: (String) -> Unit,
     val requestQa: (String, String) -> Unit,
     val requestGraph: (String) -> Unit,
     val retryGraph: (String) -> Unit,
     val saveInterests: (List<String>) -> Unit,
+    val savePaper: (String) -> Unit,
+    val sharePaper: (String) -> Unit,
+)
+
+internal data class MnemeExternalActions(
+    val openSource: (String) -> Unit,
+    val sharePaper: (String, String) -> Unit,
 )
 
 @Composable
@@ -98,6 +106,7 @@ fun MnemeApp(
     viewModel: MnemeViewModel,
     modifier: Modifier = Modifier,
     onOpenSource: ((String) -> Unit)? = null,
+    onSharePaper: ((String, String) -> Unit)? = null,
 ) {
     val onboardingState by viewModel.onboardingState.collectAsStateWithLifecycle()
     val snapshot = viewModel.collectUiSnapshot()
@@ -137,20 +146,9 @@ fun MnemeApp(
             OnboardingUiState.Ready ->
                 MnemeAppScaffold(
                     snapshot = snapshot,
-                    actions =
-                        MnemeUiActions(
-                            refreshBriefing = viewModel::refreshBriefing,
-                            recordPaperImpressions =
-                                viewModel.behavioralEvents::recordPaperImpressions,
-                            recordPaperOpened = viewModel.behavioralEvents::recordPaperOpened,
-                            requestPaper = { paperId -> viewModel.loadPaper(paperId) },
-                            retryPaper = { paperId -> viewModel.loadPaper(paperId, force = true) },
-                            requestQa = viewModel::askQuestion,
-                            requestGraph = { paperId -> viewModel.loadGraph(paperId) },
-                            retryGraph = { paperId -> viewModel.loadGraph(paperId, force = true) },
-                            saveInterests = viewModel::saveInterests,
-                        ),
+                    actions = viewModel.uiActions(),
                     onOpenSource = onOpenSource,
+                    onSharePaper = onSharePaper,
                     modifier = modifier,
                 )
         }
@@ -162,58 +160,14 @@ fun MnemeApp(
     modifier: Modifier = Modifier,
     repository: SkeletalContentRepository = SeededSkeletalContentRepository,
     onOpenSource: ((String) -> Unit)? = null,
+    onSharePaper: ((String, String) -> Unit)? = null,
 ) {
-    var paperState by remember(repository) { mutableStateOf<PaperDetailUiState>(PaperDetailUiState.Idle) }
-    var qaState by remember(repository) { mutableStateOf<QaUiState>(QaUiState.Idle) }
-    var graphState by remember(repository) { mutableStateOf<GraphUiState>(GraphUiState.Idle) }
-    var briefing by remember(repository) { mutableStateOf(repository.briefing()) }
-    var interestEditState by remember(repository) {
-        mutableStateOf<InterestEditUiState>(InterestEditUiState.Idle)
-    }
-    val loadPaper = { paperId: String ->
-        paperState =
-            repository.paper(paperId)?.let(PaperDetailUiState::Content)
-                ?: PaperDetailUiState.Error(paperId, "The selected paper is not available.")
-    }
-    val loadQa = { paperId: String, question: String ->
-        qaState =
-            repository.qa(paperId, question)?.let(QaUiState::Content)
-                ?: QaUiState.Error(
-                    paperId,
-                    question,
-                    "A paper-specific answer is not available.",
-                )
-    }
-    val loadGraph = { paperId: String ->
-        graphState =
-            repository.graph(paperId)?.let(GraphUiState::Content)
-                ?: GraphUiState.Error(paperId, "A citation graph is not available for this paper.")
-    }
+    val state = remember(repository) { FixtureMnemeState(repository) }
     MnemeAppScaffold(
-        snapshot =
-            MnemeUiSnapshot(
-                HomeUiState.Content(briefing),
-                paperState,
-                qaState,
-                graphState,
-                interestEditState,
-            ),
-        actions =
-            MnemeUiActions(
-                refreshBriefing = {},
-                recordPaperImpressions = {},
-                recordPaperOpened = {},
-                requestPaper = loadPaper,
-                retryPaper = loadPaper,
-                requestQa = loadQa,
-                requestGraph = loadGraph,
-                retryGraph = loadGraph,
-                saveInterests = { topics ->
-                    briefing = briefing.copy(interests = topics)
-                    interestEditState = InterestEditUiState.Saved
-                },
-            ),
+        snapshot = state.snapshot,
+        actions = state.actions,
         onOpenSource = onOpenSource,
+        onSharePaper = onSharePaper,
         modifier = modifier,
     )
 }
@@ -223,6 +177,7 @@ private fun MnemeAppScaffold(
     snapshot: MnemeUiSnapshot,
     actions: MnemeUiActions,
     onOpenSource: ((String) -> Unit)?,
+    onSharePaper: ((String, String) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
@@ -230,7 +185,28 @@ private fun MnemeAppScaffold(
     val currentDestination = backStackEntry?.destination
     val topLevelDestination = currentDestination.topLevelDestination()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
     val sourceOpener = onOpenSource ?: { url: String -> uriHandler.openUri(url) }
+    val paperSharer =
+        onSharePaper ?: { title: String, url: String ->
+            val sendIntent =
+                Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_SUBJECT, title)
+                    putExtra(Intent.EXTRA_TEXT, "$title\n$url")
+                }
+            context.startActivity(
+                Intent.createChooser(
+                    sendIntent,
+                    context.getString(R.string.share_chooser_title),
+                ),
+            )
+        }
+    val externalActions =
+        MnemeExternalActions(
+            openSource = sourceOpener,
+            sharePaper = paperSharer,
+        )
 
     Scaffold(
         modifier = modifier,
@@ -258,7 +234,7 @@ private fun MnemeAppScaffold(
             navController = navController,
             snapshot = snapshot,
             actions = actions,
-            onOpenSource = sourceOpener,
+            externalActions = externalActions,
             modifier = Modifier.padding(innerPadding),
         )
     }
@@ -305,7 +281,7 @@ private fun MnemeNavHost(
     navController: NavHostController,
     snapshot: MnemeUiSnapshot,
     actions: MnemeUiActions,
-    onOpenSource: (String) -> Unit,
+    externalActions: MnemeExternalActions,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -331,36 +307,14 @@ private fun MnemeNavHost(
                 onSave = actions.saveInterests,
             )
         }
-        composable<PaperDetailRoute> { entry ->
-            val paperId = entry.toRoute<PaperDetailRoute>().paperId
-            LaunchedEffect(paperId) { actions.requestPaper(paperId) }
-            PaperDestination(
-                paperId = paperId,
-                state = snapshot.paper,
-                actions =
-                    PaperDestinationActions(
-                        retry = { actions.retryPaper(paperId) },
-                        askQuestion = { navController.navigate(QaRoute(paperId)) },
-                        exploreGraph = { navController.navigate(GraphRoute(paperId)) },
-                        openSource = onOpenSource,
-                    ),
-            )
-        }
+        paperDetailNavigation(navController, snapshot, actions, externalActions)
         graphNavigation(
             navController = navController,
             state = snapshot.graph,
             requestGraph = actions.requestGraph,
             retryGraph = actions.retryGraph,
         )
-        composable<QaRoute> { entry ->
-            val paperId = entry.toRoute<QaRoute>().paperId
-            QaDestination(
-                paperId = paperId,
-                state = snapshot.qa,
-                onSubmit = { question -> actions.requestQa(paperId, question) },
-                onOpenSource = onOpenSource,
-            )
-        }
+        qaNavigation(snapshot, actions, externalActions)
     }
 }
 

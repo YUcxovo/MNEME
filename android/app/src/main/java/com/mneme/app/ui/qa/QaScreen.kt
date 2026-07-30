@@ -7,14 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -44,12 +42,8 @@ import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.network.QUESTION_MAX_LENGTH
 import com.mneme.app.ui.QaUiState
-import com.mneme.app.ui.component.ContentSourceNotice
+import com.mneme.app.ui.completedExchanges
 import com.mneme.app.ui.component.MnemeSectionLabel
-import com.mneme.app.ui.component.SourceMatchStatusPill
-import com.mneme.app.ui.model.QaUiModel
-import com.mneme.app.ui.model.SourceUiModel
-import com.mneme.app.ui.submittedQuestion
 import com.mneme.app.ui.theme.MnemeTheme
 
 @Composable
@@ -60,14 +54,15 @@ fun QaScreen(
     onOpenSource: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val initialQuestion = state.submittedQuestion().orEmpty()
-    var question by rememberSaveable(paperId) { mutableStateOf(initialQuestion) }
+    var question by rememberSaveable(paperId) { mutableStateOf("") }
     val isLoading = state is QaUiState.Loading
     val focusManager = LocalFocusManager.current
     val submitQuestion = {
         if (question.isNotBlank() && question.length <= QUESTION_MAX_LENGTH && !isLoading) {
+            val submitted = question
+            question = ""
             focusManager.clearFocus()
-            onSubmit(question)
+            onSubmit(submitted)
         }
     }
 
@@ -89,36 +84,35 @@ fun QaScreen(
             )
         }
 
-        state.submittedQuestion()?.let { submittedQuestion ->
+        state.completedExchanges().forEachIndexed { index, exchange ->
             item {
-                QuestionBubble(question = submittedQuestion)
+                QuestionBubble(question = exchange.question)
             }
+            qaResponseItems(
+                qa = exchange,
+                turnIndex = index,
+                onOpenSource = onOpenSource,
+            )
         }
 
-        qaStateItems(state = state, onSubmit = onSubmit, onOpenSource = onOpenSource)
+        qaStateItems(state = state, onSubmit = onSubmit)
     }
 }
 
 private fun LazyListScope.qaStateItems(
     state: QaUiState,
     onSubmit: (String) -> Unit,
-    onOpenSource: (String) -> Unit,
 ) {
     when (state) {
         QaUiState.Idle -> {
-            item {
-                Text(
-                    text = stringResource(R.string.qa_empty_prompt),
-                    modifier = Modifier.testTag("qa-empty-prompt"),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            qaEmptyPrompt()
         }
         is QaUiState.Loading -> {
+            item { QuestionBubble(question = state.question) }
             item { QaLoadingState() }
         }
         is QaUiState.Error -> {
+            item { QuestionBubble(question = state.question) }
             item {
                 QaErrorState(
                     message = state.message,
@@ -127,8 +121,21 @@ private fun LazyListScope.qaStateItems(
             }
         }
         is QaUiState.Content -> {
-            qaResponseItems(qa = state.qa, onOpenSource = onOpenSource)
+            if (state.exchanges.isEmpty()) {
+                qaEmptyPrompt()
+            }
         }
+    }
+}
+
+private fun LazyListScope.qaEmptyPrompt() {
+    item {
+        Text(
+            text = stringResource(R.string.qa_empty_prompt),
+            modifier = Modifier.testTag("qa-empty-prompt"),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -193,44 +200,6 @@ private fun QuestionComposer(
             ) {
                 Text(stringResource(R.string.qa_submit_question))
             }
-        }
-    }
-}
-
-private fun LazyListScope.qaResponseItems(
-    qa: QaUiModel,
-    onOpenSource: (String) -> Unit,
-) {
-    item {
-        ContentSourceNotice(disclosure = qa.disclosure)
-    }
-    item {
-        AnswerBubble(answer = qa.answer)
-    }
-    item {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            MnemeSectionLabel(text = stringResource(R.string.qa_source))
-            SourceMatchStatusPill(status = qa.sourceMatchStatus)
-        }
-    }
-    if (qa.sources.isEmpty()) {
-        item {
-            Text(
-                text = stringResource(R.string.qa_no_citations),
-                modifier = Modifier.testTag("qa-no-citations"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    } else {
-        items(
-            items = qa.sources,
-            key = { source -> "${source.url}-${source.location}" },
-        ) { source ->
-            QaSourceCard(source = source, onOpenSource = onOpenSource)
         }
     }
 }
@@ -311,91 +280,6 @@ private fun QuestionBubble(
     }
 }
 
-@Composable
-private fun AnswerBubble(
-    answer: String,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth().testTag("qa-answer"),
-        colors =
-            CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        shape = RoundedCornerShape(6.dp, 18.dp, 18.dp, 18.dp),
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.qa_answer),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = answer,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-        }
-    }
-}
-
-@Composable
-private fun QaSourceCard(
-    source: SourceUiModel,
-    onOpenSource: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        modifier = modifier.fillMaxWidth().testTag("qa-source-card"),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.42f)),
-    ) {
-        Column(
-            modifier = Modifier.padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.source_location_format, source.location),
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                source.matchStatus?.let { status ->
-                    SourceMatchStatusPill(
-                        status = status,
-                        modifier = Modifier.testTag("qa-source-status"),
-                    )
-                }
-            }
-            Text(text = source.label, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = stringResource(R.string.qa_source_note),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            OutlinedButton(
-                onClick = { onOpenSource(source.url) },
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-                shape = MaterialTheme.shapes.small,
-            ) {
-                Text(
-                    text = stringResource(R.string.action_open_source),
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-        }
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 private fun QaScreenPreview() {
@@ -404,7 +288,11 @@ private fun QaScreenPreview() {
         SeededSkeletalContentRepository.qa(SeededSkeletalContentRepository.PAPER_ID, question)?.let {
             QaScreen(
                 paperId = SeededSkeletalContentRepository.PAPER_ID,
-                state = QaUiState.Content(it),
+                state =
+                    QaUiState.Content(
+                        paperId = SeededSkeletalContentRepository.PAPER_ID,
+                        exchanges = listOf(it),
+                    ),
                 onSubmit = {},
                 onOpenSource = {},
             )

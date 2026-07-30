@@ -8,6 +8,7 @@ import com.mneme.app.ui.component.LoadingState
 import com.mneme.app.ui.graph.GraphScreen
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.interests.InterestsScreen
+import com.mneme.app.ui.paper.PaperDetailActions
 import com.mneme.app.ui.paper.PaperDetailScreen
 import com.mneme.app.ui.qa.QaScreen
 
@@ -40,6 +41,7 @@ internal fun InterestsDestination(
 internal fun PaperDestination(
     paperId: String,
     state: PaperDetailUiState,
+    isSaved: Boolean,
     actions: PaperDestinationActions,
 ) {
     when (state) {
@@ -49,9 +51,15 @@ internal fun PaperDestination(
             if (state.paper.paper.id == paperId) {
                 PaperDetailScreen(
                     paper = state.paper,
-                    onAskQuestion = actions.askQuestion,
-                    onExploreGraph = actions.exploreGraph,
-                    onOpenSource = actions.openSource,
+                    actions =
+                        PaperDetailActions(
+                            askQuestion = actions.askQuestion,
+                            exploreGraph = actions.exploreGraph,
+                            savePaper = actions.savePaper,
+                            sharePaper = actions.sharePaper,
+                            openSource = actions.openSource,
+                        ),
+                    isSaved = isSaved,
                 )
             } else {
                 LoadingState(message = "Loading paper and summary...")
@@ -64,6 +72,8 @@ internal data class PaperDestinationActions(
     val retry: () -> Unit,
     val askQuestion: () -> Unit,
     val exploreGraph: () -> Unit,
+    val savePaper: () -> Unit,
+    val sharePaper: () -> Unit,
     val openSource: (String) -> Unit,
 )
 
@@ -104,12 +114,8 @@ internal fun QaDestination(
     onOpenSource: (String) -> Unit,
 ) {
     val scopedState =
-        when (state) {
-            QaUiState.Idle -> QaUiState.Idle
-            is QaUiState.Loading -> state.takeIf { it.paperId == paperId } ?: QaUiState.Idle
-            is QaUiState.Content -> state.takeIf { it.qa.paperId == paperId } ?: QaUiState.Idle
-            is QaUiState.Error -> state.takeIf { it.paperId == paperId } ?: QaUiState.Idle
-        }
+        state.takeIf { it.paperIdOrNull() == null || it.paperIdOrNull() == paperId }
+            ?: QaUiState.Idle
     QaScreen(
         paperId = paperId,
         state = scopedState,

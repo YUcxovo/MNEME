@@ -10,6 +10,7 @@ import com.mneme.app.data.repository.PaperContentResult
 import com.mneme.app.data.repository.SkeletalDataRepository
 import com.mneme.app.data.repository.toUserMessage
 import com.mneme.app.ui.home.HomeUiState
+import com.mneme.app.ui.model.QaUiModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -46,6 +47,7 @@ class MnemeViewModel(
         MutableStateFlow<InterestEditUiState>(InterestEditUiState.Idle)
     val interestEditState: StateFlow<InterestEditUiState> = _interestEditState.asStateFlow()
 
+    private val qaConversations = mutableMapOf<String, List<QaUiModel>>()
     private var paperLoadJob: Job? = null
     private var qaLoadJob: Job? = null
     private var graphLoadJob: Job? = null
@@ -158,17 +160,48 @@ class MnemeViewModel(
         }
         behavioralEvents.recordQuestionAsked(paperId)
         qaLoadJob?.cancel()
+        val exchanges = qaConversations[paperId].orEmpty()
+        val conversationId = exchanges.lastOrNull()?.conversationId
         qaLoadJob =
             viewModelScope.launch {
-                _qaState.value = QaUiState.Loading(paperId, question)
+                _qaState.value = QaUiState.Loading(paperId, question, exchanges)
                 try {
-                    _qaState.value = QaUiState.Content(repository.askQuestion(paperId, question))
+                    val answer =
+                        repository.askQuestion(
+                            paperId = paperId,
+                            question = question,
+                            conversationId = conversationId,
+                        )
+                    val updatedExchanges = exchanges + answer
+                    qaConversations[paperId] = updatedExchanges
+                    _qaState.value = QaUiState.Content(paperId, updatedExchanges)
                 } catch (error: IOException) {
-                    _qaState.value = QaUiState.Error(paperId, question, error.toUserMessage())
+                    _qaState.value =
+                        QaUiState.Error(
+                            paperId = paperId,
+                            question = question,
+                            message = error.toUserMessage(),
+                            exchanges = exchanges,
+                        )
                 } catch (error: SerializationException) {
-                    _qaState.value = QaUiState.Error(paperId, question, error.toUserMessage())
+                    _qaState.value =
+                        QaUiState.Error(
+                            paperId = paperId,
+                            question = question,
+                            message = error.toUserMessage(),
+                            exchanges = exchanges,
+                        )
                 }
             }
+    }
+
+    fun openQa(paperId: String) {
+        require(paperId.isNotBlank()) { "A paper identifier is required." }
+        if (_qaState.value.paperIdOrNull() == paperId) {
+            return
+        }
+        qaLoadJob?.cancel()
+        _qaState.value = QaUiState.Content(paperId, qaConversations[paperId].orEmpty())
     }
 
     fun loadGraph(
