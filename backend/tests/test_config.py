@@ -125,5 +125,8 @@ def test_readiness_timeout_is_bounded(
     ],
 )
 def test_database_pool_settings_are_bounded(field: str, value: int) -> None:
-    with pytest.raises(ValueError):
-        Settings(**{field: value}, _env_file=None)
+    environment_name = f"MNEME_{field.upper()}"
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setenv(environment_name, str(value))
+        with pytest.raises(ValueError):
+            Settings(_env_file=None)

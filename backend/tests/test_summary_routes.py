@@ -245,9 +245,6 @@ def _application(
     async def jobs_override() -> FakeJobRepository:
         return jobs
 
-    async def queue_override() -> FakeQueue:
-        return queue
-
     async def session_override() -> FakeSession:
         return FakeSession()
 
@@ -261,6 +258,11 @@ def _application(
     application.dependency_overrides[get_artifact_repository] = artifacts_override
     application.dependency_overrides[get_pipeline_job_repository] = jobs_override
     if queue is not None:
+        configured_queue = queue
+
+        async def queue_override() -> FakeQueue:
+            return configured_queue
+
         application.dependency_overrides[get_task_queue] = queue_override
     application.dependency_overrides[get_session] = session_override
     return application
