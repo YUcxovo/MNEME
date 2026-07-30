@@ -399,35 +399,41 @@ def test_cold_start_user_without_preferences_still_gets_a_digest() -> None:
 @pytest.mark.base
 @pytest.mark.api
 def test_empty_candidate_pool_returns_empty_digest() -> None:
-    application = _application(FakeDigestRepository(papers=[], preferences=None))
+    repository = FakeDigestRepository(papers=[], preferences=None)
+    application = _application(repository)
 
     response = asyncio.run(_post(application))
 
     assert response.status_code == 200
     assert response.json()["entries"] == []
+    assert len(repository.ready_candidate_calls) == 1
 
 
 @pytest.mark.base
 @pytest.mark.api
-def test_manual_digest_uses_ready_catalog_when_recent_window_is_empty() -> None:
-    older_paper = _paper("Attention from an older seed library", age_days=90)
+def test_manual_digest_ranks_ready_catalog_when_recent_window_is_empty() -> None:
+    unrelated_paper = _paper("A survey of unrelated systems", age_days=90)
+    matching_paper = _paper("Attention from an older seed library", age_days=100)
     preferences = UserPreference(
         user_id=USER_ID,
-        explicit_topics=["attention"],
+        explicit_topics=["AtTeNtIoN"],
         followed_authors=[],
         model_version=2,
     )
     repository = FakeDigestRepository(
         papers=[],
-        ready_papers=[older_paper],
+        ready_papers=[unrelated_paper, matching_paper],
         preferences=preferences,
     )
 
     response = asyncio.run(_post(_application(repository)))
 
     assert response.status_code == 200
-    assert response.json()["entries"][0]["paper"]["title"] == older_paper.title
-    assert repository.ready_candidate_calls
+    entries = response.json()["entries"]
+    assert len(entries) == 2
+    assert entries[0]["paper"]["title"] == matching_paper.title
+    assert "AtTeNtIoN" in entries[0]["recommendation_reason"]
+    assert len(repository.ready_candidate_calls) == 1
 
 
 @pytest.mark.base
@@ -453,6 +459,31 @@ def test_weekly_generation_uses_an_exclusive_period_cutoff() -> None:
     assert len(bundle.entries) == 1
     assert repository.candidate_calls == [(NOW - timedelta(days=14), NOW, 200)]
     assert repository.operation_calls == ["lock", "preferences", "create"]
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_weekly_generation_does_not_fall_back_to_ready_catalog() -> None:
+    repository = FakeDigestRepository(
+        papers=[],
+        ready_papers=[_paper("Older ready paper", age_days=90)],
+        preferences=None,
+    )
+    service = RecommendedDigestService(
+        cast(DigestRepository, repository), candidate_days=14, max_entries=10
+    )
+
+    bundle = asyncio.run(
+        service.generate(
+            USER_ID,
+            digest_type=DigestType.WEEKLY,
+            as_of=NOW,
+        )
+    )
+
+    assert bundle.entries == []
+    assert repository.candidate_calls == [(NOW - timedelta(days=14), NOW, 200)]
+    assert repository.ready_candidate_calls == []
 
 
 @pytest.mark.base
