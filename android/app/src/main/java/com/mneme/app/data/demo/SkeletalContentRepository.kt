@@ -80,6 +80,7 @@ object SeededSkeletalContentRepository : SkeletalContentRepository {
     private val qa =
         QaUiModel(
             paperId = PAPER_ID,
+            conversationId = "controlled-$PAPER_ID",
             question =
                 "What mechanism does the Transformer use instead of recurrence and convolutions?",
             answer =

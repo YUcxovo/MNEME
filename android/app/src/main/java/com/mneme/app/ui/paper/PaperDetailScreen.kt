@@ -14,6 +14,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AccountTree
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -41,9 +43,8 @@ import com.mneme.app.ui.theme.MnemeTheme
 @Composable
 fun PaperDetailScreen(
     paper: PaperDetailUiModel,
-    onAskQuestion: () -> Unit,
-    onExploreGraph: () -> Unit,
-    onOpenSource: (String) -> Unit,
+    actions: PaperDetailActions,
+    isSaved: Boolean,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -73,13 +74,13 @@ fun PaperDetailScreen(
             SourceCard(
                 label = paper.source.label,
                 location = paper.source.location,
-                onOpenSource = { onOpenSource(paper.source.url) },
+                onOpenSource = { actions.openSource(paper.source.url) },
             )
         }
         item {
             PaperActions(
-                onExploreGraph = onExploreGraph,
-                onAskQuestion = onAskQuestion,
+                actions = actions,
+                isSaved = isSaved,
             )
         }
     }
@@ -87,12 +88,17 @@ fun PaperDetailScreen(
 
 @Composable
 private fun PaperActions(
-    onExploreGraph: () -> Unit,
-    onAskQuestion: () -> Unit,
+    actions: PaperDetailActions,
+    isSaved: Boolean,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        PaperEngagementActions(
+            onSavePaper = actions.savePaper,
+            onSharePaper = actions.sharePaper,
+            isSaved = isSaved,
+        )
         OutlinedButton(
-            onClick = onExploreGraph,
+            onClick = actions.exploreGraph,
             modifier = Modifier.fillMaxWidth().testTag("explore-graph-action"),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
             shape = MaterialTheme.shapes.small,
@@ -107,7 +113,7 @@ private fun PaperActions(
             )
         }
         Button(
-            onClick = onAskQuestion,
+            onClick = actions.askQuestion,
             modifier = Modifier.fillMaxWidth().testTag("ask-question-action"),
             colors =
                 ButtonDefaults.buttonColors(
@@ -122,6 +128,46 @@ private fun PaperActions(
             )
             Text(
                 text = stringResource(R.string.action_ask_question),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PaperEngagementActions(
+    onSavePaper: () -> Unit,
+    onSharePaper: () -> Unit,
+    isSaved: Boolean,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Button(
+            onClick = onSavePaper,
+            enabled = !isSaved,
+            modifier = Modifier.weight(1f).testTag("save-paper-action"),
+            shape = MaterialTheme.shapes.small,
+        ) {
+            Icon(imageVector = Icons.Default.Bookmark, contentDescription = null)
+            Text(
+                text =
+                    stringResource(
+                        if (isSaved) R.string.action_saved else R.string.action_save_paper,
+                    ),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        OutlinedButton(
+            onClick = onSharePaper,
+            modifier = Modifier.weight(1f).testTag("share-paper-action"),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+            shape = MaterialTheme.shapes.small,
+        ) {
+            Icon(imageVector = Icons.Default.Share, contentDescription = null)
+            Text(
+                text = stringResource(R.string.action_share_paper),
                 modifier = Modifier.padding(start = 8.dp),
             )
         }
@@ -299,9 +345,15 @@ private fun PaperDetailScreenPreview() {
         SeededSkeletalContentRepository.paper(SeededSkeletalContentRepository.PAPER_ID)?.let {
             PaperDetailScreen(
                 paper = it,
-                onAskQuestion = {},
-                onExploreGraph = {},
-                onOpenSource = {},
+                actions =
+                    PaperDetailActions(
+                        askQuestion = {},
+                        exploreGraph = {},
+                        savePaper = {},
+                        sharePaper = {},
+                        openSource = {},
+                    ),
+                isSaved = false,
             )
         }
     }

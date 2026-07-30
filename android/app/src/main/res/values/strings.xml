@@ -67,7 +67,7 @@
     <string name="source_status_partial">Partially matched</string>
     <string name="source_status_unmatched">Not matched</string>
     <string name="qa_answer">Answer</string>
-    <string name="qa_ask_description">Ask one question about this paper. Each submission is answered independently from the indexed paper.</string>
+    <string name="qa_ask_description">Ask this paper a question, then continue in the same paper-scoped conversation.</string>
     <string name="qa_ask_label">ASK THIS PAPER</string>
     <string name="qa_character_count">%1$d / %2$d</string>
     <string name="qa_empty_prompt">Enter a question to retrieve evidence from this paper.</string>
@@ -82,6 +82,10 @@
     <string name="qa_not_found">A paper-specific answer is not available.</string>
     <string name="qa_source">SOURCE USED FOR THIS ANSWER</string>
     <string name="qa_source_note">Open the paper to inspect the cited section.</string>
+    <string name="action_save_paper">Save</string>
+    <string name="action_saved">Saved</string>
+    <string name="action_share_paper">Share</string>
+    <string name="share_chooser_title">Share paper</string>
     <string name="saved_context_label">SAVED CONTEXT</string>
     <string name="saved_empty_body">This controlled demo does not include saved papers.</string>
     <string name="saved_empty_title">No saved papers yet</string>

@@ -20,6 +20,7 @@ data class PaperDetailUiModel(
 
 data class QaUiModel(
     val paperId: String,
+    val conversationId: String,
     val question: String,
     val answer: String,
     val disclosure: ContentDisclosureUiModel,

@@ -45,16 +45,19 @@ sealed interface QaUiState {
     data class Loading(
         val paperId: String,
         val question: String,
+        val exchanges: List<QaUiModel>,
     ) : QaUiState
 
     data class Content(
-        val qa: QaUiModel,
+        val paperId: String,
+        val exchanges: List<QaUiModel>,
     ) : QaUiState
 
     data class Error(
         val paperId: String,
         val question: String,
         val message: String,
+        val exchanges: List<QaUiModel>,
     ) : QaUiState
 }
 
@@ -87,10 +90,18 @@ sealed interface InterestEditUiState {
     ) : InterestEditUiState
 }
 
-internal fun QaUiState.submittedQuestion(): String? =
+internal fun QaUiState.paperIdOrNull(): String? =
     when (this) {
         QaUiState.Idle -> null
-        is QaUiState.Loading -> question
-        is QaUiState.Content -> qa.question
-        is QaUiState.Error -> question
+        is QaUiState.Loading -> paperId
+        is QaUiState.Content -> paperId
+        is QaUiState.Error -> paperId
+    }
+
+internal fun QaUiState.completedExchanges(): List<QaUiModel> =
+    when (this) {
+        QaUiState.Idle -> emptyList()
+        is QaUiState.Loading -> exchanges
+        is QaUiState.Content -> exchanges
+        is QaUiState.Error -> exchanges
     }

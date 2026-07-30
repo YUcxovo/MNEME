@@ -9,6 +9,10 @@ interface BehavioralEventTracker {
 
     suspend fun recordPaperOpened(paperId: String)
 
+    suspend fun recordPaperSaved(paperId: String)
+
+    suspend fun recordPaperShared(paperId: String)
+
     suspend fun recordQuestionAsked(paperId: String)
 }
 
@@ -16,6 +20,10 @@ object NoOpBehavioralEventTracker : BehavioralEventTracker {
     override suspend fun recordPaperImpressions(paperIds: List<String>) = Unit
 
     override suspend fun recordPaperOpened(paperId: String) = Unit
+
+    override suspend fun recordPaperSaved(paperId: String) = Unit
+
+    override suspend fun recordPaperShared(paperId: String) = Unit
 
     override suspend fun recordQuestionAsked(paperId: String) = Unit
 }
@@ -42,6 +50,14 @@ class QueuedBehavioralEventTracker(
 
     override suspend fun recordPaperOpened(paperId: String) {
         recordPaperEvent(BehavioralEventType.PAPER_OPENED, paperId)
+    }
+
+    override suspend fun recordPaperSaved(paperId: String) {
+        recordPaperEvent(BehavioralEventType.PAPER_SAVED, paperId)
+    }
+
+    override suspend fun recordPaperShared(paperId: String) {
+        recordPaperEvent(BehavioralEventType.PAPER_SHARED, paperId)
     }
 
     override suspend fun recordQuestionAsked(paperId: String) {

@@ -134,6 +134,7 @@ private class ConfigurationErrorRepository(
     override suspend fun askQuestion(
         paperId: String,
         question: String,
+        conversationId: String?,
     ): QaUiModel = throw error
 
     override suspend fun loadGraph(paperId: String): GraphUiModel = throw error

@@ -50,6 +50,7 @@ interface SkeletalDataRepository {
     suspend fun askQuestion(
         paperId: String,
         question: String,
+        conversationId: String? = null,
     ): QaUiModel
 
     suspend fun loadGraph(paperId: String): GraphUiModel
@@ -83,8 +84,11 @@ class ControlledFixtureDataRepository : SkeletalDataRepository {
     override suspend fun askQuestion(
         paperId: String,
         question: String,
+        conversationId: String?,
     ): QaUiModel =
-        SeededSkeletalContentRepository.qa(paperId, question)
+        SeededSkeletalContentRepository
+            .qa(paperId, question)
+            ?.copy(conversationId = conversationId ?: "controlled-$paperId")
             ?: throw ContentUnavailableException("A paper-specific answer is not available.")
 
     override suspend fun loadGraph(paperId: String): GraphUiModel =
@@ -228,6 +232,7 @@ class NetworkSkeletalDataRepository(
     override suspend fun askQuestion(
         paperId: String,
         question: String,
+        conversationId: String?,
     ): QaUiModel {
         require(question.isNotBlank()) { "Question must not be blank." }
         require(question.length <= QUESTION_MAX_LENGTH) {
@@ -239,9 +244,14 @@ class NetworkSkeletalDataRepository(
                 QuestionDto(
                     question = question,
                     paperId = paperId,
+                    conversationId = conversationId,
                 ),
             )
-        return answer.toQa(paper, question)
+        return answer.toQa(
+            paper = paper,
+            question = question,
+            requestedConversationId = conversationId,
+        )
     }
 
     override suspend fun loadGraph(paperId: String): GraphUiModel {
