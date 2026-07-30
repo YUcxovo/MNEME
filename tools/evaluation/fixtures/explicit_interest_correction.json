@@ -1,0 +1,73 @@
+{
+  "fixture_id": "explicit-interest-correction-v1",
+  "reference_time": "2026-07-28T12:00:00+00:00",
+  "candidate_age_days": 1,
+  "states": [
+    {
+      "state_id": "attention_only",
+      "topics": ["attention"]
+    },
+    {
+      "state_id": "add_quantum",
+      "topics": ["attention", "quantum"]
+    },
+    {
+      "state_id": "edit_quantum_to_robotics",
+      "topics": ["attention", "robotics"]
+    },
+    {
+      "state_id": "delete_robotics",
+      "topics": ["attention"]
+    }
+  ],
+  "candidates": [
+    {
+      "paper_id": "00000000-0000-0000-0000-000000000001",
+      "topic": "attention",
+      "title": "Attention mechanisms for long documents",
+      "categories": ["cs.CL"]
+    },
+    {
+      "paper_id": "00000000-0000-0000-0000-000000000002",
+      "topic": "attention",
+      "title": "Efficient attention for language models",
+      "categories": ["cs.CL"]
+    },
+    {
+      "paper_id": "00000000-0000-0000-0000-000000000003",
+      "topic": "quantum",
+      "title": "Quantum algorithms for optimization",
+      "categories": ["quant-ph"]
+    },
+    {
+      "paper_id": "00000000-0000-0000-0000-000000000004",
+      "topic": "quantum",
+      "title": "Quantum learning with structured circuits",
+      "categories": ["quant-ph"]
+    },
+    {
+      "paper_id": "00000000-0000-0000-0000-000000000005",
+      "topic": "robotics",
+      "title": "Robotics planning under uncertainty",
+      "categories": ["cs.RO"]
+    },
+    {
+      "paper_id": "00000000-0000-0000-0000-000000000006",
+      "topic": "robotics",
+      "title": "Robotics control with learned dynamics",
+      "categories": ["cs.RO"]
+    },
+    {
+      "paper_id": "00000000-0000-0000-0000-000000000007",
+      "topic": "databases",
+      "title": "Databases for streaming analytics",
+      "categories": ["cs.DB"]
+    },
+    {
+      "paper_id": "00000000-0000-0000-0000-000000000008",
+      "topic": "databases",
+      "title": "Databases with adaptive indexing",
+      "categories": ["cs.DB"]
+    }
+  ]
+}
