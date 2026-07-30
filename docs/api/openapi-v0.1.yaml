@@ -19,6 +19,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Health"
+  /health/ready:
+    get:
+      security: []
+      operationId: getReadiness
+      responses:
+        "200":
+          description: Required dependencies are available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+        "503":
+          $ref: "#/components/responses/Error"
   /papers:
     get:
       operationId: listPapers
@@ -277,6 +290,25 @@ components:
         status:
           type: string
           enum: [ok, degraded]
+    Readiness:
+      type: object
+      required: [status, dependencies]
+      properties:
+        status:
+          type: string
+          enum: [ready]
+        dependencies:
+          $ref: "#/components/schemas/ReadinessDependencies"
+    ReadinessDependencies:
+      type: object
+      required: [postgresql, redis]
+      properties:
+        postgresql:
+          type: string
+          enum: [ready, unavailable]
+        redis:
+          type: string
+          enum: [ready, unavailable]
     Paper:
       type: object
       required: [id, arxiv_id, title, authors, abstract, primary_category, categories, pdf_url, processing_status, published_at, updated_at]

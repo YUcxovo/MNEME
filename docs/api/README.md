@@ -2,7 +2,7 @@
 
 The frozen OpenAPI document is `openapi-v0.1.yaml`. It remains the v0.1 compatibility baseline between the Android and backend sub-teams. All frozen routes now exist, so FastAPI-generated OpenAPI from the checked-out application is the runtime implementation source of truth.
 
-As of 2026-07-23, FastAPI implements all 13 frozen operations: health, paper list/detail, explicit preferences, seed-paper onboarding, revision-safe summaries, event ingestion, digest list/recommendation, single-paper Q&A, bounded citation graphs, and durable job status. The contract regression compares every operation ID and each documented response's top-level schema reference with `openapi-v0.1.yaml`; focused schema and route tests cover reviewed authentication, parameter, request, payload, and stable-error invariants. This is not a byte-for-byte or complete structural diff of the two OpenAPI documents.
+FastAPI implements all 14 frozen operations: process liveness, dependency readiness, paper list/detail, explicit preferences, seed-paper onboarding, revision-safe summaries, event ingestion, digest list/recommendation, single-paper Q&A, bounded citation graphs, and durable job status. The contract regression compares every operation ID and each documented response's top-level schema reference with `openapi-v0.1.yaml`; focused schema and route tests cover reviewed authentication, parameter, request, payload, and stable-error invariants. This is not a byte-for-byte or complete structural diff of the two OpenAPI documents.
 
 ## Ownership
 
@@ -64,7 +64,7 @@ provider prompts, or raw database messages.
 
 | Endpoint group | Owner |
 |---|---|
-| health, papers, preferences, events, graph, jobs | Ruiyu |
+| health/readiness, papers, preferences, events, graph, jobs | Ruiyu |
 | seed onboarding | Ruiyu (orchestration), Yifan (AI pipeline), Hanyang (Android consumer) |
 | paper summary, Q&A, recommended digest | Yifan |
 

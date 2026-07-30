@@ -412,6 +412,7 @@ Production:  https://<domain>/v1
 | Method | Path | Purpose | Current status |
 |--------|------|---------|----------------|
 | `GET`  | `/v1/health` | Service health (no auth) | Implemented on `dev` |
+| `GET`  | `/v1/health/ready` | PostgreSQL and Redis readiness (no auth) | Implemented |
 | `GET`  | `/v1/papers` | Cursor-paginated papers | Implemented on `dev` |
 | `GET`  | `/v1/papers/{paper_id}` | Get paper detail; `paper_id` is an internal UUID | Implemented on `dev` |
 | `GET`  | `/v1/papers/{paper_id}/summary` | Ready revision summary or `202` durable job | Implemented on `dev` |

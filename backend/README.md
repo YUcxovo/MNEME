@@ -56,7 +56,7 @@ Available authenticated API routes include:
 - `GET /v1/digests` and `POST /v1/digests/recommended`
 - `POST /v1/qa/ask`
 
-`GET /v1/health` is public process liveness. Protected requests use `Authorization: Bearer <raw-token>`. Responses include `X-Request-ID`, and errors use the stable `ErrorResponse` shape without secrets, raw inputs, database diagnostics, or tracebacks.
+`GET /v1/health` is public process liveness and never waits for infrastructure. `GET /v1/health/ready` concurrently probes PostgreSQL and Redis within `MNEME_READINESS_TIMEOUT_SECONDS`; it returns a safe `503 service_unavailable` envelope if either required dependency is unavailable. Protected requests use `Authorization: Bearer <raw-token>`. Responses include `X-Request-ID`, and errors use the stable `ErrorResponse` shape without secrets, raw inputs, database diagnostics, or tracebacks.
 
 ## Schedule ingestion and briefings
 
@@ -204,7 +204,7 @@ Database integration and end-to-end pipeline tests run when `MNEME_DATABASE_URL`
 ## Current limitations
 
 - Authentication is a single-user demo mechanism; there is no login, JWT, or token lifecycle.
-- `GET /v1/health` reports process liveness and does not probe PostgreSQL or Redis.
+- Readiness covers the required PostgreSQL and Redis paths only; external paper and model providers remain visible through request/job failures and operational reports rather than blocking process readiness.
 - Local document storage must be mounted at the same path for every API/worker process; distributed object storage and garbage collection are deferred.
 - The worker's automatic recovery scan can reconstruct revision-scoped jobs. Collection-level daily and weekly jobs are recovered by repeatable CLI invocations because their hashed durable identities do not contain reconstructable arguments.
 - The Android skeletal path can call the backend through Retrofit/OkHttp when its demo
