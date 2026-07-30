@@ -146,7 +146,7 @@ def test_snapshot_maps_counts_with_distinct_created_and_finished_windows() -> No
     failures = cast(list[dict[str, object]], jobs["recent_failures"])
     assert failures == [
         {
-            "id": failed_id,
+            "job_id": failed_id,
             "stage": "parse_pdf",
             "error_code": "parse_failed",
             "attempt_count": 2,
@@ -156,7 +156,7 @@ def test_snapshot_maps_counts_with_distinct_created_and_finished_windows() -> No
         }
     ]
     assert set(failures[0]) == {
-        "id",
+        "job_id",
         "stage",
         "error_code",
         "attempt_count",
