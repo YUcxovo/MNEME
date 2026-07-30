@@ -133,7 +133,7 @@ class PlatformOperationsRepository:
             ).all()
             recent_failures = [
                 {
-                    "id": job_id,
+                    "job_id": job_id,
                     "stage": stage.value,
                     "error_code": error_code,
                     "attempt_count": int(attempt_count),

@@ -23,7 +23,7 @@ def _snapshot() -> dict[str, object]:
             "created": 1,
             "recent_failures": [
                 {
-                    "id": JOB_ID,
+                    "job_id": JOB_ID,
                     "stage": "parse_pdf",
                     "error_code": "parse_failed",
                     "attempt_count": 2,
@@ -148,7 +148,7 @@ def test_cli_serializes_safe_sorted_json(
 
     payload = json.loads(capsys.readouterr().out)
     assert payload["schema_version"] == "platform-operations-v1"
-    assert payload["jobs"]["recent_failures"][0]["id"] == str(JOB_ID)
+    assert payload["jobs"]["recent_failures"][0]["job_id"] == str(JOB_ID)
     assert "last_error" not in json.dumps(payload)
 
 

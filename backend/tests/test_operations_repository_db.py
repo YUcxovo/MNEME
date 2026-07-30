@@ -165,7 +165,7 @@ async def _exercise_snapshot() -> None:
         for key, delta in expected_job_deltas.items():
             assert cast(int, jobs[key]) == cast(int, baseline_jobs[key]) + delta
         failures = cast(list[dict[str, object]], jobs["recent_failures"])
-        failure = next(item for item in failures if item["id"] == failed_job_id)
+        failure = next(item for item in failures if item["job_id"] == failed_job_id)
         assert failure["error_code"] == "ops_fixture_failed"
         assert private_error not in str(report)
         assert private_identity not in str(report)
