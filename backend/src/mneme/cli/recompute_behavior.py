@@ -44,7 +44,7 @@ def resolve_user_id(settings: Settings, requested: UUID | None) -> UUID:
 
 async def run(settings: Settings, *, user_id: UUID) -> BehaviorProfile:
     """Recompute one profile and guarantee database resource cleanup."""
-    database = Database(settings.database_url, echo=settings.debug)
+    database = Database.from_settings(settings)
     try:
         async with database.session_factory() as session:
             service = BehaviorEventService(

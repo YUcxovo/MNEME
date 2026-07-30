@@ -15,6 +15,10 @@ def test_settings_defaults() -> None:
     assert settings.debug is False
     assert settings.log_level == "INFO"
     assert settings.readiness_timeout_seconds == 2
+    assert settings.database_pool_size == 5
+    assert settings.database_max_overflow == 5
+    assert settings.database_pool_timeout_seconds == 30
+    assert settings.database_pool_recycle_seconds == 1800
     assert str(settings.redis_url) == "redis://localhost:6379/0"
     assert settings.redis_max_connections == 10
     assert str(settings.arxiv_api_url) == "https://export.arxiv.org/api/query"
@@ -44,6 +48,10 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("MNEME_DEBUG", "true")
     monkeypatch.setenv("MNEME_LOG_LEVEL", "warning")
     monkeypatch.setenv("MNEME_READINESS_TIMEOUT_SECONDS", "3.5")
+    monkeypatch.setenv("MNEME_DATABASE_POOL_SIZE", "8")
+    monkeypatch.setenv("MNEME_DATABASE_MAX_OVERFLOW", "3")
+    monkeypatch.setenv("MNEME_DATABASE_POOL_TIMEOUT_SECONDS", "12.5")
+    monkeypatch.setenv("MNEME_DATABASE_POOL_RECYCLE_SECONDS", "900")
     monkeypatch.setenv("MNEME_REDIS_URL", "redis://cache:6380/2")
     monkeypatch.setenv("MNEME_REDIS_MAX_CONNECTIONS", "20")
     monkeypatch.setenv("MNEME_ARXIV_MAX_RESULTS", "50")
@@ -66,6 +74,10 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     assert settings.debug is True
     assert settings.log_level == "warning"
     assert settings.readiness_timeout_seconds == 3.5
+    assert settings.database_pool_size == 8
+    assert settings.database_max_overflow == 3
+    assert settings.database_pool_timeout_seconds == 12.5
+    assert settings.database_pool_recycle_seconds == 900
     assert str(settings.redis_url) == "redis://cache:6380/2"
     assert settings.redis_max_connections == 20
     assert settings.arxiv_max_results == 50
@@ -96,3 +108,22 @@ def test_readiness_timeout_is_bounded(
 
     with pytest.raises(ValueError):
         Settings(_env_file=None)
+
+
+@pytest.mark.base
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("database_pool_size", 0),
+        ("database_pool_size", 51),
+        ("database_max_overflow", -1),
+        ("database_max_overflow", 51),
+        ("database_pool_timeout_seconds", 0),
+        ("database_pool_timeout_seconds", 301),
+        ("database_pool_recycle_seconds", 0),
+        ("database_pool_recycle_seconds", 86401),
+    ],
+)
+def test_database_pool_settings_are_bounded(field: str, value: int) -> None:
+    with pytest.raises(ValueError):
+        Settings(**{field: value}, _env_file=None)

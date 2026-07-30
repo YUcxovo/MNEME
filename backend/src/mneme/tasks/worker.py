@@ -33,7 +33,7 @@ async def on_startup(context: dict[str, Any]) -> None:
     settings = get_settings()
     configure_logging(settings)
     context["settings"] = settings
-    context["database"] = Database(settings.database_url, echo=settings.debug)
+    context["database"] = Database.from_settings(settings)
     context["document_storage"] = DocumentStorage(settings.paper_storage_dir)
     context["pdf_downloader"] = PdfDownloader(
         user_agent=settings.arxiv_user_agent,

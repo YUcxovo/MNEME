@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     readiness_timeout_seconds: float = Field(default=2.0, gt=0, le=30)
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/mneme"
+    database_pool_size: int = Field(default=5, ge=1, le=50)
+    database_max_overflow: int = Field(default=5, ge=0, le=50)
+    database_pool_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
+    database_pool_recycle_seconds: int = Field(default=1800, ge=1, le=86400)
     redis_url: RedisDsn = RedisDsn("redis://localhost:6379/0")
     redis_max_connections: int = Field(default=10, ge=1)
     redis_socket_timeout_seconds: float = Field(default=5.0, gt=0)

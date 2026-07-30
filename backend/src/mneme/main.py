@@ -49,10 +49,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     """Create and configure the Mneme FastAPI application."""
     resolved_settings = settings or get_settings()
     configure_logging(resolved_settings)
-    database = Database(
-        resolved_settings.database_url,
-        echo=resolved_settings.debug,
-    )
+    database = Database.from_settings(resolved_settings)
     redis_client = create_redis_client(resolved_settings)
     application = FastAPI(
         title=resolved_settings.app_name,

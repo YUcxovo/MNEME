@@ -25,7 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
 async def run(category: str, *, start: int, max_results: int) -> ArxivIngestionSummary:
     """Run one ingestion page using configured HTTP and database resources."""
     settings = get_settings()
-    database = Database(settings.database_url, echo=settings.debug)
+    database = Database.from_settings(settings)
     try:
         async with (
             ArxivClient(settings) as client,

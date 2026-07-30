@@ -56,7 +56,7 @@ async def run(
     if not 1 <= resolved_limit <= resolved_settings.semantic_scholar_max_neighbors:
         raise ValueError("limit exceeds the configured Semantic Scholar maximum")
 
-    database = Database(resolved_settings.database_url, echo=resolved_settings.debug)
+    database = Database.from_settings(resolved_settings)
     try:
         async with SemanticScholarClient(resolved_settings) as client:
             service = SemanticGraphSyncService(database.session_factory, client)

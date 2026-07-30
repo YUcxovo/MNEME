@@ -78,6 +78,10 @@ def test_run_disposes_database_after_recompute(monkeypatch: pytest.MonkeyPatch) 
             self.disposed = False
             type(self).instance = self
 
+        @classmethod
+        def from_settings(cls, settings: Settings) -> "FakeDatabase":
+            return cls(settings.database_url, echo=settings.debug)
+
         def session_factory(self) -> FakeSessionContext:
             return FakeSessionContext()
 

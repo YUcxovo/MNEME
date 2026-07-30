@@ -39,7 +39,7 @@ async def run(settings: Settings, *, display_name: str) -> DemoUserBootstrapResu
     if settings.demo_user_id is None:
         raise DemoUserConfigurationError(MISSING_USER_ERROR)
 
-    database = Database(settings.database_url, echo=settings.debug)
+    database = Database.from_settings(settings)
     try:
         async with database.session_factory() as session:
             repository = DemoUserBootstrapRepository(session)
