@@ -18,6 +18,8 @@ import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import com.mneme.app.data.behavior.BehavioralEventTracker
+import com.mneme.app.data.behavior.EVENT_TRACE_PAPER_ID
+import com.mneme.app.data.behavior.EventTraceRepository
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.repository.ControlledFixtureDataRepository
 import com.mneme.app.ui.theme.MnemeTheme
@@ -231,12 +233,17 @@ class MnemeAppFlowTest {
     }
 
     @Test
-    fun viewModelBackedApp_forwardsOnlyExistingInteractionsToEventTracker() {
+    fun viewModelBackedApp_forwardsMvpInteractionsToEventTracker() {
         val tracker = RecordingBehavioralEventTracker()
         val viewModel = MnemeViewModel(ControlledFixtureDataRepository(), tracker)
+        val sharedPapers = mutableListOf<Pair<String, String>>()
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(viewModel = viewModel, onOpenSource = {})
+                MnemeApp(
+                    viewModel = viewModel,
+                    onOpenSource = {},
+                    onSharePaper = { title, url -> sharedPapers += title to url },
+                )
             }
         }
 
@@ -246,6 +253,15 @@ class MnemeAppFlowTest {
         composeRule.onNodeWithText("Attention Is All You Need").performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
             tracker.openedPaperIds.isNotEmpty()
+        }
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("save-paper-action"),
+        )
+        composeRule.onNodeWithTag("save-paper-action").performClick()
+        composeRule.onNodeWithTag("save-paper-action").assertIsNotEnabled()
+        composeRule.onNodeWithTag("share-paper-action").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            tracker.savedPaperIds.isNotEmpty() && tracker.sharedPaperIds.isNotEmpty()
         }
         composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
             hasTestTag("ask-question-action"),
@@ -263,13 +279,101 @@ class MnemeAppFlowTest {
             val paperId = SeededSkeletalContentRepository.PAPER_ID
             assertEquals(listOf(listOf(paperId)), tracker.impressionBatches)
             assertEquals(listOf(paperId), tracker.openedPaperIds)
+            assertEquals(listOf(paperId), tracker.savedPaperIds)
+            assertEquals(listOf(paperId), tracker.sharedPaperIds)
             assertEquals(listOf(paperId), tracker.questionPaperIds)
+            assertEquals(
+                listOf(
+                    "Attention Is All You Need" to "https://arxiv.org/abs/1706.03762",
+                ),
+                sharedPapers,
+            )
+        }
+    }
+
+    @Test
+    fun followUpQuestionsRemainInOnePaperConversation() {
+        val viewModel = MnemeViewModel(ControlledFixtureDataRepository())
+        composeRule.setContent {
+            MnemeTheme {
+                MnemeApp(viewModel = viewModel, onOpenSource = {}, onSharePaper = { _, _ -> })
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Attention Is All You Need").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Attention Is All You Need").performClick()
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("ask-question-action"),
+        )
+        composeRule.onNodeWithTag("ask-question-action").performClick()
+
+        val firstQuestion = "What replaces recurrence?"
+        val secondQuestion = "How is position represented?"
+        composeRule.onNodeWithTag("qa-question-input").performTextInput(firstQuestion)
+        composeRule.onNodeWithTag("qa-submit-question").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            (viewModel.qaState.value as? QaUiState.Content)?.exchanges?.size == 1
+        }
+        composeRule.onNodeWithTag("qa-question-input").performTextInput(secondQuestion)
+        composeRule.onNodeWithTag("qa-submit-question").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            (viewModel.qaState.value as? QaUiState.Content)?.exchanges?.size == 2
+        }
+
+        composeRule.runOnIdle {
+            val exchanges = (viewModel.qaState.value as QaUiState.Content).exchanges
+            assertEquals(2, exchanges.size)
+            assertEquals(1, exchanges.map { it.conversationId }.distinct().size)
+        }
+        composeRule.onNodeWithTag("qa-screen").performScrollToNode(hasText(firstQuestion))
+        composeRule.onNodeWithText(firstQuestion).assertIsDisplayed()
+        composeRule.onNodeWithTag("qa-screen").performScrollToNode(hasText(secondQuestion))
+        composeRule.onNodeWithText(secondQuestion).assertIsDisplayed()
+    }
+
+    @Test
+    fun viewModelKeepsConversationIdentityScopedToOnePaper() {
+        val repository = EventTraceRepository()
+        val viewModel = MnemeViewModel(repository)
+        val otherPaperId = "a11abac8-45e7-4c47-93c0-5be0bb391b03"
+
+        composeRule.runOnIdle {
+            viewModel.openQa(EVENT_TRACE_PAPER_ID)
+            viewModel.askQuestion(EVENT_TRACE_PAPER_ID, "First question")
+        }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            (viewModel.qaState.value as? QaUiState.Content)?.exchanges?.size == 1
+        }
+        composeRule.runOnIdle {
+            viewModel.askQuestion(EVENT_TRACE_PAPER_ID, "Follow-up question")
+        }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            (viewModel.qaState.value as? QaUiState.Content)?.exchanges?.size == 2
+        }
+        composeRule.runOnIdle {
+            viewModel.openQa(otherPaperId)
+            viewModel.askQuestion(otherPaperId, "Different paper question")
+        }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            val state = viewModel.qaState.value as? QaUiState.Content
+            state?.paperId == otherPaperId && state.exchanges.size == 1
+        }
+
+        composeRule.runOnIdle {
+            assertEquals(
+                listOf(null, "event-trace-$EVENT_TRACE_PAPER_ID", null),
+                repository.requestedConversationIds,
+            )
         }
     }
 
     private class RecordingBehavioralEventTracker : BehavioralEventTracker {
         val impressionBatches = mutableListOf<List<String>>()
         val openedPaperIds = mutableListOf<String>()
+        val savedPaperIds = mutableListOf<String>()
+        val sharedPaperIds = mutableListOf<String>()
         val questionPaperIds = mutableListOf<String>()
 
         override suspend fun recordPaperImpressions(paperIds: List<String>) {
@@ -278,6 +382,14 @@ class MnemeAppFlowTest {
 
         override suspend fun recordPaperOpened(paperId: String) {
             openedPaperIds += paperId
+        }
+
+        override suspend fun recordPaperSaved(paperId: String) {
+            savedPaperIds += paperId
+        }
+
+        override suspend fun recordPaperShared(paperId: String) {
+            sharedPaperIds += paperId
         }
 
         override suspend fun recordQuestionAsked(paperId: String) {

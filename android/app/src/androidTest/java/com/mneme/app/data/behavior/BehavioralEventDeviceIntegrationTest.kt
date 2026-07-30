@@ -72,6 +72,8 @@ class BehavioralEventDeviceIntegrationTest {
                     UUID.fromString("8f0a1d3b-cc41-43f0-97c2-c175341ef07c"),
                     UUID.fromString("e63ff7fe-4f7c-45eb-a188-df825de81f4f"),
                     UUID.fromString("9e8e9965-936d-462f-90b4-f39b4d44aa2f"),
+                    UUID.fromString("8719343c-7cbb-4277-a727-bc2c9d619a84"),
+                    UUID.fromString("e29530b6-76d1-45bb-a48f-e46fd85c37f4"),
                 ),
             )
         val store =
@@ -89,7 +91,11 @@ class BehavioralEventDeviceIntegrationTest {
         val viewModel = MnemeViewModel(EventTraceRepository(), tracker)
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(viewModel = viewModel, onOpenSource = {})
+                MnemeApp(
+                    viewModel = viewModel,
+                    onOpenSource = {},
+                    onSharePaper = { _, _ -> },
+                )
             }
         }
 
@@ -97,18 +103,25 @@ class BehavioralEventDeviceIntegrationTest {
         composeRule.onNodeWithText(EVENT_TRACE_PAPER_TITLE).performClick()
         waitForEventCount(store, 2)
         composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("save-paper-action"),
+        )
+        composeRule.onNodeWithTag("save-paper-action").performClick()
+        waitForEventCount(store, 3)
+        composeRule.onNodeWithTag("share-paper-action").performClick()
+        waitForEventCount(store, 4)
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
             hasTestTag("ask-question-action"),
         )
         composeRule.onNodeWithTag("ask-question-action").performClick()
         composeRule.onNodeWithTag("qa-question-input").performTextInput(EVENT_TRACE_QUESTION)
         composeRule.onNodeWithTag("qa-submit-question").performClick()
-        waitForEventCount(store, 3)
+        waitForEventCount(store, 5)
 
         server.enqueue(
             MockResponse()
                 .setResponseCode(200)
                 .setHeader("Content-Type", "application/json")
-                .setBody("""{"accepted":2,"duplicates":1}"""),
+                .setBody("""{"accepted":4,"duplicates":1}"""),
         )
         val remote =
             MnemeApiClient.create(
@@ -126,8 +139,8 @@ class BehavioralEventDeviceIntegrationTest {
 
         assertEquals(
             BehavioralEventSyncResult.Synced(
-                processed = 3,
-                accepted = 2,
+                processed = 5,
+                accepted = 4,
                 duplicates = 1,
             ),
             result,
@@ -139,9 +152,15 @@ class BehavioralEventDeviceIntegrationTest {
             MnemeApiClient.json
                 .parseToJsonElement(request.body.readUtf8())
                 .jsonArray
-        assertEquals(3, payload.size)
+        assertEquals(5, payload.size)
         assertEquals(
-            setOf("paper_impression", "paper_opened", "question_asked"),
+            setOf(
+                "paper_impression",
+                "paper_opened",
+                "paper_saved",
+                "paper_shared",
+                "question_asked",
+            ),
             payload
                 .map {
                     it.jsonObject
@@ -154,6 +173,8 @@ class BehavioralEventDeviceIntegrationTest {
                 "8f0a1d3b-cc41-43f0-97c2-c175341ef07c",
                 "e63ff7fe-4f7c-45eb-a188-df825de81f4f",
                 "9e8e9965-936d-462f-90b4-f39b4d44aa2f",
+                "8719343c-7cbb-4277-a727-bc2c9d619a84",
+                "e29530b6-76d1-45bb-a48f-e46fd85c37f4",
             ),
             payload
                 .map {
@@ -174,7 +195,7 @@ class BehavioralEventDeviceIntegrationTest {
             setOf(BehavioralEventSyncState.SYNCED.value),
             stored.map { it.syncState }.toSet(),
         )
-        assertEquals(3, scheduled.get())
+        assertEquals(5, scheduled.get())
     }
 
     private fun waitForEventCount(

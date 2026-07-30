@@ -19,6 +19,8 @@ internal const val EVENT_TRACE_QUESTION = "Which interaction is recorded?"
 internal const val EVENT_TRACE_TIME = 1_782_000_000_000L
 
 internal class EventTraceRepository : SkeletalDataRepository {
+    val requestedConversationIds = mutableListOf<String?>()
+
     override suspend fun restoreBriefing(): BriefingUiModel = briefing()
 
     override suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel = briefing()
@@ -37,15 +39,19 @@ internal class EventTraceRepository : SkeletalDataRepository {
     override suspend fun askQuestion(
         paperId: String,
         question: String,
-    ): QaUiModel =
-        QaUiModel(
+        conversationId: String?,
+    ): QaUiModel {
+        requestedConversationIds += conversationId
+        return QaUiModel(
             paperId = paperId,
+            conversationId = conversationId ?: "event-trace-$paperId",
             question = question,
             answer = "A controlled response used only to complete the visible interaction.",
             disclosure = disclosure(),
             sourceMatchStatus = SourceMatchUiStatus.NOT_CHECKED,
             sources = listOf(source()),
         )
+    }
 
     override suspend fun loadGraph(paperId: String): GraphUiModel = error("Graph is outside this event trace.")
 }

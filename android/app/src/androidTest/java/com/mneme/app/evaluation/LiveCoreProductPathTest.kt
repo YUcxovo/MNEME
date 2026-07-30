@@ -191,7 +191,10 @@ class LiveCoreProductPathTest {
                 viewModel.qaState.value is QaUiState.Content ||
                     viewModel.qaState.value is QaUiState.Error
             }
-            val qa = (viewModel.qaState.value as? QaUiState.Content)?.qa
+            val qa =
+                (viewModel.qaState.value as? QaUiState.Content)
+                    ?.exchanges
+                    ?.lastOrNull()
             recordQa(
                 track = LIVE_UI_TRACK,
                 scenario = "free_question_and_sources",

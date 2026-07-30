@@ -23,19 +23,23 @@ class BehavioralEventTrackerTest {
 
             tracker.recordPaperImpressions(listOf(FIRST_PAPER_ID.toString(), FIRST_PAPER_ID.toString()))
             tracker.recordPaperOpened(FIRST_PAPER_ID.toString())
+            tracker.recordPaperSaved(FIRST_PAPER_ID.toString())
+            tracker.recordPaperShared(FIRST_PAPER_ID.toString())
             tracker.recordQuestionAsked(FIRST_PAPER_ID.toString())
 
             assertEquals(
                 listOf(
                     BehavioralEventType.PAPER_IMPRESSION,
                     BehavioralEventType.PAPER_OPENED,
+                    BehavioralEventType.PAPER_SAVED,
+                    BehavioralEventType.PAPER_SHARED,
                     BehavioralEventType.QUESTION_ASKED,
                 ),
                 store.recorded.map(RecordedEvent::type),
             )
-            assertEquals(List(3) { FIRST_PAPER_ID }, store.recorded.map(RecordedEvent::paperId))
-            assertEquals(List(3) { OCCURRED_AT }, store.recorded.map(RecordedEvent::occurredAt))
-            assertEquals(3, scheduled)
+            assertEquals(List(5) { FIRST_PAPER_ID }, store.recorded.map(RecordedEvent::paperId))
+            assertEquals(List(5) { OCCURRED_AT }, store.recorded.map(RecordedEvent::occurredAt))
+            assertEquals(5, scheduled)
         }
 
     private data class RecordedEvent(
