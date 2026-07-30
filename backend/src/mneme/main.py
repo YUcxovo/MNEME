@@ -22,7 +22,7 @@ def create_lifespan(settings: Settings, database: Database, redis_client: Redis)
     """Build an application lifespan bound to validated settings."""
 
     @asynccontextmanager
-    async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
+    async def lifespan(application: FastAPI) -> AsyncGenerator[None]:
         logger.info(
             "application_started",
             environment=settings.environment.value,
@@ -32,9 +32,14 @@ def create_lifespan(settings: Settings, database: Database, redis_client: Redis)
             yield
         finally:
             try:
-                await redis_client.aclose()
+                arq_pool = getattr(application.state, "arq_pool", None)
+                if arq_pool is not None:
+                    await arq_pool.aclose()
             finally:
-                await database.dispose()
+                try:
+                    await redis_client.aclose()
+                finally:
+                    await database.dispose()
             logger.info("application_stopped")
 
     return lifespan

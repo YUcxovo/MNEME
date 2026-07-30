@@ -2,12 +2,14 @@
 
 import asyncio
 from datetime import UTC, datetime
+from unittest.mock import AsyncMock
 from uuid import UUID, uuid4
 
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient, Response
 
+from mneme.api.dependencies import ai as ai_dependencies
 from mneme.api.dependencies.ai import (
     get_artifact_repository,
     get_pipeline_job_repository,
@@ -18,6 +20,7 @@ from mneme.api.dependencies.catalog import get_paper_catalog_repository
 from mneme.api.errors import register_error_handlers
 from mneme.api.middleware import request_context_middleware
 from mneme.api.routes.summaries import router as summaries_router
+from mneme.core.config import Settings
 from mneme.db.dependencies import get_session
 from mneme.models.artifact import PaperSummary, SourceMatchStatus, SummaryStatus
 from mneme.models.job import JobStatus, PipelineJob, PipelineStage
@@ -228,7 +231,7 @@ def _application(
     catalog: FakePaperCatalogRepository,
     artifacts: FakeArtifactRepository,
     jobs: FakeJobRepository,
-    queue: FakeQueue,
+    queue: FakeQueue | None,
 ) -> FastAPI:
     async def principal_override() -> Principal:
         return Principal(user_id=USER_ID)
@@ -252,11 +255,13 @@ def _application(
     application.middleware("http")(request_context_middleware)
     register_error_handlers(application)
     application.include_router(summaries_router, prefix="/v1")
+    application.state.settings = Settings(_env_file=None)
     application.dependency_overrides[require_principal] = principal_override
     application.dependency_overrides[get_paper_catalog_repository] = catalog_override
     application.dependency_overrides[get_artifact_repository] = artifacts_override
     application.dependency_overrides[get_pipeline_job_repository] = jobs_override
-    application.dependency_overrides[get_task_queue] = queue_override
+    if queue is not None:
+        application.dependency_overrides[get_task_queue] = queue_override
     application.dependency_overrides[get_session] = session_override
     return application
 
@@ -289,6 +294,24 @@ def test_stored_summary_is_served_with_frozen_contract_fields() -> None:
         "limitations": "Single-paper scope.",
         "source_match_status": "not_checked",
     }
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_stored_summary_does_not_connect_to_queue(monkeypatch) -> None:
+    create_pool = AsyncMock(side_effect=ConnectionError("sensitive broker address"))
+    monkeypatch.setattr(ai_dependencies, "create_pool", create_pool)
+    application = _application(
+        FakePaperCatalogRepository(_paper()),
+        FakeArtifactRepository(_stored_summary()),
+        FakeJobRepository(),
+        None,
+    )
+
+    response = asyncio.run(_get(application, f"/v1/papers/{PAPER_ID}/summary"))
+
+    assert response.status_code == 200
+    create_pool.assert_not_awaited()
 
 
 @pytest.mark.base
@@ -510,4 +533,25 @@ def test_queue_failure_releases_dispatch_lease() -> None:
 
     assert response.status_code == 503
     assert response.json()["code"] == "queue_unavailable"
+    assert jobs.released == [JOB_ID]
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_queue_connection_failure_uses_stable_error(monkeypatch) -> None:
+    create_pool = AsyncMock(side_effect=ConnectionError("sensitive broker address"))
+    monkeypatch.setattr(ai_dependencies, "create_pool", create_pool)
+    jobs = FakeJobRepository()
+    application = _application(
+        FakePaperCatalogRepository(_paper()),
+        FakeArtifactRepository(None),
+        jobs,
+        None,
+    )
+
+    response = asyncio.run(_get(application, f"/v1/papers/{PAPER_ID}/summary"))
+
+    assert response.status_code == 503
+    assert response.json()["code"] == "queue_unavailable"
+    assert "sensitive" not in response.text
     assert jobs.released == [JOB_ID]
