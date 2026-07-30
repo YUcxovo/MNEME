@@ -14,6 +14,7 @@ def test_settings_defaults() -> None:
     assert settings.environment is Environment.DEVELOPMENT
     assert settings.debug is False
     assert settings.log_level == "INFO"
+    assert settings.readiness_timeout_seconds == 2
     assert str(settings.redis_url) == "redis://localhost:6379/0"
     assert settings.redis_max_connections == 10
     assert str(settings.arxiv_api_url) == "https://export.arxiv.org/api/query"
@@ -42,6 +43,7 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("MNEME_ENVIRONMENT", "testing")
     monkeypatch.setenv("MNEME_DEBUG", "true")
     monkeypatch.setenv("MNEME_LOG_LEVEL", "warning")
+    monkeypatch.setenv("MNEME_READINESS_TIMEOUT_SECONDS", "3.5")
     monkeypatch.setenv("MNEME_REDIS_URL", "redis://cache:6380/2")
     monkeypatch.setenv("MNEME_REDIS_MAX_CONNECTIONS", "20")
     monkeypatch.setenv("MNEME_ARXIV_MAX_RESULTS", "50")
@@ -63,6 +65,7 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     assert settings.environment is Environment.TESTING
     assert settings.debug is True
     assert settings.log_level == "warning"
+    assert settings.readiness_timeout_seconds == 3.5
     assert str(settings.redis_url) == "redis://cache:6380/2"
     assert settings.redis_max_connections == 20
     assert settings.arxiv_max_results == 50
@@ -81,3 +84,15 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     assert settings.deepseek_thinking_enabled is True
     assert settings.ai_embedding_backend is EmbeddingBackend.FASTEMBED
     assert settings.use_json_logs is True
+
+
+@pytest.mark.base
+@pytest.mark.parametrize("timeout", ["0", "30.1"])
+def test_readiness_timeout_is_bounded(
+    monkeypatch: pytest.MonkeyPatch,
+    timeout: str,
+) -> None:
+    monkeypatch.setenv("MNEME_READINESS_TIMEOUT_SECONDS", timeout)
+
+    with pytest.raises(ValueError):
+        Settings(_env_file=None)

@@ -2,6 +2,7 @@
 
 from collections.abc import AsyncIterator
 
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -40,6 +41,11 @@ class Database:
         """Yield one session and guarantee that it is closed after the request."""
         async with self.session_factory() as session:
             yield session
+
+    async def ping(self) -> None:
+        """Verify that PostgreSQL can execute a minimal query."""
+        async with self.engine.connect() as connection:
+            await connection.execute(text("SELECT 1"))
 
     async def dispose(self) -> None:
         """Release all pooled database connections during application shutdown."""
