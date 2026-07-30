@@ -1,6 +1,6 @@
 # Mneme Backend
 
-FastAPI backend for the Mneme research assistant. The current checkout includes the Milestone 1 platform and AI foundations plus the Milestone 2 revision-safe document pipeline: arXiv metadata ingestion, PDF download and parsing, structured summarization, chunking, embeddings, durable ARQ orchestration, daily ingestion scheduling, weekly Research Briefing assembly, and authenticated job/result APIs.
+FastAPI backend for the Mneme research assistant. The current checkout includes the complete data and AI platform through Milestone 3 plus Milestone 4 platform hardening: revision-safe arXiv/PDF ingestion, structured summarization, chunking, embeddings, retrieval, Q&A, recommendations, citation graphs, behavior profiles, durable ARQ orchestration, schedulers, bounded health and operations interfaces, explicit connection pools, and authenticated job/result APIs.
 
 ## Requirements
 
@@ -234,7 +234,7 @@ backend/
 |-- src/mneme/
 |   |-- ai/             # Providers, RAG services, routing, budget, cache, evaluation
 |   |-- api/            # Routers, dependencies, schemas, middleware, shared errors
-|   |-- cli/            # Demo identity, replay, evaluation, and manual arXiv tools
+|   |-- cli/            # Demo identity, operations, replay, evaluation, and manual tools
 |   |-- core/           # Settings, logging, and security helpers
 |   |-- db/             # Async engine, sessions, and FastAPI dependencies
 |   |-- models/         # SQLAlchemy persistence model
