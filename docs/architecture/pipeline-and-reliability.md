@@ -117,4 +117,4 @@ Demo mode is explicit configuration, not hidden endpoint behavior. It uses pre-s
 
 ## Observability
 
-No custom monitoring dashboard is in MVP scope. Use structured logs, persisted job status, `GET /jobs/{job_id}`, health endpoints, CLI JSON, and SQL reports for fetch volume, parse quality, dispatch attempts, ARQ failures, LLM usage/cost, and digest generation. Production alerts cover service uptime, disk/memory, document-storage capacity, and daily ingestion failure.
+No custom monitoring dashboard is in MVP scope. `GET /health` reports process liveness without touching infrastructure, while `GET /health/ready` concurrently checks PostgreSQL and Redis under a bounded timeout. Use these probes with structured logs, persisted job status, `GET /jobs/{job_id}`, CLI JSON, and SQL reports for fetch volume, parse quality, dispatch attempts, durable worker failures, LLM usage/cost, and digest generation. Redis enqueue rejection is visible in structured logs and as currently undispatched work; it is not persisted as a historical ARQ-failure counter. Production alerts cover service uptime, disk/memory, document-storage capacity, and daily ingestion failure.
