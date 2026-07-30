@@ -199,7 +199,7 @@ async def evaluate_case(
 async def run(settings: Settings, *, fixtures_path: Path) -> dict[str, object]:
     """Evaluate every runnable fixture and report metrics plus skips."""
     fixture_file = load_qa_fixtures(fixtures_path)
-    database = Database(settings.database_url, echo=False)
+    database = Database.from_settings(settings, echo=False)
     redis = create_redis_client(settings)
     evaluated = 0
     skipped: list[dict[str, str]] = []

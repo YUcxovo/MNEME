@@ -60,7 +60,7 @@ async def run(
         raise ValueError("MNEME_DEMO_USER_ID is required for weekly briefings.")
     resolved_week = validate_week_start(week_start or current_week_start(datetime.now(UTC).date()))
 
-    database = Database(resolved_settings.database_url, echo=resolved_settings.debug)
+    database = Database.from_settings(resolved_settings)
     queue = None
     try:
         queue = await create_pool(

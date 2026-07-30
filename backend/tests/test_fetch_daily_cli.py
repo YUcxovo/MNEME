@@ -75,7 +75,7 @@ def test_run_releases_database_and_queue_resources(monkeypatch: pytest.MonkeyPat
         del args, kwargs
         return _summary()
 
-    monkeypatch.setattr(fetch_daily, "Database", lambda *args, **kwargs: database)
+    monkeypatch.setattr(fetch_daily.Database, "from_settings", lambda _settings: database)
     monkeypatch.setattr(fetch_daily, "create_pool", fake_create_pool)
     monkeypatch.setattr(fetch_daily, "schedule_daily", fake_schedule)
 

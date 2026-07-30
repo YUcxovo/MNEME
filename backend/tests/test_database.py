@@ -2,10 +2,13 @@
 
 import asyncio
 import os
+from unittest.mock import MagicMock
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
 
+from mneme.core.config import Environment, Settings
+from mneme.db import session as session_module
 from mneme.db.session import Database, normalize_database_url
 from mneme.models import Base
 
@@ -53,6 +56,44 @@ def test_database_builds_async_sessions_without_connecting() -> None:
 
     asyncio.run(session.close())
     asyncio.run(database.dispose())
+
+
+@pytest.mark.base
+@pytest.mark.db
+def test_database_from_settings_applies_bounded_pool_configuration(monkeypatch) -> None:
+    engine = MagicMock(spec=AsyncEngine)
+    create_engine = MagicMock(return_value=engine)
+    session_factory = MagicMock()
+    monkeypatch.setattr(session_module, "create_async_engine", create_engine)
+    monkeypatch.setattr(session_module, "async_sessionmaker", session_factory)
+    settings = Settings(
+        environment=Environment.TESTING,
+        debug=True,
+        database_url="postgresql://user:pass@database/mneme",
+        database_pool_size=7,
+        database_max_overflow=2,
+        database_pool_timeout_seconds=8.5,
+        database_pool_recycle_seconds=600,
+        _env_file=None,
+    )
+
+    database = Database.from_settings(settings)
+
+    assert database.engine is engine
+    create_engine.assert_called_once_with(
+        "postgresql+asyncpg://user:pass@database/mneme",
+        echo=True,
+        pool_pre_ping=True,
+        pool_size=7,
+        max_overflow=2,
+        pool_timeout=8.5,
+        pool_recycle=600,
+    )
+    session_factory.assert_called_once_with(
+        bind=engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
 
 
 @pytest.mark.db

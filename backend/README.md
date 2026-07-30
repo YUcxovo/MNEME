@@ -18,7 +18,7 @@ cp .env.example .env
 uv run alembic upgrade head
 ```
 
-All settings use the `MNEME_` prefix. `MNEME_DATABASE_URL` accepts both `postgresql://` and `postgresql+asyncpg://` URLs. Application construction is lazy and does not itself connect to PostgreSQL or Redis.
+All settings use the `MNEME_` prefix. `MNEME_DATABASE_URL` accepts both `postgresql://` and `postgresql+asyncpg://` URLs. `MNEME_DATABASE_POOL_SIZE`, `MNEME_DATABASE_MAX_OVERFLOW`, `MNEME_DATABASE_POOL_TIMEOUT_SECONDS`, and `MNEME_DATABASE_POOL_RECYCLE_SECONDS` apply uniformly to each API, worker, or CLI process. The default bound is at most 10 database connections per process (`5 + 5`), so deployment capacity planning must multiply that bound by the process count. Application construction is lazy and does not itself connect to PostgreSQL or Redis.
 
 Document artifacts default to `.data/papers` and can be moved with `MNEME_PAPER_STORAGE_DIR`. Daily ingestion defaults to `cs.AI,cs.LG` with 20 results per category; override those values with `MNEME_ARXIV_DAILY_CATEGORIES` and `MNEME_ARXIV_DAILY_MAX_RESULTS`.
 
