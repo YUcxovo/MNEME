@@ -41,6 +41,7 @@ class Settings(BaseSettings):
     environment: Environment = Environment.DEVELOPMENT
     debug: bool = False
     log_level: str = "INFO"
+    readiness_timeout_seconds: float = Field(default=2.0, gt=0, le=30)
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/mneme"
     redis_url: RedisDsn = RedisDsn("redis://localhost:6379/0")
     redis_max_connections: int = Field(default=10, ge=1)

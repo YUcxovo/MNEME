@@ -4,7 +4,6 @@ import asyncio
 import os
 
 import pytest
-from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.db.session import Database, normalize_database_url
@@ -66,9 +65,7 @@ def test_database_connects_when_ci_url_is_configured() -> None:
     async def assert_connection() -> None:
         database = Database(database_url)
         try:
-            async with database.engine.connect() as connection:
-                result = await connection.execute(text("SELECT 1"))
-                assert result.scalar_one() == 1
+            await database.ping()
         finally:
             await database.dispose()
 
