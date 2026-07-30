@@ -269,9 +269,49 @@ class NetworkSkeletalDataRepositoryTest {
             assertTrue(qa.sources.isEmpty())
             assertEquals(ContentOrigin.LIVE_BACKEND, qa.disclosure.origin)
             assertEquals(question, qa.question)
+            assertEquals("conversation-1", qa.conversationId)
             assertEquals(qa.question, remote.questions.single().question)
             assertEquals("paper-1", remote.questions.single().paperId)
         }
+
+    @Test
+    fun followUpQuestion_reusesReturnedConversationIdentity() =
+        runBlocking {
+            val remote = FakeRemote()
+            val cachedPaper = cachedPaper("paper-1", "Cached paper")
+            val cache = FakeCache().apply { papers[cachedPaper.id] = cachedPaper }
+            val repository = NetworkSkeletalDataRepository(remote, cache)
+
+            val first = repository.askQuestion("paper-1", "What is the main result?")
+            val second =
+                repository.askQuestion(
+                    paperId = "paper-1",
+                    question = "Which evidence supports it?",
+                    conversationId = first.conversationId,
+                )
+
+            assertEquals("conversation-1", second.conversationId)
+            assertEquals(null, remote.questions[0].conversationId)
+            assertEquals("conversation-1", remote.questions[1].conversationId)
+        }
+
+    @Test
+    fun changedConversationIdentity_isRejectedAsContractMismatch() {
+        val remote = FakeRemote()
+        val cachedPaper = cachedPaper("paper-1", "Cached paper")
+        val cache = FakeCache().apply { papers[cachedPaper.id] = cachedPaper }
+        val repository = NetworkSkeletalDataRepository(remote, cache)
+
+        assertThrows(SerializationException::class.java) {
+            runBlocking {
+                repository.askQuestion(
+                    paperId = "paper-1",
+                    question = "Continue the explanation.",
+                    conversationId = "different-conversation",
+                )
+            }
+        }
+    }
 
     @Test
     fun unmatchedCitation_isShownWithoutClaimingItMatched() =

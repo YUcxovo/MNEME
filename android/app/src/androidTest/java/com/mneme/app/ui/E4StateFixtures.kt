@@ -61,6 +61,7 @@ internal class ScenarioRepository(
     override suspend fun askQuestion(
         paperId: String,
         question: String,
+        conversationId: String?,
     ): QaUiModel = error("Question answering is outside the state matrix.")
 
     override suspend fun loadGraph(paperId: String): GraphUiModel = error("Graph loading is outside the state matrix.")
