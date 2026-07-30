@@ -45,6 +45,7 @@ async def _exercise_tied_keyset() -> None:
                     User(id=other_user_id, display_name="Digest pagination other user"),
                 ]
             )
+            await session.flush()
             session.add_all(
                 [
                     Digest(

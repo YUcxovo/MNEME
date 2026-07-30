@@ -62,6 +62,7 @@ async def _exercise_snapshot() -> None:
         baseline = await _snapshot(database, now)
         async with database.session_factory() as session, session.begin():
             session.add(User(id=user_id, display_name=f"Operations User {suffix}"))
+            await session.flush()
             session.add_all(
                 [
                     Paper(
