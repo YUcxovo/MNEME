@@ -66,6 +66,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Audited bounded pagination and platform query indexes, retaining one evidence-gated failed-job index candidate instead of adding speculative global-aggregate indexes.
 - Applied one bounded PostgreSQL connection-pool configuration across the API, worker, schedulers, and standalone backend commands.
 - Replaced unconditional Android source-verification wording with the exact summary/Q&A
   source-match status returned by the backend.
