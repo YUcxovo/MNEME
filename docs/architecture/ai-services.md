@@ -38,7 +38,9 @@ via settings (`MNEME_LLM_SUMMARY_MODEL`, `MNEME_LLM_QA_MODEL`). The provider
 is inferred from the model name (`claude-*` -> Anthropic, `deepseek-*` ->
 DeepSeek, `gpt-*`/`o*-` -> OpenAI) and validated at startup so typos fail
 before the first request.
-Defaults target `claude-opus-4-8`; swap to a cheaper model per-environment
+Defaults are frozen per task since Milestone 5: `summarize` targets
+`claude-haiku-4-5` and `qa` targets `claude-opus-4-8`, per the recorded tier
+studies (see `ai-prompt-freeze.md`). Both remain overridable per-environment
 without code changes.
 
 ## BudgetGuard (hard daily cap)
