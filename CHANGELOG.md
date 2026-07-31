@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added the Milestone 5 demo Q&A curation: a seven-question validated fixture subset
+  (`qa_demo_v1.json`) with a presenter script, per-question validation provenance,
+  pre-demo re-validation procedure, and provider-outage fallbacks.
+- Added the Milestone 5 prompt and routing freeze: documented frozen template versions
+  and default routes with a hash-pinning regression test that fails on silent template
+  or routing changes.
+- Added the Milestone 5 AI cost report with measured development spend, measured unit
+  costs, and a projected per-user monthly cost under the frozen routing.
 - Added separate public liveness and bounded PostgreSQL/Redis readiness probes with safe dependency-status responses.
 - Added a bounded SQL-backed `platform-operations-v1` JSON report for jobs, papers, parse quality, and briefing generation without raw failure diagnostics.
 - Added citation-backed seed onboarding that resolves five arXiv neighbors, persists their
@@ -66,6 +74,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Changed the default summarization route from `claude-opus-4-8` to `claude-haiku-4-5`,
+  resolving cost-audit finding F1 with the recorded structural tier study; grounded QA
+  stays on the flagship route per the recorded refusal-contract comparison.
 - Audited bounded pagination and platform query indexes, retaining one evidence-gated failed-job index candidate instead of adding speculative global-aggregate indexes.
 - Applied one bounded PostgreSQL connection-pool configuration across the API, worker, schedulers, and standalone backend commands.
 - Replaced unconditional Android source-verification wording with the exact summary/Q&A
