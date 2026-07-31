@@ -50,7 +50,11 @@ def test_parser_accepts_fixture_and_output_overrides(tmp_path: Path) -> None:
 
 
 def _settings() -> Settings:
-    return Settings(database_url="postgresql+asyncpg://x:x@localhost/x", jwt_secret="s" * 32)
+    return Settings(
+        _env_file=None,
+        database_url="postgresql+asyncpg://x:x@localhost/x",
+        jwt_secret="s" * 32,
+    )
 
 
 @pytest.mark.base
