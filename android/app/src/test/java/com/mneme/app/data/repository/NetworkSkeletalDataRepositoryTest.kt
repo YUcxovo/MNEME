@@ -27,6 +27,7 @@ import com.mneme.app.data.network.SeedInitializationDto
 import com.mneme.app.data.network.SeedInitializationRequestDto
 import com.mneme.app.data.network.SummaryDto
 import com.mneme.app.data.network.UserEventDto
+import com.mneme.app.sync.LiveDigestBriefingRefresher
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.GraphAlgorithmUiStatus
 import com.mneme.app.ui.model.SourceMatchUiStatus
@@ -187,6 +188,23 @@ class NetworkSkeletalDataRepositoryTest {
         assertEquals(null, cache.storedPreferences)
         assertEquals(null, cache.storedDigest)
     }
+
+    @Test
+    fun periodicDigestRefresh_usesLatestDigestAndStoresItBeforeNotification() =
+        runBlocking {
+            val remote =
+                FakeRemote().apply {
+                    digestPage = DigestPageDto(listOf(digest().copy(id = "digest-periodic")))
+                }
+            val cache = FakeCache()
+            val refresher = LiveDigestBriefingRefresher(remote, cache) { REFRESHED_AT }
+
+            val refreshed = refresher.refreshLatest()
+
+            assertEquals("digest-periodic", refreshed?.id)
+            assertEquals("digest-periodic", cache.storedDigest?.id)
+            assertEquals(REFRESHED_AT, cache.storedBriefingAt)
+        }
 
     @Test
     fun paperAcceptedThenSucceeded_returnsSourceMatchedLiveSummary() =
@@ -437,6 +455,7 @@ class NetworkSkeletalDataRepositoryTest {
     private class FakeRemote : MnemeRemoteDataSource {
         var preferences: PreferencesDto = preferences()
         var digestResult: RemoteResource<DigestDto> = RemoteResource.Ready(digest())
+        var digestPage = DigestPageDto(emptyList())
         var paper: PaperDto = paper("paper-1", "Paper")
         var job: JobDto = JobDto(id = "job-1", stage = "summarize_paper", status = "running")
         var answer: AnswerDto =
@@ -496,7 +515,7 @@ class NetworkSkeletalDataRepositoryTest {
             )
         }
 
-        override suspend fun listDigests(limit: Int): DigestPageDto = DigestPageDto(emptyList())
+        override suspend fun listDigests(limit: Int): DigestPageDto = digestPage
 
         override suspend fun generateRecommendedDigest(): RemoteResource<DigestDto> {
             operations += "generate_digest"
