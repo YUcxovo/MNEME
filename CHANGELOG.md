@@ -12,9 +12,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   post-generation matching against the exact revision's stored chunks, explicit
   unmatched states, provenance recomputation on chunk replacement, and additive
   `claims` fields in the summary API contract.
+<<<<<<< HEAD
 - Added Android paper sharing with both an app deep link and the paper's real arXiv URL,
   plus `mneme://paper/<backend-paper-UUID>` handling for cold starts and existing app
   tasks through the normal paper repository, including its Room-backed offline fallback.
+=======
+- Added live Android briefing synchronization with network-constrained periodic work,
+  Room cache refresh, digest-identity notification deduplication, and Android 13+ permission-safe delivery.
+>>>>>>> 2324597 (feat(android): sync live briefing notifications)
 - Added separate public liveness and bounded PostgreSQL/Redis readiness probes with safe dependency-status responses.
 - Added a bounded SQL-backed `platform-operations-v1` JSON report for jobs, papers, parse quality, and briefing generation without raw failure diagnostics.
 - Added Android paper save/share actions backed by the existing durable event queue, plus

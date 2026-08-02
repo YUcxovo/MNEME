@@ -10,10 +10,20 @@ import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.mneme.app.MainActivity
 
+interface DigestNotificationPublisher {
+    fun showNewDigest(
+        digestId: String,
+        digestTitle: String,
+    ): Boolean
+}
+
 class DigestNotifier(
     private val context: Context,
-) {
-    fun showNewDigest(digestTitle: String): Boolean {
+) : DigestNotificationPublisher {
+    override fun showNewDigest(
+        digestId: String,
+        digestTitle: String,
+    ): Boolean {
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(
@@ -31,6 +41,7 @@ class DigestNotifier(
                 REQUEST_CODE_OPEN_APP,
                 Intent(context, MainActivity::class.java).apply {
                     flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    putExtra(MainActivity.EXTRA_DIGEST_ID, digestId)
                 },
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
@@ -45,8 +56,12 @@ class DigestNotifier(
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .build()
 
-        NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_NEW_DIGEST, notification)
-        return true
+        return try {
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID_NEW_DIGEST, notification)
+            true
+        } catch (_: SecurityException) {
+            false
+        }
     }
 
     private companion object {

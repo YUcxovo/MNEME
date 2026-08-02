@@ -1,6 +1,7 @@
 package com.mneme.app
 
 import android.app.Application
+import android.content.Context
 import androidx.work.WorkManager
 import com.mneme.app.data.behavior.BehavioralEventSyncCoordinator
 import com.mneme.app.data.behavior.BehavioralEventTracker
@@ -15,7 +16,12 @@ import com.mneme.app.data.repository.ControlledFixtureDataRepository
 import com.mneme.app.data.repository.NetworkSkeletalDataRepository
 import com.mneme.app.data.repository.PaperContentResult
 import com.mneme.app.data.repository.SkeletalDataRepository
+import com.mneme.app.notifications.DigestNotifier
 import com.mneme.app.sync.BehavioralEventSyncScheduler
+import com.mneme.app.sync.DigestNotificationState
+import com.mneme.app.sync.DigestRefreshCoordinator
+import com.mneme.app.sync.DigestSyncScheduler
+import com.mneme.app.sync.LiveDigestBriefingRefresher
 import com.mneme.app.ui.MnemeViewModel
 import com.mneme.app.ui.model.BriefingUiModel
 import com.mneme.app.ui.model.GraphUiModel
@@ -28,7 +34,8 @@ class MnemeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        if (BuildConfig.MNEME_DEMO_TOKEN.isNotBlank()) {
+        if (container.digestRefreshCoordinator != null) {
+            DigestSyncScheduler.schedule(WorkManager.getInstance(this))
             BehavioralEventSyncScheduler.enqueue(WorkManager.getInstance(this))
         }
     }
@@ -56,7 +63,12 @@ class MnemeApplicationContainer(
                         baseUrl = BuildConfig.MNEME_API_BASE_URL,
                         demoToken = BuildConfig.MNEME_DEMO_TOKEN,
                     )
+<<<<<<< HEAD
                 val eventStore = BehavioralEventRepository(appDatabase.behavioralEventDao())
+=======
+                val eventStore = BehavioralEventRepository(database.behavioralEventDao())
+                val cache = RoomSkeletalCache(database, MnemeApiClient.json)
+>>>>>>> 2324597 (feat(android): sync live briefing notifications)
                 val eventSyncCoordinator =
                     BehavioralEventSyncCoordinator(
                         store = eventStore,
@@ -66,7 +78,11 @@ class MnemeApplicationContainer(
                     repository =
                         NetworkSkeletalDataRepository(
                             remote = remote,
+<<<<<<< HEAD
                             cache = RoomSkeletalCache(appDatabase, MnemeApiClient.json),
+=======
+                            cache = cache,
+>>>>>>> 2324597 (feat(android): sync live briefing notifications)
                         ),
                     eventTracker =
                         QueuedBehavioralEventTracker(
@@ -78,6 +94,12 @@ class MnemeApplicationContainer(
                             },
                         ),
                     eventSyncCoordinator = eventSyncCoordinator,
+                    digestRefreshCoordinator =
+                        DigestRefreshCoordinator(
+                            refresher = LiveDigestBriefingRefresher(remote, cache),
+                            notificationState = SharedPreferencesDigestNotificationState(application),
+                            notifier = DigestNotifier(application),
+                        ),
                 )
             }
         }
@@ -120,6 +142,9 @@ class MnemeApplicationContainer(
     val behavioralEventSyncCoordinator: BehavioralEventSyncCoordinator?
         get() = liveComponents?.getOrNull()?.eventSyncCoordinator
 
+    val digestRefreshCoordinator: DigestRefreshCoordinator?
+        get() = liveComponents?.getOrNull()?.digestRefreshCoordinator
+
     val viewModelFactory: MnemeViewModel.Factory by lazy {
         MnemeViewModel.Factory(repository, eventTracker)
     }
@@ -129,7 +154,26 @@ private data class LiveComponents(
     val repository: SkeletalDataRepository,
     val eventTracker: BehavioralEventTracker,
     val eventSyncCoordinator: BehavioralEventSyncCoordinator,
+    val digestRefreshCoordinator: DigestRefreshCoordinator,
 )
+
+private class SharedPreferencesDigestNotificationState(
+    context: Context,
+) : DigestNotificationState {
+    private val preferences =
+        context.applicationContext.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
+
+    override fun lastNotifiedDigestId(): String? = preferences.getString(LAST_NOTIFIED_DIGEST_ID, null)
+
+    override fun markNotified(digestId: String) {
+        preferences.edit().putString(LAST_NOTIFIED_DIGEST_ID, digestId).apply()
+    }
+
+    private companion object {
+        const val PREFERENCES_NAME = "digest_notifications"
+        const val LAST_NOTIFIED_DIGEST_ID = "last_notified_digest_id"
+    }
+}
 
 private class ConfigurationErrorRepository(
     message: String,

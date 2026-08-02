@@ -9,6 +9,7 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.mneme.app.MnemeApplication
 import java.time.Duration
 import java.util.concurrent.TimeUnit
 
@@ -17,8 +18,18 @@ class DigestSyncWorker(
     workerParameters: WorkerParameters,
 ) : CoroutineWorker(appContext, workerParameters) {
     override suspend fun doWork(): Result {
-        // The remote repository will be connected when the API client is available.
-        return Result.success()
+        val coordinator =
+            (applicationContext as? MnemeApplication)
+                ?.container
+                ?.digestRefreshCoordinator
+                ?: return Result.success()
+        return when (coordinator.refresh()) {
+            is DigestSyncResult.Synced,
+            DigestSyncResult.NoCompleteDigest,
+            -> Result.success()
+            DigestSyncResult.Retry -> Result.retry()
+            DigestSyncResult.Failed -> Result.failure()
+        }
     }
 }
 

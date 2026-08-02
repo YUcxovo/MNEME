@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+<<<<<<< HEAD
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -63,5 +64,9 @@ class MainActivity : ComponentActivity() {
         } else {
             externalNavigation.openPaper(paperId)
         }
+=======
+    companion object {
+        const val EXTRA_DIGEST_ID = "com.mneme.app.extra.DIGEST_ID"
+>>>>>>> 2324597 (feat(android): sync live briefing notifications)
     }
 }
