@@ -142,6 +142,21 @@ class DigestRepository:
         """Return the stored preference row for scoring."""
         return await self._session.get(UserPreference, user_id)
 
+    async def get_latest_by_generator(
+        self, *, user_id: UUID, generator_version: str
+    ) -> Digest | None:
+        """Return the newest complete digest for one private generator identity."""
+        statement = _with_entries(
+            select(Digest)
+            .where(
+                Digest.user_id == user_id,
+                Digest.generator_version == generator_version,
+            )
+            .order_by(Digest.generated_at.desc(), Digest.id.desc())
+            .limit(1)
+        )
+        return await self._session.scalar(statement)
+
     async def list_recent_candidates(
         self, *, since: datetime, limit: int, before: datetime | None = None
     ) -> list[Paper]:
