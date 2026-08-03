@@ -51,6 +51,39 @@ def test_invalid_arxiv_reference_is_rejected(reference: str) -> None:
 
 @pytest.mark.base
 @pytest.mark.api
+def test_completed_seed_is_reused_before_external_requests(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected = MagicMock()
+    load_existing = AsyncMock(return_value=expected)
+    arxiv_client = MagicMock()
+    monkeypatch.setattr(onboarding, "_load_existing_seed", load_existing)
+    monkeypatch.setattr(onboarding, "ArxivClient", arxiv_client)
+    principal = Principal(user_id=uuid4())
+    session = cast(AsyncSession, MagicMock(spec=AsyncSession))
+
+    result = asyncio.run(
+        onboarding.initialize_from_seed(
+            SeedInitializationRequest(arxiv_reference="1706.03762v5"),
+            principal,
+            cast(TaskQueue, MagicMock()),
+            Settings(_env_file=None),
+            session,
+        )
+    )
+
+    assert result is expected
+    load_existing.assert_awaited_once_with(
+        session,
+        user_id=principal.user_id,
+        seed_arxiv_id="1706.03762",
+    )
+    arxiv_client.assert_not_called()
+    assert onboarding._seed_generator_version("1706.03762") == ("seed-onboarding-v2:1706.03762")
+
+
+@pytest.mark.base
+@pytest.mark.api
 def test_metadata_failure_returns_retryable_error_without_category_fallback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

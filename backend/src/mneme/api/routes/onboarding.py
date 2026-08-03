@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Annotated, Final
+from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, status
@@ -51,6 +52,41 @@ _GRAPH_NEIGHBOR_LIMIT: Final = 20
 _LIBRARY_SIZE: Final = 5
 
 
+def _seed_generator_version(seed_arxiv_id: str) -> str:
+    return f"seed-onboarding-v2:{seed_arxiv_id}"
+
+
+async def _load_existing_seed(
+    session: AsyncSession,
+    *,
+    user_id: UUID,
+    seed_arxiv_id: str,
+) -> SeedInitializationResult | None:
+    """Recover a completed seed digest before contacting external providers."""
+    digest = await DigestRepository(session).get_latest_by_generator(
+        user_id=user_id,
+        generator_version=_seed_generator_version(seed_arxiv_id),
+    )
+    if digest is None or len(digest.entries) != _LIBRARY_SIZE:
+        return None
+    preference = await PreferenceRepository(session).get_preferences(user_id)
+    seed_paper = await session.scalar(select(Paper).where(Paper.arxiv_id == seed_arxiv_id).limit(1))
+    if preference is None or seed_paper is None:
+        return None
+    return SeedInitializationResult(
+        seed_arxiv_id=seed_arxiv_id,
+        category=seed_paper.primary_category,
+        paper_count=len(digest.entries),
+        preferences=Preferences(
+            topics=preference.topics,
+            followed_authors=preference.followed_authors,
+            model_version=preference.model_version,
+            updated_at=preference.updated_at,
+        ),
+        digest=Digest.from_model(digest),
+    )
+
+
 def get_request_settings() -> Settings:
     """Return process settings; overridable in tests."""
     return get_settings()
@@ -74,6 +110,15 @@ async def initialize_from_seed(
         seed_arxiv_id = normalize_arxiv_reference(payload.arxiv_reference)
     except ValueError as error:
         raise ApiError(status.HTTP_400_BAD_REQUEST, "invalid_arxiv_reference", str(error)) from None
+
+    existing_seed = await _load_existing_seed(
+        session,
+        user_id=principal.user_id,
+        seed_arxiv_id=seed_arxiv_id,
+    )
+    if existing_seed is not None:
+        logger.info("seed_initialization_reused", seed_arxiv_id=seed_arxiv_id)
+        return existing_seed
 
     try:
         async with ArxivClient(settings) as client:
@@ -204,11 +249,22 @@ async def initialize_from_seed(
         )
         for rank, paper_id in enumerate(candidate_order, start=1)
     ]
-    digest_model = await DigestRepository(session).create_digest(
+    digest_repository = DigestRepository(session)
+    await digest_repository.lock_user(principal.user_id)
+    existing_seed = await _load_existing_seed(
+        session,
+        user_id=principal.user_id,
+        seed_arxiv_id=seed_arxiv_id,
+    )
+    if existing_seed is not None:
+        await session.commit()
+        logger.info("seed_initialization_reused", seed_arxiv_id=seed_arxiv_id)
+        return existing_seed
+    digest_model = await digest_repository.create_digest(
         user_id=principal.user_id,
         digest_type=DigestType.MANUAL,
         preference_model_version=preference.model_version,
-        generator_version="seed-onboarding-v1",
+        generator_version=_seed_generator_version(seed_arxiv_id),
         entries=entries,
     )
     await session.commit()
