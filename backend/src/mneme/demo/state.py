@@ -12,7 +12,7 @@ from mneme.core.config import Settings
 from mneme.db.session import Database
 from mneme.demo.manifest import DemoSeedManifest
 from mneme.demo.seeding_support import DemoSeedConfigurationError, DemoSeedError
-from mneme.models.paper import Paper
+from mneme.models.paper import Paper, ProcessingStatus
 from mneme.models.user import UserEvent
 
 
@@ -30,7 +30,12 @@ async def verify_persisted_seed_state(
     try:
         async with database.session_factory() as session:
             seed_paper_id = await session.scalar(
-                select(Paper.id).where(Paper.arxiv_id == manifest.seed_arxiv_reference).limit(1)
+                select(Paper.id)
+                .where(
+                    Paper.arxiv_id == manifest.seed_arxiv_reference,
+                    Paper.processing_status == ProcessingStatus.READY,
+                )
+                .limit(1)
             )
             stored_events = list(
                 (

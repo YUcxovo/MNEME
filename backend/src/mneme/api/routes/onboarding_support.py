@@ -152,11 +152,19 @@ async def resume_failed_seed_jobs(
     return dispatched
 
 
-async def wait_for_seed_papers(session: AsyncSession, paper_ids: tuple[UUID, ...]) -> None:
+async def wait_for_seed_papers(
+    session: AsyncSession,
+    paper_ids: tuple[UUID, ...],
+    *,
+    required_ready_ids: tuple[UUID, ...] = (),
+) -> None:
     """Block until every selected paper reaches a usable terminal state."""
     loop = asyncio.get_running_loop()
     deadline = loop.time() + _INITIALIZATION_TIMEOUT_SECONDS
     expected_ids = set(paper_ids)
+    required_ready = set(required_ready_ids)
+    if not required_ready.issubset(expected_ids):
+        raise ValueError("Required READY papers must belong to the wait scope")
     while True:
         rows = (
             await session.execute(
@@ -166,7 +174,10 @@ async def wait_for_seed_papers(session: AsyncSession, paper_ids: tuple[UUID, ...
         await session.rollback()
         statuses = {paper_id: processing_status for paper_id, processing_status in rows}
         if set(statuses) == expected_ids and all(
-            item in {ProcessingStatus.READY, ProcessingStatus.PARTIAL} for item in statuses.values()
+            status_value is ProcessingStatus.READY
+            if paper_id in required_ready
+            else status_value in {ProcessingStatus.READY, ProcessingStatus.PARTIAL}
+            for paper_id, status_value in statuses.items()
         ):
             return
         if any(item is ProcessingStatus.FAILED for item in statuses.values()):

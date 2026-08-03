@@ -112,6 +112,21 @@ async def _exercise() -> None:
 
         async with database.session_factory() as session, session.begin():
             await session.execute(
+                update(Paper)
+                .where(Paper.id == seed_paper_id)
+                .values(processing_status=ProcessingStatus.PARTIAL)
+            )
+        with pytest.raises(DemoSeedError, match="seed paper is unavailable"):
+            await verify_persisted_seed_state(settings, manifest, events)
+        async with database.session_factory() as session, session.begin():
+            await session.execute(
+                update(Paper)
+                .where(Paper.id == seed_paper_id)
+                .values(processing_status=ProcessingStatus.READY)
+            )
+
+        async with database.session_factory() as session, session.begin():
+            await session.execute(
                 update(UserEvent)
                 .where(UserEvent.id == events[0].event_id)
                 .values(

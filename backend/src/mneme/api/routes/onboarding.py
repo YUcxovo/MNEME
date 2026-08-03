@@ -26,7 +26,7 @@ from mneme.api.schemas.preferences import Preferences
 from mneme.core.config import Settings, get_settings
 from mneme.db.dependencies import get_session
 from mneme.models.digest import DigestEntry, DigestType
-from mneme.models.paper import Paper, PaperAuthor
+from mneme.models.paper import Paper, PaperAuthor, ProcessingStatus
 from mneme.repositories.citation_graph import CitationIdentityConflict
 from mneme.repositories.digests import DigestRepository
 from mneme.repositories.preferences import PreferenceRepository
@@ -72,7 +72,11 @@ async def _load_existing_seed(
         return None
     preference = await PreferenceRepository(session).get_preferences(user_id)
     seed_paper = await session.scalar(select(Paper).where(Paper.arxiv_id == seed_arxiv_id).limit(1))
-    if preference is None or seed_paper is None:
+    if (
+        preference is None
+        or seed_paper is None
+        or seed_paper.processing_status is not ProcessingStatus.READY
+    ):
         return None
     return SeedInitializationResult(
         seed_arxiv_id=seed_arxiv_id,
@@ -108,7 +112,11 @@ async def _resume_existing_seed(
     digest_paper_ids = tuple(entry.paper.id for entry in existing_seed.digest.entries)
     retry_scope = tuple(dict.fromkeys((seed_paper_id, *digest_paper_ids)))
     resumed = await resume_failed_seed_jobs(session, queue, retry_scope)
-    await wait_for_seed_papers(session, digest_paper_ids)
+    await wait_for_seed_papers(
+        session,
+        retry_scope,
+        required_ready_ids=(seed_paper_id,),
+    )
     if resumed:
         logger.info(
             "seed_initialization_resumed",
@@ -253,13 +261,13 @@ async def initialize_from_seed(
             "The configured demo user has not been bootstrapped.",
         )
 
-    revisions_to_prepare = (
-        (seed_result.revisions[0], *candidates)
-        if candidate_source == "citation_graph"
-        else candidates
-    )
+    revisions_to_prepare = (seed_result.revisions[0], *candidates)
     paper_ids = await enqueue_seed_downloads(session, queue, revisions_to_prepare)
-    await wait_for_seed_papers(session, paper_ids)
+    await wait_for_seed_papers(
+        session,
+        paper_ids,
+        required_ready_ids=(seed_result.revisions[0].paper_id,),
+    )
 
     candidate_order = [revision.paper_id for revision in candidates]
     prepared_papers = list(

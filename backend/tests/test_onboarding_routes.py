@@ -94,7 +94,7 @@ def test_completed_seed_is_reused_before_external_requests(
 @pytest.mark.base
 @pytest.mark.api
 @pytest.mark.pipeline
-def test_existing_seed_retries_seed_but_waits_for_digest_papers(
+def test_existing_seed_retries_and_waits_for_ready_seed_paper(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     seed_paper_id = uuid4()
@@ -128,7 +128,11 @@ def test_existing_seed_retries_seed_but_waits_for_digest_papers(
         queue,
         (seed_paper_id, *digest_paper_ids),
     )
-    wait.assert_awaited_once_with(session, digest_paper_ids)
+    wait.assert_awaited_once_with(
+        session,
+        (seed_paper_id, *digest_paper_ids),
+        required_ready_ids=(seed_paper_id,),
+    )
 
 
 @pytest.mark.base
