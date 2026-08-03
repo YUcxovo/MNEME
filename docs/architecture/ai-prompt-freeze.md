@@ -11,8 +11,12 @@ control that keeps the recorded evaluations valid.
 | Structured summarization system prompt | `summary-v1` | `mneme/ai/prompts.py` (`_SUMMARY_SYSTEM`) |
 | Grounded Q&A system prompt | `qa-v2` | `mneme/ai/prompts.py` (`_QA_SYSTEM`) |
 
-`backend/tests/test_prompt_freeze.py` pins both version constants and the
-SHA-256 of both system templates. The prompt version participates in every
+`backend/tests/test_prompt_freeze.py` pins both version constants, the
+SHA-256 of both system templates, and the exact constructed request form of
+`build_summary_request` and `build_qa_request` (task, system template,
+user-message layout, and role sequence against representative inputs), so
+the freeze covers the complete observable prompt, not only the system
+half. The prompt version participates in every
 completion cache key and in the generation-identity rows of
 `paper_summaries` / `qa_messages`, so bumping the version is the only
 sanctioned way to change observable behavior; the freeze test turns a
@@ -47,7 +51,10 @@ stay environment-overridable (`MNEME_LLM_SUMMARY_MODEL`,
 | Summary tier study, mid tier | `claude-haiku-4-5` | 7/7 parsed, claim support 0.95/0.85, cost $0.140 |
 
 Full graded results are reported in thesis Chapter 4 (Tables `qa-eval`,
-`qa-tiers`, `summary-tiers`).
+`qa-tiers`, `summary-tiers`). The raw run reports are retained on the
+repository `docs` branch as
+`docs/evaluation/qa/qa-seed-v2-run-2026-07-28-{opus,haiku}.json` and
+`docs/evaluation/summaries/summary-tier-study-2026-07-28.json`.
 
 ## Change control after the freeze
 

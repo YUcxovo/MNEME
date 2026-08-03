@@ -12,6 +12,7 @@ import hashlib
 import pytest
 
 from mneme.ai import prompts
+from mneme.ai.types import AITask
 from mneme.core.config import Settings
 
 FROZEN_SUMMARY_VERSION = "summary-v1"
@@ -47,6 +48,48 @@ def test_qa_template_matches_frozen_hash() -> None:
     assert _sha256(prompts._QA_SYSTEM) == FROZEN_QA_SYSTEM_SHA256, (
         "QA system template changed without bumping QA_PROMPT_VERSION "
         "and re-validating the demo set"
+    )
+
+
+@pytest.mark.base
+def test_summary_request_construction_is_frozen() -> None:
+    request = prompts.build_summary_request(
+        title="Frozen Title", body="Frozen body.", max_output_tokens=64
+    )
+    assert request.task is AITask.SUMMARIZE
+    assert request.system == prompts._SUMMARY_SYSTEM
+    assert request.prompt_version == FROZEN_SUMMARY_VERSION
+    assert request.max_output_tokens == 64
+    assert [message.role for message in request.messages] == ["user"]
+    assert request.messages[0].content == (
+        "Title: Frozen Title\n\nPaper text:\nFrozen body.\n\nReturn the JSON object now."
+    ), (
+        "summary user-message construction changed without bumping "
+        "SUMMARY_PROMPT_VERSION and re-validating the demo set"
+    )
+
+
+@pytest.mark.base
+def test_qa_request_construction_is_frozen() -> None:
+    request = prompts.build_qa_request(
+        question="Frozen question?",
+        evidence=["First excerpt.", "Second excerpt."],
+        max_output_tokens=64,
+    )
+    assert request.task is AITask.QA
+    assert request.system == prompts._QA_SYSTEM
+    assert request.prompt_version == FROZEN_QA_VERSION
+    assert request.max_output_tokens == 64
+    assert [message.role for message in request.messages] == ["user"]
+    assert request.messages[0].content == (
+        "Evidence excerpts:\n"
+        "[1] First excerpt.\n\n"
+        "[2] Second excerpt.\n\n"
+        "Question: Frozen question?\n\n"
+        "Answer with citations:"
+    ), (
+        "QA user-message construction changed without bumping "
+        "QA_PROMPT_VERSION and re-validating the demo set"
     )
 
 
