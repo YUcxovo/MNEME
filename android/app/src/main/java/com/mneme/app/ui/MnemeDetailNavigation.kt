@@ -6,6 +6,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.mneme.app.ui.navigation.GraphRoute
+import com.mneme.app.ui.navigation.PaperDeepLink
 import com.mneme.app.ui.navigation.PaperDetailRoute
 import com.mneme.app.ui.navigation.QaRoute
 
@@ -16,8 +17,23 @@ internal fun NavGraphBuilder.paperDetailNavigation(
     externalActions: MnemeExternalActions,
 ) {
     composable<PaperDetailRoute> { entry ->
-        val paperId = entry.toRoute<PaperDetailRoute>().paperId
+        val route = entry.toRoute<PaperDetailRoute>()
+        val paperId = route.paperId
         LaunchedEffect(paperId) { actions.requestPaper(paperId) }
+        LaunchedEffect(route.externalRequestId, paperId, snapshot.paper) {
+            val requestId = route.externalRequestId ?: return@LaunchedEffect
+            val loadedPaper =
+                (snapshot.paper as? PaperDetailUiState.Content)
+                    ?.paper
+                    ?.paper
+                    ?.takeIf { it.id == paperId }
+                    ?: return@LaunchedEffect
+            val recordedKey = "external-paper-opened-$requestId"
+            if (entry.savedStateHandle.get<Boolean>(recordedKey) != true) {
+                entry.savedStateHandle[recordedKey] = true
+                actions.recordPaperOpened(loadedPaper.id)
+            }
+        }
         paperDestination(
             paperId = paperId,
             state = snapshot.paper,
@@ -71,6 +87,12 @@ private fun shareCurrentPaper(
             ?.paper
             ?.takeIf { it.paper.id == paperId }
             ?: return
-    externalActions.sharePaper(paper.paper.title, paper.source.url)
+    val shareText =
+        PaperDeepLink.buildShareText(
+            title = paper.paper.title,
+            paperId = paper.paper.id,
+            arxivUrl = paper.source.url,
+        )
+    externalActions.sharePaper(paper.paper.title, shareText)
     actions.sharePaper(paperId)
 }

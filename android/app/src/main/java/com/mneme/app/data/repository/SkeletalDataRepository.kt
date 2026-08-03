@@ -187,6 +187,11 @@ class NetworkSkeletalDataRepository(
     override suspend fun loadPaper(paperId: String): PaperContentResult =
         try {
             val paper = remote.getPaper(paperId)
+            if (paper.id != paperId) {
+                throw SerializationException(
+                    "The backend paper ID does not match the requested paper.",
+                )
+            }
             val refreshedAt = nowEpochMillis()
             cache.storePaper(paper, refreshedAt)
             cache.markPaperOpened(paperId, refreshedAt)
