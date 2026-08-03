@@ -129,6 +129,24 @@ class ArtifactRepository:
         )
         return list((await self._session.scalars(statement)).all())
 
+    async def list_chunks_for_version(self, *, paper_version_id: UUID) -> list[PaperChunk]:
+        """Return all stored chunks for one exact revision in chunk order."""
+        statement = (
+            select(PaperChunk)
+            .where(PaperChunk.paper_version_id == paper_version_id)
+            .order_by(PaperChunk.chunk_index)
+        )
+        return list((await self._session.scalars(statement)).all())
+
+    async def list_summaries_for_version(self, *, paper_version_id: UUID) -> list[PaperSummary]:
+        """Return all stored summaries for one exact revision, oldest first."""
+        statement = (
+            select(PaperSummary)
+            .where(PaperSummary.paper_version_id == paper_version_id)
+            .order_by(PaperSummary.created_at)
+        )
+        return list((await self._session.scalars(statement)).all())
+
     async def set_chunk_embeddings(self, updates: list[ChunkEmbeddingUpdate]) -> None:
         """Attach vectors to previously stored chunks."""
         for item in updates:

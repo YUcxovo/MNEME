@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added revision-safe source provenance for summary key claims: deterministic
+  post-generation matching against the exact revision's stored chunks, explicit
+  unmatched states, provenance recomputation on chunk replacement, and additive
+  `claims` fields in the summary API contract.
 - Added separate public liveness and bounded PostgreSQL/Redis readiness probes with safe dependency-status responses.
 - Added a bounded SQL-backed `platform-operations-v1` JSON report for jobs, papers, parse quality, and briefing generation without raw failure diagnostics.
 - Added Android paper save/share actions backed by the existing durable event queue, plus
