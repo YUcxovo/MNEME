@@ -128,6 +128,11 @@ jobs:
                   uv run --project backend python -m mneme.cli.render_deployment \
                     --server-name api.ci.example \
                     --output-dir "$render_dir"
+                  # The production units intentionally target /opt/mneme. Mirror the
+                  # disposable checkout there so systemd verifies real installed
+                  # entry points instead of rejecting the absent host layout.
+                  sudo mkdir -p /opt
+                  sudo ln -s "$GITHUB_WORKSPACE" /opt/mneme
                   systemd-analyze verify "$render_dir"/*.service "$render_dir"/*.timer
 
                   sudo apt-get update -qq
