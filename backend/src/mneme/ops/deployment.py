@@ -16,6 +16,8 @@ TEMPLATE_FILENAMES = (
     "mneme-backup.timer.template",
     "mneme-digest.service.template",
     "mneme-digest.timer.template",
+    "mneme-health.service.template",
+    "mneme-health.timer.template",
     "mneme-ingest.service.template",
     "mneme-ingest.timer.template",
     "mneme-migrate.service.template",
