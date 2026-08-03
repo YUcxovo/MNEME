@@ -58,7 +58,7 @@ def test_renderer_produces_complete_deterministic_staging_tree(tmp_path: Path) -
     assert "TimeoutStartSec=2100" in (output_dir / "mneme-backup.service").read_text(
         encoding="utf-8"
     )
-    assert "TimeoutStartSec=2400" in (output_dir / "mneme-seed.service").read_text(encoding="utf-8")
+    assert "TimeoutStartSec=3900" in (output_dir / "mneme-seed.service").read_text(encoding="utf-8")
     assert "TimeoutStartSec=180" in (output_dir / "mneme-health.service").read_text(
         encoding="utf-8"
     )
