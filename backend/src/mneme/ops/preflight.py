@@ -123,8 +123,8 @@ async def _connection_capacity_check(
 ) -> PreflightCheck:
     try:
         async with asyncio.timeout(timeout):
-            maximum, reserved = await probe.connection_limits()
-        available = maximum - reserved
+            maximum, superuser_reserved, reserved = await probe.connection_limits()
+        available = maximum - superuser_reserved - reserved
         headroom = max(10, available // 5)
         required = (settings.api_workers + 2) * (
             settings.database_pool_size + settings.database_max_overflow

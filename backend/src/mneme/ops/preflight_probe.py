@@ -49,10 +49,11 @@ class ProductionPreflightProbe:
         )
         return bool(value)
 
-    async def connection_limits(self) -> tuple[int, int]:
+    async def connection_limits(self) -> tuple[int, int, int]:
         maximum = int(str(await self._scalar("SHOW max_connections")))
-        reserved = int(str(await self._scalar("SHOW superuser_reserved_connections")))
-        return maximum, reserved
+        superuser_reserved = int(str(await self._scalar("SHOW superuser_reserved_connections")))
+        reserved = int(str(await self._scalar("SHOW reserved_connections")))
+        return maximum, superuser_reserved, reserved
 
     async def ping_redis(self) -> bool:
         return bool(await self._redis.ping())

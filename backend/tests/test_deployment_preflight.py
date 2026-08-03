@@ -46,7 +46,7 @@ class FakeProbe:
             "database_revision": "0007",
             "has_pgvector": True,
             "demo_user_exists": True,
-            "connection_limits": (100, 3),
+            "connection_limits": (100, 3, 2),
             "ping_redis": True,
             "paper_storage_writable": True,
             "backup_tools_available": True,
@@ -76,7 +76,7 @@ class FakeProbe:
         assert user_id == USER_ID
         return bool(await self._get("demo_user_exists"))
 
-    async def connection_limits(self) -> tuple[int, int]:
+    async def connection_limits(self) -> tuple[int, int, int]:
         value = await self._get("connection_limits")
         assert isinstance(value, tuple)
         return value
@@ -161,7 +161,7 @@ def test_live_preflight_reports_capacity_and_closes_probe() -> None:
     assert report.status == "ready"
     assert probe.closed
     capacity = next(check for check in report.checks if check.id == "database_capacity")
-    assert capacity.details == {"available": 97, "headroom": 19, "required": 40}
+    assert capacity.details == {"available": 95, "headroom": 19, "required": 40}
     assert report.as_dict()["counts"] == {"fail": 0, "pass": 16, "warn": 0}
 
 
@@ -173,7 +173,7 @@ def test_live_preflight_reports_capacity_and_closes_probe() -> None:
         ({"database_revision": "old"}, "migration_head"),
         ({"has_pgvector": False}, "pgvector_extension"),
         ({"demo_user_exists": False}, "demo_user"),
-        ({"connection_limits": (45, 3)}, "database_capacity"),
+        ({"connection_limits": (45, 3, 2)}, "database_capacity"),
         ({"ping_redis": False}, "redis"),
         ({"paper_storage_writable": False}, "paper_storage"),
         ({"backup_tools_available": False}, "backup_tools"),
