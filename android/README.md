@@ -34,15 +34,17 @@ FastAPI backend:
 4. If later summary work is still running, poll the public job resource and reload the
    summary after the job succeeds.
 5. Enter and submit one paper-scoped question through the backend RAG path.
-6. Display the backend's source-match status and citations, then open the arXiv paper.
-7. Request the paper's bounded depth-two citation graph, inspect its backend algorithm
+6. Inspect source-linked summary claims by section, page, and excerpt; display truthful
+   unavailable states for unmatched or legacy claims; and open the same arXiv paper.
+7. Display the backend's Q&A source-match status and citations, then open the arXiv paper.
+8. Request the paper's bounded depth-two citation graph, inspect its backend algorithm
    status, select a local node, and open that paper's detail screen.
-8. Queue visible-paper impressions, paper opens, and submitted paper-scoped questions,
+9. Queue visible-paper impressions, paper opens, and submitted paper-scoped questions,
    then upload them to the M3 behavior endpoint without blocking foreground navigation.
 
 The UI labels live, cached, and controlled-fixture content separately. It also renders
-`matched`, `partial`, `not_checked`, and `insufficient_evidence` states without claiming
-that every answer or summary is verified.
+`matched`, `partial`, `unmatched`, `not_checked`, and `insufficient_evidence` states without
+claiming that every answer or summary is verified.
 
 After one complete briefing is stored in Room, later process starts restore that local
 briefing before checking for backend updates. A fresh install or cleared application data
@@ -176,8 +178,10 @@ backend paper or a matching local cache entry.
 
 ## Current client boundaries
 
-- Room schema version 4 stores paper metadata, digest cache payloads, preferences, refresh
-  metadata, and the contract-aligned behavioral-event retry queue.
+- Room schema version 5 stores paper metadata, nullable source-linked summary payloads,
+  digest cache payloads, preferences, refresh metadata, and the contract-aligned
+  behavioral-event retry queue. A v4 cache migrates with an empty summary payload, so its
+  paper metadata remains available without inventing a cached summary or source actions.
 - The default Activity uses a production `MnemeViewModel` and a manually constructed
   application container. Hilt remains a target-stack choice rather than a dependency of
   this feature unit.

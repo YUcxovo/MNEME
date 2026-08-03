@@ -17,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   tasks through the normal paper repository, including its Room-backed offline fallback.
 - Added live Android briefing synchronization with network-constrained periodic work,
   Room cache refresh, digest-identity notification deduplication, and Android 13+ permission-safe delivery.
+- Added Android claim-level summary sources with expandable section, page, and excerpt
+  details, truthful unavailable states, same-paper source actions, and a Room v5 cache
+  migration that preserves source associations across refreshes and process restarts.
 - Added separate public liveness and bounded PostgreSQL/Redis readiness probes with safe dependency-status responses.
 - Added a bounded SQL-backed `platform-operations-v1` JSON report for jobs, papers, parse quality, and briefing generation without raw failure diagnostics.
 - Added Android paper save/share actions backed by the existing durable event queue, plus
