@@ -21,6 +21,7 @@ TEMPLATE_FILENAMES = (
     "mneme-ingest.service.template",
     "mneme-ingest.timer.template",
     "mneme-migrate.service.template",
+    "mneme-preflight.service.template",
     "mneme-seed.service.template",
     "mneme-smoke.service.template",
     "mneme-worker.service.template",

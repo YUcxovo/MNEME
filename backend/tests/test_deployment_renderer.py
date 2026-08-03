@@ -45,6 +45,9 @@ def test_renderer_produces_complete_deterministic_staging_tree(tmp_path: Path) -
     smoke_service = (output_dir / "mneme-smoke.service").read_text(encoding="utf-8")
     assert "python -m mneme.cli.smoke_backend" in smoke_service
     assert "--token-file /etc/mneme/demo.token" in smoke_service
+    preflight_service = (output_dir / "mneme-preflight.service").read_text(encoding="utf-8")
+    assert "python -m mneme.cli.preflight_deployment" in preflight_service
+    assert "PGSERVICE=mneme-backup" in preflight_service
 
 
 @pytest.mark.base
