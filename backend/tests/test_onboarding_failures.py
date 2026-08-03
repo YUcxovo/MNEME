@@ -151,6 +151,31 @@ def test_seed_queue_failure_releases_lease_and_hides_diagnostics(monkeypatch) ->
 @pytest.mark.base
 @pytest.mark.api
 @pytest.mark.pipeline
+def test_seed_download_reuse_scans_failed_child_stages(monkeypatch) -> None:
+    revision = _revision()
+    paper = SimpleNamespace(processing_status=ProcessingStatus.METADATA_ONLY)
+    session = AsyncMock(spec=AsyncSession)
+    session.get.return_value = paper
+    queue = RecordingQueue()
+    resume = AsyncMock(return_value=0)
+    monkeypatch.setattr(onboarding_support, "PipelineJobRepository", FakeJobRepository)
+    monkeypatch.setattr(onboarding_support, "resume_failed_seed_jobs", resume)
+
+    paper_ids = asyncio.run(
+        onboarding_support.enqueue_seed_downloads(
+            session,
+            queue,
+            (revision,),
+        )
+    )
+
+    assert paper_ids == (revision.paper_id,)
+    resume.assert_awaited_once_with(session, queue, paper_ids)
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
 def test_existing_seed_resumes_failed_latest_revision_job(monkeypatch) -> None:
     session = AsyncMock(spec=AsyncSession)
     paper = SimpleNamespace(processing_status=ProcessingStatus.FAILED)

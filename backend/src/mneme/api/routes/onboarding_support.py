@@ -99,7 +99,9 @@ async def enqueue_seed_downloads(
                 "queue_unavailable",
                 "The paper preparation queue is temporarily unavailable.",
             ) from error
-    return tuple(revision.paper_id for revision in revisions)
+    paper_ids = tuple(revision.paper_id for revision in revisions)
+    await resume_failed_seed_jobs(session, queue, paper_ids)
+    return paper_ids
 
 
 async def resume_failed_seed_jobs(
