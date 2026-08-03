@@ -58,6 +58,8 @@ class DeploymentRenderConfig:
         _validate_account(self.service_group, "service group")
         _validate_scoped_path(self.install_dir, Path("/opt"), "install directory")
         _validate_scoped_path(self.environment_file, Path("/etc"), "environment file")
+        if self.environment_file.suffix != ".env":
+            raise DeploymentRenderError("Environment file must use an .env suffix")
         _validate_scoped_path(self.paper_data_dir, Path("/var/lib"), "paper data directory")
         _validate_scoped_path(self.backup_dir, Path("/var/backups"), "backup directory")
         if not 1024 <= self.api_port <= 65535:
@@ -150,6 +152,7 @@ def _validate_scoped_path(value: Path, parent: Path, label: str) -> None:
     if (
         not value.is_absolute()
         or ".." in value.parts
+        or value == parent
         or not value.is_relative_to(parent)
         or any(not _PATH_COMPONENT_PATTERN.fullmatch(part) for part in value.parts[1:])
     ):
