@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -19,12 +20,17 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.mneme.app.data.behavior.QueuedBehavioralEventTracker
 import com.mneme.app.data.local.BehavioralEventRepository
+import com.mneme.app.data.local.BehavioralEventStore
+import com.mneme.app.data.local.BehavioralEventType
 import com.mneme.app.data.local.MnemeDatabase
 import com.mneme.app.data.local.RoomSkeletalCache
+import com.mneme.app.data.local.entity.BehavioralEventEntity
 import com.mneme.app.data.network.MnemeApiClient
 import com.mneme.app.data.repository.NetworkSkeletalDataRepository
 import com.mneme.app.ui.navigation.ExternalNavigationRequest
 import com.mneme.app.ui.theme.MnemeTheme
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -34,6 +40,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -91,6 +98,7 @@ class MnemeExternalNavigationPersistenceTest {
         composeRule.waitForIdle()
 
         assertEquals(1, targetOpenEvents().size)
+        assertEquals(EXTERNAL_EVENT_ID, targetOpenEvents().single().id)
         assertTrue(scheduledSyncs.get() >= 1)
         assertTrue(BRIEFING_DIGEST.entries.none { it.paper.id == TARGET_PAPER.id })
     }
@@ -115,6 +123,62 @@ class MnemeExternalNavigationPersistenceTest {
         assertTrue(scheduledSyncs.get() >= 1)
     }
 
+    @Test
+    fun committedOpenReplaysOnceWhenNavigationIsRestoredBeforeAcknowledgement() {
+        runBlocking { cache.storePaper(TARGET_PAPER, FIXED_TIME) }
+        val store = CancelAfterFirstCommitStore(eventStore)
+        val tracker =
+            QueuedBehavioralEventTracker(
+                store = store,
+                scheduleSync = {},
+                nowEpochMillis = { FIXED_TIME },
+            )
+        val viewModel =
+            MnemeViewModel(
+                NetworkSkeletalDataRepository(paperRemote(AtomicBoolean(false)), cache),
+                tracker,
+            )
+        var externalRequest by
+            mutableStateOf<ExternalNavigationRequest?>(
+                ExternalNavigationRequest.OpenPaper(
+                    requestId = REQUEST_ID,
+                    paperId = TARGET_PAPER.id,
+                    eventId = EXTERNAL_EVENT_ID,
+                ),
+            )
+        val restorationTester = StateRestorationTester(composeRule)
+        restorationTester.setContent {
+            MnemeTheme {
+                MnemeApp(
+                    viewModel = viewModel,
+                    onOpenSource = {},
+                    onSharePaper = { _, _ -> },
+                    externalNavigation =
+                        MnemeExternalNavigationBinding(
+                            request = externalRequest,
+                            onRequestConsumed = { requestId ->
+                                if (externalRequest?.requestId == requestId) {
+                                    externalRequest = null
+                                }
+                            },
+                        ),
+                )
+            }
+        }
+
+        waitForText(TARGET_PAPER.title)
+        composeRule.waitUntil(timeoutMillis = UI_TIMEOUT_MILLIS) {
+            store.firstCommit.isCompleted && targetOpenEvents().size == 1
+        }
+
+        restorationTester.emulateSavedInstanceStateRestore()
+
+        composeRule.waitUntil(timeoutMillis = UI_TIMEOUT_MILLIS) { store.attempts.get() == 2 }
+        waitForText(TARGET_PAPER.title)
+        assertEquals(1, targetOpenEvents().size)
+        assertEquals(EXTERNAL_EVENT_ID, targetOpenEvents().single().id)
+    }
+
     private fun launchDeepLink(
         networkAvailable: AtomicBoolean,
         scheduledSyncs: AtomicInteger,
@@ -130,7 +194,11 @@ class MnemeExternalNavigationPersistenceTest {
         val viewModel = MnemeViewModel(repository, tracker)
         var externalRequest by
             mutableStateOf<ExternalNavigationRequest?>(
-                ExternalNavigationRequest.OpenPaper(REQUEST_ID, TARGET_PAPER.id),
+                ExternalNavigationRequest.OpenPaper(
+                    requestId = REQUEST_ID,
+                    paperId = TARGET_PAPER.id,
+                    eventId = EXTERNAL_EVENT_ID,
+                ),
             )
 
         composeRule.setContent {
@@ -176,4 +244,57 @@ class MnemeExternalNavigationPersistenceTest {
                     event.eventType == "paper_opened" && event.paperId == TARGET_PAPER.id
                 }
         }
+
+    private class CancelAfterFirstCommitStore(
+        private val delegate: BehavioralEventStore,
+    ) : BehavioralEventStore {
+        val attempts = AtomicInteger()
+        val firstCommit = CompletableDeferred<Unit>()
+
+        override suspend fun record(
+            type: BehavioralEventType,
+            paperId: UUID?,
+            occurredAtEpochMillis: Long,
+            durationMillis: Long?,
+        ): UUID = delegate.record(type, paperId, occurredAtEpochMillis, durationMillis)
+
+        override suspend fun recordOnce(
+            eventId: UUID,
+            type: BehavioralEventType,
+            paperId: UUID?,
+            occurredAtEpochMillis: Long,
+            durationMillis: Long?,
+        ): UUID {
+            val persisted =
+                delegate.recordOnce(
+                    eventId,
+                    type,
+                    paperId,
+                    occurredAtEpochMillis,
+                    durationMillis,
+                )
+            if (attempts.incrementAndGet() == 1) {
+                firstCommit.complete(Unit)
+                awaitCancellation()
+            }
+            return persisted
+        }
+
+        override suspend fun reservePendingBatch(
+            limit: Int,
+            attemptedAtEpochMillis: Long,
+            staleBeforeEpochMillis: Long,
+        ): List<BehavioralEventEntity> = delegate.reservePendingBatch(limit, attemptedAtEpochMillis, staleBeforeEpochMillis)
+
+        override suspend fun markBatchSynced(eventIds: List<UUID>) {
+            delegate.markBatchSynced(eventIds)
+        }
+
+        override suspend fun returnBatchToPending(
+            eventIds: List<UUID>,
+            error: String?,
+        ) {
+            delegate.returnBatchToPending(eventIds, error)
+        }
+    }
 }

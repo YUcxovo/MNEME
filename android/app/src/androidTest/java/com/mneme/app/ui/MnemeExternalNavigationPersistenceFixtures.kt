@@ -14,6 +14,7 @@ import kotlin.coroutines.Continuation
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 
 internal const val REQUEST_ID = 81L
+internal const val EXTERNAL_EVENT_ID = "77777777-7777-4777-8777-777777777777"
 internal const val FIXED_TIME = 1_800_000_000_000L
 internal const val UI_TIMEOUT_MILLIS = 10_000L
 

@@ -56,6 +56,17 @@ The database uniqueness constraint makes concurrent `get_or_create` calls conver
 
 Public states are `queued`, `running`, `succeeded`, and `failed`. Attempts, safe error code, internal last error, dispatch/start/finish timestamps, and pipeline version are persisted. The public API returns the safe code and timestamps but never `last_error`.
 
+The Android behavioral-event queue also treats its UUID as a durable idempotency boundary.
+Ordinary interactions receive a UUID when they enter Room. An external paper link receives
+one UUID when Android accepts the intent, carries it through saved Activity and navigation
+state, and awaits the Room insertion before acknowledging the open. Replaying that identity
+uses insert-if-absent semantics and verifies that an existing row has the same event type,
+paper identity, and duration. A cancelled acknowledgement or transient local write failure
+therefore retries the same identity without creating a second `paper_opened` event. Controlled
+fixture builds persist interactions in a separate fixture database and do not schedule an
+upload. A later credential-enabled build uses only the live database, so controlled paper
+identifiers cannot enter or block the production event queue.
+
 ## Dispatch and Recovery
 
 Before submitting to Redis, a scheduler atomically claims a PostgreSQL dispatch lease and increments the attempt. The ARQ attempt ID is derived from the durable job UUID and attempt number, so duplicate submissions for one attempt collapse at the broker. A submission failure releases the lease; an executing worker claims the matching durable job before side effects and records success or a stable failure code afterward.

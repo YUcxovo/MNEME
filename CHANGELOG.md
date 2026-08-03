@@ -92,6 +92,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Made Android deep-link open events replay-safe by carrying one event UUID through
+  navigation and using an idempotent Room insertion boundary.
 - Preserved citation-backed seed candidates when a temporary arXiv batch failure requires
   smaller metadata requests, and return an explicit retryable error instead of silently
   completing with unrelated papers when their metadata remains unavailable.

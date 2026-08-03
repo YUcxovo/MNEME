@@ -163,6 +163,9 @@ navigation; live builds can recover cached paper metadata through the repository
 fallback. If first-run onboarding is still in progress, the requested paper is retained
 until onboarding completes. An unknown or currently unavailable paper remains a retryable
 error, and malformed links are rejected without opening unrelated content.
+Each accepted link carries a stable event UUID through Activity recreation. The client
+awaits the Room write before marking that open as recorded, and a replay of the same UUID
+uses an insert-if-absent boundary so it cannot queue a second `paper_opened` event.
 
 This custom scheme is an installed-app entry point, not a public web page or an account-based
 sharing service. The recipient therefore needs the Mneme app and access to the referenced
