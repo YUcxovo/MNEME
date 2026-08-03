@@ -295,6 +295,7 @@ def test_stored_summary_is_served_with_frozen_contract_fields() -> None:
         "methodology": "Retrieval plus citation checking.",
         "limitations": "Single-paper scope.",
         "source_match_status": "not_checked",
+        "claims": [],
     }
 
 

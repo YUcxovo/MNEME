@@ -58,7 +58,7 @@ def test_alembic_script_directory_is_configured() -> None:
 
     assert Path(script.dir).resolve() == BACKEND_ROOT / "alembic"
     assert Path(script.versions).resolve() == BACKEND_ROOT / "alembic" / "versions"
-    assert script.get_current_head() == "0007"
+    assert script.get_current_head() == "0008"
 
 
 @pytest.mark.base

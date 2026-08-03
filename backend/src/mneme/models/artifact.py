@@ -42,6 +42,7 @@ class SourceMatchStatus(StrEnum):
     MATCHED = "matched"
     PARTIAL = "partial"
     NOT_CHECKED = "not_checked"
+    UNMATCHED = "unmatched"
 
 
 class PaperChunk(UUIDPrimaryKeyMixin, Base):

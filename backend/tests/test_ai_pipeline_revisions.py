@@ -67,6 +67,14 @@ class FakeArtifacts:
     async def set_chunk_embeddings(self, updates: list[object]) -> None:
         self.embedding_updates.extend(updates)
 
+    async def list_summaries_for_version(self, *, paper_version_id: UUID) -> list[object]:
+        del paper_version_id
+        return []
+
+    async def list_chunks_for_version(self, *, paper_version_id: UUID) -> list[PaperChunk]:
+        del paper_version_id
+        return []
+
 
 class FakeEmbedder:
     model = "test-embedding"
