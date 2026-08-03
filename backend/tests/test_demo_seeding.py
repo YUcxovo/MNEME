@@ -14,7 +14,7 @@ from mneme.api.schemas.papers import Paper
 from mneme.api.schemas.preferences import Preferences, PreferenceUpdate
 from mneme.core.config import Settings
 from mneme.core.security import token_sha256
-from mneme.demo.manifest import load_default_demo_seed_manifest
+from mneme.demo.manifest import DemoSeedManifest, load_default_demo_seed_manifest
 from mneme.demo.seeding import seed_demo
 from mneme.demo.seeding_support import (
     DemoSeedConfig,
@@ -30,6 +30,7 @@ from mneme.repositories.demo_user_bootstrap import DemoUserBootstrapResult
 ANCHOR = datetime(2026, 8, 3, 12, tzinfo=UTC)
 USER_ID = UUID("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa")
 PAPER_IDS = tuple(UUID(int=index) for index in range(1, 6))
+SEED_PAPER_ID = UUID(int=100)
 
 
 def _settings(token: str = "demo-secret") -> Settings:
@@ -43,7 +44,11 @@ def _settings(token: str = "demo-secret") -> Settings:
 def _initialization() -> SeedInitializationResult:
     entries = [
         DigestEntry.model_construct(
-            paper=Paper.model_construct(id=paper_id, processing_status=ProcessingStatus.PARTIAL),
+            paper=Paper.model_construct(
+                id=paper_id,
+                arxiv_id=f"2401.{rank:05d}",
+                processing_status=ProcessingStatus.PARTIAL,
+            ),
             rank=rank,
             relevance_score=1.0,
             recommendation_reason="seed",
@@ -112,6 +117,17 @@ async def _bootstrap(_settings: Settings, display_name: str) -> DemoUserBootstra
     )
 
 
+async def _verify_state(
+    settings: Settings,
+    manifest: DemoSeedManifest,
+    events: list[UserEvent],
+) -> UUID:
+    assert settings.demo_user_id == USER_ID
+    content_sha256 = manifest.content_sha256()
+    assert all(event.context["manifest_sha256"] == content_sha256 for event in events)
+    return SEED_PAPER_ID
+
+
 @pytest.mark.base
 def test_seed_demo_waits_for_ready_and_replays_stable_events(tmp_path: Path) -> None:
     manifest = load_default_demo_seed_manifest()
@@ -126,6 +142,7 @@ def test_seed_demo_waits_for_ready_and_replays_stable_events(tmp_path: Path) -> 
             token="demo-secret",
             client=first_client,
             bootstrapper=_bootstrap,
+            state_verifier=_verify_state,
         )
     )
 
@@ -133,6 +150,9 @@ def test_seed_demo_waits_for_ready_and_replays_stable_events(tmp_path: Path) -> 
     assert first.ready_papers == 5
     assert first.events_accepted == len(manifest.events)
     assert first.events_duplicates == 0
+    assert first.seed_paper_id == str(SEED_PAPER_ID)
+    assert first.digest_paper_ids == tuple(str(paper_id) for paper_id in PAPER_IDS)
+    assert first.digest_arxiv_ids == tuple(f"2401.{rank:05d}" for rank in range(1, 6))
     assert first_client.closed
     assert first_client.calls[0] == "initialize:1706.03762"
     assert first_client.calls[-2:] == ["preferences", "events"]
@@ -153,6 +173,7 @@ def test_seed_demo_waits_for_ready_and_replays_stable_events(tmp_path: Path) -> 
             token="demo-secret",
             client=resumed_client,
             bootstrapper=_bootstrap,
+            state_verifier=_verify_state,
         )
     )
     assert resumed.events_accepted == 0
@@ -179,9 +200,40 @@ def test_seed_demo_closes_client_after_remote_failure(tmp_path: Path) -> None:
                 token="demo-secret",
                 client=client,
                 bootstrapper=_bootstrap,
+                state_verifier=_verify_state,
             )
         )
     assert client.closed
+
+
+@pytest.mark.base
+def test_seed_demo_rejects_non_contiguous_digest_ranks(tmp_path: Path) -> None:
+    class InvalidDigestClient(FakeSeedClient):
+        async def initialize(self, arxiv_reference: str) -> SeedInitializationResult:
+            result = await super().initialize(arxiv_reference)
+            result.digest.entries[-1].rank = 4
+            return result
+
+    verifier_called = False
+
+    async def unexpected_verifier(*_args: object) -> UUID:
+        nonlocal verifier_called
+        verifier_called = True
+        return SEED_PAPER_ID
+
+    with pytest.raises(DemoSeedError, match="incomplete digest"):
+        asyncio.run(
+            seed_demo(
+                _settings(),
+                load_default_demo_seed_manifest(),
+                DemoSeedConfig(lock_file=tmp_path / "seed.lock"),
+                token="demo-secret",
+                client=InvalidDigestClient(),
+                bootstrapper=_bootstrap,
+                state_verifier=unexpected_verifier,
+            )
+        )
+    assert not verifier_called
 
 
 @pytest.mark.base

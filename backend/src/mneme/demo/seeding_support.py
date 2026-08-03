@@ -61,6 +61,9 @@ class DemoSeedResult:
     manifest_id: str
     manifest_sha256: str
     digest_id: str
+    seed_paper_id: str
+    digest_paper_ids: tuple[str, ...]
+    digest_arxiv_ids: tuple[str, ...]
     paper_count: int
     ready_papers: int
     events_accepted: int
@@ -71,6 +74,8 @@ class DemoSeedResult:
     def as_dict(self) -> dict[str, object]:
         return {
             "digest_id": self.digest_id,
+            "digest_arxiv_ids": list(self.digest_arxiv_ids),
+            "digest_paper_ids": list(self.digest_paper_ids),
             "events_accepted": self.events_accepted,
             "events_duplicates": self.events_duplicates,
             "manifest_id": self.manifest_id,
@@ -79,6 +84,7 @@ class DemoSeedResult:
             "preferences_created": self.preferences_created,
             "ready_papers": self.ready_papers,
             "schema_version": "demo-seed-result-v1",
+            "seed_paper_id": self.seed_paper_id,
             "status": "ok",
             "user_created": self.user_created,
         }

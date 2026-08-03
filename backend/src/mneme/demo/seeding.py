@@ -21,6 +21,7 @@ from mneme.demo.seeding_support import (
     bootstrap_demo_user,
     demo_seed_lock,
 )
+from mneme.demo.state import verify_persisted_seed_state
 from mneme.models.paper import ProcessingStatus
 from mneme.repositories.demo_user_bootstrap import DemoUserBootstrapResult
 
@@ -51,6 +52,9 @@ async def seed_demo(
     bootstrapper: Callable[
         [Settings, str], Awaitable[DemoUserBootstrapResult]
     ] = bootstrap_demo_user,
+    state_verifier: Callable[
+        [Settings, DemoSeedManifest, list[UserEvent]], Awaitable[UUID]
+    ] = verify_persisted_seed_state,
 ) -> DemoSeedResult:
     """Bootstrap, initialize, wait for READY, then replay deterministic events."""
     resolved_client = client or DemoSeedClient(
@@ -66,7 +70,7 @@ async def seed_demo(
                 resolved_client.initialize(manifest.seed_arxiv_reference)
             )
             entries_by_rank = {entry.rank: entry for entry in initialization.digest.entries}
-            if len(entries_by_rank) != manifest.onboarding_limit:
+            if set(entries_by_rank) != set(range(1, manifest.onboarding_limit + 1)):
                 raise DemoSeedError("Seed onboarding returned an incomplete digest")
             await _wait_until_ready(
                 resolved_client,
@@ -94,17 +98,26 @@ async def seed_demo(
                     paper_id=entries_by_rank[template.paper_rank].paper.id,
                     occurred_at=manifest.event_time(template, initialization.digest.generated_at),
                     duration_ms=template.duration_ms,
-                    context={"manifest_id": manifest.manifest_id, "source": "demo_seed"},
+                    context={
+                        "manifest_id": manifest.manifest_id,
+                        "manifest_sha256": manifest.content_sha256(),
+                        "source": "demo_seed",
+                    },
                 )
                 for template in manifest.events
             ]
             ingestion = await _translate_remote(resolved_client.ingest_events(events))
             if ingestion.accepted + ingestion.duplicates != len(events):
                 raise DemoSeedError("Demo event ingestion returned inconsistent counts")
+            seed_paper_id = await state_verifier(settings, manifest, events)
+            ordered_entries = tuple(entries_by_rank[rank] for rank in sorted(entries_by_rank))
             result = DemoSeedResult(
                 manifest_id=manifest.manifest_id,
                 manifest_sha256=manifest.content_sha256(),
                 digest_id=str(initialization.digest.id),
+                seed_paper_id=str(seed_paper_id),
+                digest_paper_ids=tuple(str(entry.paper.id) for entry in ordered_entries),
+                digest_arxiv_ids=tuple(entry.paper.arxiv_id for entry in ordered_entries),
                 paper_count=len(entries_by_rank),
                 ready_papers=len(entries_by_rank),
                 events_accepted=ingestion.accepted,

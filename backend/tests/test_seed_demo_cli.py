@@ -38,6 +38,9 @@ def test_demo_seed_cli_prints_safe_result(
         manifest_id="mneme-live-core-v1",
         manifest_sha256="a" * 64,
         digest_id="00000000-0000-0000-0000-000000000099",
+        seed_paper_id="00000000-0000-0000-0000-000000000100",
+        digest_paper_ids=("00000000-0000-0000-0000-000000000001",),
+        digest_arxiv_ids=("2401.00001",),
         paper_count=5,
         ready_papers=5,
         events_accepted=8,
@@ -59,6 +62,8 @@ def test_demo_seed_cli_prints_safe_result(
     payload = json.loads(capsys.readouterr().out)
     assert payload["schema_version"] == "demo-seed-result-v1"
     assert payload["status"] == "ok"
+    assert payload["seed_paper_id"] == "00000000-0000-0000-0000-000000000100"
+    assert payload["digest_arxiv_ids"] == ["2401.00001"]
     assert "raw-secret" not in json.dumps(payload)
 
 
