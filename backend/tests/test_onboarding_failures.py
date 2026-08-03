@@ -15,9 +15,17 @@ from mneme.api.errors import ApiError
 from mneme.api.routes import onboarding, onboarding_support
 from mneme.api.schemas.onboarding import SeedInitializationRequest
 from mneme.core.config import Settings
-from mneme.models.job import JobStatus, PipelineStage
-from mneme.models.paper import ProcessingStatus
+from mneme.models.job import JobStatus, PipelineJob, PipelineStage
+from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
+from mneme.repositories.job_identity import (
+    chunk_idempotency_key,
+    download_idempotency_key,
+    embed_idempotency_key,
+    parse_idempotency_key,
+    summarize_idempotency_key,
+)
 from mneme.services.arxiv.ingestion import ArxivObservedRevision
+from mneme.services.documents import PARSER_VERSION
 
 
 class FailingQueue:
@@ -117,6 +125,91 @@ def _revision() -> ArxivObservedRevision:
         arxiv_id="2607.01234",
         version_number=1,
         version_created=True,
+    )
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
+def test_seed_recovery_matches_only_current_artifact_identities() -> None:
+    paper_id = uuid4()
+    version_id = uuid4()
+    source_checksum = "a" * 64
+    parsed_checksum = "b" * 64
+    paper = Paper(id=paper_id, arxiv_id="2607.01234")
+    version = PaperVersion(
+        id=version_id,
+        paper_id=paper_id,
+        version_number=2,
+        source_checksum=source_checksum,
+        parsed_checksum=parsed_checksum,
+        parser_version=PARSER_VERSION,
+    )
+    common = {"paper_id": paper_id, "paper_version_id": version_id}
+    expected = {
+        PipelineStage.DOWNLOAD_PDF: download_idempotency_key(
+            **common,
+            arxiv_id=paper.arxiv_id,
+            version_number=version.version_number,
+        ),
+        PipelineStage.PARSE_PDF: parse_idempotency_key(
+            **common,
+            source_checksum=source_checksum,
+            parser_version=PARSER_VERSION,
+        ),
+        PipelineStage.SUMMARIZE_PAPER: summarize_idempotency_key(
+            **common,
+            parsed_checksum=parsed_checksum,
+            parser_version=PARSER_VERSION,
+        ),
+        PipelineStage.CHUNK_PAPER: chunk_idempotency_key(
+            **common,
+            parsed_checksum=parsed_checksum,
+            parser_version=PARSER_VERSION,
+        ),
+        PipelineStage.EMBED_CHUNKS: embed_idempotency_key(
+            **common,
+            parsed_checksum=parsed_checksum,
+            parser_version=PARSER_VERSION,
+            embedding_model="current-embedding",
+        ),
+    }
+
+    for stage, idempotency_key in expected.items():
+        job = PipelineJob(
+            id=uuid4(),
+            paper_id=paper_id,
+            paper_version_id=version_id,
+            idempotency_key=idempotency_key,
+            stage=stage,
+            status=JobStatus.FAILED,
+            pipeline_version="v1",
+        )
+        assert onboarding_support._matches_current_seed_job(
+            job,
+            paper,
+            version,
+            embedding_model="current-embedding",
+        )
+
+    obsolete_embed = PipelineJob(
+        id=uuid4(),
+        paper_id=paper_id,
+        paper_version_id=version_id,
+        idempotency_key=embed_idempotency_key(
+            **common,
+            parsed_checksum=parsed_checksum,
+            parser_version=PARSER_VERSION,
+            embedding_model="obsolete-embedding",
+        ),
+        stage=PipelineStage.EMBED_CHUNKS,
+        status=JobStatus.FAILED,
+        pipeline_version="v1",
+    )
+    assert not onboarding_support._matches_current_seed_job(
+        obsolete_embed,
+        paper,
+        version,
+        embedding_model="current-embedding",
     )
 
 
@@ -299,6 +392,36 @@ def test_failed_seed_pipeline_returns_stable_public_error(monkeypatch) -> None:
     assert raised.value.code == "seed_initialization_failed"
     assert raised.value.details is None
     session.rollback.assert_awaited_once()
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_failed_current_child_aborts_seed_wait_without_sleep(monkeypatch) -> None:
+    paper_id = uuid4()
+    rows = MagicMock()
+    rows.all.return_value = [(paper_id, ProcessingStatus.QUEUED)]
+    session = AsyncMock(spec=AsyncSession)
+    session.execute.return_value = rows
+    monkeypatch.setattr(
+        onboarding_support,
+        "_list_current_failed_seed_jobs",
+        AsyncMock(return_value=[SimpleNamespace(id=uuid4())]),
+    )
+    sleep = AsyncMock()
+    monkeypatch.setattr(onboarding_support.asyncio, "sleep", sleep)
+
+    with pytest.raises(ApiError) as raised:
+        asyncio.run(
+            onboarding_support.wait_for_seed_papers(
+                session,
+                (paper_id,),
+                embedding_model="test-embedding",
+            )
+        )
+
+    assert raised.value.code == "seed_initialization_failed"
+    sleep.assert_not_awaited()
 
 
 @pytest.mark.base
