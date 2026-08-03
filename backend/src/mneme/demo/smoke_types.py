@@ -47,7 +47,7 @@ class MvpSmokeError(RuntimeError):
 
 @dataclass(frozen=True)
 class MvpSmokeConfig:
-    """Bounded inputs for an HTTP-only deployment acceptance run."""
+    """Bounded inputs for a public-API deployment acceptance run."""
 
     base_url: str
     seed_arxiv_id: str = "1706.03762"

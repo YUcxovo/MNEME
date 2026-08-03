@@ -19,6 +19,7 @@ MNEME/
 |-- tools/                    # Team-wide dev scripts (setup, check, deploy)
 |-- android/                  # Android client (Kotlin + Jetpack Compose)
 |-- backend/                  # Python backend (FastAPI + PostgreSQL + RAG)
+|-- deploy/                   # Provider-neutral production templates and runbook
 |-- docs/                     # Project documentation (ADR, API, meeting notes, thesis)
 |-- .gitignore                # Whitelist-based ignore rules
 |-- .gitattributes            # LFS tracking + LF line ending normalization
@@ -160,6 +161,7 @@ make Ruiyu responsible for fixing another owner's implementation or CI failure.
   Ruiyu and Yifan to review.
 - Pipeline behavior changes update `docs/architecture/pipeline-and-reliability.md`.
 - Security/privacy changes update the relevant ADR and `docs/architecture/privacy-and-data.md`.
+- Production-process, preflight, backup, health, seed, or smoke changes update `deploy/README.md`, the affected templates, and their backend tests. Never commit a real host name, credential, token, private path, or provider-specific live result.
 - Significant irreversible decisions get a numbered ADR under `docs/adr/`.
 
 ## Git Hooks (Lefthook)

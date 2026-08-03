@@ -1,4 +1,4 @@
-"""HTTP-only acceptance sequence for a deployed Mneme MVP."""
+"""Public-API acceptance sequence for a deployed Mneme MVP."""
 
 from __future__ import annotations
 

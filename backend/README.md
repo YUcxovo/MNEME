@@ -1,6 +1,6 @@
 # Mneme Backend
 
-FastAPI backend for the Mneme research assistant. The current checkout includes the complete data and AI platform through Milestone 3 plus Milestone 4 platform hardening: revision-safe arXiv/PDF ingestion, structured summarization, chunking, embeddings, retrieval, Q&A, recommendations, citation graphs, behavior profiles, durable ARQ orchestration, schedulers, bounded health and operations interfaces, explicit connection pools, and authenticated job/result APIs.
+FastAPI backend for the Mneme research assistant. The current checkout includes the data and AI platform, platform hardening, and a code-only production delivery layer: revision-safe arXiv/PDF ingestion, structured summarization, chunking, embeddings, retrieval, Q&A, recommendations, citation graphs, behavior profiles, durable ARQ orchestration, schedulers, bounded health and operations interfaces, explicit connection pools, production process configuration, deployment gates, backups, installation-local demo replay, and public API acceptance checks.
 
 ## Requirements
 
@@ -57,6 +57,40 @@ Available authenticated API routes include:
 - `POST /v1/qa/ask`
 
 `GET /v1/health` is public process liveness and never waits for infrastructure. `GET /v1/health/ready` concurrently probes PostgreSQL and Redis within `MNEME_READINESS_TIMEOUT_SECONDS`; it returns a safe `503 service_unavailable` envelope if either required dependency is unavailable. Protected requests use `Authorization: Bearer <raw-token>`. Responses include `X-Request-ID`, and errors use the stable `ErrorResponse` shape without secrets, raw inputs, database diagnostics, or tracebacks.
+
+## Prepare a production deployment
+
+The provider-neutral templates under `deploy/templates/` and the complete operator sequence in [`deploy/README.md`](../deploy/README.md) cover Gunicorn with `uvicorn-worker`, loopback-only API binding, Nginx bootstrap/TLS configurations, migration units and a manual preflight gate, scheduled ingestion and briefings, validated PostgreSQL backups, private platform health checks, replayable demo preparation, and a public-API MVP smoke gate. They do not provision a VM, DNS, firewall, certificate, provider account, secret, off-host backup target, or alert destination.
+
+Render a complete staging tree from the repository root without writing privileged host paths:
+
+```bash
+uv run --project backend python -m mneme.cli.render_deployment \
+  --server-name api.example.edu \
+  --output-dir /tmp/mneme-deployment
+```
+
+The renderer fails on an incomplete or unexpected template set. Replace and privately install every placeholder, apply migrations and bootstrap the demo identity, then run `mneme-preflight.service` manually before enabling the API and worker. Its stable JSON report fails closed on unsafe configuration, a stale migration, missing pgvector/Redis/storage, insufficient database connection headroom, or unusable backup tooling and credentials. The long-running services depend on migration rather than preflight, so a failed manual gate is an operator stop condition rather than a runtime liveness dependency.
+
+The packaged demo manifest can be inspected without touching the database or network:
+
+```bash
+uv run --project backend python -m mneme.cli.seed_demo --dry-run
+```
+
+The live seed command is resumable on one installation: it bootstraps the configured demo user, invokes the existing onboarding API, waits for all returned papers, replaces explicit preferences, posts stable manifest events, and verifies the persisted event contents. When an existing onboarding digest contains a paper whose latest-revision pipeline job failed, the request reclaims and dispatches that failed stage before reusing the digest. The result records `seed_paper_id`, `digest_paper_ids`, and `digest_arxiv_ids`; copy the seed UUID to the smoke configuration. The live onboarding candidates and provider-generated artifacts can vary across hosts or dates, so this is not a frozen cross-host fixture. It does not fabricate summaries, answers, embeddings, or citation edges.
+
+After TLS and seeding, run the public API acceptance sequence from a trusted host. Supply the raw token through an owner-only file or `MNEME_MVP_SMOKE_TOKEN`, never a command-line argument:
+
+```bash
+export MNEME_MVP_SMOKE_BASE_URL=https://api.example.edu
+export MNEME_MVP_SMOKE_SEED=1706.03762
+export MNEME_MVP_SMOKE_PAPER_ID='<seed_paper_id from demo-seed-result-v1>'
+export MNEME_MVP_SMOKE_QUESTION='What problem does this paper address, and what method does it propose?'
+uv run --project backend python -m mneme.cli.smoke_backend --token-file /absolute/path/demo.token
+```
+
+The `mvp-smoke-report-v1` output checks liveness, readiness, authenticated preferences, catalog lookup, asynchronous summary jobs, recommended briefing generation, a connected graph, and optional source-matched Q&A. It contains no token or response body. Exit codes are `0` for a passing sequence, `1` for an acceptance failure, and `2` for invalid local configuration.
 
 ## Schedule ingestion and briefings
 
@@ -217,6 +251,10 @@ Database integration and end-to-end pipeline tests run when `MNEME_DATABASE_URL`
 
 ## Current limitations
 
+- The deployment package renders and validates host artifacts but does not provision or mutate a cloud host. VM/DNS/firewall/TLS setup, production secrets and provider choices, unit installation, and live Android integration remain operator work.
+- Database backup creation verifies custom-archive readability and retention, not recoverability. A scratch restore, off-host encrypted copy, local PDF artifact policy, and restore rehearsal are required before disaster-recovery sign-off.
+- Private health checks expose stable exit codes for systemd and fail on undispatched, stale-dispatched, or stale-running jobs, but the alert adapter is intentionally a commented placeholder until the deployment owner selects and tests a delivery channel.
+- Packaged demo events are deterministic demonstration data, not user-study evidence. Replay is stable within a verified installation, but live onboarding candidates and provider-generated summaries, embeddings, answers, and graph observations are not frozen across hosts or dates.
 - Authentication is a single-user demo mechanism; there is no login, JWT, or token lifecycle.
 - Readiness covers the required PostgreSQL and Redis paths only; external paper and model providers remain visible through request/job failures and operational reports rather than blocking process readiness.
 - Local document storage must be mounted at the same path for every API/worker process; distributed object storage and garbage collection are deferred.

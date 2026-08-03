@@ -1,4 +1,4 @@
-"""Run the HTTP-only deployed MVP acceptance sequence."""
+"""Run the public-API deployed MVP acceptance sequence."""
 
 from __future__ import annotations
 
