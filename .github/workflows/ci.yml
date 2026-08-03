@@ -28,6 +28,7 @@ jobs:
                   filters: |
                       backend:
                         - 'backend/**'
+                        - 'deploy/**'
                         - 'docs/evaluation/behavior/fixtures/**'
                         - 'tools/evaluation/*behavior*'
                         - '.github/workflows/ci.yml'
@@ -47,8 +48,9 @@ jobs:
                   if grep -rPn '[^\x00-\x7F]' --include='*.py' --include='*.kt' \
                       --include='*.kts' --include='*.yaml' --include='*.yml' \
                       --include='*.toml' --include='*.md' --include='*.sh' \
+                      --include='*.template' \
                       --include='Makefile' --include='Dockerfile' \
-                      android/ backend/ docs/ tools/ .github/ 2>/dev/null \
+                      android/ backend/ deploy/ docs/ tools/ .github/ 2>/dev/null \
                       | grep -v '^docs/latex_template/'; then
                     echo "ERROR: Non-ASCII characters found. Repo must be ASCII-only."
                     exit 1
@@ -56,14 +58,15 @@ jobs:
 
             - name: Check merge conflict markers
               run: |
-                  if grep -rE '^<<<<<<< \|^=======|^>>>>>>> ' android/ backend/ docs/ tools/ .github/ 2>/dev/null; then
+                  if grep -rE '^(<<<<<<< |=======|>>>>>>> )' \
+                      android/ backend/ deploy/ docs/ tools/ .github/ 2>/dev/null; then
                     echo "ERROR: Unresolved merge conflict markers found."
                     exit 1
                   fi
 
             - name: Check large files
               run: |
-                  large_files=$(find android/ backend/ docs/evaluation/behavior/ tools/evaluation/ \
+                  large_files=$(find android/ backend/ deploy/ docs/evaluation/behavior/ tools/evaluation/ \
                     -type f -size +500k ! -path '*/.git/*')
                   if [ -n "$large_files" ]; then
                     echo "$large_files" | while read -r f; do
@@ -74,8 +77,8 @@ jobs:
 
             - name: Check private keys
               run: |
-                  if grep -rIl '-----BEGIN.*PRIVATE KEY-----' \
-                      android/ backend/ docs/evaluation/behavior/ tools/evaluation/ 2>/dev/null; then
+                  if grep -rIl -- '-----BEGIN.*PRIVATE KEY-----' \
+                      android/ backend/ deploy/ docs/evaluation/behavior/ tools/evaluation/ 2>/dev/null; then
                     echo "ERROR: Private key found in repository."
                     exit 1
                   fi
