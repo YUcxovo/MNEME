@@ -42,6 +42,23 @@ class BehavioralEventTrackerTest {
             assertEquals(5, scheduled)
         }
 
+    @Test
+    fun schedulerFailureDoesNotInvalidateTheDurableRoomBoundary() =
+        runBlocking {
+            val store = RecordingStore()
+            val tracker =
+                QueuedBehavioralEventTracker(
+                    store = store,
+                    scheduleSync = { error("WorkManager unavailable") },
+                    nowEpochMillis = { OCCURRED_AT },
+                )
+
+            tracker.recordPaperSaved(FIRST_PAPER_ID.toString())
+
+            assertEquals(1, store.recorded.size)
+            assertEquals(BehavioralEventType.PAPER_SAVED, store.recorded.single().type)
+        }
+
     private data class RecordedEvent(
         val type: BehavioralEventType,
         val paperId: UUID?,
