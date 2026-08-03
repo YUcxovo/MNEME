@@ -19,7 +19,7 @@ uv run --project backend python -m mneme.cli.render_deployment \
   --output-dir /tmp/mneme-deployment
 ```
 
-The command emits `deployment-render-v1` JSON. Review every rendered file before installation. Replace every angle-bracket placeholder in `backend.env`; a remaining placeholder makes production preflight fail. Provider keys, model IDs, the final hostname, and host paths are operator inputs rather than repository defaults.
+The command emits `deployment-render-v1` JSON. Review every rendered file before installation. Replace every active angle-bracket placeholder in `backend.env`; the static preflight rejects placeholders in required database and model settings. Commented provider, smoke-question, and upload-hook examples may remain disabled until their corresponding path is configured. Provider keys, model IDs, the final hostname, and host paths are operator inputs rather than repository defaults.
 
 Use the renderer flags when the installation differs from the defaults of `/opt/mneme`, `/etc/mneme/backend.env`, `/var/lib/mneme/papers`, `/var/backups/mneme`, user/group `mneme`, port `8000`, or two API workers. The renderer intentionally does not create accounts, install packages, write `/etc`, alter the firewall, request certificates, or enable services.
 

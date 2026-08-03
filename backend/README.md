@@ -70,7 +70,7 @@ uv run --project backend python -m mneme.cli.render_deployment \
   --output-dir /tmp/mneme-deployment
 ```
 
-The renderer fails on an incomplete or unexpected template set. Replace and privately install every placeholder, apply migrations and bootstrap the demo identity, then run `mneme-preflight.service` manually before enabling the API and worker. Its stable JSON report fails closed on unsafe configuration, a stale migration, missing pgvector/Redis/storage, insufficient database connection headroom, or unusable backup tooling and credentials. The long-running services depend on migration rather than preflight, so a failed manual gate is an operator stop condition rather than a runtime liveness dependency.
+The renderer fails on an incomplete or unexpected template set. Replace every active required placeholder, leave unused optional examples commented, and install the result privately. Apply migrations and bootstrap the demo identity, then run `mneme-preflight.service` manually before enabling the API and worker. Its stable JSON report fails closed on unsafe configuration, a stale migration, missing pgvector/Redis/storage, insufficient database connection headroom, or unusable backup tooling and credentials. The long-running services depend on migration rather than preflight, so a failed manual gate is an operator stop condition rather than a runtime liveness dependency.
 
 The packaged demo manifest can be inspected without touching the database or network:
 
