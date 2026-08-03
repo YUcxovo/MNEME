@@ -11,6 +11,7 @@ dependencies = [
     "asyncpg>=0.30,<1",
     "defusedxml>=0.7,<1",
     "fastapi>=0.115,<1",
+    "gunicorn>=26,<27",
     "httpx>=0.28,<1",
     "openai>=1.60,<3",
     "pdfplumber>=0.11,<1",
@@ -21,6 +22,7 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0,<3",
     "structlog>=24.4,<27",
     "uvicorn[standard]>=0.32,<1",
+    "uvicorn-worker>=0.4,<1",
 ]
 
 [project.optional-dependencies]

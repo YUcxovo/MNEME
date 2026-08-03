@@ -4,6 +4,7 @@ from decimal import Decimal
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
+from typing import Literal
 from uuid import UUID
 
 from pydantic import Field, HttpUrl, RedisDsn, SecretStr
@@ -41,6 +42,14 @@ class Settings(BaseSettings):
     environment: Environment = Environment.DEVELOPMENT
     debug: bool = False
     log_level: str = "INFO"
+    api_host: Literal["127.0.0.1"] = "127.0.0.1"
+    api_port: int = Field(default=8000, ge=1024, le=65535)
+    api_workers: int = Field(default=2, ge=1, le=8)
+    api_timeout_seconds: int = Field(default=120, ge=1, le=600)
+    api_graceful_timeout_seconds: int = Field(default=90, ge=1, le=300)
+    api_keepalive_seconds: int = Field(default=5, ge=1, le=60)
+    api_max_requests: int = Field(default=1000, ge=0, le=1_000_000)
+    api_max_requests_jitter: int = Field(default=100, ge=0, le=100_000)
     readiness_timeout_seconds: float = Field(default=2.0, gt=0, le=30)
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/mneme"
     database_pool_size: int = Field(default=5, ge=1, le=50)
