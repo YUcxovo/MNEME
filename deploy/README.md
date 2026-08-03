@@ -41,7 +41,7 @@ Install the rendered `*.service` and `*.timer` files in the host's systemd unit 
 database migration -> demo identity bootstrap -> manual production preflight -> API and worker
 ```
 
-Starting `mneme-preflight.service` triggers bootstrap and migration through its own dependencies. It checks production-safe settings, loopback binding, shutdown headroom, demo identity, provider routing, non-placeholder database settings, writable artifact storage, current Alembic head, pgvector, Redis, database connection capacity, PostgreSQL backup tools, and private libpq backup credentials. The API and worker intentionally do not depend on preflight at runtime, which keeps liveness and readiness behavior separate; the operator must stop when this manual gate fails.
+Starting `mneme-preflight.service` triggers bootstrap and migration through its own dependencies. It checks production-safe settings, loopback binding, rendered service-timeout envelopes, demo identity, usable provider credentials, non-placeholder database settings, writable artifact storage, current Alembic head, pgvector, Redis, ordinary-role connection capacity after both PostgreSQL reserve classes, PostgreSQL backup tools, private libpq credentials, and a restart-scoped fingerprint proving that the backup service reaches the application database. The optional `--offline` CLI mode validates configuration only, reports `incomplete`, and exits nonzero; it is never a deployment-ready result. The API and worker intentionally do not depend on preflight at runtime, which keeps liveness and readiness behavior separate; the operator must stop when this manual gate fails.
 
 After a passing preflight, enable and inspect both units:
 
@@ -62,14 +62,14 @@ Validate the packaged plan without PostgreSQL, Redis, the API, or external provi
 uv run --project backend python -m mneme.cli.seed_demo --dry-run
 ```
 
-On the host, the manual service bootstraps the configured user idempotently, invokes seed onboarding for arXiv `1706.03762`, waits for all five returned briefing papers to reach `ready`, replaces explicit preferences, and posts deterministic behavior events:
+On the host, the manual service bootstraps the configured user idempotently, invokes seed onboarding for arXiv `1706.03762`, requires the original seed and all five returned briefing papers to reach `ready`, replaces explicit preferences, and posts deterministic behavior events:
 
 ```bash
 sudo systemctl start mneme-seed.service
 sudo journalctl -u mneme-seed.service
 ```
 
-The successful `demo-seed-result-v1` record includes `seed_paper_id`, `digest_paper_ids`, and `digest_arxiv_ids`; retain the sanitized result and copy `seed_paper_id` into `MNEME_MVP_SMOKE_PAPER_ID` before the smoke run. Reruns on the same installation reuse the onboarding result and stable manifest event UUIDs, reclaim failed latest-revision pipeline stages, and check persisted event contents against the manifest. This is installation-local replay, not a frozen cross-host data set: the five onboarding candidates and provider-generated summaries, embeddings, answers, and graph observations may vary with live provider state. The manifest fabricates none of those artifacts. Changing a manifest alone does not rotate an existing onboarding digest; use an intentionally new demo identity or an approved reset procedure when the candidate set or event anchor must change.
+The successful `demo-seed-result-v1` record includes `seed_paper_id`, `digest_paper_ids`, and `digest_arxiv_ids`; retain the sanitized result and copy `seed_paper_id` into `MNEME_MVP_SMOKE_PAPER_ID` before the smoke run. Reruns on the same installation reuse the onboarding result and stable manifest event UUIDs, reclaim only failed jobs whose current pipeline and artifact/model identities still match, and require the persisted `demo_seed` event set to match the manifest exactly. This is installation-local replay, not a frozen cross-host data set: the five onboarding candidates and provider-generated summaries, embeddings, answers, and graph observations may vary with live provider state. The manifest fabricates none of those artifacts. Changing a manifest alone does not rotate an existing onboarding digest; use an intentionally new demo identity or an approved reset procedure when the candidate set or event anchor must change.
 
 ## 5. Run the public MVP acceptance gate
 
@@ -80,7 +80,7 @@ sudo systemctl start mneme-smoke.service
 sudo journalctl -u mneme-smoke.service
 ```
 
-The `mvp-smoke-report-v1` result verifies public liveness and readiness, authenticated preferences, the seeded catalog paper, asynchronous summary recovery through `GET /v1/jobs/{job_id}`, a non-empty recommended briefing, and a connected citation graph. Q&A runs only when `MNEME_MVP_SMOKE_QUESTION` is configured; a passing report with that step marked `skipped` does not validate the provider-backed Q&A path. The runner outputs only bounded counts, status values, operation identifiers, and HTTP status codes, never tokens or response bodies.
+The `mvp-smoke-report-v1` result verifies public liveness and readiness, authenticated preferences, the seeded catalog paper, asynchronous summary recovery through `GET /v1/jobs/{job_id}`, exact summary-paper identity, a non-empty recommended briefing, and a connected citation graph centered on that paper. Q&A runs only when `MNEME_MVP_SMOKE_QUESTION` is configured; a passing report with that step marked `skipped` does not validate the provider-backed Q&A path. A passing Q&A step requires every source-matched citation to carry the tested paper's UUID and arXiv identity. The runner outputs only bounded counts, status values, operation identifiers, and HTTP status codes, never tokens or response bodies.
 
 The same runner can be invoked from a trusted workstation. Prefer a private token file because a command-line token would be visible in the process list:
 
@@ -105,7 +105,7 @@ sudo journalctl -u mneme-backup.service
 
 The command creates a custom-format `pg_dump`, verifies that `pg_restore --list` can read it, records its SHA-256 and size, and retains only recognized archive/manifest pairs. This is not a restore drill. Before sign-off, the deployment owner must restore an archive into an isolated scratch database, verify application-level records and pgvector data, account separately for local PDF artifacts, and test any off-host upload/encryption hook.
 
-The private health check expects a fresh backup plus recent successful ingestion and digest jobs. It also fails on undispatched, stale-dispatched, or stale-running pipeline work. Trigger the two schedulers, allow the worker to finish their durable jobs, inspect `platform-operations-v1`, and only then validate health:
+The private health check expects a fresh backup plus recent successful ingestion-stage and digest-stage jobs. These stage-wide timestamps can also be refreshed by manual work, so they do not prove that either systemd timer fired. The check also fails on undispatched, stale-dispatched, or stale-running pipeline work. Trigger the two schedulers, allow the worker to finish their durable jobs, inspect `platform-operations-v1`, and only then validate health:
 
 ```bash
 sudo systemctl start mneme-ingest.service mneme-digest.service
@@ -120,6 +120,8 @@ sudo systemctl enable --now mneme-ingest.timer mneme-digest.timer
 sudo systemctl enable --now mneme-backup.timer mneme-health.timer
 sudo systemctl list-timers 'mneme-*'
 ```
+
+Retain the `systemctl list-timers` output separately; stage freshness and timer activation are complementary acceptance evidence.
 
 The digest timer invokes the weekly scheduler each day so a missed Monday dispatch can recover without creating duplicate briefings; the durable job identity remains scoped to one user and UTC week.
 

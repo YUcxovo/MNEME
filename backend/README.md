@@ -70,7 +70,7 @@ uv run --project backend python -m mneme.cli.render_deployment \
   --output-dir /tmp/mneme-deployment
 ```
 
-The renderer fails on an incomplete or unexpected template set. Replace every active required placeholder, leave unused optional examples commented, and install the result privately. Apply migrations and bootstrap the demo identity, then run `mneme-preflight.service` manually before enabling the API and worker. Its stable JSON report fails closed on unsafe configuration, a stale migration, missing pgvector/Redis/storage, insufficient database connection headroom, or unusable backup tooling and credentials. The long-running services depend on migration rather than preflight, so a failed manual gate is an operator stop condition rather than a runtime liveness dependency.
+The renderer fails on an incomplete or unexpected template set. Replace every active required placeholder, leave unused optional examples commented, and install the result privately. Apply migrations and bootstrap the demo identity, then run `mneme-preflight.service` manually before enabling the API and worker. Its stable JSON report fails closed on unsafe configuration, unsupported service-timeout overrides, a stale migration, missing pgvector/Redis/storage, insufficient database connection headroom, unusable backup tooling or credentials, or a libpq backup service that does not reach the application database. Configuration-only `--offline` output is `incomplete` and exits nonzero. The long-running services depend on migration rather than preflight, so a failed manual gate is an operator stop condition rather than a runtime liveness dependency.
 
 The packaged demo manifest can be inspected without touching the database or network:
 
@@ -78,7 +78,7 @@ The packaged demo manifest can be inspected without touching the database or net
 uv run --project backend python -m mneme.cli.seed_demo --dry-run
 ```
 
-The live seed command is resumable on one installation: it bootstraps the configured demo user, invokes the existing onboarding API, waits for all returned papers, replaces explicit preferences, posts stable manifest events, and verifies the persisted event contents. When an existing onboarding digest contains a paper whose latest-revision pipeline job failed, the request reclaims and dispatches that failed stage before reusing the digest. The result records `seed_paper_id`, `digest_paper_ids`, and `digest_arxiv_ids`; copy the seed UUID to the smoke configuration. The live onboarding candidates and provider-generated artifacts can vary across hosts or dates, so this is not a frozen cross-host fixture. It does not fabricate summaries, answers, embeddings, or citation edges.
+The live seed command is resumable on one installation: it bootstraps the configured demo user, invokes the existing onboarding API, requires the original seed and all returned papers to become ready, replaces explicit preferences, posts stable manifest events, and verifies an exact persisted event set. When an existing onboarding digest contains a failed job, the request reclaims it only when its latest revision, current pipeline version, and current artifact/model identity still match. The result records `seed_paper_id`, `digest_paper_ids`, and `digest_arxiv_ids`; copy the seed UUID to the smoke configuration. The live onboarding candidates and provider-generated artifacts can vary across hosts or dates, so this is not a frozen cross-host fixture. It does not fabricate summaries, answers, embeddings, or citation edges.
 
 After TLS and seeding, run the public API acceptance sequence from a trusted host. Supply the raw token through an owner-only file or `MNEME_MVP_SMOKE_TOKEN`, never a command-line argument:
 
@@ -90,7 +90,7 @@ export MNEME_MVP_SMOKE_QUESTION='What problem does this paper address, and what 
 uv run --project backend python -m mneme.cli.smoke_backend --token-file /absolute/path/demo.token
 ```
 
-The `mvp-smoke-report-v1` output checks liveness, readiness, authenticated preferences, catalog lookup, asynchronous summary jobs, recommended briefing generation, a connected graph, and optional source-matched Q&A. It contains no token or response body. Exit codes are `0` for a passing sequence, `1` for an acceptance failure, and `2` for invalid local configuration.
+The `mvp-smoke-report-v1` output checks liveness, readiness, authenticated preferences, exact catalog and summary identity, asynchronous summary jobs, recommended briefing generation, a connected graph, and optional source-matched Q&A whose citations belong to the tested paper. It contains no token or response body. Exit codes are `0` for a passing sequence, `1` for an acceptance failure, and `2` for invalid local configuration.
 
 ## Schedule ingestion and briefings
 
@@ -253,7 +253,7 @@ Database integration and end-to-end pipeline tests run when `MNEME_DATABASE_URL`
 
 - The deployment package renders and validates host artifacts but does not provision or mutate a cloud host. VM/DNS/firewall/TLS setup, production secrets and provider choices, unit installation, and live Android integration remain operator work.
 - Database backup creation verifies custom-archive readability and retention, not recoverability. A scratch restore, off-host encrypted copy, local PDF artifact policy, and restore rehearsal are required before disaster-recovery sign-off.
-- Private health checks expose stable exit codes for systemd and fail on undispatched, stale-dispatched, or stale-running jobs, but the alert adapter is intentionally a commented placeholder until the deployment owner selects and tests a delivery channel.
+- Private health checks expose stable exit codes for systemd and fail on undispatched, stale-dispatched, or stale-running jobs. Their ingestion/digest timestamps measure stage-wide success rather than timer identity, so timer activation needs separate host evidence. The alert adapter is intentionally a commented placeholder until the deployment owner selects and tests a delivery channel.
 - Packaged demo events are deterministic demonstration data, not user-study evidence. Replay is stable within a verified installation, but live onboarding candidates and provider-generated summaries, embeddings, answers, and graph observations are not frozen across hosts or dates.
 - Authentication is a single-user demo mechanism; there is no login, JWT, or token lifecycle.
 - Readiness covers the required PostgreSQL and Redis paths only; external paper and model providers remain visible through request/job failures and operational reports rather than blocking process readiness.
