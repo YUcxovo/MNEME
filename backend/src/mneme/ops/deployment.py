@@ -22,6 +22,7 @@ TEMPLATE_FILENAMES = (
     "mneme-ingest.timer.template",
     "mneme-migrate.service.template",
     "mneme-seed.service.template",
+    "mneme-smoke.service.template",
     "mneme-worker.service.template",
     "nginx-mneme-bootstrap.conf.template",
     "nginx-mneme-tls.conf.template",

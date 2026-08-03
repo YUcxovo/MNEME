@@ -42,6 +42,9 @@ def test_renderer_produces_complete_deterministic_staging_tree(tmp_path: Path) -
     assert "ExecStart=/opt/mneme/backend/.venv/bin/gunicorn" in (
         output_dir / "mneme-api.service"
     ).read_text(encoding="utf-8")
+    smoke_service = (output_dir / "mneme-smoke.service").read_text(encoding="utf-8")
+    assert "python -m mneme.cli.smoke_backend" in smoke_service
+    assert "--token-file /etc/mneme/demo.token" in smoke_service
 
 
 @pytest.mark.base
