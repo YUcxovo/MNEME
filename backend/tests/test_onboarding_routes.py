@@ -85,6 +85,7 @@ def test_completed_seed_is_reused_before_external_requests(
         session,
         queue,
         expected,
+        embedding_model="text-embedding-3-small",
         seed_arxiv_id="1706.03762",
     )
     arxiv_client.assert_not_called()
@@ -119,6 +120,7 @@ def test_existing_seed_retries_and_waits_for_ready_seed_paper(
             session,
             queue,
             cast(SeedInitializationResult, existing),
+            embedding_model="text-embedding-3-small",
             seed_arxiv_id="1706.03762",
         )
     )
@@ -127,10 +129,12 @@ def test_existing_seed_retries_and_waits_for_ready_seed_paper(
         session,
         queue,
         (seed_paper_id, *digest_paper_ids),
+        embedding_model="text-embedding-3-small",
     )
     wait.assert_awaited_once_with(
         session,
         (seed_paper_id, *digest_paper_ids),
+        embedding_model="text-embedding-3-small",
         required_ready_ids=(seed_paper_id,),
     )
 

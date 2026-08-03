@@ -14,11 +14,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.api.dependencies.ai import TaskQueue
 from mneme.api.errors import ApiError
-from mneme.models.job import JobStatus, PipelineStage
-from mneme.models.paper import Paper, ProcessingStatus
-from mneme.repositories.job_identity import download_idempotency_key
+from mneme.models.job import JobStatus, PipelineJob, PipelineStage
+from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
+from mneme.repositories.job_identity import (
+    PIPELINE_VERSION,
+    chunk_idempotency_key,
+    download_idempotency_key,
+    embed_idempotency_key,
+    parse_idempotency_key,
+    summarize_idempotency_key,
+)
 from mneme.repositories.jobs import PipelineJobRepository, arq_attempt_id
 from mneme.services.arxiv.ingestion import ArxivObservedRevision
+from mneme.services.documents import PARSER_VERSION
 
 _ARXIV_REFERENCE = re.compile(r"(?P<base>(?:\d{4}\.\d{4,5}|[A-Za-z0-9._-]+/\d{7}))(?:v[1-9]\d*)?$")
 _ALLOWED_HOSTS: Final = frozenset({"arxiv.org", "www.arxiv.org", "export.arxiv.org"})
@@ -51,6 +59,8 @@ async def enqueue_seed_downloads(
     session: AsyncSession,
     queue: TaskQueue,
     revisions: tuple[ArxivObservedRevision, ...],
+    *,
+    embedding_model: str,
 ) -> tuple[UUID, ...]:
     """Create or resume the durable download pipeline for selected revisions."""
     jobs = PipelineJobRepository(session)
@@ -100,7 +110,12 @@ async def enqueue_seed_downloads(
                 "The paper preparation queue is temporarily unavailable.",
             ) from error
     paper_ids = tuple(revision.paper_id for revision in revisions)
-    await resume_failed_seed_jobs(session, queue, paper_ids)
+    await resume_failed_seed_jobs(
+        session,
+        queue,
+        paper_ids,
+        embedding_model=embedding_model,
+    )
     return paper_ids
 
 
@@ -108,10 +123,16 @@ async def resume_failed_seed_jobs(
     session: AsyncSession,
     queue: TaskQueue,
     paper_ids: tuple[UUID, ...],
+    *,
+    embedding_model: str,
 ) -> int:
     """Requeue failed latest-revision stages before reusing a seed digest."""
     jobs = PipelineJobRepository(session)
-    failed_jobs = await jobs.list_failed_latest_revision_jobs(paper_ids)
+    failed_jobs = await _list_current_failed_seed_jobs(
+        session,
+        paper_ids,
+        embedding_model=embedding_model,
+    )
     dispatches: list[tuple[PipelineStage, UUID, UUID, UUID]] = []
     for job in failed_jobs:
         if job.paper_id is None or job.paper_version_id is None:
@@ -156,6 +177,7 @@ async def wait_for_seed_papers(
     session: AsyncSession,
     paper_ids: tuple[UUID, ...],
     *,
+    embedding_model: str,
     required_ready_ids: tuple[UUID, ...] = (),
 ) -> None:
     """Block until every selected paper reaches a usable terminal state."""
@@ -166,12 +188,23 @@ async def wait_for_seed_papers(
     if not required_ready.issubset(expected_ids):
         raise ValueError("Required READY papers must belong to the wait scope")
     while True:
+        failed_jobs = await _list_current_failed_seed_jobs(
+            session,
+            tuple(expected_ids),
+            embedding_model=embedding_model,
+        )
         rows = (
             await session.execute(
                 select(Paper.id, Paper.processing_status).where(Paper.id.in_(expected_ids))
             )
         ).all()
         await session.rollback()
+        if failed_jobs:
+            raise ApiError(
+                status.HTTP_502_BAD_GATEWAY,
+                "seed_initialization_failed",
+                "The backend could not prepare the papers required for initialization.",
+            )
         statuses = {paper_id: processing_status for paper_id, processing_status in rows}
         if set(statuses) == expected_ids and all(
             status_value is ProcessingStatus.READY
@@ -193,3 +226,108 @@ async def wait_for_seed_papers(
                 "Preparing five related papers took too long. Try again to resume the work.",
             )
         await asyncio.sleep(_POLL_INTERVAL_SECONDS)
+
+
+async def _list_current_failed_seed_jobs(
+    session: AsyncSession,
+    paper_ids: tuple[UUID, ...],
+    *,
+    embedding_model: str,
+) -> list[PipelineJob]:
+    candidates = await PipelineJobRepository(session).list_failed_latest_revision_jobs(paper_ids)
+    version_ids = {job.paper_version_id for job in candidates if job.paper_version_id is not None}
+    if not version_ids:
+        return []
+    rows = (
+        await session.execute(
+            select(Paper, PaperVersion)
+            .join(PaperVersion, PaperVersion.paper_id == Paper.id)
+            .where(PaperVersion.id.in_(version_ids))
+        )
+    ).all()
+    revisions = {version.id: (paper, version) for paper, version in rows}
+    return [
+        job
+        for job in candidates
+        if job.paper_version_id in revisions
+        and _matches_current_seed_job(
+            job,
+            *revisions[job.paper_version_id],
+            embedding_model=embedding_model,
+        )
+    ]
+
+
+def _matches_current_seed_job(
+    job: PipelineJob,
+    paper: Paper,
+    version: PaperVersion,
+    *,
+    embedding_model: str,
+) -> bool:
+    if (
+        job.pipeline_version != PIPELINE_VERSION
+        or job.paper_id != paper.id
+        or job.paper_version_id != version.id
+        or version.paper_id != paper.id
+    ):
+        return False
+    try:
+        expected_key = _current_seed_job_key(
+            job.stage,
+            paper,
+            version,
+            embedding_model=embedding_model,
+        )
+    except (TypeError, ValueError):
+        return False
+    return expected_key is not None and job.idempotency_key == expected_key
+
+
+def _current_seed_job_key(
+    stage: PipelineStage,
+    paper: Paper,
+    version: PaperVersion,
+    *,
+    embedding_model: str,
+) -> str | None:
+    common = {"paper_id": paper.id, "paper_version_id": version.id}
+    if stage is PipelineStage.DOWNLOAD_PDF:
+        return download_idempotency_key(
+            **common,
+            arxiv_id=paper.arxiv_id,
+            version_number=version.version_number,
+        )
+    if stage is PipelineStage.PARSE_PDF and version.source_checksum is not None:
+        return parse_idempotency_key(
+            **common,
+            source_checksum=version.source_checksum,
+            parser_version=PARSER_VERSION,
+        )
+    if (
+        stage in {PipelineStage.SUMMARIZE_PAPER, PipelineStage.CHUNK_PAPER}
+        and version.parsed_checksum is not None
+        and version.parser_version is not None
+    ):
+        factory = (
+            summarize_idempotency_key
+            if stage is PipelineStage.SUMMARIZE_PAPER
+            else chunk_idempotency_key
+        )
+        return factory(
+            **common,
+            parsed_checksum=version.parsed_checksum,
+            parser_version=version.parser_version,
+        )
+    if (
+        stage is PipelineStage.EMBED_CHUNKS
+        and version.parsed_checksum is not None
+        and version.parser_version is not None
+    ):
+        return embed_idempotency_key(
+            **common,
+            parsed_checksum=version.parsed_checksum,
+            parser_version=version.parser_version,
+            embedding_model=embedding_model,
+        )
+    return None

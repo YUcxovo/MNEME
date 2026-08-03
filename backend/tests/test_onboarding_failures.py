@@ -137,6 +137,7 @@ def test_seed_queue_failure_releases_lease_and_hides_diagnostics(monkeypatch) ->
                 session,
                 FailingQueue(),
                 (revision,),
+                embedding_model="test-embedding",
             )
         )
 
@@ -166,11 +167,17 @@ def test_seed_download_reuse_scans_failed_child_stages(monkeypatch) -> None:
             session,
             queue,
             (revision,),
+            embedding_model="test-embedding",
         )
     )
 
     assert paper_ids == (revision.paper_id,)
-    resume.assert_awaited_once_with(session, queue, paper_ids)
+    resume.assert_awaited_once_with(
+        session,
+        queue,
+        paper_ids,
+        embedding_model="test-embedding",
+    )
 
 
 @pytest.mark.base
@@ -182,12 +189,27 @@ def test_existing_seed_resumes_failed_latest_revision_job(monkeypatch) -> None:
     session.get.return_value = paper
     queue = RecordingQueue()
     monkeypatch.setattr(onboarding_support, "PipelineJobRepository", FakeFailedJobRepository)
+    monkeypatch.setattr(
+        onboarding_support,
+        "_list_current_failed_seed_jobs",
+        AsyncMock(
+            return_value=[
+                SimpleNamespace(
+                    id=FakeFailedJobRepository.job_id,
+                    paper_id=FakeFailedJobRepository.paper_id,
+                    paper_version_id=FakeFailedJobRepository.paper_version_id,
+                    stage=PipelineStage.SUMMARIZE_PAPER,
+                )
+            ]
+        ),
+    )
 
     resumed = asyncio.run(
         onboarding_support.resume_failed_seed_jobs(
             session,
             queue,
             (FakeFailedJobRepository.paper_id,),
+            embedding_model="test-embedding",
         )
     )
 
@@ -217,6 +239,20 @@ def test_existing_seed_resume_releases_failed_enqueue(monkeypatch) -> None:
     session.get.return_value = SimpleNamespace(processing_status=ProcessingStatus.FAILED)
     FakeFailedJobRepository.released = []
     monkeypatch.setattr(onboarding_support, "PipelineJobRepository", FakeFailedJobRepository)
+    monkeypatch.setattr(
+        onboarding_support,
+        "_list_current_failed_seed_jobs",
+        AsyncMock(
+            return_value=[
+                SimpleNamespace(
+                    id=FakeFailedJobRepository.job_id,
+                    paper_id=FakeFailedJobRepository.paper_id,
+                    paper_version_id=FakeFailedJobRepository.paper_version_id,
+                    stage=PipelineStage.SUMMARIZE_PAPER,
+                )
+            ]
+        ),
+    )
 
     with pytest.raises(ApiError) as raised:
         asyncio.run(
@@ -224,6 +260,7 @@ def test_existing_seed_resume_releases_failed_enqueue(monkeypatch) -> None:
                 session,
                 FailingQueue(),
                 (FakeFailedJobRepository.paper_id,),
+                embedding_model="test-embedding",
             )
         )
 
@@ -237,15 +274,26 @@ def test_existing_seed_resume_releases_failed_enqueue(monkeypatch) -> None:
 @pytest.mark.base
 @pytest.mark.api
 @pytest.mark.pipeline
-def test_failed_seed_pipeline_returns_stable_public_error() -> None:
+def test_failed_seed_pipeline_returns_stable_public_error(monkeypatch) -> None:
     paper_id = uuid4()
     rows = MagicMock()
     rows.all.return_value = [(paper_id, ProcessingStatus.FAILED)]
     session = AsyncMock(spec=AsyncSession)
     session.execute.return_value = rows
+    monkeypatch.setattr(
+        onboarding_support,
+        "_list_current_failed_seed_jobs",
+        AsyncMock(return_value=[]),
+    )
 
     with pytest.raises(ApiError) as raised:
-        asyncio.run(onboarding_support.wait_for_seed_papers(session, (paper_id,)))
+        asyncio.run(
+            onboarding_support.wait_for_seed_papers(
+                session,
+                (paper_id,),
+                embedding_model="test-embedding",
+            )
+        )
 
     assert raised.value.status_code == status.HTTP_502_BAD_GATEWAY
     assert raised.value.code == "seed_initialization_failed"

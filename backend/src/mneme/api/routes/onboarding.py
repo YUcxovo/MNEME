@@ -97,6 +97,7 @@ async def _resume_existing_seed(
     queue: TaskQueue,
     existing_seed: SeedInitializationResult,
     *,
+    embedding_model: str,
     seed_arxiv_id: str,
 ) -> None:
     """Resume failed preparation stages represented by an existing digest."""
@@ -111,10 +112,16 @@ async def _resume_existing_seed(
         )
     digest_paper_ids = tuple(entry.paper.id for entry in existing_seed.digest.entries)
     retry_scope = tuple(dict.fromkeys((seed_paper_id, *digest_paper_ids)))
-    resumed = await resume_failed_seed_jobs(session, queue, retry_scope)
+    resumed = await resume_failed_seed_jobs(
+        session,
+        queue,
+        retry_scope,
+        embedding_model=embedding_model,
+    )
     await wait_for_seed_papers(
         session,
         retry_scope,
+        embedding_model=embedding_model,
         required_ready_ids=(seed_paper_id,),
     )
     if resumed:
@@ -159,6 +166,7 @@ async def initialize_from_seed(
             session,
             queue,
             existing_seed,
+            embedding_model=settings.ai_embedding_model,
             seed_arxiv_id=seed_arxiv_id,
         )
         logger.info("seed_initialization_reused", seed_arxiv_id=seed_arxiv_id)
@@ -262,10 +270,16 @@ async def initialize_from_seed(
         )
 
     revisions_to_prepare = (seed_result.revisions[0], *candidates)
-    paper_ids = await enqueue_seed_downloads(session, queue, revisions_to_prepare)
+    paper_ids = await enqueue_seed_downloads(
+        session,
+        queue,
+        revisions_to_prepare,
+        embedding_model=settings.ai_embedding_model,
+    )
     await wait_for_seed_papers(
         session,
         paper_ids,
+        embedding_model=settings.ai_embedding_model,
         required_ready_ids=(seed_result.revisions[0].paper_id,),
     )
 
