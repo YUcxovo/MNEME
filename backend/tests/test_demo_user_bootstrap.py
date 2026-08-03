@@ -136,6 +136,14 @@ def test_cli_parser_accepts_a_first_creation_display_name() -> None:
 
 @pytest.mark.base
 @pytest.mark.db
+def test_cli_default_matches_packaged_seed_identity() -> None:
+    arguments = bootstrap_demo_user.build_parser().parse_args([])
+
+    assert arguments.display_name == "Mneme Demo Researcher"
+
+
+@pytest.mark.base
+@pytest.mark.db
 def test_successful_cli_output_contains_only_safe_bootstrap_fields(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
