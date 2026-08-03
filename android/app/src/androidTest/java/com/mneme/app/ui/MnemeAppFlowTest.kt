@@ -285,7 +285,10 @@ class MnemeAppFlowTest {
             assertEquals(listOf(paperId), tracker.questionPaperIds)
             assertEquals(
                 listOf(
-                    "Attention Is All You Need" to "https://arxiv.org/abs/1706.03762",
+                    "Attention Is All You Need" to
+                        "Attention Is All You Need\n" +
+                        "mneme://paper/${SeededSkeletalContentRepository.PAPER_ID}\n" +
+                        "https://arxiv.org/abs/1706.03762",
                 ),
                 sharedPapers,
             )
