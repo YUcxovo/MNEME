@@ -1,6 +1,7 @@
 """Live dependency probes for the production preflight gate."""
 
 import os
+import shutil
 from pathlib import Path
 from uuid import UUID
 
@@ -11,6 +12,7 @@ from sqlalchemy import text
 
 from mneme.core.config import Settings
 from mneme.db.session import Database
+from mneme.ops.backup import BackupConfigurationError, validate_libpq_environment
 from mneme.redis.client import create_redis_client
 
 
@@ -58,6 +60,16 @@ class ProductionPreflightProbe:
     async def paper_storage_writable(self) -> bool:
         path = self._settings.paper_storage_dir
         return path.is_dir() and os.access(path, os.W_OK | os.X_OK)
+
+    async def backup_tools_available(self) -> bool:
+        return shutil.which("pg_dump") is not None and shutil.which("pg_restore") is not None
+
+    async def backup_credentials_configured(self) -> bool:
+        try:
+            validate_libpq_environment(os.environ)
+        except BackupConfigurationError:
+            return False
+        return True
 
     async def aclose(self) -> None:
         await self._redis.aclose()

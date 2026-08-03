@@ -92,6 +92,22 @@ async def run_preflight(
                 "The paper storage directory is writable.",
             )
         )
+        checks.append(
+            await _safe_live_boolean(
+                "backup_tools",
+                resolved_probe.backup_tools_available,
+                timeout,
+                "PostgreSQL backup clients are installed.",
+            )
+        )
+        checks.append(
+            await _safe_live_boolean(
+                "backup_credentials",
+                resolved_probe.backup_credentials_configured,
+                timeout,
+                "Private libpq backup credentials are configured.",
+            )
+        )
     finally:
         try:
             await resolved_probe.aclose()

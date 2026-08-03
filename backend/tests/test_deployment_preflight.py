@@ -49,6 +49,8 @@ class FakeProbe:
             "connection_limits": (100, 3),
             "ping_redis": True,
             "paper_storage_writable": True,
+            "backup_tools_available": True,
+            "backup_credentials_configured": True,
             "aclose": True,
         }
         self.values.update(overrides)
@@ -84,6 +86,12 @@ class FakeProbe:
 
     async def paper_storage_writable(self) -> bool:
         return bool(await self._get("paper_storage_writable"))
+
+    async def backup_tools_available(self) -> bool:
+        return bool(await self._get("backup_tools_available"))
+
+    async def backup_credentials_configured(self) -> bool:
+        return bool(await self._get("backup_credentials_configured"))
 
     async def aclose(self) -> None:
         self.closed = True
@@ -151,7 +159,7 @@ def test_live_preflight_reports_capacity_and_closes_probe() -> None:
     assert probe.closed
     capacity = next(check for check in report.checks if check.id == "database_capacity")
     assert capacity.details == {"available": 97, "headroom": 19, "required": 40}
-    assert report.as_dict()["counts"] == {"fail": 0, "pass": 14, "warn": 0}
+    assert report.as_dict()["counts"] == {"fail": 0, "pass": 16, "warn": 0}
 
 
 @pytest.mark.base
@@ -165,6 +173,8 @@ def test_live_preflight_reports_capacity_and_closes_probe() -> None:
         ({"connection_limits": (45, 3)}, "database_capacity"),
         ({"ping_redis": False}, "redis"),
         ({"paper_storage_writable": False}, "paper_storage"),
+        ({"backup_tools_available": False}, "backup_tools"),
+        ({"backup_credentials_configured": False}, "backup_credentials"),
         ({"aclose": RuntimeError("redis://secret")}, "probe_cleanup"),
         ({"ping_database": ConnectionError("postgresql://secret")}, "postgresql"),
     ],
