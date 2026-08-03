@@ -35,6 +35,13 @@ def static_preflight_checks(settings: Settings) -> tuple[PreflightCheck, ...]:
             "Graceful shutdown covers the configured model timeout.",
         )
     )
+    checks.append(
+        boolean_check(
+            "service_timeouts",
+            settings.api_graceful_timeout_seconds <= 90 and settings.arq_job_timeout_seconds <= 300,
+            "Application timeouts fit the rendered systemd stop envelopes.",
+        )
+    )
     token = (
         settings.demo_token_sha256.get_secret_value()
         if settings.demo_token_sha256 is not None

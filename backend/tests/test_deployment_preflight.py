@@ -112,6 +112,7 @@ def test_static_preflight_accepts_complete_production_configuration() -> None:
         "production_mode",
         "loopback_binding",
         "graceful_timeout",
+        "service_timeouts",
         "demo_identity",
         "provider_routes",
         "database_configuration",
@@ -128,6 +129,8 @@ def test_static_preflight_accepts_complete_production_configuration() -> None:
         ({"debug": True}, "production_mode"),
         ({"log_level": "DEBUG"}, "production_mode"),
         ({"api_graceful_timeout_seconds": 30}, "graceful_timeout"),
+        ({"api_graceful_timeout_seconds": 91}, "service_timeouts"),
+        ({"arq_job_timeout_seconds": 301}, "service_timeouts"),
         ({"demo_token_sha256": "not-a-digest"}, "demo_identity"),
         ({"demo_user_id": None}, "demo_identity"),
         ({"anthropic_api_key": None}, "provider_routes"),
@@ -168,7 +171,7 @@ def test_live_preflight_reports_capacity_and_closes_probe() -> None:
     assert probe.closed
     capacity = next(check for check in report.checks if check.id == "database_capacity")
     assert capacity.details == {"available": 95, "headroom": 19, "required": 40}
-    assert report.as_dict()["counts"] == {"fail": 0, "pass": 17, "warn": 0}
+    assert report.as_dict()["counts"] == {"fail": 0, "pass": 18, "warn": 0}
 
 
 @pytest.mark.base
