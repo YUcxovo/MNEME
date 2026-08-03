@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     deepseek_thinking_enabled: bool = False
     openai_api_key: SecretStr | None = None
     llm_timeout_seconds: float = Field(default=60.0, gt=0)
-    llm_summary_model: str = "claude-opus-4-8"
+    llm_summary_model: str = "claude-haiku-4-5"
     llm_qa_model: str = "claude-opus-4-8"
     ai_daily_budget_usd: Decimal = Field(default=Decimal("5"), gt=Decimal(0))
     ai_cache_enabled: bool = True

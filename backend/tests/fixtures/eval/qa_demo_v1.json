@@ -1,0 +1,76 @@
+{
+  "fixture_version": "qa-demo-v1",
+  "fixtures": [
+    {
+      "fixture_id": "qa-001-transformer-attention",
+      "arxiv_id": "1706.03762",
+      "arxiv_version": 7,
+      "section_hint": "Model Architecture",
+      "question": "What mechanism does the Transformer use instead of recurrence and convolutions?",
+      "reference_answer": "The Transformer relies entirely on attention mechanisms, specifically multi-head self-attention, to draw global dependencies between input and output, removing recurrence and convolutions.",
+      "expected_keywords": ["attention", "self-attention", "multi-head"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-002-lora-parameters",
+      "arxiv_id": "2106.09685",
+      "arxiv_version": 2,
+      "section_hint": "Method",
+      "question": "How does LoRA reduce the number of trainable parameters when adapting large language models?",
+      "reference_answer": "LoRA freezes the pretrained weights and injects trainable low-rank decomposition matrices into each layer, so only the small rank-decomposition matrices are updated during fine-tuning.",
+      "expected_keywords": ["low-rank", "frozen", "trainable parameters"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-004-rag-components",
+      "arxiv_id": "2005.11401",
+      "arxiv_version": 4,
+      "section_hint": "Methods",
+      "question": "What are the two components combined in retrieval-augmented generation and what role does each play?",
+      "reference_answer": "RAG combines a dense retriever that fetches relevant passages from a document index with a sequence-to-sequence generator that conditions on both the query and retrieved passages to produce the answer.",
+      "expected_keywords": ["retriever", "generator", "passages"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-005-dpo-reward-model",
+      "arxiv_id": "2305.18290",
+      "arxiv_version": 3,
+      "section_hint": "Direct Preference Optimization",
+      "question": "Why does Direct Preference Optimization not require training a separate reward model?",
+      "reference_answer": "DPO derives a closed-form mapping between reward functions and optimal policies, letting it optimize the language model directly on preference pairs with a simple classification loss instead of fitting an explicit reward model and running reinforcement learning.",
+      "expected_keywords": ["reward model", "preference", "closed-form"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-011-bert-pretraining",
+      "arxiv_id": "1810.04805",
+      "arxiv_version": 2,
+      "section_hint": "Pre-training BERT",
+      "question": "What pre-training tasks does BERT use to learn bidirectional representations?",
+      "reference_answer": "BERT is pre-trained with a masked language model objective, predicting randomly masked input tokens from both left and right context, together with a next sentence prediction task.",
+      "expected_keywords": ["masked", "bidirectional", "next sentence"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-012-vit-patches",
+      "arxiv_id": "2010.11929",
+      "arxiv_version": 2,
+      "section_hint": "Method",
+      "question": "How does the Vision Transformer convert an image into a sequence the Transformer can process?",
+      "reference_answer": "The image is split into fixed-size patches, each patch is flattened and linearly projected to an embedding, and position embeddings are added before the resulting sequence is fed to a standard Transformer encoder.",
+      "expected_keywords": ["patches", "embedding", "sequence"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-014-lora-diffusion-scope",
+      "arxiv_id": "2106.09685",
+      "arxiv_version": 2,
+      "section_hint": null,
+      "question": "What does the paper conclude about applying LoRA to image diffusion models?",
+      "reference_answer": "The LoRA paper studies adapting large language models; it draws no conclusions about image diffusion models, so the question is out of scope and must be refused.",
+      "expected_keywords": [],
+      "must_cite": false,
+      "expect_refusal": true
+    }
+  ]
+}

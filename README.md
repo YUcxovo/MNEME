@@ -12,6 +12,7 @@ Engineering sources of truth:
 - [`docs/architecture/pipeline-and-reliability.md`](docs/architecture/pipeline-and-reliability.md) -- jobs, evaluation, demo mode, observability
 - [`docs/architecture/platform-performance.md`](docs/architecture/platform-performance.md) -- pagination, index, pool, and measurement decisions
 - [`docs/architecture/privacy-and-data.md`](docs/architecture/privacy-and-data.md) -- licensing, privacy, reproducibility
+- [`docs/demo/qa-demo-script.md`](docs/demo/qa-demo-script.md) -- curated demo Q&A, validation provenance, re-validation procedure
 - [`docs/adr/0001-mvp-auth.md`](docs/adr/0001-mvp-auth.md) -- MVP authentication decision
 - [`docs/adr/0002-m3-behavior-baseline.md`](docs/adr/0002-m3-behavior-baseline.md) -- deterministic behavior-v1 decision
 - [`docs/adr/0003-behavior-v2.md`](docs/adr/0003-behavior-v2.md) -- confidence-calibrated contrastive behavior model

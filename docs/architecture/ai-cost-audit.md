@@ -73,3 +73,8 @@ Against the default `ai_daily_budget_usd = 5`:
 
 F1 is a recommendation pending an owner decision and a summary-quality
 comparison; no default was changed in this audit. F2-F4 require no action.
+
+**Resolution (Milestone 5):** the summary tier study ran the comparison F1
+asked for, and `llm_summary_model` now defaults to `claude-haiku-4-5` while
+QA stays on `claude-opus-4-8`. See `ai-prompt-freeze.md` for the frozen
+routing and its evidence, and `ai-cost-report.md` for measured spend.
