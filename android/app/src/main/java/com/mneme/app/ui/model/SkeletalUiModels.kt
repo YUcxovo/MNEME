@@ -16,6 +16,28 @@ data class PaperDetailUiModel(
     val limitation: String?,
     val sourceMatchStatus: SourceMatchUiStatus,
     val source: SourceUiModel,
+    val summaryClaims: List<SummaryClaimUiModel> =
+        keyClaims.map { claim ->
+            SummaryClaimUiModel(
+                text = claim,
+                matchStatus = SourceMatchUiStatus.NOT_CHECKED,
+            )
+        },
+)
+
+data class SummaryClaimUiModel(
+    val text: String,
+    val matchStatus: SourceMatchUiStatus,
+    val source: ClaimProvenanceUiModel? = null,
+)
+
+data class ClaimProvenanceUiModel(
+    val chunkId: String,
+    val chunkIndex: Int,
+    val sectionTitle: String?,
+    val pageStart: Int?,
+    val pageEnd: Int?,
+    val excerpt: String,
 )
 
 data class QaUiModel(

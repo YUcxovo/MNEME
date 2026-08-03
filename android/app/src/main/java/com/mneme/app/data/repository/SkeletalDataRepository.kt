@@ -231,7 +231,11 @@ class NetworkSkeletalDataRepository(
             cache.storePaper(paper, refreshedAt)
             cache.markPaperOpened(paperId, refreshedAt)
             when (val summary = remote.getPaperSummary(paperId)) {
-                is RemoteResource.Ready -> PaperContentResult.Ready(paper.toDetail(summary.value))
+                is RemoteResource.Ready -> {
+                    val detail = paper.toDetail(summary.value)
+                    cache.storePaperContent(paper, summary.value, refreshedAt)
+                    PaperContentResult.Ready(detail)
+                }
                 is RemoteResource.Accepted ->
                     PaperContentResult.Processing(
                         paperId = paperId,
