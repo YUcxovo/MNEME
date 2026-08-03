@@ -204,3 +204,26 @@ def test_snapshot_maps_counts_with_distinct_created_and_finished_windows() -> No
     assert "DISTINCT ON (paper_versions.paper_id)" in quality_sql
     assert "LEFT OUTER JOIN" in quality_sql
     assert "digests.generated_at >=" in digest_sql
+
+
+def test_latest_success_by_stage_preserves_requested_empty_buckets() -> None:
+    now = datetime(2026, 8, 3, 8, tzinfo=UTC)
+    repository, session = _repository_with_results(
+        _result(rows=[(PipelineStage.FETCH_METADATA, now)])
+    )
+
+    result = asyncio.run(
+        repository.latest_success_by_stage(
+            (PipelineStage.FETCH_METADATA, PipelineStage.ASSEMBLE_DIGEST)
+        )
+    )
+
+    assert result == {
+        PipelineStage.FETCH_METADATA: now,
+        PipelineStage.ASSEMBLE_DIGEST: None,
+    }
+    statement = session.execute.await_args.args[0]
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+    assert "max(pipeline_jobs.finished_at)" in sql
+    assert "pipeline_jobs.status =" in sql
+    assert "GROUP BY pipeline_jobs.stage" in sql

@@ -32,6 +32,26 @@ class PlatformOperationsRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def latest_success_by_stage(
+        self, stages: tuple[PipelineStage, ...]
+    ) -> dict[PipelineStage, datetime | None]:
+        """Return safe latest-success timestamps for explicitly requested stages."""
+        if not stages:
+            return {}
+        rows = (
+            await self._session.execute(
+                select(PipelineJob.stage, func.max(PipelineJob.finished_at))
+                .where(
+                    PipelineJob.stage.in_(stages),
+                    PipelineJob.status == JobStatus.SUCCEEDED,
+                    PipelineJob.finished_at.is_not(None),
+                )
+                .group_by(PipelineJob.stage)
+            )
+        ).all()
+        observed = {stage: finished_at for stage, finished_at in rows}
+        return {stage: observed.get(stage) for stage in stages}
+
     async def snapshot(
         self,
         *,
