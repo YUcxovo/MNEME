@@ -1,10 +1,8 @@
 [Unit]
 Description=Gate Mneme production configuration and dependencies
-After=network-online.target mneme-migrate.service
+After=network-online.target mneme-bootstrap.service
 Wants=network-online.target
-Requires=mneme-migrate.service
-ConditionPathExists=/etc/mneme/pg_service.conf
-ConditionPathExists=/etc/mneme/pgpass
+Requires=mneme-bootstrap.service
 
 [Service]
 Type=oneshot
@@ -25,4 +23,4 @@ ReadWritePaths=${paper_data_dir}
 ReadOnlyPaths=/etc/mneme/pg_service.conf /etc/mneme/pgpass
 UMask=0077
 
-# Run manually after installing host configuration and before enabling API or worker units.
+# API and worker startup require this gate; any failed check prevents both units from starting.

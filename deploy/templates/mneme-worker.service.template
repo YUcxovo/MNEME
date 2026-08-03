@@ -1,8 +1,8 @@
 [Unit]
 Description=Mneme ARQ worker
-After=network-online.target mneme-migrate.service
+After=network-online.target mneme-preflight.service
 Wants=network-online.target
-Requires=mneme-migrate.service
+Requires=mneme-preflight.service
 
 [Service]
 Type=simple

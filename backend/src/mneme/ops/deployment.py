@@ -14,6 +14,7 @@ TEMPLATE_FILENAMES = (
     "mneme-api.service.template",
     "mneme-backup.service.template",
     "mneme-backup.timer.template",
+    "mneme-bootstrap.service.template",
     "mneme-digest.service.template",
     "mneme-digest.timer.template",
     "mneme-health.service.template",

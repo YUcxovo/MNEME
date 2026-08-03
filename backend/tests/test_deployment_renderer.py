@@ -48,6 +48,10 @@ def test_renderer_produces_complete_deterministic_staging_tree(tmp_path: Path) -
     preflight_service = (output_dir / "mneme-preflight.service").read_text(encoding="utf-8")
     assert "python -m mneme.cli.preflight_deployment" in preflight_service
     assert "PGSERVICE=mneme-backup" in preflight_service
+    assert "Requires=mneme-bootstrap.service" in preflight_service
+    assert "Requires=mneme-preflight.service" in (output_dir / "mneme-worker.service").read_text(
+        encoding="utf-8"
+    )
 
 
 @pytest.mark.base
