@@ -56,17 +56,20 @@ def test_completed_seed_is_reused_before_external_requests(
 ) -> None:
     expected = MagicMock()
     load_existing = AsyncMock(return_value=expected)
+    resume_existing = AsyncMock()
     arxiv_client = MagicMock()
     monkeypatch.setattr(onboarding, "_load_existing_seed", load_existing)
+    monkeypatch.setattr(onboarding, "_resume_existing_seed", resume_existing)
     monkeypatch.setattr(onboarding, "ArxivClient", arxiv_client)
     principal = Principal(user_id=uuid4())
     session = cast(AsyncSession, MagicMock(spec=AsyncSession))
+    queue = cast(TaskQueue, MagicMock())
 
     result = asyncio.run(
         onboarding.initialize_from_seed(
             SeedInitializationRequest(arxiv_reference="1706.03762v5"),
             principal,
-            cast(TaskQueue, MagicMock()),
+            queue,
             Settings(_env_file=None),
             session,
         )
@@ -76,6 +79,12 @@ def test_completed_seed_is_reused_before_external_requests(
     load_existing.assert_awaited_once_with(
         session,
         user_id=principal.user_id,
+        seed_arxiv_id="1706.03762",
+    )
+    resume_existing.assert_awaited_once_with(
+        session,
+        queue,
+        expected,
         seed_arxiv_id="1706.03762",
     )
     arxiv_client.assert_not_called()

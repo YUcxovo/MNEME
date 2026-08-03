@@ -15,7 +15,7 @@ from mneme.api.errors import ApiError
 from mneme.api.routes import onboarding, onboarding_support
 from mneme.api.schemas.onboarding import SeedInitializationRequest
 from mneme.core.config import Settings
-from mneme.models.job import JobStatus
+from mneme.models.job import JobStatus, PipelineStage
 from mneme.models.paper import ProcessingStatus
 from mneme.services.arxiv.ingestion import ArxivObservedRevision
 
@@ -64,6 +64,52 @@ class FakeJobRepository:
         self.released.append(job_id)
 
 
+class FakeFailedJobRepository:
+    """Expose one failed revision job for seed-resume tests."""
+
+    released: ClassVar[list[object]] = []
+    job_id = uuid4()
+    paper_id = uuid4()
+    paper_version_id = uuid4()
+
+    def __init__(self, _session: AsyncSession) -> None:
+        pass
+
+    async def list_failed_latest_revision_jobs(
+        self, paper_ids: tuple[object, ...]
+    ) -> list[SimpleNamespace]:
+        assert self.paper_id in paper_ids
+        return [
+            SimpleNamespace(
+                id=self.job_id,
+                paper_id=self.paper_id,
+                paper_version_id=self.paper_version_id,
+                stage=PipelineStage.SUMMARIZE_PAPER,
+            )
+        ]
+
+    async def claim_failed_for_retry(self, job_id: object) -> bool:
+        assert job_id == self.job_id
+        return True
+
+    async def claim_for_dispatch(self, job_id: object) -> int:
+        assert job_id == self.job_id
+        return 2
+
+    async def release_dispatch(self, job_id: object) -> None:
+        self.released.append(job_id)
+
+
+class RecordingQueue:
+    """Record one resumed ARQ dispatch."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    async def enqueue_job(self, *args: object, **kwargs: object) -> None:
+        self.calls.append((args, kwargs))
+
+
 def _revision() -> ArxivObservedRevision:
     return ArxivObservedRevision(
         paper_id=uuid4(),
@@ -99,6 +145,67 @@ def test_seed_queue_failure_releases_lease_and_hides_diagnostics(monkeypatch) ->
     assert "sensitive" not in raised.value.message
     assert len(FakeJobRepository.released) == 1
     assert paper.processing_status is ProcessingStatus.QUEUED
+    assert session.commit.await_count == 3
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_existing_seed_resumes_failed_latest_revision_job(monkeypatch) -> None:
+    session = AsyncMock(spec=AsyncSession)
+    paper = SimpleNamespace(processing_status=ProcessingStatus.FAILED)
+    session.get.return_value = paper
+    queue = RecordingQueue()
+    monkeypatch.setattr(onboarding_support, "PipelineJobRepository", FakeFailedJobRepository)
+
+    resumed = asyncio.run(
+        onboarding_support.resume_failed_seed_jobs(
+            session,
+            queue,
+            (FakeFailedJobRepository.paper_id,),
+        )
+    )
+
+    assert resumed == 1
+    assert paper.processing_status is ProcessingStatus.QUEUED
+    assert queue.calls == [
+        (
+            (
+                PipelineStage.SUMMARIZE_PAPER.value,
+                str(FakeFailedJobRepository.paper_id),
+                str(FakeFailedJobRepository.paper_version_id),
+            ),
+            {
+                "job_id": str(FakeFailedJobRepository.job_id),
+                "_job_id": f"pipeline:{FakeFailedJobRepository.job_id}:attempt:2",
+            },
+        )
+    ]
+    assert session.commit.await_count == 2
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_existing_seed_resume_releases_failed_enqueue(monkeypatch) -> None:
+    session = AsyncMock(spec=AsyncSession)
+    session.get.return_value = SimpleNamespace(processing_status=ProcessingStatus.FAILED)
+    FakeFailedJobRepository.released = []
+    monkeypatch.setattr(onboarding_support, "PipelineJobRepository", FakeFailedJobRepository)
+
+    with pytest.raises(ApiError) as raised:
+        asyncio.run(
+            onboarding_support.resume_failed_seed_jobs(
+                session,
+                FailingQueue(),
+                (FakeFailedJobRepository.paper_id,),
+            )
+        )
+
+    assert raised.value.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+    assert raised.value.code == "queue_unavailable"
+    assert "sensitive" not in raised.value.message
+    assert FakeFailedJobRepository.released == [FakeFailedJobRepository.job_id]
     assert session.commit.await_count == 3
 
 

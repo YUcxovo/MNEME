@@ -17,6 +17,7 @@ from mneme.api.errors import ApiError, ErrorResponse
 from mneme.api.routes.onboarding_support import (
     enqueue_seed_downloads,
     normalize_arxiv_reference,
+    resume_failed_seed_jobs,
     wait_for_seed_papers,
 )
 from mneme.api.schemas.digests import Digest
@@ -87,6 +88,36 @@ async def _load_existing_seed(
     )
 
 
+async def _resume_existing_seed(
+    session: AsyncSession,
+    queue: TaskQueue,
+    existing_seed: SeedInitializationResult,
+    *,
+    seed_arxiv_id: str,
+) -> None:
+    """Resume failed preparation stages represented by an existing digest."""
+    seed_paper_id = await session.scalar(
+        select(Paper.id).where(Paper.arxiv_id == seed_arxiv_id).limit(1)
+    )
+    if seed_paper_id is None:
+        raise ApiError(
+            status.HTTP_502_BAD_GATEWAY,
+            "seed_state_incomplete",
+            "The stored demo seed is incomplete. Rebuild it before retrying.",
+        )
+    paper_ids = tuple(
+        dict.fromkeys((seed_paper_id, *(entry.paper.id for entry in existing_seed.digest.entries)))
+    )
+    resumed = await resume_failed_seed_jobs(session, queue, paper_ids)
+    await wait_for_seed_papers(session, paper_ids)
+    if resumed:
+        logger.info(
+            "seed_initialization_resumed",
+            seed_arxiv_id=seed_arxiv_id,
+            resumed_jobs=resumed,
+        )
+
+
 def get_request_settings() -> Settings:
     """Return process settings; overridable in tests."""
     return get_settings()
@@ -117,6 +148,12 @@ async def initialize_from_seed(
         seed_arxiv_id=seed_arxiv_id,
     )
     if existing_seed is not None:
+        await _resume_existing_seed(
+            session,
+            queue,
+            existing_seed,
+            seed_arxiv_id=seed_arxiv_id,
+        )
         logger.info("seed_initialization_reused", seed_arxiv_id=seed_arxiv_id)
         return existing_seed
 

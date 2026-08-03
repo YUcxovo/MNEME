@@ -102,6 +102,54 @@ async def enqueue_seed_downloads(
     return tuple(revision.paper_id for revision in revisions)
 
 
+async def resume_failed_seed_jobs(
+    session: AsyncSession,
+    queue: TaskQueue,
+    paper_ids: tuple[UUID, ...],
+) -> int:
+    """Requeue failed latest-revision stages before reusing a seed digest."""
+    jobs = PipelineJobRepository(session)
+    failed_jobs = await jobs.list_failed_latest_revision_jobs(paper_ids)
+    dispatches: list[tuple[PipelineStage, UUID, UUID, UUID]] = []
+    for job in failed_jobs:
+        if job.paper_id is None or job.paper_version_id is None:
+            continue
+        if not await jobs.claim_failed_for_retry(job.id):
+            continue
+        paper = await session.get(Paper, job.paper_id)
+        if paper is not None:
+            paper.processing_status = ProcessingStatus.QUEUED
+        dispatches.append((job.stage, job.paper_id, job.paper_version_id, job.id))
+    if not dispatches:
+        return 0
+    await session.commit()
+
+    dispatched = 0
+    for stage, paper_id, paper_version_id, job_id in dispatches:
+        attempt = await jobs.claim_for_dispatch(job_id)
+        await session.commit()
+        if attempt is None:
+            continue
+        try:
+            await queue.enqueue_job(
+                stage.value,
+                str(paper_id),
+                str(paper_version_id),
+                job_id=str(job_id),
+                _job_id=arq_attempt_id(job_id, attempt),
+            )
+            dispatched += 1
+        except Exception as error:
+            await jobs.release_dispatch(job_id)
+            await session.commit()
+            raise ApiError(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                "queue_unavailable",
+                "The paper preparation queue is temporarily unavailable.",
+            ) from error
+    return dispatched
+
+
 async def wait_for_seed_papers(session: AsyncSession, paper_ids: tuple[UUID, ...]) -> None:
     """Block until every selected paper reaches a usable terminal state."""
     loop = asyncio.get_running_loop()
