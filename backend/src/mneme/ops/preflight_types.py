@@ -46,7 +46,11 @@ class PreflightReport:
 
     @property
     def status(self) -> str:
-        return "failed" if any(item.status is CheckStatus.FAIL for item in self.checks) else "ready"
+        if any(item.status is CheckStatus.FAIL for item in self.checks):
+            return "failed"
+        if any(item.status is CheckStatus.WARN for item in self.checks):
+            return "incomplete"
+        return "ready"
 
     def as_dict(self) -> dict[str, object]:
         counts = {

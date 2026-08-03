@@ -146,7 +146,7 @@ def test_static_preflight_fails_closed(overrides: dict[str, object], failed_chec
 def test_offline_preflight_records_skipped_live_checks() -> None:
     report = asyncio.run(run_preflight(_settings(), expected_head="unused", offline=True, now=NOW))
 
-    assert report.status == "ready"
+    assert report.status == "incomplete"
     assert report.checks[-1].id == "live_dependencies"
     assert report.checks[-1].status is CheckStatus.WARN
     assert report.as_dict()["generated_at"] == "2026-08-03T09:00:00Z"
@@ -254,3 +254,19 @@ def test_preflight_cli_redacts_configuration_errors(
     assert captured.value.code == 2
     assert error["error"] == preflight_cli.CONFIG_ERROR
     assert "secret" not in json.dumps(error)
+
+
+@pytest.mark.base
+def test_preflight_cli_offline_report_is_not_deployment_ready(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(preflight_cli, "get_settings", _settings)
+    monkeypatch.setattr("sys.argv", ["preflight_deployment", "--offline"])
+
+    with pytest.raises(SystemExit) as captured:
+        preflight_cli.main()
+
+    payload = json.loads(capsys.readouterr().out)
+    assert captured.value.code == 1
+    assert payload["status"] == "incomplete"
