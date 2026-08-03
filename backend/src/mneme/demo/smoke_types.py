@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
 
+from mneme.api.routes.onboarding_support import normalize_arxiv_reference
+
 
 class MvpSmokeConfigurationError(ValueError):
     """A smoke-test input is missing, malformed, or unsafe."""
@@ -59,8 +61,11 @@ class MvpSmokeConfig:
 
     def __post_init__(self) -> None:
         _validate_base_url(self.base_url)
-        if not self.seed_arxiv_id or len(self.seed_arxiv_id) > 64:
-            raise MvpSmokeConfigurationError("Seed arXiv ID is invalid")
+        try:
+            normalized_seed = normalize_arxiv_reference(self.seed_arxiv_id)
+        except ValueError as exception:
+            raise MvpSmokeConfigurationError("Seed arXiv ID is invalid") from exception
+        object.__setattr__(self, "seed_arxiv_id", normalized_seed)
         if self.question is not None and not 1 <= len(self.question.strip()) <= 500:
             raise MvpSmokeConfigurationError("Question length is invalid")
         if not 1 <= self.request_timeout_seconds <= 120:
