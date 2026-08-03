@@ -103,6 +103,7 @@ fun mnemeApp(
     viewModel: MnemeViewModel,
     modifier: Modifier = Modifier,
     onOpenSource: ((String) -> Unit)? = null,
+    notificationDigestId: String? = null,
     onSharePaper: ((String, String) -> Unit)? = null,
     externalNavigation: MnemeExternalNavigationBinding = MnemeExternalNavigationBinding(),
 ) {
@@ -156,6 +157,7 @@ fun mnemeApp(
                     snapshot = snapshot,
                     actions = viewModel.uiActions(),
                     externalEnvironment = externalEnvironment,
+                    notificationDigestId = notificationDigestId,
                     modifier = modifier,
                 )
         }
@@ -181,6 +183,7 @@ fun mnemeApp(
         snapshot = state.snapshot,
         actions = state.actions,
         externalEnvironment = externalEnvironment,
+        notificationDigestId = null,
         modifier = modifier,
     )
 }
@@ -190,9 +193,16 @@ private fun mnemeAppScaffold(
     snapshot: MnemeUiSnapshot,
     actions: MnemeUiActions,
     externalEnvironment: MnemeExternalEnvironment,
+    notificationDigestId: String?,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
+    LaunchedEffect(notificationDigestId) {
+        if (notificationDigestId != null) {
+            navController.navigateToTopLevel(TopLevelDestination.BRIEFING)
+            actions.refreshBriefing()
+        }
+    }
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val topLevelDestination = currentDestination.topLevelDestination()

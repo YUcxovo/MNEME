@@ -34,7 +34,7 @@ class MnemeApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        if (container.digestRefreshCoordinator != null) {
+        if (BuildConfig.MNEME_DEMO_TOKEN.isNotBlank()) {
             DigestSyncScheduler.schedule(WorkManager.getInstance(this))
             BehavioralEventSyncScheduler.enqueue(WorkManager.getInstance(this))
         }

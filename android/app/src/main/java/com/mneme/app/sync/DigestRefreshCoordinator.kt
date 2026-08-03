@@ -18,7 +18,6 @@ class DigestRefreshCoordinator(
     private val refresher: DigestBriefingRefresher,
     private val notificationState: DigestNotificationState,
     private val notifier: DigestNotificationPublisher,
-    private val nowEpochMillis: () -> Long = System::currentTimeMillis,
 ) {
     @Suppress("SwallowedException") // Worker results intentionally avoid persisting or exposing transport details.
     suspend fun refresh(): DigestSyncResult =
@@ -27,7 +26,11 @@ class DigestRefreshCoordinator(
             notifyIfNew(digest)
             DigestSyncResult.Synced(digest.id)
         } catch (error: MnemeApiException) {
-            if (error.statusCode >= SERVER_ERROR_STATUS) DigestSyncResult.Retry else DigestSyncResult.Failed
+            if (error.statusCode == RATE_LIMIT_STATUS || error.statusCode >= SERVER_ERROR_STATUS) {
+                DigestSyncResult.Retry
+            } else {
+                DigestSyncResult.Failed
+            }
         } catch (error: IOException) {
             DigestSyncResult.Retry
         } catch (error: SerializationException) {
@@ -42,6 +45,7 @@ class DigestRefreshCoordinator(
     }
 
     private companion object {
+        const val RATE_LIMIT_STATUS = 429
         const val SERVER_ERROR_STATUS = 500
     }
 }

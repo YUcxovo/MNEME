@@ -67,9 +67,12 @@ class DigestRefreshCoordinatorTest {
         }
 
     @Test
-    fun serverFailure_requestsWorkManagerRetry_butClientFailureDoesNot() =
+    fun serverAndRateLimitFailures_requestWorkManagerRetry_butClientFailureDoesNot() =
         runCoordinatorTest { refresher, state, notifier ->
             refresher.error = apiError(503)
+            assertEquals(DigestSyncResult.Retry, coordinator(refresher, state, notifier).refresh())
+
+            refresher.error = apiError(429)
             assertEquals(DigestSyncResult.Retry, coordinator(refresher, state, notifier).refresh())
 
             refresher.error = apiError(401)

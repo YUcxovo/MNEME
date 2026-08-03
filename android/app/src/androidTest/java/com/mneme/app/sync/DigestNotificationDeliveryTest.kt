@@ -1,12 +1,17 @@
 package com.mneme.app.sync
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.mneme.app.data.network.DigestDto
 import com.mneme.app.notifications.DigestNotifier
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -16,11 +21,22 @@ class DigestNotificationDeliveryTest {
     fun deniedNotificationPermission_keepsDigestRefreshSuccessfulWithoutRecordingNotification() =
         runBlocking {
             val state = InMemoryNotificationState()
+            val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+            assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            InstrumentationRegistry
+                .getInstrumentation()
+                .uiAutomation
+                .revokeRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
+            assertEquals(
+                PackageManager.PERMISSION_DENIED,
+                context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS),
+            )
+
             val coordinator =
                 DigestRefreshCoordinator(
                     refresher = FakeRefresher,
                     notificationState = state,
-                    notifier = DigestNotifier(ApplicationProvider.getApplicationContext()),
+                    notifier = DigestNotifier(context),
                 )
 
             val result = coordinator.refresh()
