@@ -91,7 +91,11 @@ def validate_libpq_environment(environment: Mapping[str, str]) -> None:
         if not path.is_absolute() or path.is_symlink() or not path.is_file():
             raise BackupConfigurationError(f"{key} must reference a regular absolute file")
         metadata = path.stat()
-        if stat.S_IMODE(metadata.st_mode) & 0o077 or metadata.st_uid not in {0, os.geteuid()}:
+        if (
+            stat.S_IMODE(metadata.st_mode) & 0o077
+            or metadata.st_uid not in {0, os.geteuid()}
+            or not os.access(path, os.R_OK)
+        ):
             raise BackupConfigurationError(f"{key} permissions or ownership are unsafe")
 
 

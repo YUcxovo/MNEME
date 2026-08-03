@@ -151,6 +151,10 @@ def test_libpq_environment_requires_private_regular_files(tmp_path: Path) -> Non
     with pytest.raises(BackupConfigurationError):
         validate_libpq_environment(environment)
 
+    password_file.chmod(0o000)
+    with pytest.raises(BackupConfigurationError):
+        validate_libpq_environment(environment)
+
 
 @pytest.mark.base
 @pytest.mark.parametrize(
