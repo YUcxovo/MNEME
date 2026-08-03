@@ -61,7 +61,10 @@ fun PaperDetailScreen(
             ContentSourceNotice(disclosure = paper.disclosure)
         }
         item {
-            PaperSummaryCard(paper = paper)
+            PaperSummaryCard(
+                paper = paper,
+                onOpenPaper = { actions.openSource(paper.source.url) },
+            )
         }
         item {
             Row(
@@ -242,6 +245,7 @@ private fun PaperHeader(paper: PaperDetailUiModel) {
 @Composable
 private fun PaperSummaryCard(
     paper: PaperDetailUiModel,
+    onOpenPaper: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -266,22 +270,13 @@ private fun PaperSummaryCard(
                 body = paper.paper.summary,
                 testTag = "basic-summary",
             )
-            if (paper.keyClaims.isNotEmpty()) {
+            if (paper.summaryClaims.isNotEmpty()) {
                 SummaryDivider()
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = stringResource(R.string.paper_key_claims),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    paper.keyClaims.forEach { claim ->
-                        Text(
-                            text = "\u2022  $claim",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                        )
-                    }
-                }
+                SummaryClaimList(
+                    paperId = paper.paper.id,
+                    claims = paper.summaryClaims,
+                    onOpenPaper = onOpenPaper,
+                )
             }
             paper.methodology?.takeIf(String::isNotBlank)?.let { methodology ->
                 SummaryDivider()
