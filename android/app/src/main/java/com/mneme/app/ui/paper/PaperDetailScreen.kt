@@ -34,6 +34,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
+import com.mneme.app.ui.EventRecordingStatus
 import com.mneme.app.ui.component.ContentSourceNotice
 import com.mneme.app.ui.component.MnemeSectionLabel
 import com.mneme.app.ui.component.SourceMatchStatusPill
@@ -44,7 +45,8 @@ import com.mneme.app.ui.theme.MnemeTheme
 fun PaperDetailScreen(
     paper: PaperDetailUiModel,
     actions: PaperDetailActions,
-    isSaved: Boolean,
+    saveStatus: EventRecordingStatus,
+    shareStatus: EventRecordingStatus,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -80,7 +82,8 @@ fun PaperDetailScreen(
         item {
             PaperActions(
                 actions = actions,
-                isSaved = isSaved,
+                saveStatus = saveStatus,
+                shareStatus = shareStatus,
             )
         }
     }
@@ -89,13 +92,15 @@ fun PaperDetailScreen(
 @Composable
 private fun PaperActions(
     actions: PaperDetailActions,
-    isSaved: Boolean,
+    saveStatus: EventRecordingStatus,
+    shareStatus: EventRecordingStatus,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         PaperEngagementActions(
             onSavePaper = actions.savePaper,
             onSharePaper = actions.sharePaper,
-            isSaved = isSaved,
+            saveStatus = saveStatus,
+            shareStatus = shareStatus,
         )
         OutlinedButton(
             onClick = actions.exploreGraph,
@@ -138,40 +143,76 @@ private fun PaperActions(
 private fun PaperEngagementActions(
     onSavePaper: () -> Unit,
     onSharePaper: () -> Unit,
-    isSaved: Boolean,
+    saveStatus: EventRecordingStatus,
+    shareStatus: EventRecordingStatus,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Button(
-            onClick = onSavePaper,
-            enabled = !isSaved,
-            modifier = Modifier.weight(1f).testTag("save-paper-action"),
-            shape = MaterialTheme.shapes.small,
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Icon(imageVector = Icons.Default.Bookmark, contentDescription = null)
-            Text(
-                text =
-                    stringResource(
-                        if (isSaved) R.string.action_saved else R.string.action_save_paper,
-                    ),
-                modifier = Modifier.padding(start = 8.dp),
+            Button(
+                onClick = onSavePaper,
+                enabled =
+                    saveStatus != EventRecordingStatus.RECORDING &&
+                        saveStatus != EventRecordingStatus.RECORDED,
+                modifier = Modifier.weight(1f).testTag("save-paper-action"),
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Icon(imageVector = Icons.Default.Bookmark, contentDescription = null)
+                Text(
+                    text = stringResource(saveStatus.saveLabel()),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+            OutlinedButton(
+                onClick = onSharePaper,
+                enabled = shareStatus != EventRecordingStatus.RECORDING,
+                modifier = Modifier.weight(1f).testTag("share-paper-action"),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                Text(
+                    text = stringResource(R.string.action_share_paper),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+        }
+        saveStatus.feedbackRes()?.let { feedback ->
+            EngagementFeedback(
+                text = stringResource(feedback),
+                testTag = "save-paper-feedback",
+                isFailure = saveStatus == EventRecordingStatus.FAILED,
             )
         }
-        OutlinedButton(
-            onClick = onSharePaper,
-            modifier = Modifier.weight(1f).testTag("share-paper-action"),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
-            shape = MaterialTheme.shapes.small,
-        ) {
-            Icon(imageVector = Icons.Default.Share, contentDescription = null)
-            Text(
-                text = stringResource(R.string.action_share_paper),
-                modifier = Modifier.padding(start = 8.dp),
+        shareStatus.feedbackRes(isShare = true)?.let { feedback ->
+            EngagementFeedback(
+                text = stringResource(feedback),
+                testTag = "share-paper-feedback",
+                isFailure = shareStatus == EventRecordingStatus.FAILED,
             )
         }
     }
+}
+
+@Composable
+private fun EngagementFeedback(
+    text: String,
+    testTag: String,
+    isFailure: Boolean,
+) {
+    Text(
+        text = text,
+        modifier = Modifier.testTag(testTag),
+        style = MaterialTheme.typography.bodySmall,
+        color =
+            if (isFailure) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+    )
 }
 
 @Composable
@@ -353,7 +394,8 @@ private fun PaperDetailScreenPreview() {
                         sharePaper = {},
                         openSource = {},
                     ),
-                isSaved = false,
+                saveStatus = EventRecordingStatus.IDLE,
+                shareStatus = EventRecordingStatus.IDLE,
             )
         }
     }

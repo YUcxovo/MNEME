@@ -11,6 +11,6 @@ internal fun MnemeViewModel.collectUiSnapshot(): MnemeUiSnapshot {
     val qa by qaState.collectAsStateWithLifecycle()
     val graph by graphState.collectAsStateWithLifecycle()
     val interestEdit by interestEditState.collectAsStateWithLifecycle()
-    val savedPaperIds by behavioralEvents.savedPaperIds.collectAsStateWithLifecycle()
-    return MnemeUiSnapshot(home, paper, qa, graph, interestEdit, savedPaperIds)
+    val engagement by behavioralEvents.engagementState.collectAsStateWithLifecycle()
+    return MnemeUiSnapshot(home, paper, qa, graph, interestEdit, engagement)
 }

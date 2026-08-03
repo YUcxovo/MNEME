@@ -21,7 +21,8 @@ internal fun NavGraphBuilder.paperDetailNavigation(
         PaperDestination(
             paperId = paperId,
             state = snapshot.paper,
-            isSaved = paperId in snapshot.savedPaperIds,
+            saveStatus = snapshot.engagement.saveStatus(paperId),
+            shareStatus = snapshot.engagement.shareStatus(paperId),
             actions =
                 PaperDestinationActions(
                     retry = { actions.retryPaper(paperId) },

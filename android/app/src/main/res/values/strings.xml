@@ -83,8 +83,16 @@
     <string name="qa_source">SOURCE USED FOR THIS ANSWER</string>
     <string name="qa_source_note">Open the paper to inspect the cited section.</string>
     <string name="action_save_paper">Save</string>
+    <string name="action_saving_paper">Saving...</string>
     <string name="action_saved">Saved</string>
+    <string name="action_retry_save_paper">Retry save</string>
     <string name="action_share_paper">Share</string>
+    <string name="save_recording">Saving this paper...</string>
+    <string name="save_recorded">Saved after the action was added to the sync queue.</string>
+    <string name="save_record_failed">Save was not recorded. Tap Retry save to try again.</string>
+    <string name="share_recording">Adding the share action to the sync queue...</string>
+    <string name="share_recorded">Share action added to the sync queue.</string>
+    <string name="share_record_failed">Share action was not recorded. Tap Share to try again.</string>
     <string name="share_chooser_title">Share paper</string>
     <string name="saved_context_label">SAVED CONTEXT</string>
     <string name="saved_empty_body">This controlled demo does not include saved papers.</string>
