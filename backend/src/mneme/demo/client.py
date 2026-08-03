@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TypeVar
 from uuid import UUID
 
 import httpx
+from pydantic import BaseModel, ValidationError
 
 from mneme.api.schemas.events import EventIngestionResult, UserEvent
 from mneme.api.schemas.onboarding import SeedInitializationResult
 from mneme.api.schemas.papers import Paper
 from mneme.api.schemas.preferences import Preferences, PreferenceUpdate
+
+_ModelT = TypeVar("_ModelT", bound=BaseModel)
 
 
 class DemoSeedRemoteError(RuntimeError):
@@ -45,11 +49,11 @@ class DemoSeedClient:
             operation="onboarding",
             json={"arxiv_reference": arxiv_reference},
         )
-        return SeedInitializationResult.model_validate(payload)
+        return _validate(SeedInitializationResult, payload, "onboarding")
 
     async def get_paper(self, paper_id: UUID) -> Paper:
         payload = await self._request("GET", f"/v1/papers/{paper_id}", operation="paper_status")
-        return Paper.model_validate(payload)
+        return _validate(Paper, payload, "paper_status")
 
     async def replace_preferences(self, update: PreferenceUpdate) -> Preferences:
         payload = await self._request(
@@ -58,7 +62,7 @@ class DemoSeedClient:
             operation="preferences",
             json=update.model_dump(mode="json"),
         )
-        return Preferences.model_validate(payload)
+        return _validate(Preferences, payload, "preferences")
 
     async def ingest_events(self, events: list[UserEvent]) -> EventIngestionResult:
         payload = await self._request(
@@ -67,7 +71,7 @@ class DemoSeedClient:
             operation="events",
             json=[event.model_dump(mode="json") for event in events],
         )
-        return EventIngestionResult.model_validate(payload)
+        return _validate(EventIngestionResult, payload, "events")
 
     async def _request(
         self,
@@ -95,3 +99,10 @@ class DemoSeedClient:
 
     async def aclose(self) -> None:
         await self._client.aclose()
+
+
+def _validate(model: type[_ModelT], payload: object, operation: str) -> _ModelT:
+    try:
+        return model.model_validate(payload)
+    except ValidationError as exception:
+        raise DemoSeedRemoteError(operation, 200) from exception

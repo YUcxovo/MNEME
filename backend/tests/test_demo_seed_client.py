@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+from uuid import UUID
 
 import httpx
 import pytest
@@ -49,6 +50,30 @@ def test_demo_seed_client_rejects_invalid_success_json() -> None:
 
     with pytest.raises(DemoSeedRemoteError):
         asyncio.run(client.initialize("1706.03762"))
+    asyncio.run(client.aclose())
+
+
+@pytest.mark.base
+def test_demo_seed_client_classifies_wrong_success_schema_as_remote_failure() -> None:
+    http = httpx.AsyncClient(
+        base_url="http://127.0.0.1:8000",
+        transport=httpx.MockTransport(
+            lambda _request: httpx.Response(200, json={"secret": "not-a-paper"})
+        ),
+    )
+    client = DemoSeedClient(
+        base_url="http://127.0.0.1:8000",
+        token="token",
+        timeout_seconds=30,
+        client=http,
+    )
+
+    with pytest.raises(DemoSeedRemoteError) as captured:
+        asyncio.run(client.get_paper(UUID("00000000-0000-4000-8000-000000000001")))
+
+    assert captured.value.operation == "paper_status"
+    assert captured.value.status_code == 200
+    assert "not-a-paper" not in str(captured.value)
     asyncio.run(client.aclose())
 
 
