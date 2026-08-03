@@ -11,6 +11,7 @@ import pytest
 
 from mneme.cli import preflight_deployment as preflight_cli
 from mneme.core.config import Settings
+from mneme.core.timeouts import ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS
 from mneme.ops import preflight_probe
 from mneme.ops.preflight import (
     CheckStatus,
@@ -131,6 +132,10 @@ def test_static_preflight_accepts_complete_production_configuration() -> None:
         ({"api_graceful_timeout_seconds": 30}, "graceful_timeout"),
         ({"api_graceful_timeout_seconds": 91}, "service_timeouts"),
         ({"arq_job_timeout_seconds": 301}, "service_timeouts"),
+        (
+            {"arq_job_timeout_seconds": 60 + ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS - 1},
+            "service_timeouts",
+        ),
         ({"demo_token_sha256": "not-a-digest"}, "demo_identity"),
         ({"demo_user_id": None}, "demo_identity"),
         ({"anthropic_api_key": None}, "provider_routes"),
@@ -149,6 +154,18 @@ def test_static_preflight_accepts_complete_production_configuration() -> None:
 def test_static_preflight_fails_closed(overrides: dict[str, object], failed_check: str) -> None:
     checks = {check.id: check for check in static_preflight_checks(_settings(**overrides))}
     assert checks[failed_check].status is CheckStatus.FAIL
+
+
+@pytest.mark.base
+def test_static_preflight_accepts_minimum_worker_model_timeout_margin() -> None:
+    checks = {
+        check.id: check
+        for check in static_preflight_checks(
+            _settings(arq_job_timeout_seconds=60 + ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS)
+        )
+    }
+
+    assert checks["service_timeouts"].status is CheckStatus.PASS
 
 
 @pytest.mark.base
