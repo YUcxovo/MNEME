@@ -15,6 +15,10 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
+import com.mneme.app.data.local.MnemeDatabase
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -35,6 +39,16 @@ class MainActivityDeepLinkTest {
             rule.scenario.onActivity { activity = it }
             activity
         }
+    private val controlledFixtureDatabase by lazy {
+        MnemeDatabase.createControlledFixture(targetContext())
+    }
+    private val liveDatabase by lazy { MnemeDatabase.create(targetContext()) }
+
+    @After
+    fun closeDatabaseConnection() {
+        controlledFixtureDatabase.close()
+        liveDatabase.close()
+    }
 
     @Before
     fun requireControlledFixtureBuild() {
@@ -50,6 +64,7 @@ class MainActivityDeepLinkTest {
 
         // A cold ACTION_VIEW launch resolves through the normal repository-backed paper path.
         waitForText("Attention Is All You Need")
+        waitForOpenEventCount(1)
         assertEquals(coldLaunchIntent.dataString, coldActivity.intent.dataString)
 
         // Deliver a second valid link through Android while MainActivity is already on top.
@@ -59,6 +74,7 @@ class MainActivityDeepLinkTest {
         targetContext().startActivity(warmLaunchIntent.asWarmDelivery())
         waitForActivityIntent(warmLaunchIntent.dataString)
         waitForText("Attention predecessor")
+        waitForOpenEventCount(2)
         assertSame(coldActivity, composeRule.activity)
 
         // A malformed warm link reports the contract error without replacing the current
@@ -75,6 +91,13 @@ class MainActivityDeepLinkTest {
         // rather than revealing the earlier cold-start paper underneath it.
         composeRule.onNodeWithTag("navigate-back").performClick()
         composeRule.onNodeWithTag("briefing-screen").assertIsDisplayed()
+        val openedPaperIds = paperOpenEvents().mapNotNull { it.paperId }
+        assertEquals(1, openedPaperIds.count { it == SeededSkeletalContentRepository.PAPER_ID })
+        assertEquals(1, openedPaperIds.count { it == SeededSkeletalContentRepository.NEIGHBOR_PAPER_ID })
+        assertTrue(
+            "Controlled interactions must not enter the live upload queue.",
+            liveEvents().isEmpty(),
+        )
 
         // ActivityScenario identifies its Activity by the launch Intent. MainActivity
         // correctly replaces that Intent in onNewIntent, so restore the test harness's
@@ -94,6 +117,27 @@ class MainActivityDeepLinkTest {
             composeRule.activity.intent.dataString == dataString
         }
     }
+
+    private fun waitForOpenEventCount(expected: Int) {
+        composeRule.waitUntil(timeoutMillis = 5_000) { paperOpenEvents().size == expected }
+    }
+
+    private fun paperOpenEvents() =
+        runBlocking {
+            controlledFixtureDatabase
+                .behavioralEventDao()
+                .observeAll()
+                .first()
+                .filter { it.eventType == "paper_opened" }
+        }
+
+    private fun liveEvents() =
+        runBlocking {
+            liveDatabase
+                .behavioralEventDao()
+                .observeAll()
+                .first()
+        }
 
     private fun assertManifestResolvesPaperLink() {
         val context = targetContext()
