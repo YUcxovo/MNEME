@@ -14,6 +14,8 @@
 !backend/
 !docs/
 !/docs/**
+!/deploy/
+!/deploy/**
 !/tools/
 !/tools/**
 

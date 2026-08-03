@@ -1,0 +1,31 @@
+[Unit]
+Description=Mneme ARQ worker
+After=network-online.target mneme-migrate.service
+Wants=network-online.target
+Requires=mneme-migrate.service
+
+[Service]
+Type=simple
+User=${service_user}
+Group=${service_group}
+WorkingDirectory=${install_dir}/backend
+EnvironmentFile=${environment_file}
+Environment=PYTHONUNBUFFERED=1
+ExecStart=${install_dir}/backend/.venv/bin/arq mneme.tasks.worker.WorkerSettings
+TimeoutStopSec=105
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+StateDirectory=mneme
+ReadWritePaths=${paper_data_dir}
+UMask=0027
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
