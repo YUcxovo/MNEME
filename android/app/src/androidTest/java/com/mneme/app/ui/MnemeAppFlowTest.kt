@@ -26,6 +26,7 @@ import com.mneme.app.ui.theme.MnemeTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
+import java.io.IOException
 
 class MnemeAppFlowTest {
     @get:Rule
@@ -292,6 +293,51 @@ class MnemeAppFlowTest {
     }
 
     @Test
+    fun failedSaveWriteStaysVisibleAndCanBeRetried() {
+        val tracker = RecordingBehavioralEventTracker(saveFailuresRemaining = 1)
+        val viewModel = MnemeViewModel(ControlledFixtureDataRepository(), tracker)
+        composeRule.setContent {
+            MnemeTheme {
+                MnemeApp(viewModel = viewModel, onOpenSource = {}, onSharePaper = { _, _ -> })
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Attention Is All You Need").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithText("Attention Is All You Need").performClick()
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("save-paper-action"),
+        )
+        composeRule.onNodeWithTag("save-paper-action").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            viewModel.behavioralEvents.engagementState.value.saveStatus(
+                SeededSkeletalContentRepository.PAPER_ID,
+            ) == EventRecordingStatus.FAILED
+        }
+        composeRule.onNodeWithTag("save-paper-action").assertIsEnabled()
+        composeRule
+            .onNodeWithText("Save was not recorded. Tap Retry save to try again.")
+            .assertIsDisplayed()
+
+        composeRule.onNodeWithTag("save-paper-action").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            viewModel.behavioralEvents.engagementState.value.saveStatus(
+                SeededSkeletalContentRepository.PAPER_ID,
+            ) == EventRecordingStatus.RECORDED
+        }
+
+        composeRule.onNodeWithTag("save-paper-action").assertIsNotEnabled()
+        composeRule.runOnIdle {
+            assertEquals(2, tracker.saveAttempts)
+            assertEquals(
+                listOf(SeededSkeletalContentRepository.PAPER_ID),
+                tracker.savedPaperIds,
+            )
+        }
+    }
+
+    @Test
     fun followUpQuestionsRemainInOnePaperConversation() {
         val viewModel = MnemeViewModel(ControlledFixtureDataRepository())
         composeRule.setContent {
@@ -369,12 +415,15 @@ class MnemeAppFlowTest {
         }
     }
 
-    private class RecordingBehavioralEventTracker : BehavioralEventTracker {
+    private class RecordingBehavioralEventTracker(
+        private var saveFailuresRemaining: Int = 0,
+    ) : BehavioralEventTracker {
         val impressionBatches = mutableListOf<List<String>>()
         val openedPaperIds = mutableListOf<String>()
         val savedPaperIds = mutableListOf<String>()
         val sharedPaperIds = mutableListOf<String>()
         val questionPaperIds = mutableListOf<String>()
+        var saveAttempts = 0
 
         override suspend fun recordPaperImpressions(paperIds: List<String>) {
             impressionBatches += paperIds
@@ -385,6 +434,11 @@ class MnemeAppFlowTest {
         }
 
         override suspend fun recordPaperSaved(paperId: String) {
+            saveAttempts += 1
+            if (saveFailuresRemaining > 0) {
+                saveFailuresRemaining -= 1
+                throw IOException("Room write failed")
+            }
             savedPaperIds += paperId
         }
 
