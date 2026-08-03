@@ -182,10 +182,19 @@ def run_backup_command(arguments: tuple[str, ...], timeout_seconds: int) -> None
 def _prepare_output_directory(path: Path) -> None:
     if path.is_symlink():
         raise BackupConfigurationError("Backup output directory cannot be a symbolic link")
-    path.mkdir(parents=True, mode=0o700, exist_ok=True)
-    path.chmod(0o700)
-    if not path.is_dir():
-        raise BackupConfigurationError("Backup output location is not a directory")
+    created = False
+    try:
+        path.mkdir(parents=True, mode=0o700, exist_ok=False)
+        created = True
+    except FileExistsError:
+        pass
+    if path.is_symlink() or not path.is_dir():
+        raise BackupConfigurationError("Backup output location is not a safe directory")
+    metadata = path.stat()
+    if metadata.st_uid not in {0, os.geteuid()} or stat.S_IMODE(metadata.st_mode) & 0o077:
+        raise BackupConfigurationError("Backup output directory ownership or mode is unsafe")
+    if created:
+        path.chmod(0o700)
 
 
 @contextmanager

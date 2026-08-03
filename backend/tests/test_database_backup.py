@@ -172,6 +172,20 @@ def test_backup_config_rejects_unsafe_bounds(values: dict[str, object]) -> None:
 
 
 @pytest.mark.base
+def test_backup_rejects_existing_shared_directory_without_chmod(tmp_path: Path) -> None:
+    tmp_path.chmod(0o755)
+
+    with pytest.raises(BackupConfigurationError, match="ownership or mode"):
+        run_database_backup(
+            BackupConfig(output_dir=tmp_path),
+            now=NOW,
+            runner=FakeCommandRunner(),
+        )
+
+    assert stat.S_IMODE(tmp_path.stat().st_mode) == 0o755
+
+
+@pytest.mark.base
 def test_backup_command_hides_subprocess_diagnostics(monkeypatch: pytest.MonkeyPatch) -> None:
     def timed_out(*_args: object, **_kwargs: object) -> subprocess.CompletedProcess[str]:
         raise subprocess.TimeoutExpired("postgresql://user:secret@db", 30)
