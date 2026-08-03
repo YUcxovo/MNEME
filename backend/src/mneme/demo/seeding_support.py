@@ -66,6 +66,7 @@ class DemoSeedResult:
     digest_arxiv_ids: tuple[str, ...]
     paper_count: int
     ready_papers: int
+    partial_papers: int
     events_accepted: int
     events_duplicates: int
     user_created: bool
@@ -81,6 +82,7 @@ class DemoSeedResult:
             "manifest_id": self.manifest_id,
             "manifest_sha256": self.manifest_sha256,
             "paper_count": self.paper_count,
+            "partial_papers": self.partial_papers,
             "preferences_created": self.preferences_created,
             "ready_papers": self.ready_papers,
             "schema_version": "demo-seed-result-v1",

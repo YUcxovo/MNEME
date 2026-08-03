@@ -148,6 +148,7 @@ def test_seed_demo_waits_for_ready_and_replays_stable_events(tmp_path: Path) -> 
 
     assert first.paper_count == 5
     assert first.ready_papers == 5
+    assert first.partial_papers == 0
     assert first.events_accepted == len(manifest.events)
     assert first.events_duplicates == 0
     assert first.seed_paper_id == str(SEED_PAPER_ID)
@@ -181,6 +182,35 @@ def test_seed_demo_waits_for_ready_and_replays_stable_events(tmp_path: Path) -> 
     assert [event.event_id for event in resumed_client.events] == [
         event.event_id for event in first_client.events
     ]
+
+
+@pytest.mark.base
+def test_seed_demo_accepts_permanent_partial_candidate(tmp_path: Path) -> None:
+    partial_paper_id = PAPER_IDS[-1]
+
+    class PartialSeedClient(FakeSeedClient):
+        async def get_paper(self, paper_id: UUID) -> Paper:
+            self.calls.append(f"paper:{paper_id}")
+            processing_status = (
+                ProcessingStatus.PARTIAL if paper_id == partial_paper_id else ProcessingStatus.READY
+            )
+            return Paper.model_construct(id=paper_id, processing_status=processing_status)
+
+    result = asyncio.run(
+        seed_demo(
+            _settings(),
+            load_default_demo_seed_manifest(),
+            DemoSeedConfig(lock_file=tmp_path / "seed.lock"),
+            token="demo-secret",
+            client=PartialSeedClient(),
+            bootstrapper=_bootstrap,
+            state_verifier=_verify_state,
+        )
+    )
+
+    assert result.paper_count == 5
+    assert result.ready_papers == 4
+    assert result.partial_papers == 1
 
 
 @pytest.mark.base

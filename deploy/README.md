@@ -62,14 +62,14 @@ Validate the packaged plan without PostgreSQL, Redis, the API, or external provi
 uv run --project backend python -m mneme.cli.seed_demo --dry-run
 ```
 
-On the host, the manual service bootstraps the configured user idempotently, invokes seed onboarding for arXiv `1706.03762`, requires the original seed and all five returned briefing papers to reach `ready`, replaces explicit preferences, and posts deterministic behavior events:
+On the host, the manual service bootstraps the configured user idempotently, invokes seed onboarding for arXiv `1706.03762`, requires the original seed to reach `ready` and all five returned briefing papers to reach the usable `ready` or `partial` state, replaces explicit preferences, and posts deterministic behavior events:
 
 ```bash
 sudo systemctl start mneme-seed.service
 sudo journalctl -u mneme-seed.service
 ```
 
-The successful `demo-seed-result-v1` record includes `seed_paper_id`, `digest_paper_ids`, and `digest_arxiv_ids`; retain the sanitized result and copy `seed_paper_id` into `MNEME_MVP_SMOKE_PAPER_ID` before the smoke run. Reruns on the same installation reuse the onboarding result and stable manifest event UUIDs, reclaim only failed jobs whose current pipeline and artifact/model identities still match, and require the persisted `demo_seed` event set to match the manifest exactly. This is installation-local replay, not a frozen cross-host data set: the five onboarding candidates and provider-generated summaries, embeddings, answers, and graph observations may vary with live provider state. The manifest fabricates none of those artifacts. Changing a manifest alone does not rotate an existing onboarding digest; use an intentionally new demo identity or an approved reset procedure when the candidate set or event anchor must change.
+The successful `demo-seed-result-v1` record includes `seed_paper_id`, `digest_paper_ids`, `digest_arxiv_ids`, and separate counts for candidates in `ready` and permanent degraded `partial` states; retain the sanitized result and copy `seed_paper_id` into `MNEME_MVP_SMOKE_PAPER_ID` before the smoke run. Reruns on the same installation reuse the onboarding result and stable manifest event UUIDs, reclaim only failed jobs whose current pipeline and artifact/model identities still match, and require the persisted `demo_seed` event set to match the manifest exactly. This is installation-local replay, not a frozen cross-host data set: the five onboarding candidates and provider-generated summaries, embeddings, answers, and graph observations may vary with live provider state. The manifest fabricates none of those artifacts. Changing a manifest alone does not rotate an existing onboarding digest; use an intentionally new demo identity or an approved reset procedure when the candidate set or event anchor must change.
 
 ## 5. Run the public MVP acceptance gate
 

@@ -43,6 +43,7 @@ def test_demo_seed_cli_prints_safe_result(
         digest_arxiv_ids=("2401.00001",),
         paper_count=5,
         ready_papers=5,
+        partial_papers=0,
         events_accepted=8,
         events_duplicates=0,
         user_created=True,
@@ -64,6 +65,8 @@ def test_demo_seed_cli_prints_safe_result(
     assert payload["status"] == "ok"
     assert payload["seed_paper_id"] == "00000000-0000-0000-0000-000000000100"
     assert payload["digest_arxiv_ids"] == ["2401.00001"]
+    assert payload["ready_papers"] == 5
+    assert payload["partial_papers"] == 0
     assert "raw-secret" not in json.dumps(payload)
 
 

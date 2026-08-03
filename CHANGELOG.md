@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   `claims` fields in the summary API contract.
 - Added a provider-neutral production process configuration and deterministic renderer for loopback Gunicorn, Nginx bootstrap/TLS sites, hardened systemd services, and scheduler timers without provisioning or mutating a host.
 - Added fail-closed production preflight with service-envelope, reserved-connection, and backup-target identity checks; validated local PostgreSQL backup creation and retention; private platform-health checks; and sanitized machine-readable CLI results.
-- Added a strict demo manifest, installation-local resumable seeding with current-artifact recovery and exact persisted-state verification, stable ready seed/digest paper identities, and a bounded public-API MVP smoke sequence with cross-resource identity checks and optional source-matched Q&A.
+- Added a strict demo manifest, installation-local resumable seeding with current-artifact recovery, exact persisted-state verification, truthful usable-paper state counts, and a bounded public-API MVP smoke sequence with cross-resource identity checks and optional source-matched Q&A.
 - Added CI rendering plus native systemd and Nginx syntax validation for production deployment artifacts.
 - Added separate public liveness and bounded PostgreSQL/Redis readiness probes with safe dependency-status responses.
 - Added a bounded SQL-backed `platform-operations-v1` JSON report for jobs, papers, parse quality, and briefing generation without raw failure diagnostics.

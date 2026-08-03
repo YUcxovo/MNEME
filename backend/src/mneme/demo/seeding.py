@@ -56,7 +56,7 @@ async def seed_demo(
         [Settings, DemoSeedManifest, list[UserEvent]], Awaitable[UUID]
     ] = verify_persisted_seed_state,
 ) -> DemoSeedResult:
-    """Bootstrap, initialize, wait for READY, then replay deterministic events."""
+    """Bootstrap, initialize, wait for usable papers, then replay deterministic events."""
     resolved_client = client or DemoSeedClient(
         base_url=config.base_url,
         token=token,
@@ -72,7 +72,7 @@ async def seed_demo(
             entries_by_rank = {entry.rank: entry for entry in initialization.digest.entries}
             if set(entries_by_rank) != set(range(1, manifest.onboarding_limit + 1)):
                 raise DemoSeedError("Seed onboarding returned an incomplete digest")
-            await _wait_until_ready(
+            ready_papers, partial_papers = await _wait_until_usable(
                 resolved_client,
                 tuple(entry.paper.id for entry in entries_by_rank.values()),
                 timeout_seconds=config.ready_timeout_seconds,
@@ -119,7 +119,8 @@ async def seed_demo(
                 digest_paper_ids=tuple(str(entry.paper.id) for entry in ordered_entries),
                 digest_arxiv_ids=tuple(entry.paper.arxiv_id for entry in ordered_entries),
                 paper_count=len(entries_by_rank),
-                ready_papers=len(entries_by_rank),
+                ready_papers=ready_papers,
+                partial_papers=partial_papers,
                 events_accepted=ingestion.accepted,
                 events_duplicates=ingestion.duplicates,
                 user_created=bootstrap.user_created,
@@ -135,27 +136,35 @@ async def seed_demo(
                 raise DemoSeedError("Demo seed client did not close cleanly") from exception
 
 
-async def _wait_until_ready(
+async def _wait_until_usable(
     client: DemoSeedOperations,
     paper_ids: tuple[UUID, ...],
     *,
     timeout_seconds: float,
     poll_interval_seconds: float,
-) -> None:
+) -> tuple[int, int]:
     try:
         async with asyncio.timeout(timeout_seconds):
+            statuses: dict[UUID, ProcessingStatus] = {}
             pending = set(paper_ids)
             while pending:
                 for paper_id in tuple(pending):
                     paper = await _translate_remote(client.get_paper(paper_id))
                     if paper.processing_status is ProcessingStatus.FAILED:
                         raise DemoSeedError("A demo paper failed during preparation")
-                    if paper.processing_status is ProcessingStatus.READY:
+                    if paper.processing_status in {
+                        ProcessingStatus.READY,
+                        ProcessingStatus.PARTIAL,
+                    }:
+                        statuses[paper_id] = paper.processing_status
                         pending.remove(paper_id)
                 if pending:
                     await asyncio.sleep(poll_interval_seconds)
+            ready = sum(status is ProcessingStatus.READY for status in statuses.values())
+            partial = sum(status is ProcessingStatus.PARTIAL for status in statuses.values())
+            return ready, partial
     except TimeoutError as exception:
-        raise DemoSeedError("Demo papers did not become ready before the deadline") from exception
+        raise DemoSeedError("Demo papers did not become usable before the deadline") from exception
 
 
 async def _translate_remote(awaitable: Awaitable[_T]) -> _T:
