@@ -23,4 +23,4 @@ ReadWritePaths=${paper_data_dir}
 ReadOnlyPaths=/etc/mneme/pg_service.conf /etc/mneme/pgpass
 UMask=0077
 
-# API and worker startup require this gate; any failed check prevents both units from starting.
+# Manual operator gate; API and worker retain migration-only runtime dependencies.

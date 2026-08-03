@@ -11,7 +11,9 @@ Group=${service_group}
 WorkingDirectory=${install_dir}/backend
 EnvironmentFile=${environment_file}
 ExecStart=${install_dir}/backend/.venv/bin/python -m mneme.cli.seed_demo --base-url http://${api_host}:${api_port} --token-file /etc/mneme/demo.token --lock-file /var/lib/mneme/demo-seed.lock
-TimeoutStartSec=1800
+# The CLI has separate 900-second API and readiness envelopes, plus bounded
+# preference/event replay and final persistence verification.
+TimeoutStartSec=2400
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true

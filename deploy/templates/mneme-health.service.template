@@ -10,7 +10,9 @@ Group=${service_group}
 WorkingDirectory=${install_dir}/backend
 EnvironmentFile=${environment_file}
 ExecStart=${install_dir}/backend/.venv/bin/python -m mneme.cli.check_platform --base-url http://${api_host}:${api_port} --backup-dir ${backup_dir}
-TimeoutStartSec=60
+# Health probes are intentionally independent and currently run in sequence.
+# Keep the systemd envelope above their aggregate per-probe timeout budget.
+TimeoutStartSec=180
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true

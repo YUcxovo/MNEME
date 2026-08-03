@@ -1,5 +1,5 @@
 [Unit]
-Description=Run the Mneme Research Briefing scheduler weekly
+Description=Check the Mneme weekly Research Briefing scheduler daily
 
 [Timer]
 OnCalendar=*-*-* 03:00:00 UTC

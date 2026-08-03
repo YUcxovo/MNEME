@@ -12,7 +12,9 @@ Environment=PGSERVICE=mneme-backup
 Environment=PGSERVICEFILE=/etc/mneme/pg_service.conf
 Environment=PGPASSFILE=/etc/mneme/pgpass
 ExecStart=${install_dir}/backend/.venv/bin/python -m mneme.cli.backup_database --output-dir ${backup_dir}
-TimeoutStartSec=1800
+# The CLI may spend up to 900 seconds on each of pg_dump and pg_restore,
+# followed by archive hashing and atomic manifest publication.
+TimeoutStartSec=2100
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
