@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.models.digest import Digest, DigestType
@@ -107,6 +107,15 @@ class PlatformOperationsRepository:
                     .label("running"),
                     func.count(PipelineJob.id)
                     .filter(
+                        PipelineJob.status == JobStatus.RUNNING,
+                        or_(
+                            PipelineJob.started_at.is_(None),
+                            PipelineJob.started_at < stale_before,
+                        ),
+                    )
+                    .label("stale_running"),
+                    func.count(PipelineJob.id)
+                    .filter(
                         PipelineJob.status == JobStatus.QUEUED,
                         PipelineJob.dispatched_at.is_(None),
                     )
@@ -121,7 +130,9 @@ class PlatformOperationsRepository:
                 ).where(PipelineJob.status.in_((JobStatus.QUEUED, JobStatus.RUNNING)))
             )
         ).one()
-        queued, running, undispatched_queued, stale_dispatched_queued = map(int, active_row)
+        queued, running, stale_running, undispatched_queued, stale_dispatched_queued = map(
+            int, active_row
+        )
 
         failed_window = (
             PipelineJob.status == JobStatus.FAILED,
@@ -234,6 +245,7 @@ class PlatformOperationsRepository:
                 "by_stage_status": job_activity,
                 "queued": queued,
                 "running": running,
+                "stale_running": stale_running,
                 "undispatched_queued": undispatched_queued,
                 "stale_dispatched_queued": stale_dispatched_queued,
                 "failed": failed_jobs,

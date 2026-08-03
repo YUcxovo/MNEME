@@ -110,8 +110,14 @@ async def _operations_check(
         jobs = cast(dict[str, object], snapshot["jobs"])
         failed = int(cast(int, jobs["failed"]))
         undispatched = int(cast(int, jobs["undispatched_queued"]))
-        stale = int(cast(int, jobs["stale_dispatched_queued"]))
-        passed = failed <= config.maximum_failed_jobs and undispatched == 0 and stale == 0
+        stale_dispatched = int(cast(int, jobs["stale_dispatched_queued"]))
+        stale_running = int(cast(int, jobs["stale_running"]))
+        passed = (
+            failed <= config.maximum_failed_jobs
+            and undispatched == 0
+            and stale_dispatched == 0
+            and stale_running == 0
+        )
         return HealthCheck(
             id="pipeline_operations",
             status=HealthCheckStatus.PASS if passed else HealthCheckStatus.FAIL,
@@ -120,7 +126,12 @@ async def _operations_check(
                 if passed
                 else "Recent pipeline operations exceed thresholds."
             ),
-            details={"failed": failed, "stale": stale, "undispatched": undispatched},
+            details={
+                "failed": failed,
+                "stale_dispatched": stale_dispatched,
+                "stale_running": stale_running,
+                "undispatched": undispatched,
+            },
         )
     except Exception:
         return _failed("pipeline_operations", "Pipeline operations could not be verified.")

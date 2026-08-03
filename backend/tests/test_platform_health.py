@@ -29,7 +29,12 @@ class FakeHealthProbe:
             "api_readiness": True,
             "worker_alive": True,
             "operations_snapshot": {
-                "jobs": {"failed": 0, "stale_dispatched_queued": 0, "undispatched_queued": 0}
+                "jobs": {
+                    "failed": 0,
+                    "stale_dispatched_queued": 0,
+                    "stale_running": 0,
+                    "undispatched_queued": 0,
+                }
             },
             "paper_disk_space": (1000, 500),
             "backup_disk_space": (1000, 400),
@@ -137,6 +142,20 @@ def test_platform_health_reports_all_healthy_aggregates(tmp_path: Path) -> None:
                     "jobs": {
                         "failed": 1,
                         "stale_dispatched_queued": 0,
+                        "stale_running": 0,
+                        "undispatched_queued": 0,
+                    }
+                }
+            },
+            "pipeline_operations",
+        ),
+        (
+            {
+                "operations_snapshot": {
+                    "jobs": {
+                        "failed": 0,
+                        "stale_dispatched_queued": 0,
+                        "stale_running": 1,
                         "undispatched_queued": 0,
                     }
                 }

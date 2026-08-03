@@ -52,8 +52,13 @@ async def _exercise_snapshot() -> None:
     recent = now - timedelta(hours=1)
     old = now - timedelta(hours=25)
     user_id, ready_paper_id, old_paper_id = uuid4(), uuid4(), uuid4()
-    queued_job_id, stale_job_id, failed_job_id = uuid4(), uuid4(), uuid4()
-    job_ids = (queued_job_id, stale_job_id, failed_job_id)
+    queued_job_id, stale_job_id, running_job_id, failed_job_id = (
+        uuid4(),
+        uuid4(),
+        uuid4(),
+        uuid4(),
+    )
+    job_ids = (queued_job_id, stale_job_id, running_job_id, failed_job_id)
     paper_ids = (ready_paper_id, old_paper_id)
     private_error = f"private-worker-detail-{suffix}"
     private_identity = f"private-job-identity-{suffix}"
@@ -128,6 +133,17 @@ async def _exercise_snapshot() -> None:
                         updated_at=recent,
                     ),
                     PipelineJob(
+                        id=running_job_id,
+                        idempotency_key=f"ops-{suffix}-running",
+                        stage=PipelineStage.FETCH_METADATA,
+                        status=JobStatus.RUNNING,
+                        attempt_count=1,
+                        pipeline_version="ops-test-v1",
+                        started_at=now - timedelta(minutes=10),
+                        created_at=recent,
+                        updated_at=recent,
+                    ),
+                    PipelineJob(
                         id=failed_job_id,
                         idempotency_key=private_identity,
                         stage=PipelineStage.PARSE_PDF,
@@ -155,9 +171,11 @@ async def _exercise_snapshot() -> None:
         baseline_jobs = cast(dict[str, object], baseline["jobs"])
         jobs = cast(dict[str, object], report["jobs"])
         expected_job_deltas = {
-            "created": 2,
-            "dispatch_attempts": 1,
+            "created": 3,
+            "dispatch_attempts": 2,
             "queued": 2,
+            "running": 1,
+            "stale_running": 1,
             "undispatched_queued": 1,
             "stale_dispatched_queued": 1,
             "failed": 1,
