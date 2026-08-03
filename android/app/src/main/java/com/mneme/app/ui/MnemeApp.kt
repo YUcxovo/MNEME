@@ -2,7 +2,6 @@
 
 package com.mneme.app.ui
 
-import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,17 +16,17 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -47,6 +46,7 @@ import com.mneme.app.data.demo.SkeletalContentRepository
 import com.mneme.app.ui.component.LoadingState
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.navigation.BriefingRoute
+import com.mneme.app.ui.navigation.ExternalNavigationRequest
 import com.mneme.app.ui.navigation.GraphRoute
 import com.mneme.app.ui.navigation.InterestsRoute
 import com.mneme.app.ui.navigation.PaperDetailRoute
@@ -64,12 +64,13 @@ private enum class TopLevelDestination(
     INTERESTS(InterestsRoute, R.string.nav_interests),
     ;
 
-    fun icon(): ImageVector =
-        when (this) {
-            BRIEFING -> Icons.Default.Home
-            SAVED -> Icons.Default.Bookmark
-            INTERESTS -> Icons.Default.Interests
-        }
+    val icon: ImageVector
+        get() =
+            when (this) {
+                BRIEFING -> Icons.Default.Home
+                SAVED -> Icons.Default.Bookmark
+                INTERESTS -> Icons.Default.Interests
+            }
 }
 
 internal data class MnemeUiSnapshot(
@@ -96,59 +97,64 @@ internal data class MnemeUiActions(
     val sharePaper: (String) -> Unit,
 )
 
-internal data class MnemeExternalActions(
-    val openSource: (String) -> Unit,
-    val sharePaper: (String, String) -> Unit,
-)
-
 @Composable
 fun mnemeApp(
     viewModel: MnemeViewModel,
     modifier: Modifier = Modifier,
     onOpenSource: ((String) -> Unit)? = null,
     onSharePaper: ((String, String) -> Unit)? = null,
+    externalNavigation: MnemeExternalNavigationBinding = MnemeExternalNavigationBinding(),
 ) {
     val onboardingState by viewModel.onboardingState.collectAsStateWithLifecycle()
     val snapshot = viewModel.collectUiSnapshot()
+    val externalEnvironment =
+        rememberMnemeExternalEnvironment(onOpenSource, onSharePaper, externalNavigation)
     Surface(
         color = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
     ) {
         when (val current = onboardingState) {
             OnboardingUiState.Checking ->
-                Box(
-                    modifier = modifier.fillMaxSize().testTag("briefing-restore-loading"),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    LoadingState(message = stringResource(R.string.briefing_restore_loading))
+                OnboardingWithSnackbar(externalEnvironment.snackbarHostState) {
+                    Box(
+                        modifier = modifier.fillMaxSize().testTag("briefing-restore-loading"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingState(message = stringResource(R.string.briefing_restore_loading))
+                    }
                 }
             OnboardingUiState.AwaitingSeed ->
-                SeedOnboardingScreen(
-                    initialReference = "",
-                    errorMessage = null,
-                    onSubmit = viewModel::initializeFromSeed,
-                    modifier = modifier,
-                )
+                OnboardingWithSnackbar(externalEnvironment.snackbarHostState) {
+                    SeedOnboardingScreen(
+                        initialReference = "",
+                        errorMessage = null,
+                        onSubmit = viewModel::initializeFromSeed,
+                        modifier = modifier,
+                    )
+                }
             is OnboardingUiState.Loading ->
-                Box(
-                    modifier = modifier.fillMaxSize().testTag("seed-onboarding-loading"),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    LoadingState(message = stringResource(R.string.onboarding_loading))
+                OnboardingWithSnackbar(externalEnvironment.snackbarHostState) {
+                    Box(
+                        modifier = modifier.fillMaxSize().testTag("seed-onboarding-loading"),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LoadingState(message = stringResource(R.string.onboarding_loading))
+                    }
                 }
             is OnboardingUiState.Error ->
-                SeedOnboardingScreen(
-                    initialReference = current.arxivReference,
-                    errorMessage = current.message,
-                    onSubmit = viewModel::initializeFromSeed,
-                    modifier = modifier,
-                )
+                OnboardingWithSnackbar(externalEnvironment.snackbarHostState) {
+                    SeedOnboardingScreen(
+                        initialReference = current.arxivReference,
+                        errorMessage = current.message,
+                        onSubmit = viewModel::initializeFromSeed,
+                        modifier = modifier,
+                    )
+                }
             OnboardingUiState.Ready ->
                 mnemeAppScaffold(
                     snapshot = snapshot,
                     actions = viewModel.uiActions(),
-                    onOpenSource = onOpenSource,
-                    onSharePaper = onSharePaper,
+                    externalEnvironment = externalEnvironment,
                     modifier = modifier,
                 )
         }
@@ -161,13 +167,19 @@ fun mnemeApp(
     repository: SkeletalContentRepository = SeededSkeletalContentRepository,
     onOpenSource: ((String) -> Unit)? = null,
     onSharePaper: ((String, String) -> Unit)? = null,
+    externalNavigation: MnemeExternalNavigationBinding = MnemeExternalNavigationBinding(),
 ) {
     val state = remember(repository) { FixtureMnemeState(repository) }
+    val externalEnvironment =
+        rememberMnemeExternalEnvironment(
+            openSourceOverride = onOpenSource,
+            sharePaperOverride = onSharePaper,
+            navigation = externalNavigation,
+        )
     mnemeAppScaffold(
         snapshot = state.snapshot,
         actions = state.actions,
-        onOpenSource = onOpenSource,
-        onSharePaper = onSharePaper,
+        externalEnvironment = externalEnvironment,
         modifier = modifier,
     )
 }
@@ -176,46 +188,41 @@ fun mnemeApp(
 private fun mnemeAppScaffold(
     snapshot: MnemeUiSnapshot,
     actions: MnemeUiActions,
-    onOpenSource: ((String) -> Unit)?,
-    onSharePaper: ((String, String) -> Unit)?,
+    externalEnvironment: MnemeExternalEnvironment,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val topLevelDestination = currentDestination.topLevelDestination()
-    val uriHandler = LocalUriHandler.current
-    val context = LocalContext.current
-    val sourceOpener = onOpenSource ?: { url: String -> uriHandler.openUri(url) }
-    val paperSharer =
-        onSharePaper ?: { title: String, url: String ->
-            val sendIntent =
-                Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_SUBJECT, title)
-                    putExtra(Intent.EXTRA_TEXT, "$title\n$url")
-                }
-            context.startActivity(
-                Intent.createChooser(
-                    sendIntent,
-                    context.getString(R.string.share_chooser_title),
+    val navigationReady = backStackEntry != null
+
+    LaunchedEffect(externalEnvironment.navigation.request, navigationReady) {
+        val request = externalEnvironment.navigation.request
+        if (!navigationReady) return@LaunchedEffect
+        if (request is ExternalNavigationRequest.OpenPaper) {
+            navController.navigate(
+                PaperDetailRoute(
+                    paperId = request.paperId,
+                    externalRequestId = request.requestId,
                 ),
-            )
+            ) {
+                popUpTo(navController.graph.findStartDestination().id)
+                launchSingleTop = true
+            }
+            externalEnvironment.navigation.onRequestConsumed(request.requestId)
         }
-    val externalActions =
-        MnemeExternalActions(
-            openSource = sourceOpener,
-            sharePaper = paperSharer,
-        )
+    }
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
+        snackbarHost = { SnackbarHost(externalEnvironment.snackbarHostState) },
         topBar = {
             MnemeTopAppBar(
                 titleRes = currentDestination.appBarTitleRes(topLevelDestination),
-                kickerRes = topLevelDestination.kickerRes(),
+                kickerRes = topLevelDestination.kickerRes,
                 showBrandMark = topLevelDestination != null,
                 canNavigateBack = currentDestination != null && topLevelDestination == null,
                 onNavigateBack = navController::popBackStack,
@@ -234,7 +241,7 @@ private fun mnemeAppScaffold(
             navController = navController,
             snapshot = snapshot,
             actions = actions,
-            externalActions = externalActions,
+            externalActions = externalEnvironment.actions,
             modifier = Modifier.padding(innerPadding),
         )
     }
@@ -257,7 +264,7 @@ private fun mnemeNavigationBar(
                 onClick = { onDestinationSelected(destination) },
                 icon = {
                     Icon(
-                        imageVector = destination.icon(),
+                        imageVector = destination.icon,
                         contentDescription = label,
                     )
                 },
@@ -350,13 +357,16 @@ private fun NavDestination?.appBarTitleRes(topLevelDestination: TopLevelDestinat
         else -> titleRes()
     }
 
-@StringRes
-private fun TopLevelDestination?.kickerRes(): Int? =
-    when (this) {
-        TopLevelDestination.BRIEFING -> R.string.kicker_research_briefing
-        TopLevelDestination.SAVED, TopLevelDestination.INTERESTS -> R.string.kicker_research_memory
-        null -> null
-    }
+private val TopLevelDestination?.kickerRes: Int?
+    @StringRes
+    get() =
+        when (this) {
+            TopLevelDestination.BRIEFING -> R.string.kicker_research_briefing
+            TopLevelDestination.SAVED, TopLevelDestination.INTERESTS -> {
+                R.string.kicker_research_memory
+            }
+            null -> null
+        }
 
 @StringRes
 private fun NavDestination?.titleRes(): Int =
