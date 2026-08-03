@@ -9,6 +9,7 @@ import os
 import sys
 from pathlib import Path
 from typing import Never
+from uuid import UUID
 
 from mneme.demo.smoke import run_mvp_smoke
 from mneme.demo.smoke_types import (
@@ -35,15 +36,16 @@ def build_parser() -> argparse.ArgumentParser:
     parser = JsonArgumentParser(description="Exercise the deployed Mneme MVP over HTTP.")
     parser.add_argument(
         "--base-url",
-        default=os.environ.get("MNEME_LIVE_CORE_BASE_URL", "http://127.0.0.1:8000"),
+        default=os.environ.get("MNEME_MVP_SMOKE_BASE_URL", "http://127.0.0.1:8000"),
     )
     parser.add_argument(
         "--seed",
-        default=os.environ.get("MNEME_LIVE_CORE_SEED", "1706.03762"),
+        default=os.environ.get("MNEME_MVP_SMOKE_SEED", "1706.03762"),
     )
-    parser.add_argument("--question", default=os.environ.get("MNEME_LIVE_CORE_QUESTION"))
+    parser.add_argument("--paper-id", type=UUID, default=os.environ.get("MNEME_MVP_SMOKE_PAPER_ID"))
+    parser.add_argument("--question", default=os.environ.get("MNEME_MVP_SMOKE_QUESTION"))
     parser.add_argument("--token-file", type=Path)
-    parser.add_argument("--request-timeout-seconds", type=float, default=30)
+    parser.add_argument("--request-timeout-seconds", type=float, default=120)
     parser.add_argument("--deadline-seconds", type=float, default=600)
     parser.add_argument("--poll-interval-seconds", type=float, default=1)
     parser.add_argument("--maximum-summary-jobs", type=int, default=8)
@@ -70,7 +72,7 @@ def _print_config_error() -> None:
 def _resolve_token(token_file: Path | None) -> str:
     if token_file is not None:
         return read_private_smoke_token(token_file)
-    token = os.environ.get("MNEME_LIVE_CORE_TOKEN")
+    token = os.environ.get("MNEME_MVP_SMOKE_TOKEN")
     if token is None:
         raise MvpSmokeConfigurationError("Smoke token is not configured")
     return validate_smoke_token(token)
@@ -83,6 +85,7 @@ def main() -> None:
         config = MvpSmokeConfig(
             base_url=arguments.base_url,
             seed_arxiv_id=arguments.seed,
+            seed_paper_id=arguments.paper_id,
             question=arguments.question,
             request_timeout_seconds=arguments.request_timeout_seconds,
             deadline_seconds=arguments.deadline_seconds,

@@ -11,7 +11,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from mneme.api.schemas.digests import Digest
 from mneme.api.schemas.graphs import Graph
 from mneme.api.schemas.jobs import Job
-from mneme.api.schemas.papers import PaperPage
+from mneme.api.schemas.papers import Paper, PaperPage
 from mneme.api.schemas.preferences import Preferences
 from mneme.api.schemas.qa import Answer, Question
 from mneme.api.schemas.summaries import Summary
@@ -87,6 +87,13 @@ class MvpSmokeClient:
         return _validate(
             PaperPage,
             await self._request("GET", "/v1/papers", "catalog", params=params),
+            "catalog",
+        )
+
+    async def paper(self, paper_id: UUID) -> Paper:
+        return _validate(
+            Paper,
+            await self._request("GET", f"/v1/papers/{paper_id}", "catalog"),
             "catalog",
         )
 

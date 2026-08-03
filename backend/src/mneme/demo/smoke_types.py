@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 from urllib.parse import urlsplit
+from uuid import UUID
 
 from mneme.api.routes.onboarding_support import normalize_arxiv_reference
 
@@ -50,8 +51,9 @@ class MvpSmokeConfig:
 
     base_url: str
     seed_arxiv_id: str = "1706.03762"
+    seed_paper_id: UUID | None = None
     question: str | None = None
-    request_timeout_seconds: float = 30
+    request_timeout_seconds: float = 120
     deadline_seconds: float = 600
     poll_interval_seconds: float = 1
     maximum_summary_jobs: int = 8

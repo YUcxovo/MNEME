@@ -67,6 +67,10 @@ class FakeSmokeClient:
         assert cursor is None
         return PaperPage(items=[_paper()])
 
+    async def paper(self, paper_id: UUID) -> Paper:
+        assert paper_id == PAPER_ID
+        return _paper()
+
     async def summary(self, paper_id: UUID) -> Summary | Job:
         assert paper_id == PAPER_ID
         self.summary_calls += 1
@@ -189,6 +193,18 @@ def test_mvp_smoke_skips_qa_only_when_question_is_absent() -> None:
         "status": "skipped",
     }
     assert client.qa_calls == 0
+
+
+@pytest.mark.base
+def test_mvp_smoke_uses_explicit_seed_paper_id() -> None:
+    client = FakeSmokeClient()
+    config = MvpSmokeConfig(base_url="https://demo.example", seed_paper_id=PAPER_ID)
+
+    report = asyncio.run(run_mvp_smoke(config, token="token", client=client))
+
+    assert report.status == "passed"
+    catalog = next(check for check in report.checks if check.name == "catalog")
+    assert catalog.details["catalog_items_scanned"] == 1
 
 
 @pytest.mark.base

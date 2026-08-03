@@ -36,6 +36,8 @@ class MvpSmokeOperations(Protocol):
 
     async def papers(self, *, cursor: str | None = None) -> PaperPage: ...
 
+    async def paper(self, paper_id: UUID) -> Paper: ...
+
     async def summary(self, paper_id: UUID) -> Summary | Job: ...
 
     async def job(self, job_id: UUID) -> Job: ...
@@ -189,6 +191,11 @@ async def run_mvp_smoke(
 
 
 async def _find_seed_paper(client: MvpSmokeOperations, config: MvpSmokeConfig) -> tuple[Paper, int]:
+    if config.seed_paper_id is not None:
+        paper = await client.paper(config.seed_paper_id)
+        if paper.arxiv_id != config.seed_arxiv_id:
+            raise MvpSmokeError("catalog", "seed_paper_identity_mismatch")
+        return paper, 1
     cursor: str | None = None
     observed_cursors: set[str] = set()
     scanned = 0

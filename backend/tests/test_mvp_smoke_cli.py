@@ -24,9 +24,9 @@ def test_smoke_cli_emits_passing_report_without_token(
             checks=(SmokeCheck("liveness", "passed"),),
         )
 
-    monkeypatch.setenv("MNEME_LIVE_CORE_TOKEN", secret)
-    monkeypatch.setenv("MNEME_LIVE_CORE_BASE_URL", "https://api.mneme.example")
-    monkeypatch.setenv("MNEME_LIVE_CORE_SEED", "https://arxiv.org/abs/1706.03762v7")
+    monkeypatch.setenv("MNEME_MVP_SMOKE_TOKEN", secret)
+    monkeypatch.setenv("MNEME_MVP_SMOKE_BASE_URL", "https://api.mneme.example")
+    monkeypatch.setenv("MNEME_MVP_SMOKE_SEED", "https://arxiv.org/abs/1706.03762v7")
     monkeypatch.setattr(smoke_backend, "run_mvp_smoke", fake_run)
     monkeypatch.setattr("sys.argv", ["smoke_backend"])
 
@@ -59,7 +59,7 @@ def test_smoke_cli_returns_one_for_failed_acceptance(
             ),
         )
 
-    monkeypatch.setenv("MNEME_LIVE_CORE_TOKEN", "token")
+    monkeypatch.setenv("MNEME_MVP_SMOKE_TOKEN", "token")
     monkeypatch.setattr(smoke_backend, "run_mvp_smoke", fake_run)
     monkeypatch.setattr("sys.argv", ["smoke_backend"])
 
@@ -75,8 +75,8 @@ def test_smoke_cli_returns_two_without_credentials(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    monkeypatch.delenv("MNEME_LIVE_CORE_TOKEN", raising=False)
-    monkeypatch.delenv("MNEME_LIVE_CORE_BASE_URL", raising=False)
+    monkeypatch.delenv("MNEME_MVP_SMOKE_TOKEN", raising=False)
+    monkeypatch.delenv("MNEME_MVP_SMOKE_BASE_URL", raising=False)
     monkeypatch.setattr("sys.argv", ["smoke_backend"])
 
     with pytest.raises(SystemExit) as captured:
@@ -97,7 +97,7 @@ def test_smoke_cli_redacts_invalid_token(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     secret = "invalid token value"
-    monkeypatch.setenv("MNEME_LIVE_CORE_TOKEN", secret)
+    monkeypatch.setenv("MNEME_MVP_SMOKE_TOKEN", secret)
     monkeypatch.setattr("sys.argv", ["smoke_backend"])
 
     with pytest.raises(SystemExit) as captured:
