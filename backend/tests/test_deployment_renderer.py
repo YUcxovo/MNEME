@@ -36,8 +36,9 @@ def test_renderer_produces_complete_deterministic_staging_tree(tmp_path: Path) -
 
     nginx = (output_dir / "nginx-mneme-tls.conf").read_text(encoding="utf-8")
     assert "server_name api.mneme.example;" in nginx
-    assert "$host$request_uri" in nginx
-    assert "$proxy_add_x_forwarded_for" in nginx
+    assert "https://api.mneme.example$request_uri" in nginx
+    assert "proxy_set_header X-Forwarded-For $remote_addr" in nginx
+    assert 'proxy_set_header Connection ""' in nginx
     assert "${" not in nginx
     assert "ExecStart=/opt/mneme/backend/.venv/bin/gunicorn" in (
         output_dir / "mneme-api.service"
@@ -49,9 +50,21 @@ def test_renderer_produces_complete_deterministic_staging_tree(tmp_path: Path) -
     assert "python -m mneme.cli.preflight_deployment" in preflight_service
     assert "PGSERVICE=mneme-backup" in preflight_service
     assert "Requires=mneme-bootstrap.service" in preflight_service
-    assert "Requires=mneme-preflight.service" in (output_dir / "mneme-worker.service").read_text(
+    assert "Requires=mneme-migrate.service" in (output_dir / "mneme-worker.service").read_text(
         encoding="utf-8"
     )
+    assert "KillSignal=SIGTERM" in (output_dir / "mneme-api.service").read_text(encoding="utf-8")
+    assert "TimeoutStopSec=360" in (output_dir / "mneme-worker.service").read_text(encoding="utf-8")
+    assert "Requires=mneme-worker.service" in (output_dir / "mneme-ingest.service").read_text(
+        encoding="utf-8"
+    )
+    assert "OnCalendar=*-*-* 03:00:00 UTC" in (output_dir / "mneme-digest.timer").read_text(
+        encoding="utf-8"
+    )
+    bootstrap_nginx = (output_dir / "nginx-mneme-bootstrap.conf").read_text(encoding="utf-8")
+    assert "return 503;" in bootstrap_nginx
+    assert "proxy_pass" not in bootstrap_nginx
+    assert "ConditionPathExists" not in smoke_service
 
 
 @pytest.mark.base
@@ -59,9 +72,13 @@ def test_renderer_produces_complete_deterministic_staging_tree(tmp_path: Path) -
     "overrides",
     [
         {"server_name": "localhost"},
+        {"server_name": "api.example.com."},
         {"server_name": "api.example.com\nBAD=1"},
         {"server_name": "api.example.com", "install_dir": Path("relative")},
         {"server_name": "api.example.com", "install_dir": Path("/home/mneme")},
+        {"server_name": "api.example.com", "install_dir": Path("/opt/bad path")},
+        {"server_name": "api.example.com", "install_dir": Path("/opt/bad%name")},
+        {"server_name": "api.example.com", "install_dir": Path("/opt/bad\nname")},
         {"server_name": "api.example.com", "environment_file": Path("/tmp/backend.env")},
         {"server_name": "api.example.com", "paper_data_dir": Path("/tmp/papers")},
         {"server_name": "api.example.com", "backup_dir": Path("/tmp/backups")},
@@ -89,6 +106,12 @@ def test_renderer_rejects_incomplete_or_symlinked_outputs(tmp_path: Path) -> Non
     output_link.symlink_to(tmp_path / "elsewhere", target_is_directory=True)
     with pytest.raises(DeploymentRenderError):
         render_deployment(TEMPLATE_DIR, output_link, config)
+
+    stale_output = tmp_path / "stale-output"
+    stale_output.mkdir()
+    (stale_output / "obsolete.service").write_text("stale", encoding="ascii")
+    with pytest.raises(DeploymentRenderError):
+        render_deployment(TEMPLATE_DIR, stale_output, config)
 
 
 @pytest.mark.base
@@ -119,6 +142,29 @@ def test_render_cli_emits_stable_json(
     assert payload["files"] == sorted(
         filename.removesuffix(".template") for filename in TEMPLATE_FILENAMES
     )
+
+
+@pytest.mark.base
+def test_render_cli_default_template_path_is_cwd_independent(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    output_dir = tmp_path / "output"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "render_deployment",
+            "--server-name",
+            "api.example.com",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    render_cli.main()
+
+    assert (output_dir / "mneme-api.service").is_file()
 
 
 @pytest.mark.base

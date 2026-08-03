@@ -16,6 +16,7 @@ from mneme.ops.deployment import (
 
 INPUT_ERROR = "deployment_render_input_invalid"
 RENDER_ERROR = "deployment_render_failed"
+DEFAULT_TEMPLATE_DIR = Path(__file__).resolve().parents[4] / "deploy" / "templates"
 
 
 class JsonArgumentParser(argparse.ArgumentParser):
@@ -31,7 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the non-privileged deployment renderer parser."""
     parser = JsonArgumentParser(description="Render Mneme deployment files into staging.")
     parser.add_argument("--server-name", required=True)
-    parser.add_argument("--template-dir", type=Path, default=Path("deploy/templates"))
+    parser.add_argument("--template-dir", type=Path, default=DEFAULT_TEMPLATE_DIR)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--install-dir", type=Path, default=Path("/opt/mneme"))
     parser.add_argument("--environment-file", type=Path, default=Path("/etc/mneme/backend.env"))

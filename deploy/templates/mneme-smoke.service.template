@@ -3,7 +3,6 @@ Description=Exercise the deployed Mneme MVP over its public API
 After=network-online.target mneme-api.service mneme-worker.service
 Wants=network-online.target
 Requires=mneme-api.service mneme-worker.service
-ConditionPathExists=/etc/mneme/demo.token
 
 [Service]
 Type=oneshot

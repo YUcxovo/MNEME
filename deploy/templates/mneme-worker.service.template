@@ -1,8 +1,8 @@
 [Unit]
 Description=Mneme ARQ worker
-After=network-online.target mneme-preflight.service
+After=network-online.target mneme-migrate.service
 Wants=network-online.target
-Requires=mneme-preflight.service
+Requires=mneme-migrate.service
 
 [Service]
 Type=simple
@@ -12,7 +12,7 @@ WorkingDirectory=${install_dir}/backend
 EnvironmentFile=${environment_file}
 Environment=PYTHONUNBUFFERED=1
 ExecStart=${install_dir}/backend/.venv/bin/arq mneme.tasks.worker.WorkerSettings
-TimeoutStopSec=105
+TimeoutStopSec=360
 Restart=on-failure
 RestartSec=5
 NoNewPrivileges=true

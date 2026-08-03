@@ -31,6 +31,7 @@ TEMPLATE_FILENAMES = (
 )
 _ACCOUNT_PATTERN = re.compile(r"^[a-z_][a-z0-9_-]{0,30}$")
 _DNS_LABEL_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?$")
+_PATH_COMPONENT_PATTERN = re.compile(r"^[A-Za-z0-9._-]+$")
 
 
 class DeploymentRenderError(ValueError):
@@ -93,6 +94,9 @@ def render_deployment(
     if output_dir.is_symlink():
         raise DeploymentRenderError("Deployment output directory cannot be a symbolic link")
     output_dir.mkdir(parents=True, exist_ok=True)
+    expected_outputs = {name.removesuffix(".template") for name in TEMPLATE_FILENAMES}
+    if any(path.name not in expected_outputs for path in output_dir.iterdir()):
+        raise DeploymentRenderError("Deployment output directory contains unexpected files")
 
     rendered_paths: list[Path] = []
     mapping = config.as_mapping()
@@ -133,7 +137,7 @@ def _validate_account(value: str, label: str) -> None:
 
 
 def _validate_fqdn(value: str) -> None:
-    labels = value.rstrip(".").split(".")
+    labels = value.split(".")
     if (
         len(value) > 253
         or len(labels) < 2
@@ -143,5 +147,10 @@ def _validate_fqdn(value: str) -> None:
 
 
 def _validate_scoped_path(value: Path, parent: Path, label: str) -> None:
-    if not value.is_absolute() or ".." in value.parts or not value.is_relative_to(parent):
+    if (
+        not value.is_absolute()
+        or ".." in value.parts
+        or not value.is_relative_to(parent)
+        or any(not _PATH_COMPONENT_PATTERN.fullmatch(part) for part in value.parts[1:])
+    ):
         raise DeploymentRenderError(f"Invalid {label}")

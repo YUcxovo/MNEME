@@ -2,7 +2,7 @@
 Description=Run the Mneme Research Briefing scheduler weekly
 
 [Timer]
-OnCalendar=Mon *-*-* 03:00:00 UTC
+OnCalendar=*-*-* 03:00:00 UTC
 Persistent=true
 RandomizedDelaySec=15m
 Unit=mneme-digest.service

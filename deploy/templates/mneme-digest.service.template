@@ -1,7 +1,8 @@
 [Unit]
 Description=Schedule the Mneme weekly Research Briefing
-After=network-online.target
+After=network-online.target mneme-worker.service
 Wants=network-online.target
+Requires=mneme-worker.service
 
 [Service]
 Type=oneshot
