@@ -54,6 +54,7 @@ def test_renderer_produces_complete_deterministic_staging_tree(tmp_path: Path) -
         {"server_name": "api.example.com", "install_dir": Path("/home/mneme")},
         {"server_name": "api.example.com", "environment_file": Path("/tmp/backend.env")},
         {"server_name": "api.example.com", "paper_data_dir": Path("/tmp/papers")},
+        {"server_name": "api.example.com", "backup_dir": Path("/tmp/backups")},
         {"server_name": "api.example.com", "service_user": "root user"},
         {"server_name": "api.example.com", "api_port": 443},
         {"server_name": "api.example.com", "api_workers": 9},

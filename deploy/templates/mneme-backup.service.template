@@ -1,0 +1,24 @@
+[Unit]
+Description=Create a validated local Mneme PostgreSQL backup
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=${service_user}
+Group=${service_group}
+WorkingDirectory=${install_dir}/backend
+Environment=PGSERVICE=mneme-backup
+Environment=PGSERVICEFILE=/etc/mneme/pg_service.conf
+Environment=PGPASSFILE=/etc/mneme/pgpass
+ExecStart=${install_dir}/backend/.venv/bin/python -m mneme.cli.backup_database --output-dir ${backup_dir}
+TimeoutStartSec=1800
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=${backup_dir}
+UMask=0077
+
+# Optional off-server upload is an operator-owned executable, never a shell string.
+# ExecStartPost=<absolute-upload-hook> ${backup_dir}/latest.json

@@ -36,6 +36,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--install-dir", type=Path, default=Path("/opt/mneme"))
     parser.add_argument("--environment-file", type=Path, default=Path("/etc/mneme/backend.env"))
     parser.add_argument("--paper-data-dir", type=Path, default=Path("/var/lib/mneme/papers"))
+    parser.add_argument("--backup-dir", type=Path, default=Path("/var/backups/mneme"))
     parser.add_argument("--service-user", default="mneme")
     parser.add_argument("--service-group", default="mneme")
     parser.add_argument("--api-port", type=int, default=8000)
@@ -56,6 +57,7 @@ def main() -> None:
     try:
         config = DeploymentRenderConfig(
             server_name=arguments.server_name,
+            backup_dir=arguments.backup_dir,
             install_dir=arguments.install_dir,
             environment_file=arguments.environment_file,
             paper_data_dir=arguments.paper_data_dir,

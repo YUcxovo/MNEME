@@ -12,6 +12,8 @@ from string import Template
 TEMPLATE_FILENAMES = (
     "backend.env.template",
     "mneme-api.service.template",
+    "mneme-backup.service.template",
+    "mneme-backup.timer.template",
     "mneme-digest.service.template",
     "mneme-digest.timer.template",
     "mneme-ingest.service.template",
@@ -34,6 +36,7 @@ class DeploymentRenderConfig:
     """Validated non-secret values used by the deployment templates."""
 
     server_name: str
+    backup_dir: Path = Path("/var/backups/mneme")
     install_dir: Path = Path("/opt/mneme")
     environment_file: Path = Path("/etc/mneme/backend.env")
     paper_data_dir: Path = Path("/var/lib/mneme/papers")
@@ -49,6 +52,7 @@ class DeploymentRenderConfig:
         _validate_scoped_path(self.install_dir, Path("/opt"), "install directory")
         _validate_scoped_path(self.environment_file, Path("/etc"), "environment file")
         _validate_scoped_path(self.paper_data_dir, Path("/var/lib"), "paper data directory")
+        _validate_scoped_path(self.backup_dir, Path("/var/backups"), "backup directory")
         if not 1024 <= self.api_port <= 65535:
             raise DeploymentRenderError("API port must be between 1024 and 65535")
         if not 1 <= self.api_workers <= 8:
@@ -60,6 +64,7 @@ class DeploymentRenderConfig:
             "api_host": "127.0.0.1",
             "api_port": str(self.api_port),
             "api_workers": str(self.api_workers),
+            "backup_dir": str(self.backup_dir),
             "environment_file": str(self.environment_file),
             "install_dir": str(self.install_dir),
             "paper_data_dir": str(self.paper_data_dir),

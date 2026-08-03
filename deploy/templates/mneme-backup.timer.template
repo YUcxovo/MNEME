@@ -1,0 +1,11 @@
+[Unit]
+Description=Create the Mneme database backup every day
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=mneme-backup.service
+
+[Install]
+WantedBy=timers.target
