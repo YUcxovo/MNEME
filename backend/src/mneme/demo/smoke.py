@@ -116,6 +116,7 @@ async def run_mvp_smoke(
 
             current_check = "summary"
             summary, completed_jobs = await _resolve_summary(resolved_client, paper.id, config)
+            _require(summary.paper_id == paper.id, current_check, "summary_paper_mismatch")
             _require(bool(summary.tldr.strip()), current_check, "summary_empty")
             checks.append(
                 _passed(
@@ -167,6 +168,14 @@ async def run_mvp_smoke(
                     and all(citation.source_match for citation in answer.citations),
                     current_check,
                     "answer_not_source_matched",
+                )
+                _require(
+                    all(
+                        citation.paper_id == paper.id and citation.arxiv_id == paper.arxiv_id
+                        for citation in answer.citations
+                    ),
+                    current_check,
+                    "answer_citation_identity_mismatch",
                 )
                 checks.append(
                     _passed(

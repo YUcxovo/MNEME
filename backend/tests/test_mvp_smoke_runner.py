@@ -233,6 +233,44 @@ def test_mvp_smoke_requires_connected_graph() -> None:
 
 
 @pytest.mark.base
+def test_mvp_smoke_rejects_cross_paper_summary() -> None:
+    class WrongSummaryClient(FakeSmokeClient):
+        async def summary(self, paper_id: UUID) -> Summary | Job:
+            result = await super().summary(paper_id)
+            if isinstance(result, Summary):
+                return result.model_copy(update={"paper_id": NEIGHBOR_ID})
+            return result
+
+    report = asyncio.run(run_mvp_smoke(_config(), token="token", client=WrongSummaryClient()))
+
+    assert report.status == "failed"
+    assert report.checks[-1].details == {"code": "summary_paper_mismatch"}
+
+
+@pytest.mark.base
+def test_mvp_smoke_rejects_cross_paper_qa_citation() -> None:
+    class WrongCitationClient(FakeSmokeClient):
+        async def ask(self, paper_id: UUID, question: str) -> Answer:
+            answer = await super().ask(paper_id, question)
+            return answer.model_copy(
+                update={
+                    "citations": [answer.citations[0].model_copy(update={"paper_id": NEIGHBOR_ID})]
+                }
+            )
+
+    report = asyncio.run(
+        run_mvp_smoke(
+            _config(question="What method does this paper propose?"),
+            token="token",
+            client=WrongCitationClient(),
+        )
+    )
+
+    assert report.status == "failed"
+    assert report.checks[-1].details == {"code": "answer_citation_identity_mismatch"}
+
+
+@pytest.mark.base
 def test_mvp_smoke_converts_timeout_to_stable_failure() -> None:
     class TimeoutClient(FakeSmokeClient):
         async def liveness(self) -> LivenessPayload:
