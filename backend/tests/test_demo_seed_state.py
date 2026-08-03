@@ -138,6 +138,28 @@ def test_persisted_demo_seed_state_rejects_manifest_drift(
 
 @pytest.mark.base
 @pytest.mark.db
+def test_persisted_demo_seed_state_rejects_unexpected_seed_events(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    manifest = load_default_demo_seed_manifest()
+    expected = _stored_event(_event(manifest))
+    unexpected = _stored_event(_event(manifest))
+    unexpected.id = UUID("dddddddd-dddd-4ddd-8ddd-dddddddddddd")
+    database = FakeDatabase(FakeSession(SEED_PAPER_ID, [expected, unexpected]))
+    monkeypatch.setattr(state.Database, "from_settings", lambda *_args, **_kwargs: database)
+
+    with pytest.raises(DemoSeedError, match="not exact"):
+        asyncio.run(
+            state.verify_persisted_seed_state(
+                Settings(demo_user_id=USER_ID, _env_file=None),
+                manifest,
+                [_event(manifest)],
+            )
+        )
+
+
+@pytest.mark.base
+@pytest.mark.db
 @pytest.mark.parametrize("seed_paper_id,events", [(None, [object()]), (SEED_PAPER_ID, [])])
 def test_persisted_demo_seed_state_rejects_missing_rows(
     monkeypatch: pytest.MonkeyPatch,

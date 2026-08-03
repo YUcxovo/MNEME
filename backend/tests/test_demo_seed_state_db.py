@@ -125,6 +125,28 @@ async def _exercise() -> None:
                 .values(processing_status=ProcessingStatus.READY)
             )
 
+        unexpected_event_id = uuid4()
+        async with database.session_factory() as session, session.begin():
+            session.add(
+                UserEvent(
+                    id=unexpected_event_id,
+                    user_id=user_id,
+                    paper_id=digest_paper_ids[0],
+                    event_type=events[0].event_type,
+                    occurred_at=anchor,
+                    duration_ms=events[0].duration_ms,
+                    context={
+                        "manifest_id": "obsolete-demo-seed",
+                        "manifest_sha256": "f" * 64,
+                        "source": "demo_seed",
+                    },
+                )
+            )
+        with pytest.raises(DemoSeedError, match="not exact"):
+            await verify_persisted_seed_state(settings, manifest, events)
+        async with database.session_factory() as session, session.begin():
+            await session.execute(delete(UserEvent).where(UserEvent.id == unexpected_event_id))
+
         async with database.session_factory() as session, session.begin():
             await session.execute(
                 update(UserEvent)

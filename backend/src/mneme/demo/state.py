@@ -40,7 +40,10 @@ async def verify_persisted_seed_state(
             stored_events = list(
                 (
                     await session.scalars(
-                        select(UserEvent).where(UserEvent.id.in_(set(expected_events)))
+                        select(UserEvent).where(
+                            UserEvent.user_id == settings.demo_user_id,
+                            UserEvent.context["source"].astext == "demo_seed",
+                        )
                     )
                 ).all()
             )
@@ -55,8 +58,8 @@ async def verify_persisted_seed_state(
                 raise DemoSeedError("Demo state verifier did not close cleanly") from exception
     if seed_paper_id is None:
         raise DemoSeedError("The persisted seed paper is unavailable")
-    if len(stored_events) != len(expected_events):
-        raise DemoSeedError("The persisted demo event set is incomplete")
+    if {event.id for event in stored_events} != set(expected_events):
+        raise DemoSeedError("The persisted demo event set is not exact")
     for stored in stored_events:
         expected = expected_events.get(stored.id)
         if expected is None or not _event_matches(stored, expected, settings.demo_user_id):
