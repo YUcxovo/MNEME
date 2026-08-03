@@ -1,5 +1,5 @@
 [Unit]
-Description=Prepare or resume the deterministic Mneme demo account
+Description=Prepare or resume installation-local Mneme demo state
 After=network-online.target mneme-api.service mneme-worker.service
 Wants=network-online.target
 Requires=mneme-api.service mneme-worker.service

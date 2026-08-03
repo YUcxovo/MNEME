@@ -1,4 +1,4 @@
-"""Resumable orchestration for a deterministic production demo account."""
+"""Resumable orchestration for installation-local production demo state."""
 
 from __future__ import annotations
 

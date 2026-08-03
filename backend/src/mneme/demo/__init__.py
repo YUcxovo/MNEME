@@ -1,1 +1,1 @@
-"""Reproducible production-demo preparation."""
+"""Production-demo preparation with installation-local replay."""

@@ -1,4 +1,4 @@
-"""Local safety boundaries for deterministic demo orchestration."""
+"""Local safety boundaries for replayable demo orchestration."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Prepare or resume the deterministic production demo account."""
+"""Prepare or resume installation-local production demo state."""
 
 from __future__ import annotations
 
@@ -38,7 +38,9 @@ class JsonArgumentParser(argparse.ArgumentParser):
 
 def build_parser() -> argparse.ArgumentParser:
     """Build the bounded demo-seed parser."""
-    parser = JsonArgumentParser(description="Prepare a reproducible Mneme demo account.")
+    parser = JsonArgumentParser(
+        description="Prepare an installation-local replayable Mneme demo account."
+    )
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--base-url", default="http://127.0.0.1:8000")

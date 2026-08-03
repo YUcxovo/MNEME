@@ -1,4 +1,4 @@
-"""Strict versioned input contract for reproducible demo preparation."""
+"""Strict versioned input contract for installation-local demo replay."""
 
 from __future__ import annotations
 
