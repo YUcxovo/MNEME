@@ -46,6 +46,37 @@ class MnemeDatabaseMigrationTest {
             }
     }
 
+    @Test
+    fun migrate4To5_preservesLegacyPaperWithEmptySummaryCache() {
+        migrationHelper
+            .createDatabase(TEST_DATABASE, 4)
+            .use { database ->
+                database.execSQL(
+                    "INSERT INTO papers " +
+                        "(id, arxiv_id, title, authors_json, abstract_text, primary_category, " +
+                        "pdf_url, processing_status, updated_at, last_synced_at, last_opened_at) " +
+                        "VALUES ('paper-1', '2607.00001', 'Legacy paper', '[]', 'Abstract', " +
+                        "'cs.IR', NULL, 'ready', 10, 20, 30)",
+                )
+            }
+
+        migrationHelper
+            .runMigrationsAndValidate(
+                TEST_DATABASE,
+                5,
+                true,
+                MnemeDatabase.MIGRATION_4_5,
+            ).use { database ->
+                database
+                    .query("SELECT title, summary_json FROM papers WHERE id = 'paper-1'")
+                    .use { cursor ->
+                        cursor.moveToFirst()
+                        assertEquals("Legacy paper", cursor.getString(0))
+                        assertEquals(true, cursor.isNull(1))
+                    }
+            }
+    }
+
     companion object {
         private const val TEST_DATABASE = "mneme-migration-test"
     }
