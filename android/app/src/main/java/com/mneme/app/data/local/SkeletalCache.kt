@@ -8,6 +8,7 @@ import com.mneme.app.data.local.entity.UserPrefsEntity
 import com.mneme.app.data.network.DigestDto
 import com.mneme.app.data.network.PaperDto
 import com.mneme.app.data.network.PreferencesDto
+import com.mneme.app.data.network.SummaryDto
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -33,6 +34,7 @@ data class CachedPaper(
     val pdfUrl: String?,
     val processingStatus: String,
     val updatedAtEpochMillis: Long,
+    val summary: SummaryDto? = null,
 )
 
 interface SkeletalCache {
@@ -50,6 +52,14 @@ interface SkeletalCache {
         paper: PaperDto,
         refreshedAtEpochMillis: Long,
     )
+
+    suspend fun storePaperContent(
+        paper: PaperDto,
+        summary: SummaryDto,
+        refreshedAtEpochMillis: Long,
+    ) {
+        storePaper(paper, refreshedAtEpochMillis)
+    }
 
     suspend fun getPaper(paperId: String): CachedPaper?
 
@@ -78,9 +88,16 @@ class RoomSkeletalCache(
                     },
             )
         database.withTransaction {
+            val existingPapers = database.paperDao().getAll().associateBy(PaperEntity::id)
             database.paperDao().upsertAll(
                 digest.entries.map { entry ->
-                    entry.paper.toEntity(refreshedAtEpochMillis, json)
+                    entry.paper.toEntity(
+                        lastSyncedAtEpochMillis = refreshedAtEpochMillis,
+                        json = json,
+                        summaryJson = existingPapers[entry.paper.id]?.summaryJson,
+                        lastOpenedAtEpochMillis =
+                            existingPapers[entry.paper.id]?.lastOpenedAtEpochMillis ?: 0,
+                    )
                 },
             )
             database.digestDao().upsertAll(
@@ -155,7 +172,42 @@ class RoomSkeletalCache(
         paper: PaperDto,
         refreshedAtEpochMillis: Long,
     ) {
-        database.paperDao().upsertAll(listOf(paper.toEntity(refreshedAtEpochMillis, json)))
+        database.withTransaction {
+            val existing = database.paperDao().getById(paper.id)
+            database.paperDao().upsertAll(
+                listOf(
+                    paper.toEntity(
+                        lastSyncedAtEpochMillis = refreshedAtEpochMillis,
+                        json = json,
+                        summaryJson = existing?.summaryJson,
+                        lastOpenedAtEpochMillis = existing?.lastOpenedAtEpochMillis ?: 0,
+                    ),
+                ),
+            )
+        }
+    }
+
+    override suspend fun storePaperContent(
+        paper: PaperDto,
+        summary: SummaryDto,
+        refreshedAtEpochMillis: Long,
+    ) {
+        require(summary.paperId == paper.id) {
+            "A cached summary must belong to the cached paper."
+        }
+        database.withTransaction {
+            val existing = database.paperDao().getById(paper.id)
+            database.paperDao().upsertAll(
+                listOf(
+                    paper.toEntity(
+                        lastSyncedAtEpochMillis = refreshedAtEpochMillis,
+                        json = json,
+                        summaryJson = json.encodeToString(SummaryDto.serializer(), summary),
+                        lastOpenedAtEpochMillis = existing?.lastOpenedAtEpochMillis ?: 0,
+                    ),
+                ),
+            )
+        }
     }
 
     override suspend fun getPaper(paperId: String): CachedPaper? {
@@ -199,6 +251,8 @@ private fun DigestDto.description(): String =
 private fun PaperDto.toEntity(
     lastSyncedAtEpochMillis: Long,
     json: Json,
+    summaryJson: String? = null,
+    lastOpenedAtEpochMillis: Long = 0,
 ): PaperEntity =
     PaperEntity(
         id = id,
@@ -211,6 +265,8 @@ private fun PaperDto.toEntity(
         processingStatus = processingStatus,
         updatedAtEpochMillis = updatedAt.toEpochMillis(lastSyncedAtEpochMillis),
         lastSyncedAtEpochMillis = lastSyncedAtEpochMillis,
+        lastOpenedAtEpochMillis = lastOpenedAtEpochMillis,
+        summaryJson = summaryJson,
     )
 
 private fun PreferencesDto.toEntity(
@@ -241,6 +297,13 @@ private fun PaperEntity.toCachedPaper(json: Json): CachedPaper =
         pdfUrl = pdfUrl,
         processingStatus = processingStatus,
         updatedAtEpochMillis = updatedAtEpochMillis,
+        summary =
+            summaryJson
+                ?.let { encoded ->
+                    runCatching {
+                        json.decodeFromString(SummaryDto.serializer(), encoded)
+                    }.getOrNull()
+                }?.takeIf { summary -> summary.paperId == id },
     )
 
 private fun String.toEpochMillis(fallback: Long): Long {

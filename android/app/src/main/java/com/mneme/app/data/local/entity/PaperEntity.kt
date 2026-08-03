@@ -21,4 +21,5 @@ data class PaperEntity(
     @ColumnInfo(name = "updated_at") val updatedAtEpochMillis: Long,
     @ColumnInfo(name = "last_synced_at") val lastSyncedAtEpochMillis: Long = 0,
     @ColumnInfo(name = "last_opened_at") val lastOpenedAtEpochMillis: Long = 0,
+    @ColumnInfo(name = "summary_json") val summaryJson: String? = null,
 )
