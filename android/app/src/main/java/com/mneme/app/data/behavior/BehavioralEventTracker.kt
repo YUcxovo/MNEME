@@ -5,6 +5,9 @@ import com.mneme.app.data.local.BehavioralEventType
 import java.util.UUID
 
 interface BehavioralEventTracker {
+    val recordsDurably: Boolean
+        get() = true
+
     suspend fun recordPaperImpressions(paperIds: List<String>)
 
     suspend fun recordPaperOpened(paperId: String)
@@ -17,6 +20,8 @@ interface BehavioralEventTracker {
 }
 
 object NoOpBehavioralEventTracker : BehavioralEventTracker {
+    override val recordsDurably: Boolean = false
+
     override suspend fun recordPaperImpressions(paperIds: List<String>) = Unit
 
     override suspend fun recordPaperOpened(paperId: String) = Unit
@@ -45,7 +50,7 @@ class QueuedBehavioralEventTracker(
                 occurredAtEpochMillis = occurredAt,
             )
         }
-        scheduleSync()
+        schedulePersistedEvents()
     }
 
     override suspend fun recordPaperOpened(paperId: String) {
@@ -73,6 +78,12 @@ class QueuedBehavioralEventTracker(
             paperId = UUID.fromString(paperId),
             occurredAtEpochMillis = nowEpochMillis(),
         )
-        scheduleSync()
+        schedulePersistedEvents()
+    }
+
+    private fun schedulePersistedEvents() {
+        // The Room insert is the durable boundary. A later application-start recovery pass
+        // can schedule the same pending event if WorkManager is temporarily unavailable.
+        runCatching { scheduleSync() }
     }
 }
