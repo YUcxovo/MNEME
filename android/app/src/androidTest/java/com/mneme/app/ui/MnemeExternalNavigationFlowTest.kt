@@ -40,6 +40,7 @@ class MnemeExternalNavigationFlowTest {
                 ExternalNavigationRequest.OpenPaper(
                     requestId = VALID_REQUEST_ID,
                     paperId = SeededSkeletalContentRepository.PAPER_ID,
+                    eventId = VALID_EVENT_ID,
                 ),
             )
         var recompositionToken by mutableIntStateOf(0)
@@ -99,6 +100,7 @@ class MnemeExternalNavigationFlowTest {
                 ExternalNavigationRequest.OpenPaper(
                     requestId = UNKNOWN_REQUEST_ID,
                     paperId = UNKNOWN_PAPER_ID,
+                    eventId = UNKNOWN_EVENT_ID,
                 ),
             )
 
@@ -149,6 +151,7 @@ class MnemeExternalNavigationFlowTest {
                 ExternalNavigationRequest.OpenPaper(
                     requestId = ONBOARDING_REQUEST_ID,
                     paperId = SeededSkeletalContentRepository.PAPER_ID,
+                    eventId = ONBOARDING_EVENT_ID,
                 ),
             )
 
@@ -207,12 +210,89 @@ class MnemeExternalNavigationFlowTest {
         }
     }
 
+    @Test
+    fun failedDurableWrite_retriesWithoutClosingThePaperOrDuplicatingTheOpen() {
+        val tracker = RetryingOpenEventTracker()
+        val viewModel = MnemeViewModel(ControlledFixtureDataRepository(), tracker)
+        var externalRequest by
+            mutableStateOf<ExternalNavigationRequest?>(
+                ExternalNavigationRequest.OpenPaper(
+                    requestId = RETRY_REQUEST_ID,
+                    paperId = SeededSkeletalContentRepository.PAPER_ID,
+                    eventId = RETRY_EVENT_ID,
+                ),
+            )
+
+        composeRule.setContent {
+            MnemeTheme {
+                MnemeApp(
+                    viewModel = viewModel,
+                    onOpenSource = {},
+                    onSharePaper = { _, _ -> },
+                    externalNavigation =
+                        MnemeExternalNavigationBinding(
+                            request = externalRequest,
+                            onRequestConsumed = { requestId ->
+                                if (externalRequest?.requestId == requestId) {
+                                    externalRequest = null
+                                }
+                            },
+                        ),
+                )
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            tracker.attemptedEventIds.size == 2 && tracker.openedPaperIds.size == 1
+        }
+        composeRule.onNodeWithTag("paper-detail-screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Attention Is All You Need").assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(listOf(RETRY_EVENT_ID, RETRY_EVENT_ID), tracker.attemptedEventIds)
+            assertEquals(
+                listOf(SeededSkeletalContentRepository.PAPER_ID),
+                tracker.openedPaperIds,
+            )
+        }
+    }
+
     private class OpenEventTracker : BehavioralEventTracker {
         val openedPaperIds = mutableListOf<String>()
 
         override suspend fun recordPaperImpressions(paperIds: List<String>) = Unit
 
         override suspend fun recordPaperOpened(paperId: String) {
+            openedPaperIds += paperId
+        }
+
+        override suspend fun recordPaperOpenedOnce(
+            eventId: String,
+            paperId: String,
+        ) = recordPaperOpened(paperId)
+
+        override suspend fun recordPaperSaved(paperId: String) = Unit
+
+        override suspend fun recordPaperShared(paperId: String) = Unit
+
+        override suspend fun recordQuestionAsked(paperId: String) = Unit
+    }
+
+    private class RetryingOpenEventTracker : BehavioralEventTracker {
+        val attemptedEventIds = mutableListOf<String>()
+        val openedPaperIds = mutableListOf<String>()
+
+        override suspend fun recordPaperImpressions(paperIds: List<String>) = Unit
+
+        override suspend fun recordPaperOpened(paperId: String) = Unit
+
+        override suspend fun recordPaperOpenedOnce(
+            eventId: String,
+            paperId: String,
+        ) {
+            attemptedEventIds += eventId
+            if (attemptedEventIds.size == 1) {
+                error("controlled Room failure")
+            }
             openedPaperIds += paperId
         }
 
@@ -227,6 +307,11 @@ class MnemeExternalNavigationFlowTest {
         const val VALID_REQUEST_ID = 41L
         const val UNKNOWN_REQUEST_ID = 42L
         const val ONBOARDING_REQUEST_ID = 43L
+        const val RETRY_REQUEST_ID = 44L
+        const val VALID_EVENT_ID = "11111111-1111-4111-8111-111111111111"
+        const val UNKNOWN_EVENT_ID = "22222222-2222-4222-8222-222222222222"
+        const val ONBOARDING_EVENT_ID = "33333333-3333-4333-8333-333333333333"
+        const val RETRY_EVENT_ID = "44444444-4444-4444-8444-444444444444"
         const val UNKNOWN_PAPER_ID = "00000000-0000-0000-0000-000000000001"
     }
 }

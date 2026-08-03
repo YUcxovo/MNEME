@@ -7,13 +7,49 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MnemeBehavioralEventRecorderTest {
+    @Test
+    fun externalOpenReturnsOnlyAfterTheDurableWriteCompletes() =
+        runBlocking {
+            val allowWrite = CompletableDeferred<Unit>()
+            val tracker = ConfigurableTracker(openOnceAction = { _, _ -> allowWrite.await() })
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+            val recorder = MnemeBehavioralEventRecorder(tracker, scope)
+
+            val recording = async { recorder.recordPaperOpenedOnce(EVENT_ID, PAPER_ID) }
+            yield()
+
+            assertFalse(recording.isCompleted)
+            allowWrite.complete(Unit)
+            assertTrue(recording.await())
+            scope.cancel()
+        }
+
+    @Test
+    fun externalOpenPropagatesWriteFailureForLifecycleRetry() =
+        runBlocking {
+            val expected = IllegalStateException("Room write failed")
+            val tracker = ConfigurableTracker(openOnceAction = { _, _ -> throw expected })
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+            val recorder = MnemeBehavioralEventRecorder(tracker, scope)
+
+            val actual =
+                runCatching { recorder.recordPaperOpenedOnce(EVENT_ID, PAPER_ID) }.exceptionOrNull()
+
+            assertSame(expected, actual)
+            scope.cancel()
+        }
+
     @Test
     fun saveConfirmsOnlyAfterDurableTrackerWriteCompletes() =
         runBlocking {
@@ -136,13 +172,29 @@ class MnemeBehavioralEventRecorderTest {
         scope.cancel()
     }
 
+    @Test
+    fun unavailableTrackerDoesNotAcknowledgeAnExternalOpen() =
+        runBlocking {
+            val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+            val recorder = MnemeBehavioralEventRecorder(NoOpBehavioralEventTracker, scope)
+
+            assertFalse(recorder.recordPaperOpenedOnce(EVENT_ID, PAPER_ID))
+            scope.cancel()
+        }
+
     private class ConfigurableTracker(
         private val saveAction: suspend () -> Unit = {},
         private val shareAction: suspend () -> Unit = {},
+        private val openOnceAction: suspend (String, String) -> Unit = { _, _ -> },
     ) : BehavioralEventTracker {
         override suspend fun recordPaperImpressions(paperIds: List<String>) = Unit
 
         override suspend fun recordPaperOpened(paperId: String) = Unit
+
+        override suspend fun recordPaperOpenedOnce(
+            eventId: String,
+            paperId: String,
+        ) = openOnceAction(eventId, paperId)
 
         override suspend fun recordPaperSaved(paperId: String) = saveAction()
 
@@ -152,6 +204,7 @@ class MnemeBehavioralEventRecorderTest {
     }
 
     private companion object {
+        const val EVENT_ID = "77777777-7777-4777-8777-777777777777"
         const val PAPER_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
     }
 }

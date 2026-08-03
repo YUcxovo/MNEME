@@ -86,6 +86,7 @@ internal data class MnemeUiActions(
     val refreshBriefing: () -> Unit,
     val recordPaperImpressions: (List<String>) -> Unit,
     val recordPaperOpened: (String) -> Unit,
+    val recordExternalPaperOpened: suspend (String, String) -> Boolean,
     val requestPaper: (String) -> Unit,
     val retryPaper: (String) -> Unit,
     val openQa: (String) -> Unit,
@@ -205,6 +206,7 @@ private fun mnemeAppScaffold(
                 PaperDetailRoute(
                     paperId = request.paperId,
                     externalRequestId = request.requestId,
+                    externalEventId = request.eventId,
                 ),
             ) {
                 popUpTo(navController.graph.findStartDestination().id)

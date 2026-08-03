@@ -2,9 +2,11 @@ package com.mneme.app.ui.navigation
 
 import androidx.lifecycle.SavedStateHandle
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.UUID
 
 class ExternalNavigationViewModelTest {
     @Test
@@ -13,13 +15,12 @@ class ExternalNavigationViewModelTest {
 
         viewModel.openPaper(PAPER_ID)
 
-        assertEquals(
-            ExternalNavigationRequest.OpenPaper(
-                requestId = 1L,
-                paperId = PAPER_ID,
-            ),
-            viewModel.request.value,
-        )
+        val request = viewModel.request.value
+        assertTrue(request is ExternalNavigationRequest.OpenPaper)
+        request as ExternalNavigationRequest.OpenPaper
+        assertEquals(1L, request.requestId)
+        assertEquals(PAPER_ID, request.paperId)
+        assertEquals(request.eventId, UUID.fromString(request.eventId).toString())
     }
 
     @Test
@@ -67,7 +68,8 @@ class ExternalNavigationViewModelTest {
         val viewModel = ExternalNavigationViewModel(savedStateHandle)
 
         viewModel.openPaper(PAPER_ID)
-        val firstId = requireNotNull(viewModel.request.value).requestId
+        val firstRequest = viewModel.request.value as ExternalNavigationRequest.OpenPaper
+        val firstId = firstRequest.requestId
         viewModel.consume(firstId)
         viewModel.rejectPaperLink()
         val secondId = requireNotNull(viewModel.request.value).requestId
@@ -81,6 +83,7 @@ class ExternalNavigationViewModelTest {
         assertEquals(1L, firstId)
         assertEquals(2L, secondId)
         assertEquals(3L, thirdId)
+        assertNotEquals(firstRequest.eventId, (thirdRequest as ExternalNavigationRequest.OpenPaper).eventId)
     }
 
     private companion object {

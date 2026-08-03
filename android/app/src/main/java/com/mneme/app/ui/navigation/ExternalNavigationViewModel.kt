@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.StateFlow
 import java.io.Serializable
+import java.util.UUID
 
 sealed interface ExternalNavigationRequest : Serializable {
     val requestId: Long
@@ -11,6 +12,7 @@ sealed interface ExternalNavigationRequest : Serializable {
     data class OpenPaper(
         override val requestId: Long,
         val paperId: String,
+        val eventId: String,
     ) : ExternalNavigationRequest
 
     data class InvalidPaperLink(
@@ -29,7 +31,11 @@ internal class ExternalNavigationViewModel(
             "A canonical paper identifier is required."
         }
         savedStateHandle[PENDING_REQUEST_KEY] =
-            ExternalNavigationRequest.OpenPaper(nextRequestId(), paperId)
+            ExternalNavigationRequest.OpenPaper(
+                requestId = nextRequestId(),
+                paperId = paperId,
+                eventId = UUID.randomUUID().toString(),
+            )
     }
 
     fun rejectPaperLink() {
