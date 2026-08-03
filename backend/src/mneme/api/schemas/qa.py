@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from mneme.ai.qa import GroundedAnswer
-from mneme.models.qa import QaSourceMatchStatus
+from mneme.models.qa import QaCitationResolution, QaSourceMatchStatus
 
 
 class Question(BaseModel):
@@ -31,11 +31,20 @@ class Citation(BaseModel):
 
 
 class Answer(BaseModel):
-    """A grounded answer with verified citations."""
+    """A grounded answer with verified citations.
+
+    ``citation_resolution`` and ``model_calls`` extend the contract
+    additively: existing fields keep their frozen shapes, and the new fields
+    state how the citation contract was resolved (first pass, one bounded
+    correction, or an explicit unresolved state) and how many model calls
+    the answer consumed.
+    """
 
     answer: str
     citations: list[Citation]
     source_match_status: QaSourceMatchStatus
+    citation_resolution: QaCitationResolution = QaCitationResolution.NOT_APPLICABLE
+    model_calls: int = 0
     conversation_id: UUID
 
     @classmethod
@@ -56,5 +65,7 @@ class Answer(BaseModel):
                 for citation in grounded.citations
             ],
             source_match_status=grounded.source_match_status,
+            citation_resolution=grounded.citation_resolution,
+            model_calls=grounded.model_calls,
             conversation_id=conversation_id,
         )

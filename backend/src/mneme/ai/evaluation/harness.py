@@ -153,6 +153,7 @@ class RagCaseOutcome(BaseModel):
     source_match_status: QaSourceMatchStatus | None = None
     verified_citations: int = Field(default=0, ge=0)
     completion: CompletionResult | None = None
+    all_completions: tuple[CompletionResult, ...] = ()
     query_embedding_cost: Decimal = Field(default=Decimal(0), ge=Decimal(0))
     pipeline_latency_ms: int = Field(default=0, ge=0)
 
@@ -271,8 +272,11 @@ class RagEvaluationHarness:
             outcome = await self._answer_fn(fixture)
             completion = outcome.completion
             answerable = not fixture.expect_refusal
-            generation_cost = completion.estimated_cost if completion else Decimal(0)
-            cached = completion.cached if completion else False
+            # A corrected answer carries two completions; cost accounting
+            # covers every model call behind the final answer.
+            billed = outcome.all_completions or ((completion,) if completion is not None else ())
+            generation_cost = sum((item.estimated_cost for item in billed), start=Decimal(0))
+            cached = all(item.cached for item in billed) if billed else False
             case = RagCaseResult(
                 fixture_id=fixture.fixture_id,
                 answer=outcome.answer,

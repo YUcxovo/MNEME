@@ -59,3 +59,39 @@ def build_qa_request(
         max_output_tokens=max_output_tokens,
         prompt_version=QA_PROMPT_VERSION,
     )
+
+
+QA_CORRECTION_PROMPT_VERSION = "qa-correction-v1"
+
+_QA_CORRECTION_INSTRUCTION = (
+    "Your previous answer is shown below. Some of its citations could not be "
+    "verified against the evidence excerpts. Rewrite the answer using only "
+    "the numbered excerpts above: every claim must cite a supporting excerpt "
+    "with a bracketed number like [1], and any statement you cannot support "
+    "must be removed. Reply exactly INSUFFICIENT_EVIDENCE if no useful part "
+    "of the question can be answered from the excerpts."
+)
+
+
+def build_qa_correction_request(
+    *, question: str, evidence: list[str], previous_answer: str, max_output_tokens: int
+) -> CompletionRequest:
+    """Build the single bounded correction request for an unverified answer.
+
+    Reuses the frozen Q&A system template and the same evidence bundle; only
+    the user message differs, so the first-pass request and its cache entry
+    are untouched.
+    """
+    blocks = "\n\n".join(f"[{index + 1}] {text}" for index, text in enumerate(evidence))
+    prompt = (
+        f"Evidence excerpts:\n{blocks}\n\nQuestion: {question}\n\n"
+        f"{_QA_CORRECTION_INSTRUCTION}\n\n"
+        f"Previous answer:\n{previous_answer}\n\nCorrected answer with citations:"
+    )
+    return CompletionRequest(
+        task=AITask.QA,
+        messages=(ChatMessage(role="user", content=prompt),),
+        system=_QA_SYSTEM,
+        max_output_tokens=max_output_tokens,
+        prompt_version=QA_CORRECTION_PROMPT_VERSION,
+    )

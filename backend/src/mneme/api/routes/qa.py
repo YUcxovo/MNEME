@@ -109,6 +109,7 @@ async def ask_question(
         raise map_ai_error(error) from error
 
     completion = grounded.completion
+    completions = grounded.completions
     await conversations.append_exchange(
         conversation=conversation,
         question=payload.question,
@@ -124,13 +125,23 @@ async def ask_question(
                 for citation in grounded.citations
             ],
             source_match_status=grounded.source_match_status,
+            citation_resolution=grounded.citation_resolution,
+            model_calls=grounded.model_calls,
             provider=completion.provider.value if completion is not None else None,
             model_snapshot=completion.model if completion is not None else None,
             prompt_version=completion.prompt_version if completion is not None else None,
-            estimated_cost=completion.estimated_cost if completion is not None else None,
-            input_tokens=completion.usage.input_tokens if completion is not None else None,
-            output_tokens=completion.usage.output_tokens if completion is not None else None,
-            latency_ms=completion.latency_ms if completion is not None else None,
+            # Cost and token accounting cover every model call behind the
+            # final answer, including the bounded correction pass.
+            estimated_cost=(
+                sum(item.estimated_cost for item in completions) if completions else None
+            ),
+            input_tokens=(
+                sum(item.usage.input_tokens for item in completions) if completions else None
+            ),
+            output_tokens=(
+                sum(item.usage.output_tokens for item in completions) if completions else None
+            ),
+            latency_ms=(sum(item.latency_ms for item in completions) if completions else None),
         ),
     )
     await session.commit()
@@ -141,5 +152,7 @@ async def ask_question(
         paper_version_id=str(version.id),
         conversation_id=str(conversation.id),
         source_match_status=grounded.source_match_status.value,
+        citation_resolution=grounded.citation_resolution.value,
+        model_calls=grounded.model_calls,
     )
     return Answer.from_grounded(grounded, arxiv_id=paper.arxiv_id, conversation_id=conversation.id)
