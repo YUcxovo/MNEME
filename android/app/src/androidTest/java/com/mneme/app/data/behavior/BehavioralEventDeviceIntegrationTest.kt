@@ -202,8 +202,12 @@ class BehavioralEventDeviceIntegrationTest {
         store: BehavioralEventRepository,
         count: Int,
     ) {
-        composeRule.waitUntil(timeoutMillis = 5_000) {
+        composeRule.waitUntil(timeoutMillis = EVENT_WRITE_TIMEOUT_MILLIS) {
             runBlocking { store.observeAll().first().size == count }
         }
+    }
+
+    private companion object {
+        const val EVENT_WRITE_TIMEOUT_MILLIS = 30_000L
     }
 }

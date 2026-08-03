@@ -163,10 +163,14 @@ The graph is not cached, so an unavailable backend produces a retryable error.
   events with network constraints and exponential backoff. A live configuration also
   schedules a recovery pass on application start so an interrupted pending batch does not
   require another user interaction. The separate digest-refresh worker remains a no-op.
-- The client records only interactions exposed by the current product: paper impressions,
-  paper opens, and paper-scoped questions. Save, skip, share, and digest-dismiss events are
-  not fabricated while those UI controls are absent.
-- Saved papers, live background digest refresh, search, login/JWT, FCM, notification
+- The client records the interactions exposed by the current product: paper impressions,
+  paper opens, paper-scoped questions, Save actions, and Share chooser launches. Save and
+  Share confirm their Room queue write in a live configuration; a failed or unavailable
+  local write remains visible and retryable instead of being reported as queued. Skip and
+  digest-dismiss events are not fabricated while those UI controls are absent.
+- The Save control records a behavioral event and provides per-session feedback; it does
+  not create a persistent saved-paper library. Saved-paper browsing, live background digest
+  refresh, search, login/JWT, FCM, notification
   permission UX, and production deployment remain outside this integration unit.
 
 The Retrofit DTOs follow [`../docs/api/openapi-v0.1.yaml`](../docs/api/openapi-v0.1.yaml).
