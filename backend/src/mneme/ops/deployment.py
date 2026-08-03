@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from string import Template
 
+from mneme.core.timeouts import PUBLIC_PROXY_READ_TIMEOUT_SECONDS
+
 TEMPLATE_FILENAMES = (
     "backend.env.template",
     "mneme-api.service.template",
@@ -77,6 +79,7 @@ class DeploymentRenderConfig:
             "environment_file": str(self.environment_file),
             "install_dir": str(self.install_dir),
             "paper_data_dir": str(self.paper_data_dir),
+            "proxy_read_timeout_seconds": str(PUBLIC_PROXY_READ_TIMEOUT_SECONDS),
             "server_name": self.server_name,
             "service_group": self.service_group,
             "service_user": self.service_user,

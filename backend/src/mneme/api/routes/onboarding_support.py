@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.api.dependencies.ai import TaskQueue
 from mneme.api.errors import ApiError
+from mneme.core.timeouts import SEED_ONBOARDING_WAIT_SECONDS
 from mneme.models.job import JobStatus, PipelineJob, PipelineStage
 from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
 from mneme.repositories.job_identity import (
@@ -31,7 +32,6 @@ from mneme.services.documents import PARSER_VERSION
 _ARXIV_REFERENCE = re.compile(r"(?P<base>(?:\d{4}\.\d{4,5}|[A-Za-z0-9._-]+/\d{7}))(?:v[1-9]\d*)?$")
 _ALLOWED_HOSTS: Final = frozenset({"arxiv.org", "www.arxiv.org", "export.arxiv.org"})
 _POLL_INTERVAL_SECONDS: Final = 1.0
-_INITIALIZATION_TIMEOUT_SECONDS: Final = 12 * 60
 
 
 def normalize_arxiv_reference(value: str) -> str:
@@ -182,7 +182,7 @@ async def wait_for_seed_papers(
 ) -> None:
     """Block until every selected paper reaches a usable terminal state."""
     loop = asyncio.get_running_loop()
-    deadline = loop.time() + _INITIALIZATION_TIMEOUT_SECONDS
+    deadline = loop.time() + SEED_ONBOARDING_WAIT_SECONDS
     expected_ids = set(paper_ids)
     required_ready = set(required_ready_ids)
     if not required_ready.issubset(expected_ids):

@@ -31,7 +31,7 @@ Install the reviewed environment file as a root-owned `0600` file; systemd reads
 
 Backups use libpq indirection so database credentials never appear in process arguments. Create `/etc/mneme/pg_service.conf` with a service named `mneme-backup` and `/etc/mneme/pgpass` with the matching credential. Both files are opened by processes running as the service account, so make them service-account-owned regular files with owner-only permissions. Select a retention count and an off-host encrypted storage policy before claiming disaster recovery readiness.
 
-Run only the Nginx bootstrap configuration on port 80 while obtaining a certificate. After certificate issuance, disable or remove that bootstrap site before enabling the rendered TLS site; leaving both enabled creates duplicate `server_name` listeners. Confirm that only the TLS site is active, run the host's `nginx -t`, and reload Nginx. Non-loopback smoke targets reject plain HTTP.
+Run only the Nginx bootstrap configuration on port 80 while obtaining a certificate. After certificate issuance, disable or remove that bootstrap site before enabling the rendered TLS site; leaving both enabled creates duplicate `server_name` listeners. Confirm that only the TLS site is active, run the host's `nginx -t`, and reload Nginx. Non-loopback smoke targets reject plain HTTP. The rendered TLS proxy permits 15 minutes for a response, covering the seed-onboarding route's 12-minute initialization wait with three minutes for request handling and proxy overhead.
 
 ## 3. Install and start services
 

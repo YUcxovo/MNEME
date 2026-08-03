@@ -1,0 +1,6 @@
+"""Shared timeout contracts that cross application and deployment boundaries."""
+
+from typing import Final
+
+SEED_ONBOARDING_WAIT_SECONDS: Final = 12 * 60
+PUBLIC_PROXY_READ_TIMEOUT_SECONDS: Final = SEED_ONBOARDING_WAIT_SECONDS + 3 * 60
