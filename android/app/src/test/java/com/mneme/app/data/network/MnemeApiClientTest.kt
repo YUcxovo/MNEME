@@ -185,6 +185,37 @@ class MnemeApiClientTest {
         }
 
     @Test
+    fun askFollowUpQuestion_serializesConversationIdentity() =
+        runBlocking {
+            val conversationId = "88888888-8888-4888-8888-888888888888"
+            server.enqueue(
+                jsonResponse(
+                    """
+                    {
+                      "answer": "The follow-up stays in the same conversation.",
+                      "citations": [],
+                      "source_match_status": "insufficient_evidence",
+                      "conversation_id": "$conversationId"
+                    }
+                    """.trimIndent(),
+                ),
+            )
+
+            createRemote().askQuestion(
+                QuestionDto(
+                    question = "How does that mechanism work?",
+                    paperId = PAPER_ID,
+                    conversationId = conversationId,
+                ),
+            )
+
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/v1/qa/ask", request.path)
+            assertTrue(request.body.readUtf8().contains("\"conversation_id\":\"$conversationId\""))
+        }
+
+    @Test
     fun citationGraph_decodesFrozenShapeAndSendsBounds() =
         runBlocking {
             server.enqueue(
