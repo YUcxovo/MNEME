@@ -1,7 +1,10 @@
 """Live dependency probes for the production preflight gate."""
 
+import asyncio
 import os
+import re
 import shutil
+import subprocess
 from pathlib import Path
 from uuid import UUID
 
@@ -14,6 +17,8 @@ from mneme.core.config import Settings
 from mneme.db.session import Database
 from mneme.ops.backup import BackupConfigurationError, validate_libpq_environment
 from mneme.redis.client import create_redis_client
+
+_FINGERPRINT_PATTERN = re.compile(r"^[0-9a-f]{32}$")
 
 
 class ProductionPreflightProbe:
@@ -72,6 +77,27 @@ class ProductionPreflightProbe:
             return False
         return True
 
+    async def backup_target_matches_database(self) -> bool:
+        """Verify the private libpq service reaches this application database."""
+        user_id = self._settings.demo_user_id
+        if user_id is None:
+            return False
+        try:
+            validate_libpq_environment(os.environ)
+        except BackupConfigurationError:
+            return False
+        query = _database_fingerprint_query(user_id)
+        application_value = await self._scalar(query)
+        application_fingerprint = str(application_value or "").strip()
+        if not _FINGERPRINT_PATTERN.fullmatch(application_fingerprint):
+            return False
+        backup_fingerprint = await asyncio.to_thread(
+            _read_backup_database_fingerprint,
+            query,
+            max(1.0, self._settings.readiness_timeout_seconds),
+        )
+        return backup_fingerprint == application_fingerprint
+
     async def aclose(self) -> None:
         await self._redis.aclose()
         await self._database.dispose()
@@ -83,3 +109,40 @@ def expected_migration_head(config_path: Path) -> str:
     if len(heads) != 1:
         raise ValueError("Mneme deployment requires exactly one migration head")
     return heads[0]
+
+
+def _database_fingerprint_query(user_id: UUID) -> str:
+    """Build a non-secret, restart-scoped database identity query."""
+    return (
+        "SELECT md5(concat_ws('|', current_database(), d.oid::text, "
+        "pg_postmaster_start_time()::text, a.version_num, u.id::text)) "
+        "FROM pg_database AS d CROSS JOIN alembic_version AS a "
+        f"JOIN users AS u ON u.id = '{user_id}'::uuid "
+        "WHERE d.datname = current_database()"
+    )
+
+
+def _read_backup_database_fingerprint(query: str, timeout_seconds: float) -> str | None:
+    try:
+        result = subprocess.run(
+            (
+                "psql",
+                "-X",
+                "--no-password",
+                "--tuples-only",
+                "--no-align",
+                "--set=ON_ERROR_STOP=1",
+                f"--command={query}",
+            ),
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            timeout=timeout_seconds,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    fingerprint = result.stdout.strip()
+    if result.returncode != 0 or not _FINGERPRINT_PATTERN.fullmatch(fingerprint):
+        return None
+    return fingerprint

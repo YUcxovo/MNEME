@@ -108,6 +108,14 @@ async def run_preflight(
                 "Private libpq backup credentials are configured.",
             )
         )
+        checks.append(
+            await _safe_live_boolean(
+                "backup_target",
+                resolved_probe.backup_target_matches_database,
+                timeout,
+                "The backup service targets the application database.",
+            )
+        )
     finally:
         try:
             await resolved_probe.aclose()

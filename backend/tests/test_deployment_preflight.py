@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import UUID
@@ -10,6 +11,7 @@ import pytest
 
 from mneme.cli import preflight_deployment as preflight_cli
 from mneme.core.config import Settings
+from mneme.ops import preflight_probe
 from mneme.ops.preflight import (
     CheckStatus,
     PreflightCheck,
@@ -51,6 +53,7 @@ class FakeProbe:
             "paper_storage_writable": True,
             "backup_tools_available": True,
             "backup_credentials_configured": True,
+            "backup_target_matches_database": True,
             "aclose": True,
         }
         self.values.update(overrides)
@@ -92,6 +95,9 @@ class FakeProbe:
 
     async def backup_credentials_configured(self) -> bool:
         return bool(await self._get("backup_credentials_configured"))
+
+    async def backup_target_matches_database(self) -> bool:
+        return bool(await self._get("backup_target_matches_database"))
 
     async def aclose(self) -> None:
         self.closed = True
@@ -162,7 +168,7 @@ def test_live_preflight_reports_capacity_and_closes_probe() -> None:
     assert probe.closed
     capacity = next(check for check in report.checks if check.id == "database_capacity")
     assert capacity.details == {"available": 95, "headroom": 19, "required": 40}
-    assert report.as_dict()["counts"] == {"fail": 0, "pass": 16, "warn": 0}
+    assert report.as_dict()["counts"] == {"fail": 0, "pass": 17, "warn": 0}
 
 
 @pytest.mark.base
@@ -178,6 +184,7 @@ def test_live_preflight_reports_capacity_and_closes_probe() -> None:
         ({"paper_storage_writable": False}, "paper_storage"),
         ({"backup_tools_available": False}, "backup_tools"),
         ({"backup_credentials_configured": False}, "backup_credentials"),
+        ({"backup_target_matches_database": False}, "backup_target"),
         ({"aclose": RuntimeError("redis://secret")}, "probe_cleanup"),
         ({"ping_database": ConnectionError("postgresql://secret")}, "postgresql"),
     ],
@@ -207,6 +214,36 @@ def test_live_preflight_contains_dependency_failures(
 def test_expected_migration_head_matches_checkout() -> None:
     config_path = Path(__file__).parents[1] / "alembic.ini"
     assert expected_migration_head(config_path) == "0007"
+
+
+@pytest.mark.base
+def test_backup_database_fingerprint_uses_private_libpq_service(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: list[tuple[str, ...]] = []
+
+    def run(arguments: tuple[str, ...], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        captured.append(arguments)
+        return subprocess.CompletedProcess(arguments, 0, stdout="a" * 32 + "\n", stderr="")
+
+    monkeypatch.setattr(preflight_probe.subprocess, "run", run)
+    query = preflight_probe._database_fingerprint_query(USER_ID)
+
+    assert preflight_probe._read_backup_database_fingerprint(query, 2.0) == "a" * 32
+    assert captured[0][0] == "psql"
+    assert not any("postgresql://" in argument for argument in captured[0])
+
+
+@pytest.mark.base
+def test_backup_database_fingerprint_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def run(arguments: tuple[str, ...], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(arguments, 0, stdout="unexpected\n", stderr="")
+
+    monkeypatch.setattr(preflight_probe.subprocess, "run", run)
+
+    assert preflight_probe._read_backup_database_fingerprint("SELECT 1", 2.0) is None
 
 
 @pytest.mark.base
