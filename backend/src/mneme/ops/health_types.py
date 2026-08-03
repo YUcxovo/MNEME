@@ -87,7 +87,7 @@ class PlatformHealthConfig:
     probe_timeout_seconds: float = 5.0
 
     def __post_init__(self) -> None:
-        _validate_loopback_url(self.base_url)
+        validate_loopback_url(self.base_url)
         if not self.backup_dir.is_absolute() or ".." in self.backup_dir.parts:
             raise PlatformHealthConfigurationError("Backup directory must be absolute")
         for value, label in (
@@ -137,7 +137,8 @@ class PlatformHealthProbe(Protocol):
     async def aclose(self) -> None: ...
 
 
-def _validate_loopback_url(value: str) -> None:
+def validate_loopback_url(value: str) -> None:
+    """Reject remote or credential-bearing health and operations origins."""
     parsed = urlsplit(value)
     if (
         parsed.scheme != "http"
