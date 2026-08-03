@@ -36,6 +36,8 @@ def test_failed_revision_query_is_limited_to_latest_paper_versions() -> None:
     compiled = statement.compile(dialect=postgresql.dialect())
     sql = str(compiled)
     assert "pipeline_jobs.status =" in sql
+    assert "pipeline_jobs.pipeline_version =" in sql
+    assert "papers.processing_status !=" in sql
     assert "paper_versions.version_number = (SELECT max" in sql
     assert "paper_versions.paper_id = pipeline_jobs.paper_id" in sql
     assert "ORDER BY pipeline_jobs.created_at, pipeline_jobs.id" in sql

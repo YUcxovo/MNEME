@@ -13,6 +13,7 @@ from mneme.ai.budget import BudgetExceededError
 from mneme.ai.pipeline import PaperNotReadyError
 from mneme.ai.types import LLMProviderError, ProviderNotConfiguredError
 from mneme.models.job import JobStatus, PipelineStage
+from mneme.repositories.job_identity import PIPELINE_VERSION
 from mneme.repositories.jobs import PipelineJobRepository
 from mneme.services.documents import DocumentStorage, ParsedDocument
 
@@ -71,6 +72,7 @@ async def run_ai_stage(
                 job.stage != stage
                 or job.paper_id != resolved_paper_id
                 or job.paper_version_id != resolved_version_id
+                or job.pipeline_version != PIPELINE_VERSION
             ):
                 return "pipeline_job_identity_mismatch"
             if job.status is JobStatus.SUCCEEDED:

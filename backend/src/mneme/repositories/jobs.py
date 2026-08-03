@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.models.base import utc_now
 from mneme.models.job import JobStatus, PipelineJob, PipelineStage
-from mneme.models.paper import PaperVersion
+from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
 from mneme.repositories.job_identity import (
     PIPELINE_VERSION,
     PipelineJobIdentityConflictError,
@@ -198,10 +198,13 @@ class PipelineJobRepository:
         statement = (
             select(PipelineJob)
             .join(PaperVersion, PaperVersion.id == PipelineJob.paper_version_id)
+            .join(Paper, Paper.id == PipelineJob.paper_id)
             .where(
                 PipelineJob.paper_id.in_(paper_ids),
                 PipelineJob.status == JobStatus.FAILED,
+                PipelineJob.pipeline_version == PIPELINE_VERSION,
                 PaperVersion.version_number == latest_version_number,
+                Paper.processing_status != ProcessingStatus.READY,
             )
             .order_by(PipelineJob.created_at, PipelineJob.id)
         )

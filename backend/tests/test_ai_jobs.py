@@ -2,7 +2,9 @@
 
 import asyncio
 from decimal import Decimal
+from types import SimpleNamespace
 from typing import Any, Self
+from unittest.mock import AsyncMock
 from uuid import uuid4
 
 import pytest
@@ -10,7 +12,8 @@ import pytest
 from mneme.ai.budget import BudgetExceededError
 from mneme.ai.pipeline import PaperNotReadyError
 from mneme.ai.types import LLMProviderError, ProviderNotConfiguredError
-from mneme.models.job import PipelineStage
+from mneme.models.job import JobStatus, PipelineStage
+from mneme.tasks import ai_runtime
 from mneme.tasks.ai_runtime import run_ai_stage as _run_stage
 
 
@@ -131,3 +134,42 @@ def test_missing_paper_maps_to_stable_outcome() -> None:
     outcome, _ = _run(runner)
 
     assert outcome == "paper_not_ready"
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
+def test_ai_stage_rejects_obsolete_pipeline_version(monkeypatch: pytest.MonkeyPatch) -> None:
+    paper_id = uuid4()
+    version_id = uuid4()
+    job_id = uuid4()
+
+    class FakeRepository:
+        def __init__(self, _session: object) -> None:
+            pass
+
+        async def get(self, requested_job_id: object) -> SimpleNamespace:
+            assert requested_job_id == job_id
+            return SimpleNamespace(
+                stage=PipelineStage.SUMMARIZE_PAPER,
+                paper_id=paper_id,
+                paper_version_id=version_id,
+                pipeline_version="obsolete",
+                status=JobStatus.QUEUED,
+            )
+
+    monkeypatch.setattr(ai_runtime, "PipelineJobRepository", FakeRepository)
+    runner = AsyncMock(return_value="unused")
+
+    outcome = asyncio.run(
+        _run_stage(
+            _ctx(),
+            stage=PipelineStage.SUMMARIZE_PAPER,
+            job_id=str(job_id),
+            paper_id=str(paper_id),
+            paper_version_id=str(version_id),
+            runner=runner,
+        )
+    )
+
+    assert outcome == "pipeline_job_identity_mismatch"
+    runner.assert_not_awaited()
