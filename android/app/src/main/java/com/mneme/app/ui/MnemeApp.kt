@@ -78,7 +78,7 @@ internal data class MnemeUiSnapshot(
     val qa: QaUiState,
     val graph: GraphUiState,
     val interestEdit: InterestEditUiState,
-    val savedPaperIds: Set<String>,
+    val engagement: PaperEngagementUiState,
 )
 
 internal data class MnemeUiActions(

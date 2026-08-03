@@ -29,7 +29,7 @@ internal class FixtureMnemeState(
     private var qaState by mutableStateOf<QaUiState>(QaUiState.Idle)
     private var graphState by mutableStateOf<GraphUiState>(GraphUiState.Idle)
     private var interestEditState by mutableStateOf<InterestEditUiState>(InterestEditUiState.Idle)
-    private var savedPaperIds by mutableStateOf<Set<String>>(emptySet())
+    private var engagement by mutableStateOf(PaperEngagementUiState())
     private var briefing by mutableStateOf(repository.briefing())
 
     val snapshot: MnemeUiSnapshot
@@ -40,7 +40,7 @@ internal class FixtureMnemeState(
                 qa = qaState,
                 graph = graphState,
                 interestEdit = interestEditState,
-                savedPaperIds = savedPaperIds,
+                engagement = engagement,
             )
 
     val actions =
@@ -58,8 +58,22 @@ internal class FixtureMnemeState(
                 briefing = briefing.copy(interests = topics)
                 interestEditState = InterestEditUiState.Saved
             },
-            savePaper = { paperId -> savedPaperIds = savedPaperIds + paperId },
-            sharePaper = {},
+            savePaper = { paperId ->
+                engagement =
+                    engagement.copy(
+                        saveStatuses =
+                            engagement.saveStatuses +
+                                (paperId to EventRecordingStatus.RECORDED),
+                    )
+            },
+            sharePaper = { paperId ->
+                engagement =
+                    engagement.copy(
+                        shareStatuses =
+                            engagement.shareStatuses +
+                                (paperId to EventRecordingStatus.RECORDED),
+                    )
+            },
         )
 
     private fun loadPaper(paperId: String) {

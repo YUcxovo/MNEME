@@ -31,8 +31,6 @@ class MnemeBehavioralEventRecorder(
 ) {
     private val _engagementState = MutableStateFlow(PaperEngagementUiState())
     val engagementState: StateFlow<PaperEngagementUiState> = _engagementState.asStateFlow()
-    private val _savedPaperIds = MutableStateFlow<Set<String>>(emptySet())
-    val savedPaperIds: StateFlow<Set<String>> = _savedPaperIds.asStateFlow()
 
     fun recordPaperImpressions(paperIds: List<String>) {
         record { tracker.recordPaperImpressions(paperIds) }
@@ -127,9 +125,6 @@ class MnemeBehavioralEventRecorder(
     ) {
         _engagementState.update { state ->
             state.copy(saveStatuses = state.saveStatuses + (paperId to status))
-        }
-        if (status == EventRecordingStatus.RECORDED) {
-            _savedPaperIds.update { savedIds -> savedIds + paperId }
         }
     }
 

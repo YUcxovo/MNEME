@@ -41,7 +41,8 @@ internal fun InterestsDestination(
 internal fun PaperDestination(
     paperId: String,
     state: PaperDetailUiState,
-    isSaved: Boolean,
+    saveStatus: EventRecordingStatus,
+    shareStatus: EventRecordingStatus,
     actions: PaperDestinationActions,
 ) {
     when (state) {
@@ -59,7 +60,8 @@ internal fun PaperDestination(
                             sharePaper = actions.sharePaper,
                             openSource = actions.openSource,
                         ),
-                    isSaved = isSaved,
+                    saveStatus = saveStatus,
+                    shareStatus = shareStatus,
                 )
             } else {
                 LoadingState(message = "Loading paper and summary...")
