@@ -1,0 +1,23 @@
+[Unit]
+Description=Prepare or resume the deterministic Mneme demo account
+After=network-online.target mneme-api.service mneme-worker.service
+Wants=network-online.target
+Requires=mneme-api.service mneme-worker.service
+ConditionPathExists=/etc/mneme/demo.token
+
+[Service]
+Type=oneshot
+User=${service_user}
+Group=${service_group}
+WorkingDirectory=${install_dir}/backend
+EnvironmentFile=${environment_file}
+ExecStart=${install_dir}/backend/.venv/bin/python -m mneme.cli.seed_demo --base-url http://${api_host}:${api_port} --token-file /etc/mneme/demo.token --lock-file /var/lib/mneme/demo-seed.lock
+TimeoutStartSec=1800
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+StateDirectory=mneme
+ReadWritePaths=/var/lib/mneme
+ReadOnlyPaths=/etc/mneme/demo.token
+UMask=0077
