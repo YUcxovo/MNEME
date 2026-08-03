@@ -169,6 +169,34 @@ remove failed samples, restart the session, or retry automatically. Diagnose
 the retained failure and begin a new run ID if the protocol needs to be
 repeated.
 
+### Retained-run provenance
+
+The completed `resource-formal-20260729-r2` evidence was acquired at revision
+`a94833283f7fddc5be2b81b6bc57ab04699d3821` on branch
+`perf/android-e4-formal-rerun`. That revision is not an ancestor of this PR
+head. The acquisition runner
+`run_android_formal_resource_matrix.sh`, the measured graph instrumentation
+class `E4GraphMeasurementTest.kt`, and the complete `android/benchmark/` module
+are byte-identical between that revision and this PR head. However,
+`android/app/src/main/` is not byte-identical: the app under measurement
+predates the current source after later QA, navigation, and event-recorder
+changes. The retained measurements therefore characterize the APKs built at
+the acquisition revision, not the current PR-head app build.
+
+The earlier `resource-formal-20260729` directory is a retained failed
+acquisition at revision `a25972c658cb6813194adc84354867bf2b1222c0` on the same
+branch. Its failure records report exit status 255, the runner phase
+`emulator_boot`, and the generic reason `unexpected command failure`, while
+its `emulator_output.txt` reports `Boot completed in 34898 ms`. The trap
+recorded neither the failing command nor its line number, so the exact failing
+step and root cause remain undiagnosed; the phase label identifies only where
+the runner was when it exited and does not establish that emulator boot
+failed. No automatic retry was performed. `resource-formal-20260729-r2` is a
+separately initiated acquisition with a fresh run ID so the failed attempt
+remained intact; `-r2` denotes that second acquisition, not a recovered or
+selected subset of the failed run. Only the eight complete `-r2` sessions
+enter its derived analysis.
+
 ## Validation and analysis
 
 The runner validates every session before proceeding. A retained run can also
@@ -183,8 +211,8 @@ The analyzer treats each separately cold-booted session as the analysis unit:
 
 1. five retained observations become one median within each session;
 2. both session medians for each resource cell are preserved;
-3. their median, minimum, maximum, and explicit max-minus-min range are
-   reported;
+3. their arithmetic mean, minimum, maximum, and explicit max-minus-min range
+   are reported;
 4. CPU and RAM simple effects and their descriptive interaction are calculated
    separately for each block; and
 5. graph-latency curves retain the two session medians at each node count.

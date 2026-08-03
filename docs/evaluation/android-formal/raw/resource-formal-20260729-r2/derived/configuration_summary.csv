@@ -1,4 +1,4 @@
-metric,config_id,cpu_cores,ram_mb,block_1_session_median_ms,block_2_session_median_ms,median_of_two_ms,observed_min_ms,observed_max_ms,observed_range_ms
+metric,config_id,cpu_cores,ram_mb,block_1_session_median_ms,block_2_session_median_ms,mean_of_session_medians_ms,observed_min_ms,observed_max_ms,observed_range_ms
 cached_cold_ms,cpu2_ram2gb,2,2048,1425.161,1509.098,1467.13,1425.161,1509.098,83.937
 foreground_resume_ms,cpu2_ram2gb,2,2048,89.546,98.372,93.959,89.546,98.372,8.826
 graph_new_1_ms,cpu2_ram2gb,2,2048,96.65,111.973,104.311,96.65,111.973,15.323

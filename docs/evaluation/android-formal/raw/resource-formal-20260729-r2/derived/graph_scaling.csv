@@ -1,4 +1,4 @@
-config_id,cpu_cores,ram_mb,phase,node_count,block_1_session_median_ms,block_2_session_median_ms,median_of_two_ms,observed_min_ms,observed_max_ms,observed_range_ms
+config_id,cpu_cores,ram_mb,phase,node_count,block_1_session_median_ms,block_2_session_median_ms,mean_of_session_medians_ms,observed_min_ms,observed_max_ms,observed_range_ms
 cpu2_ram2gb,2,2048,new_webview_instance,1,96.65,111.973,104.311,96.65,111.973,15.323
 cpu2_ram2gb,2,2048,new_webview_instance,12,184.126,184.675,184.401,184.126,184.675,0.549
 cpu2_ram2gb,2,2048,new_webview_instance,25,179.806,198.734,189.27,179.806,198.734,18.928

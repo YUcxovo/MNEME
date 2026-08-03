@@ -794,7 +794,9 @@ def configuration_rows(summaries: Sequence[SessionSummary]) -> list[dict[str, ob
                     "ram_mb": ram_mb,
                     "block_1_session_median_ms": first,
                     "block_2_session_median_ms": second,
-                    "median_of_two_ms": rounded(statistics.median((first, second))),
+                    "mean_of_session_medians_ms": rounded(
+                        statistics.fmean((first, second)),
+                    ),
                     "observed_min_ms": rounded(min(first, second)),
                     "observed_max_ms": rounded(max(first, second)),
                     "observed_range_ms": rounded(abs(second - first)),
@@ -876,8 +878,8 @@ def graph_rows(summaries: Sequence[SessionSummary]) -> list[dict[str, object]]:
                         "node_count": nodes,
                         "block_1_session_median_ms": first,
                         "block_2_session_median_ms": second,
-                        "median_of_two_ms": rounded(
-                            statistics.median((first, second)),
+                        "mean_of_session_medians_ms": rounded(
+                            statistics.fmean((first, second)),
                         ),
                         "observed_min_ms": rounded(min(first, second)),
                         "observed_max_ms": rounded(max(first, second)),
@@ -952,10 +954,10 @@ def plot_graph_scaling(
                 key=lambda row: int(row["node_count"]),
             )
             x_values = [int(row["node_count"]) for row in group]
-            medians = [float(row["median_of_two_ms"]) for row in group]
+            means = [float(row["mean_of_session_medians_ms"]) for row in group]
             axis.plot(
                 x_values,
-                medians,
+                means,
                 marker="o",
                 linewidth=1.8,
                 color=colors[config_id],
@@ -975,7 +977,7 @@ def plot_graph_scaling(
                 )
         axis.set_title(title, loc="left", fontweight="bold")
         axis.set_xlabel("Graph nodes")
-        axis.set_ylabel("Session median latency (ms)")
+        axis.set_ylabel("Latency (ms; line = mean of session medians)")
         axis.set_xticks(list(EDGE_COUNTS))
         axis.grid(axis="y")
     handles, labels = axes[0].get_legend_handles_labels()
@@ -1009,21 +1011,22 @@ def plot_resource_interactions(
     figure, axes = plt.subplots(2, 2, figsize=(9.8, 7.4))
     for axis, (metric, title) in zip(axes.flat, metrics, strict=True):
         for cpu_cores, color in cpu_colors.items():
-            cell_medians: list[float] = []
+            cell_means_of_session_medians: list[float] = []
             for ram_mb in (2048, 6144):
                 cell_summaries = sorted(
                     (
                         summary
                         for summary in summaries
-                        if summary.cpu_cores == cpu_cores
-                        and summary.ram_mb == ram_mb
+                        if summary.cpu_cores == cpu_cores and summary.ram_mb == ram_mb
                     ),
                     key=lambda summary: summary.block,
                 )
                 cell_values = [
                     metric_map(summary)[metric] for summary in cell_summaries
                 ]
-                cell_medians.append(statistics.median(cell_values))
+                cell_means_of_session_medians.append(
+                    statistics.fmean(cell_values),
+                )
                 for summary in cell_summaries:
                     axis.scatter(
                         ram_mb // 1024,
@@ -1035,7 +1038,7 @@ def plot_resource_interactions(
                     )
             axis.plot(
                 [2, 6],
-                cell_medians,
+                cell_means_of_session_medians,
                 color=color,
                 marker="o",
                 linewidth=1.8,
@@ -1043,7 +1046,7 @@ def plot_resource_interactions(
             )
         axis.set_title(title, loc="left", fontweight="bold")
         axis.set_xlabel("Emulated RAM (GiB)")
-        axis.set_ylabel("Session median latency (ms)")
+        axis.set_ylabel("Latency (ms; line = mean of session medians)")
         axis.set_xticks([2, 6])
         axis.grid(axis="y")
     legend_handles = [
@@ -1154,7 +1157,7 @@ def analyze(args: argparse.Namespace) -> None:
             "retained_graph_pairs_per_node_count_per_session": 5,
             "within_session_summary": "median",
             "across_session_summary": (
-                "both raw session medians, median of two, and observed range"
+                "both session medians, their arithmetic mean, and observed range"
             ),
             "p95_reported": False,
             "confidence_intervals_reported": False,
