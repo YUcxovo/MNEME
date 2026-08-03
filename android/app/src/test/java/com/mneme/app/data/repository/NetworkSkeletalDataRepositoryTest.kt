@@ -6,6 +6,7 @@ import com.mneme.app.data.local.SkeletalCache
 import com.mneme.app.data.local.entity.DigestEntity
 import com.mneme.app.data.network.AnswerDto
 import com.mneme.app.data.network.CitationDto
+import com.mneme.app.data.network.ClaimProvenanceDto
 import com.mneme.app.data.network.DigestDto
 import com.mneme.app.data.network.DigestEntryDto
 import com.mneme.app.data.network.DigestPageDto
@@ -25,6 +26,7 @@ import com.mneme.app.data.network.QuestionDto
 import com.mneme.app.data.network.RemoteResource
 import com.mneme.app.data.network.SeedInitializationDto
 import com.mneme.app.data.network.SeedInitializationRequestDto
+import com.mneme.app.data.network.SourcedClaimDto
 import com.mneme.app.data.network.SummaryDto
 import com.mneme.app.data.network.UserEventDto
 import com.mneme.app.sync.LiveDigestBriefingRefresher
@@ -269,15 +271,7 @@ class NetworkSkeletalDataRepositoryTest {
             )
             remote.summaryResults.add(
                 RemoteResource.Ready(
-                    SummaryDto(
-                        paperId = "paper-1",
-                        status = "ready",
-                        tldr = "A live generated summary.",
-                        keyClaims = listOf("A grounded claim"),
-                        methodology = "A measured method",
-                        limitations = "A stated limitation",
-                        sourceMatchStatus = "matched",
-                    ),
+                    sourceLinkedSummary(),
                 ),
             )
             remote.job = JobDto(id = "job-1", stage = "summarize_paper", status = "succeeded")
@@ -285,11 +279,180 @@ class NetworkSkeletalDataRepositoryTest {
 
             val accepted = repository.loadPaper("paper-1") as PaperContentResult.Processing
             val ready = repository.refreshPaper("paper-1", accepted.jobId) as PaperContentResult.Ready
+            val claim = ready.paper.summaryClaims.single()
+            val cachedSummary = cache.papers["paper-1"]?.summary
 
             assertEquals("A live generated summary.", ready.paper.paper.summary)
             assertEquals(SourceMatchUiStatus.MATCHED, ready.paper.sourceMatchStatus)
+            assertEquals(SourceMatchUiStatus.MATCHED, claim.matchStatus)
+            assertEquals("Results", claim.source?.sectionTitle)
+            assertEquals("A grounded excerpt.", claim.source?.excerpt)
             assertEquals(ContentOrigin.LIVE_BACKEND, ready.paper.disclosure.origin)
             assertEquals(listOf("paper-1", "paper-1"), cache.openedPaperIds)
+            assertEquals("A grounded claim", cachedSummary?.keyClaims?.single())
+        }
+
+    @Test
+    fun paperSummary_mapsUnmatchedAndPartialSourceMetadataTruthfully() =
+        runBlocking {
+            val remote = FakeRemote()
+            remote.summaryResults.add(
+                RemoteResource.Ready(
+                    SummaryDto(
+                        paperId = "paper-1",
+                        status = "ready",
+                        tldr = "Mixed source coverage.",
+                        keyClaims = listOf("Unmatched claim", "Matched claim"),
+                        sourceMatchStatus = "partial",
+                        claims =
+                            listOf(
+                                SourcedClaimDto(text = "Unmatched claim", matched = false),
+                                sourcedClaim(
+                                    text = "Matched claim",
+                                    sectionTitle = null,
+                                    pageStart = null,
+                                    pageEnd = null,
+                                ),
+                            ),
+                    ),
+                ),
+            )
+            val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+            val ready = repository.loadPaper("paper-1") as PaperContentResult.Ready
+
+            assertEquals(SourceMatchUiStatus.UNMATCHED, ready.paper.summaryClaims[0].matchStatus)
+            assertEquals(null, ready.paper.summaryClaims[0].source)
+            assertEquals(SourceMatchUiStatus.MATCHED, ready.paper.summaryClaims[1].matchStatus)
+            assertEquals(
+                null,
+                ready.paper.summaryClaims[1]
+                    .source
+                    ?.sectionTitle,
+            )
+            assertEquals(
+                null,
+                ready.paper.summaryClaims[1]
+                    .source
+                    ?.pageStart,
+            )
+        }
+
+    @Test
+    fun legacySummary_hasNonClickableNotCheckedClaims() =
+        runBlocking {
+            val remote = FakeRemote()
+            remote.summaryResults.add(
+                RemoteResource.Ready(
+                    SummaryDto(
+                        paperId = "paper-1",
+                        status = "ready",
+                        tldr = "Legacy summary.",
+                        keyClaims = listOf("Legacy claim"),
+                        sourceMatchStatus = "not_checked",
+                    ),
+                ),
+            )
+            val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+            val ready = repository.loadPaper("paper-1") as PaperContentResult.Ready
+
+            assertEquals(
+                SourceMatchUiStatus.NOT_CHECKED,
+                ready.paper.summaryClaims
+                    .single()
+                    .matchStatus,
+            )
+            assertEquals(
+                null,
+                ready.paper.summaryClaims
+                    .single()
+                    .source,
+            )
+        }
+
+    @Test
+    fun offlinePaper_restoresCachedSummaryAndClaimAssociation() =
+        runBlocking {
+            val summary =
+                SummaryDto(
+                    paperId = "paper-1",
+                    status = "ready",
+                    tldr = "Cached linked summary.",
+                    keyClaims = listOf("A grounded claim"),
+                    sourceMatchStatus = "matched",
+                    claims = listOf(sourcedClaim(text = "A grounded claim")),
+                )
+            val cachedPaper = cachedPaper("paper-1", "Cached paper").copy(summary = summary)
+            val cache = FakeCache().apply { papers[cachedPaper.id] = cachedPaper }
+            val remote = FakeRemote().apply { paperFailure = IOException("offline") }
+            val repository = NetworkSkeletalDataRepository(remote, cache)
+
+            val ready = repository.loadPaper("paper-1") as PaperContentResult.Ready
+
+            assertEquals(ContentOrigin.CACHED_BACKEND, ready.paper.disclosure.origin)
+            assertEquals("Cached linked summary.", ready.paper.paper.summary)
+            assertEquals(
+                SourceMatchUiStatus.MATCHED,
+                ready.paper.summaryClaims
+                    .single()
+                    .matchStatus,
+            )
+            assertEquals(
+                CLAIM_CHUNK_ID,
+                ready.paper.summaryClaims
+                    .single()
+                    .source
+                    ?.chunkId,
+            )
+        }
+
+    @Test
+    fun offlinePaper_restoresLegacyCachedClaimWithoutSourceAction() =
+        runBlocking {
+            val legacySummary =
+                SummaryDto(
+                    paperId = "paper-1",
+                    status = "ready",
+                    tldr = "Cached legacy summary.",
+                    keyClaims = listOf("Legacy cached claim"),
+                    sourceMatchStatus = "not_checked",
+                )
+            val cachedPaper = cachedPaper("paper-1", "Cached paper").copy(summary = legacySummary)
+            val cache = FakeCache().apply { papers[cachedPaper.id] = cachedPaper }
+            val remote = FakeRemote().apply { paperFailure = IOException("offline") }
+            val repository = NetworkSkeletalDataRepository(remote, cache)
+
+            val ready = repository.loadPaper("paper-1") as PaperContentResult.Ready
+            val claim = ready.paper.summaryClaims.single()
+
+            assertEquals("Cached legacy summary.", ready.paper.paper.summary)
+            assertEquals(SourceMatchUiStatus.NOT_CHECKED, claim.matchStatus)
+            assertEquals(null, claim.source)
+        }
+
+    @Test
+    fun inconsistentClaimContract_fallsBackWithoutExposingWrongSource() =
+        runBlocking {
+            val remote = FakeRemote()
+            remote.summaryResults.add(
+                RemoteResource.Ready(
+                    SummaryDto(
+                        paperId = "paper-1",
+                        status = "ready",
+                        tldr = "Invalid contract.",
+                        keyClaims = listOf("Expected claim"),
+                        sourceMatchStatus = "matched",
+                        claims = listOf(sourcedClaim(text = "Different claim")),
+                    ),
+                ),
+            )
+            val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+            val ready = repository.loadPaper("paper-1") as PaperContentResult.Ready
+
+            assertEquals(ContentOrigin.CACHED_BACKEND, ready.paper.disclosure.origin)
+            assertTrue(ready.paper.summaryClaims.isEmpty())
         }
 
     @Test
@@ -631,6 +794,15 @@ class NetworkSkeletalDataRepositoryTest {
                 )
         }
 
+        override suspend fun storePaperContent(
+            paper: PaperDto,
+            summary: SummaryDto,
+            refreshedAtEpochMillis: Long,
+        ) {
+            storePaper(paper, refreshedAtEpochMillis)
+            papers[paper.id] = checkNotNull(papers[paper.id]).copy(summary = summary)
+        }
+
         override suspend fun getPaper(paperId: String): CachedPaper? = papers[paperId]
 
         override suspend fun markPaperOpened(
@@ -643,6 +815,7 @@ class NetworkSkeletalDataRepositoryTest {
 
     companion object {
         private const val REFRESHED_AT = 1_721_632_800_000L
+        private const val CLAIM_CHUNK_ID = "33333333-3333-4333-8333-333333333333"
 
         private fun preferences(): PreferencesDto =
             PreferencesDto(
@@ -722,6 +895,46 @@ class NetworkSkeletalDataRepositoryTest {
                 papers = listOf(cachedPaper("paper-1", "Cached paper")),
                 recommendationReasons = mapOf("paper-1" to "Cached reason"),
                 refreshedAtEpochMillis = REFRESHED_AT,
+            )
+
+        private fun sourcedClaim(
+            text: String,
+            sectionTitle: String? = "Results",
+            pageStart: Int? = 4,
+            pageEnd: Int? = 4,
+        ): SourcedClaimDto =
+            SourcedClaimDto(
+                text = text,
+                matched = true,
+                source =
+                    ClaimProvenanceDto(
+                        chunkId = CLAIM_CHUNK_ID,
+                        chunkIndex = 4,
+                        sectionTitle = sectionTitle,
+                        pageStart = pageStart,
+                        pageEnd = pageEnd,
+                        excerpt = "A grounded excerpt.",
+                    ),
+            )
+
+        private fun sourceLinkedSummary(): SummaryDto =
+            SummaryDto(
+                paperId = "paper-1",
+                status = "ready",
+                tldr = "A live generated summary.",
+                keyClaims = listOf("A grounded claim"),
+                methodology = "A measured method",
+                limitations = "A stated limitation",
+                sourceMatchStatus = "matched",
+                claims =
+                    listOf(
+                        sourcedClaim(
+                            text = "A grounded claim",
+                            sectionTitle = "Results",
+                            pageStart = 4,
+                            pageEnd = 5,
+                        ),
+                    ),
             )
 
         private fun graph(
