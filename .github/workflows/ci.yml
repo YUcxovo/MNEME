@@ -153,12 +153,12 @@ jobs:
                   } > "$nginx_root/nginx.conf"
 
                   cp "$render_dir/nginx-mneme-bootstrap.conf" "$nginx_root/site.conf"
-                  nginx -t -p "$nginx_root/" -c "$nginx_root/nginx.conf"
+                  sudo nginx -t -p "$nginx_root/" -c "$nginx_root/nginx.conf"
                   sed \
                     -e "s#/etc/letsencrypt/live/api.ci.example/fullchain.pem#$nginx_root/fullchain.pem#" \
                     -e "s#/etc/letsencrypt/live/api.ci.example/privkey.pem#$nginx_root/privkey.pem#" \
                     "$render_dir/nginx-mneme-tls.conf" > "$nginx_root/site.conf"
-                  nginx -t -p "$nginx_root/" -c "$nginx_root/nginx.conf"
+                  sudo nginx -t -p "$nginx_root/" -c "$nginx_root/nginx.conf"
 
             - name: Ruff Lint
               run: uv run ruff check .
