@@ -32,7 +32,10 @@ failure, so present it on purpose.
 
 All seven questions were part of the recorded live evaluation of
 `qa-seed-v2` (2026-07-28, flagship route `claude-opus-4-8`, fifteen cases,
-zero skips) reported in thesis Chapter 4:
+zero skips) reported in thesis Chapter 4. The raw run report is retained
+on the repository `docs` branch as
+`docs/evaluation/qa/qa-seed-v2-run-2026-07-28-opus.json`; the per-question
+provenance below is traceable to that file:
 
 - All six answerable questions above were answered with at least one
   verified citation and were fully source-matched under the 30% content-word
@@ -78,6 +81,11 @@ cache hit.
 - Provider outage during the demo: answers validated within 24 h are served
   from cache; questions outside the cache surface the standard
   `service_unavailable` error envelope rather than crashing the app.
-- Backend unreachable: the Android demo mode falls back to controlled
-  fixtures with an explicit data-source label; state the label honestly if
-  it appears.
+- Backend unreachable: a live-configured Android build does not switch to
+  controlled fixtures. It restores the last Room-cached briefing and paper
+  content where available (surfaced with the cached data-source label) and
+  shows the standard error state for anything not cached. The
+  controlled-fixture mode is a separate, deliberate operator choice: a
+  build with a blank demo token selects the fixture repository, which
+  labels its content explicitly. Decide before the demo which build is on
+  the device, and state the visible data-source label honestly.

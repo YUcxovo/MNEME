@@ -12,7 +12,11 @@ numbers where they exist and states plainly where they do not.
 Milestones 1-3 developed and tested the AI layer against deterministic
 provider fakes, at zero provider spend. Live LLM spend during development
 is concentrated in the recorded Milestone 4 evaluation runs (caching
-disabled or cold for every run, so each figure is genuine provider spend):
+disabled or cold for every run, so each figure is genuine provider spend).
+The raw run reports behind every figure in this table are retained on the
+repository `docs` branch as
+`docs/evaluation/qa/qa-seed-v2-run-2026-07-28-{opus,haiku}.json` and
+`docs/evaluation/summaries/summary-tier-study-2026-07-28.json`:
 
 | Recorded run (2026-07-28) | Model | Calls | Measured cost |
 |---------------------------|-------|-------|---------------|
@@ -22,13 +26,16 @@ disabled or cold for every run, so each figure is genuine provider spend):
 | Summary tier study, mid tier | claude-haiku-4-5 | 7 | $0.140 |
 | **Total recorded** | | | **$1.441** |
 
-Two smaller sources are not in run reports: the live end-to-end UI traces
-(one five-paper briefing preparation plus single Q&A turns, repeated a
-handful of times) and ad-hoc manual calls during integration. Both drew
-from the shared `BudgetGuard` daily cap, which was never exhausted on any
-development day; bounding them generously at two additional trace-days puts
-total development LLM spend under $5. Corpus embeddings used the local
-fastembed backend at $0.
+Two smaller sources sit outside the recorded runs and were not measured:
+the live end-to-end UI traces (one five-paper briefing preparation plus
+single Q&A turns, repeated a handful of times) and ad-hoc manual calls
+during integration. No per-call cost records or provider billing exports
+were retained for them, so their cost is reported as unrecorded rather
+than estimated, and this report claims no cumulative total beyond the
+$1.441 measured above. The shared `BudgetGuard` cap
+(`ai_daily_budget_usd = 5`) bounds any single development day but not
+multi-day cumulative spend. Corpus embeddings used the local fastembed
+backend at $0.
 
 The eval CLI intentionally does not persist to `qa_messages` (its JSON
 report is the durable record), and the local demo database confirms zero
@@ -82,7 +89,9 @@ scaling limit.
 ## Standing conclusions
 
 1. Development discipline held: fakes for iteration, a handful of recorded
-   live runs for evidence, total live spend under $5.
+   live runs for evidence. Measured recorded spend is $1.44; the only
+   spend outside that record (UI traces and ad-hoc integration calls) is
+   unrecorded and is reported as such, not estimated away.
 2. The frozen routing is the cost story: measured, not estimated, and the
    flagship tier is reserved for the one task whose failure contract
    (refusal markers) measurably needs it.
