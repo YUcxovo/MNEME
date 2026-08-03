@@ -15,7 +15,7 @@ from mneme.api.dependencies.auth import Principal
 from mneme.api.errors import ApiError
 from mneme.api.routes import onboarding
 from mneme.api.routes.onboarding_support import normalize_arxiv_reference
-from mneme.api.schemas.onboarding import SeedInitializationRequest
+from mneme.api.schemas.onboarding import SeedInitializationRequest, SeedInitializationResult
 from mneme.core.config import Settings
 from mneme.services.arxiv.client import ArxivHTTPError
 from mneme.services.seed_graph import SeedGraphMetadataUnavailable
@@ -89,6 +89,46 @@ def test_completed_seed_is_reused_before_external_requests(
     )
     arxiv_client.assert_not_called()
     assert onboarding._seed_generator_version("1706.03762") == ("seed-onboarding-v2:1706.03762")
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_existing_seed_retries_seed_but_waits_for_digest_papers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seed_paper_id = uuid4()
+    digest_paper_ids = (uuid4(), uuid4())
+    existing = SimpleNamespace(
+        digest=SimpleNamespace(
+            entries=[
+                SimpleNamespace(paper=SimpleNamespace(id=paper_id)) for paper_id in digest_paper_ids
+            ]
+        )
+    )
+    session = AsyncMock(spec=AsyncSession)
+    session.scalar.return_value = seed_paper_id
+    resume = AsyncMock(return_value=1)
+    wait = AsyncMock()
+    monkeypatch.setattr(onboarding, "resume_failed_seed_jobs", resume)
+    monkeypatch.setattr(onboarding, "wait_for_seed_papers", wait)
+    queue = cast(TaskQueue, MagicMock())
+
+    asyncio.run(
+        onboarding._resume_existing_seed(
+            session,
+            queue,
+            cast(SeedInitializationResult, existing),
+            seed_arxiv_id="1706.03762",
+        )
+    )
+
+    resume.assert_awaited_once_with(
+        session,
+        queue,
+        (seed_paper_id, *digest_paper_ids),
+    )
+    wait.assert_awaited_once_with(session, digest_paper_ids)
 
 
 @pytest.mark.base

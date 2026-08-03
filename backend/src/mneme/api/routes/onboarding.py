@@ -105,11 +105,10 @@ async def _resume_existing_seed(
             "seed_state_incomplete",
             "The stored demo seed is incomplete. Rebuild it before retrying.",
         )
-    paper_ids = tuple(
-        dict.fromkeys((seed_paper_id, *(entry.paper.id for entry in existing_seed.digest.entries)))
-    )
-    resumed = await resume_failed_seed_jobs(session, queue, paper_ids)
-    await wait_for_seed_papers(session, paper_ids)
+    digest_paper_ids = tuple(entry.paper.id for entry in existing_seed.digest.entries)
+    retry_scope = tuple(dict.fromkeys((seed_paper_id, *digest_paper_ids)))
+    resumed = await resume_failed_seed_jobs(session, queue, retry_scope)
+    await wait_for_seed_papers(session, digest_paper_ids)
     if resumed:
         logger.info(
             "seed_initialization_resumed",
