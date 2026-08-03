@@ -169,8 +169,19 @@ async def initialize_from_seed(
             embedding_model=settings.ai_embedding_model,
             seed_arxiv_id=seed_arxiv_id,
         )
+        refreshed_seed = await _load_existing_seed(
+            session,
+            user_id=principal.user_id,
+            seed_arxiv_id=seed_arxiv_id,
+        )
+        if refreshed_seed is None:
+            raise ApiError(
+                status.HTTP_502_BAD_GATEWAY,
+                "seed_state_incomplete",
+                "The stored demo seed is incomplete. Rebuild it before retrying.",
+            )
         logger.info("seed_initialization_reused", seed_arxiv_id=seed_arxiv_id)
-        return existing_seed
+        return refreshed_seed
 
     try:
         async with ArxivClient(settings) as client:
