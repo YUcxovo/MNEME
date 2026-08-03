@@ -60,6 +60,7 @@
     <string name="paper_key_claims">Key claims</string>
     <string name="paper_limitation">Current limitation</string>
     <string name="paper_methodology">Methodology</string>
+    <string name="paper_deep_link_invalid">This Mneme paper link is invalid.</string>
     <string name="paper_not_found">The selected paper is not available.</string>
     <string name="paper_source_inspectable">Open the source paper to inspect the material behind this summary.</string>
     <string name="paper_source_trace">SOURCE TRACE</string>
