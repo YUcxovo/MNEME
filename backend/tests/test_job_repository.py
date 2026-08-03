@@ -194,3 +194,56 @@ async def _exercise_scope_validation() -> None:
 
 def test_revision_scoped_stage_requires_both_resource_ids() -> None:
     asyncio.run(_exercise_scope_validation())
+
+
+async def _exercise_latest_failed_selection() -> None:
+    database = Database(DATABASE_URL)
+    paper_id, old_version_id, latest_version_id = await _add_paper(database)
+    old_job_id, latest_job_id, succeeded_job_id = uuid4(), uuid4(), uuid4()
+    try:
+        async with database.session_factory() as session, session.begin():
+            session.add_all(
+                [
+                    PipelineJob(
+                        id=old_job_id,
+                        paper_id=paper_id,
+                        paper_version_id=old_version_id,
+                        idempotency_key=f"failed-old-{uuid4().hex}",
+                        stage=PipelineStage.SUMMARIZE_PAPER,
+                        status=JobStatus.FAILED,
+                        pipeline_version="v1",
+                    ),
+                    PipelineJob(
+                        id=latest_job_id,
+                        paper_id=paper_id,
+                        paper_version_id=latest_version_id,
+                        idempotency_key=f"failed-latest-{uuid4().hex}",
+                        stage=PipelineStage.SUMMARIZE_PAPER,
+                        status=JobStatus.FAILED,
+                        pipeline_version="v1",
+                    ),
+                    PipelineJob(
+                        id=succeeded_job_id,
+                        paper_id=paper_id,
+                        paper_version_id=latest_version_id,
+                        idempotency_key=f"succeeded-latest-{uuid4().hex}",
+                        stage=PipelineStage.CHUNK_PAPER,
+                        status=JobStatus.SUCCEEDED,
+                        pipeline_version="v1",
+                    ),
+                ]
+            )
+
+        async with database.session_factory() as session:
+            jobs = await PipelineJobRepository(session).list_failed_latest_revision_jobs(
+                (paper_id,)
+            )
+
+        assert [job.id for job in jobs] == [latest_job_id]
+    finally:
+        await _delete_paper(database, paper_id)
+        await database.dispose()
+
+
+def test_failed_retry_selection_uses_only_latest_revision() -> None:
+    asyncio.run(_exercise_latest_failed_selection())
