@@ -2,6 +2,8 @@
 
 import re
 
+from pydantic import SecretStr
+
 from mneme.ai.routing import UnroutableModelError, infer_provider
 from mneme.ai.types import ProviderName
 from mneme.core.config import EmbeddingBackend, Environment, Settings
@@ -69,9 +71,9 @@ def static_preflight_checks(settings: Settings) -> tuple[PreflightCheck, ...]:
 
 def _provider_check(settings: Settings) -> PreflightCheck:
     keys = {
-        ProviderName.ANTHROPIC: settings.anthropic_api_key is not None,
-        ProviderName.DEEPSEEK: settings.deepseek_api_key is not None,
-        ProviderName.OPENAI: settings.openai_api_key is not None,
+        ProviderName.ANTHROPIC: _usable_secret(settings.anthropic_api_key),
+        ProviderName.DEEPSEEK: _usable_secret(settings.deepseek_api_key),
+        ProviderName.OPENAI: _usable_secret(settings.openai_api_key),
     }
     try:
         routes = (infer_provider(settings.llm_summary_model), infer_provider(settings.llm_qa_model))
@@ -90,5 +92,12 @@ def _provider_check(settings: Settings) -> PreflightCheck:
 
 
 def _contains_placeholder(value: str) -> bool:
-    lowered = value.lower()
-    return "<" in value or ">" in value or "replace-me" in lowered
+    lowered = value.strip().lower()
+    return not lowered or any(
+        marker in lowered
+        for marker in ("<", ">", "replace-me", "changeme", "placeholder", "your-key")
+    )
+
+
+def _usable_secret(value: SecretStr | None) -> bool:
+    return value is not None and not _contains_placeholder(value.get_secret_value())

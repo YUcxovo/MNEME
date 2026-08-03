@@ -125,7 +125,10 @@ def test_static_preflight_accepts_complete_production_configuration() -> None:
         ({"demo_token_sha256": "not-a-digest"}, "demo_identity"),
         ({"demo_user_id": None}, "demo_identity"),
         ({"anthropic_api_key": None}, "provider_routes"),
+        ({"anthropic_api_key": "   "}, "provider_routes"),
+        ({"anthropic_api_key": "replace-me"}, "provider_routes"),
         ({"openai_api_key": None}, "provider_routes"),
+        ({"openai_api_key": "your-key-here"}, "provider_routes"),
         ({"llm_qa_model": "<replace-me>"}, "provider_routes"),
         (
             {"database_url": "postgresql+asyncpg://postgres:postgres@localhost/mneme"},
