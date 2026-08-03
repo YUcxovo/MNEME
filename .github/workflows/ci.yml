@@ -116,6 +116,45 @@ jobs:
             - name: Install dependencies
               run: uv sync --locked --dev
 
+            - name: Validate deployment artifacts
+              if: >-
+                  contains(needs.changes.outputs.backend_files, 'deploy/') ||
+                  contains(needs.changes.outputs.backend_files, 'src/mneme/ops/deployment.py') ||
+                  contains(needs.changes.outputs.backend_files, 'test_deployment_renderer.py')
+              working-directory: .
+              run: |
+                  render_dir="$RUNNER_TEMP/mneme-deploy"
+                  nginx_root="$RUNNER_TEMP/mneme-nginx"
+                  uv run --project backend python -m mneme.cli.render_deployment \
+                    --server-name api.ci.example \
+                    --output-dir "$render_dir"
+                  systemd-analyze verify "$render_dir"/*.service "$render_dir"/*.timer
+
+                  sudo apt-get update -qq
+                  sudo apt-get install --yes nginx
+                  mkdir -p "$nginx_root"
+                  openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+                    -subj '/CN=api.ci.example' \
+                    -keyout "$nginx_root/privkey.pem" \
+                    -out "$nginx_root/fullchain.pem" 2>/dev/null
+                  {
+                    echo "pid $nginx_root/nginx.pid;"
+                    echo 'error_log stderr;'
+                    echo 'events {}'
+                    echo 'http {'
+                    echo '    access_log off;'
+                    echo "    include $nginx_root/site.conf;"
+                    echo '}'
+                  } > "$nginx_root/nginx.conf"
+
+                  cp "$render_dir/nginx-mneme-bootstrap.conf" "$nginx_root/site.conf"
+                  nginx -t -p "$nginx_root/" -c "$nginx_root/nginx.conf"
+                  sed \
+                    -e "s#/etc/letsencrypt/live/api.ci.example/fullchain.pem#$nginx_root/fullchain.pem#" \
+                    -e "s#/etc/letsencrypt/live/api.ci.example/privkey.pem#$nginx_root/privkey.pem#" \
+                    "$render_dir/nginx-mneme-tls.conf" > "$nginx_root/site.conf"
+                  nginx -t -p "$nginx_root/" -c "$nginx_root/nginx.conf"
+
             - name: Ruff Lint
               run: uv run ruff check .
 
