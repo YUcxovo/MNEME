@@ -14,6 +14,12 @@ abstract class BehavioralEventDao {
     @Insert(onConflict = OnConflictStrategy.ABORT)
     abstract suspend fun insert(event: BehavioralEventEntity): Long
 
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    abstract suspend fun insertIfAbsent(event: BehavioralEventEntity): Long
+
+    @Query("SELECT * FROM behavioral_events WHERE id = :eventId LIMIT 1")
+    abstract suspend fun findById(eventId: String): BehavioralEventEntity?
+
     @Query(
         "SELECT * FROM behavioral_events " +
             "WHERE sync_state = :syncState ORDER BY occurred_at ASC LIMIT :limit",

@@ -30,6 +30,14 @@ interface BehavioralEventStore {
         durationMillis: Long? = null,
     ): UUID
 
+    suspend fun recordOnce(
+        eventId: UUID,
+        type: BehavioralEventType,
+        paperId: UUID?,
+        occurredAtEpochMillis: Long,
+        durationMillis: Long? = null,
+    ): UUID
+
     suspend fun reservePendingBatch(
         limit: Int,
         attemptedAtEpochMillis: Long,
@@ -56,6 +64,45 @@ class BehavioralEventRepository(
         occurredAtEpochMillis: Long,
         durationMillis: Long?,
     ): UUID {
+        validateEvent(type, paperId, occurredAtEpochMillis, durationMillis)
+
+        val eventId = idGenerator()
+        behavioralEventDao.insert(
+            eventEntity(eventId, type, paperId, occurredAtEpochMillis, durationMillis),
+        )
+        return eventId
+    }
+
+    override suspend fun recordOnce(
+        eventId: UUID,
+        type: BehavioralEventType,
+        paperId: UUID?,
+        occurredAtEpochMillis: Long,
+        durationMillis: Long?,
+    ): UUID {
+        validateEvent(type, paperId, occurredAtEpochMillis, durationMillis)
+        val requested = eventEntity(eventId, type, paperId, occurredAtEpochMillis, durationMillis)
+        val inserted = behavioralEventDao.insertIfAbsent(requested)
+        if (inserted == INSERT_IGNORED) {
+            val existing = behavioralEventDao.findById(eventId.toString())
+            check(
+                existing != null &&
+                    existing.eventType == requested.eventType &&
+                    existing.paperId == requested.paperId &&
+                    existing.durationMillis == requested.durationMillis,
+            ) {
+                "An existing behavioral event uses the requested UUID for another payload."
+            }
+        }
+        return eventId
+    }
+
+    private fun validateEvent(
+        type: BehavioralEventType,
+        paperId: UUID?,
+        occurredAtEpochMillis: Long,
+        durationMillis: Long?,
+    ) {
         require(type.requiresPaperId == (paperId != null)) {
             if (type.requiresPaperId) {
                 "${type.wireValue} events require an internal paper UUID."
@@ -75,19 +122,21 @@ class BehavioralEventRepository(
         require(occurredAtEpochMillis >= 0) {
             "Event occurrence time cannot precede the Unix epoch."
         }
-
-        val eventId = idGenerator()
-        val event =
-            BehavioralEventEntity(
-                id = eventId.toString(),
-                eventType = type.wireValue,
-                paperId = paperId?.toString(),
-                occurredAtEpochMillis = occurredAtEpochMillis,
-                durationMillis = durationMillis,
-            )
-        behavioralEventDao.insert(event)
-        return eventId
     }
+
+    private fun eventEntity(
+        eventId: UUID,
+        type: BehavioralEventType,
+        paperId: UUID?,
+        occurredAtEpochMillis: Long,
+        durationMillis: Long?,
+    ) = BehavioralEventEntity(
+        id = eventId.toString(),
+        eventType = type.wireValue,
+        paperId = paperId?.toString(),
+        occurredAtEpochMillis = occurredAtEpochMillis,
+        durationMillis = durationMillis,
+    )
 
     override suspend fun reservePendingBatch(
         limit: Int,
@@ -119,5 +168,9 @@ class BehavioralEventRepository(
         if (eventIds.isNotEmpty()) {
             behavioralEventDao.markPending(eventIds.map(UUID::toString), error)
         }
+    }
+
+    private companion object {
+        const val INSERT_IGNORED = -1L
     }
 }

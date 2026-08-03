@@ -145,6 +145,14 @@ class BehavioralEventSyncCoordinatorTest {
             durationMillis: Long?,
         ): UUID = error("record is not used by sync tests")
 
+        override suspend fun recordOnce(
+            eventId: UUID,
+            type: BehavioralEventType,
+            paperId: UUID?,
+            occurredAtEpochMillis: Long,
+            durationMillis: Long?,
+        ): UUID = error("recordOnce is not used by sync tests")
+
         override suspend fun reservePendingBatch(
             limit: Int,
             attemptedAtEpochMillis: Long,
