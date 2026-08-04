@@ -1,4 +1,4 @@
-﻿@file:Suppress("ktlint:standard:function-naming")
+@file:Suppress("ktlint:standard:function-naming")
 
 package com.mneme.app.ui.graph
 

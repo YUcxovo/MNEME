@@ -1,4 +1,4 @@
-﻿@file:Suppress("ktlint:standard:function-naming", "FunctionNaming", "LongParameterList", "MaxLineLength")
+@file:Suppress("ktlint:standard:function-naming", "FunctionNaming", "LongParameterList", "MaxLineLength")
 
 package com.mneme.app.ui
 

@@ -1,4 +1,4 @@
-﻿package com.mneme.app.ui.graph
+package com.mneme.app.ui.graph
 
 import com.mneme.app.ui.model.GraphEdgeUiModel
 import com.mneme.app.ui.model.GraphNodeUiModel

@@ -1,4 +1,4 @@
-﻿package com.mneme.app.ui
+package com.mneme.app.ui
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavGraphBuilder
