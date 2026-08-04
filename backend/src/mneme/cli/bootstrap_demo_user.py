@@ -13,7 +13,7 @@ from mneme.repositories.demo_user_bootstrap import (
     DemoUserBootstrapResult,
 )
 
-DEFAULT_DISPLAY_NAME = "Mneme Demo User"
+DEFAULT_DISPLAY_NAME = "Mneme Demo Researcher"
 MISSING_USER_ERROR = "demo_user_id_not_configured"
 
 

@@ -16,8 +16,9 @@ Engineering sources of truth:
 - [`docs/adr/0002-m3-behavior-baseline.md`](docs/adr/0002-m3-behavior-baseline.md) -- deterministic behavior-v1 decision
 - [`docs/adr/0003-behavior-v2.md`](docs/adr/0003-behavior-v2.md) -- confidence-calibrated contrastive behavior model
 - [`docs/evaluation/behavior/README.md`](docs/evaluation/behavior/README.md) -- controlled behavior evaluation and claim boundary
+- [`deploy/README.md`](deploy/README.md) -- production artifact boundaries and operator runbook
 
-Current implementation status (2026-07-30): the checkout contains the backend/data and AI platform through Milestone 3, the live skeletal Android path, and Ruiyu's Milestone 4 platform-hardening units. In addition to the v0.1 relational schema, ingestion, durable jobs, provider-routed AI pipeline, retrieval, Q&A, recommendations, graph, behavior, scheduling, caching, and evaluation, the backend now has separate liveness/readiness probes, safe dependency-failure mapping, lazy ARQ dispatch connections, bounded database pools, a SQL-backed operations report, and expanded cross-layer integration coverage.
+Current implementation status (2026-08-03): the checkout contains the backend/data and AI platform, the live skeletal Android path, platform hardening, and a code-only production-delivery package. In addition to the v0.1 relational schema, ingestion, durable jobs, provider-routed AI pipeline, retrieval, Q&A, recommendations, graph, behavior, scheduling, caching, and evaluation, the backend has separate liveness/readiness probes, safe dependency-failure mapping, lazy ARQ dispatch connections, bounded database pools, and a SQL-backed operations report. The delivery package adds a production ASGI process configuration, rendered Nginx/systemd artifacts, a manual preflight gate, validated local backups, private health checks, installation-local demo replay, and a public-API smoke sequence. It does not claim that a VM, DNS name, TLS certificate, provider configuration, off-host backup, alert channel, or live Android integration has been provisioned or validated.
 
 This checkout connects seed-paper onboarding -> Android briefing -> paper summary ->
 single-paper Q&A -> arXiv source flow to those implemented REST APIs. It adds
@@ -72,7 +73,7 @@ cd android
 ./gradlew ktlintCheck           # Lint check
 ```
 
-### Backend (Milestone 3 platform available on this branch)
+### Backend platform and delivery tooling
 
 The backend includes FastAPI/Uvicorn, Pydantic settings, structlog, async SQLAlchemy/asyncpg, PostgreSQL/pgvector, Alembic, Redis/ARQ, a rate-limited arXiv client, revision-safe local document artifacts, PyMuPDF/pdfplumber parsing, provider-routed AI services, durable staged jobs, daily/weekly schedulers, and the test toolchain. See [`backend/README.md`](backend/README.md) for operational setup, recovery semantics, and current limitations.
 
@@ -80,7 +81,7 @@ The backend includes FastAPI/Uvicorn, Pydantic settings, structlog, async SQLAlc
 |-----------|---------|---------|------|
 | Python | 3.11+ | Development language | https://www.python.org |
 | FastAPI + Uvicorn | Current compatible releases | Async REST API and development server | https://fastapi.tiangolo.com |
-| Gunicorn | Planned; not currently installed | Production process manager after deployment packaging is defined | https://gunicorn.org |
+| Gunicorn + uvicorn-worker | Current locked compatible releases | Production ASGI process manager and worker | https://gunicorn.org |
 | SQLAlchemy + asyncpg | SQLAlchemy 2.x | Async ORM and PostgreSQL driver | https://www.sqlalchemy.org |
 | Alembic | Current compatible release | Database migrations | https://alembic.sqlalchemy.org |
 | PostgreSQL + pgvector | PostgreSQL 16 baseline | Relational data and vector search | https://github.com/pgvector/pgvector |
@@ -134,13 +135,13 @@ embeddings. Final choices are made from measured quality, latency, and cost.
 | GitHub Actions | CI: lint + test | https://github.com/features/actions |
 | Nginx | Reverse proxy | https://nginx.org |
 | systemd | Process management | https://systemd.io |
-| pg_dump + cron | Daily database backup | https://www.postgresql.org/docs/16/app-pgdump.html |
+| pg_dump + systemd timer | Validated local backup creation and scheduling | https://www.postgresql.org/docs/16/app-pgdump.html |
 
 ---
 
 ## Model and Engine
 
-The following sections describe the target MVP architecture, not the current scaffold.
+The following sections describe the selected MVP architecture. The implementation status and live-operation boundaries are stated above and in the linked engineering documents.
 
 ### Story Map
 

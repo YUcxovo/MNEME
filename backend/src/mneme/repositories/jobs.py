@@ -5,12 +5,13 @@ from __future__ import annotations
 from datetime import timedelta
 from uuid import UUID, uuid4
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.models.base import utc_now
 from mneme.models.job import JobStatus, PipelineJob, PipelineStage
+from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
 from mneme.repositories.job_identity import (
     PIPELINE_VERSION,
     PipelineJobIdentityConflictError,
@@ -180,6 +181,33 @@ class PipelineJobRepository:
         if revision_only:
             statement = statement.where(PipelineJob.paper_version_id.is_not(None))
         statement = statement.order_by(PipelineJob.created_at, PipelineJob.id).limit(limit)
+        return list((await self._session.scalars(statement)).all())
+
+    async def list_failed_latest_revision_jobs(
+        self, paper_ids: tuple[UUID, ...]
+    ) -> list[PipelineJob]:
+        """Return failed jobs bound to each paper's latest observed revision."""
+        if not paper_ids:
+            return []
+        latest_version_number = (
+            select(func.max(PaperVersion.version_number))
+            .where(PaperVersion.paper_id == PipelineJob.paper_id)
+            .correlate(PipelineJob)
+            .scalar_subquery()
+        )
+        statement = (
+            select(PipelineJob)
+            .join(PaperVersion, PaperVersion.id == PipelineJob.paper_version_id)
+            .join(Paper, Paper.id == PipelineJob.paper_id)
+            .where(
+                PipelineJob.paper_id.in_(paper_ids),
+                PipelineJob.status == JobStatus.FAILED,
+                PipelineJob.pipeline_version == PIPELINE_VERSION,
+                PaperVersion.version_number == latest_version_number,
+                Paper.processing_status != ProcessingStatus.READY,
+            )
+            .order_by(PipelineJob.created_at, PipelineJob.id)
+        )
         return list((await self._session.scalars(statement)).all())
 
     async def mark_running(self, job_id: UUID) -> None:

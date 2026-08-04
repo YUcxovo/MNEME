@@ -51,6 +51,7 @@ def test_worker_registers_probe_and_ai_stages() -> None:
         assemble_digest,
     ]
     assert WorkerSettings.queue_name == "mneme:jobs"
+    assert WorkerSettings.job_completion_wait == WorkerSettings.job_timeout
     assert WorkerSettings.health_check_key == "mneme:worker:health"
     assert len(WorkerSettings.cron_jobs) == 1
     assert WorkerSettings.cron_jobs[0].coroutine is recover_revision_dispatches

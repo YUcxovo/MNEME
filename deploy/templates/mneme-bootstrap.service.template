@@ -1,0 +1,19 @@
+[Unit]
+Description=Provision the configured Mneme demo identity
+After=network-online.target mneme-migrate.service
+Wants=network-online.target
+Requires=mneme-migrate.service
+
+[Service]
+Type=oneshot
+User=${service_user}
+Group=${service_group}
+WorkingDirectory=${install_dir}/backend
+EnvironmentFile=${environment_file}
+ExecStart=${install_dir}/backend/.venv/bin/python -m mneme.cli.bootstrap_demo_user
+TimeoutStartSec=60
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+UMask=0077

@@ -42,7 +42,7 @@ def _repository_with_results(*results: MagicMock) -> tuple[PlatformOperationsRep
 def test_empty_snapshot_prefills_every_stable_enum_bucket() -> None:
     repository, session = _repository_with_results(
         _result(),
-        _result(one=(0, 0, 0, 0)),
+        _result(one=(0, 0, 0, 0, 0)),
         _result(scalar=0),
         _result(),
         _result(),
@@ -96,7 +96,7 @@ def test_snapshot_maps_counts_with_distinct_created_and_finished_windows() -> No
                 (PipelineStage.PARSE_PDF, JobStatus.FAILED, 1, 2),
             ]
         ),
-        _result(one=(4, 1, 2, 1)),
+        _result(one=(4, 1, 1, 2, 1)),
         _result(scalar=1),
         _result(
             rows=[
@@ -135,6 +135,7 @@ def test_snapshot_maps_counts_with_distinct_created_and_finished_windows() -> No
     assert jobs["dispatch_attempts"] == 5
     assert jobs["queued"] == 4
     assert jobs["running"] == 1
+    assert jobs["stale_running"] == 1
     assert jobs["undispatched_queued"] == 2
     assert jobs["stale_dispatched_queued"] == 1
     assert jobs["failed"] == 1
@@ -195,6 +196,8 @@ def test_snapshot_maps_counts_with_distinct_created_and_finished_windows() -> No
     assert "FILTER (WHERE pipeline_jobs.status =" in active_sql
     assert "pipeline_jobs.dispatched_at IS NULL" in active_sql
     assert "pipeline_jobs.dispatched_at <" in active_sql
+    assert "pipeline_jobs.started_at IS NULL" in active_sql
+    assert "pipeline_jobs.started_at <" in active_sql
     assert "pipeline_jobs.finished_at >=" in failed_count_sql
     assert "pipeline_jobs.finished_at <" in failed_count_sql
     assert "ORDER BY pipeline_jobs.finished_at DESC, pipeline_jobs.id DESC" in failure_sql
@@ -204,3 +207,26 @@ def test_snapshot_maps_counts_with_distinct_created_and_finished_windows() -> No
     assert "DISTINCT ON (paper_versions.paper_id)" in quality_sql
     assert "LEFT OUTER JOIN" in quality_sql
     assert "digests.generated_at >=" in digest_sql
+
+
+def test_latest_success_by_stage_preserves_requested_empty_buckets() -> None:
+    now = datetime(2026, 8, 3, 8, tzinfo=UTC)
+    repository, session = _repository_with_results(
+        _result(rows=[(PipelineStage.FETCH_METADATA, now)])
+    )
+
+    result = asyncio.run(
+        repository.latest_success_by_stage(
+            (PipelineStage.FETCH_METADATA, PipelineStage.ASSEMBLE_DIGEST)
+        )
+    )
+
+    assert result == {
+        PipelineStage.FETCH_METADATA: now,
+        PipelineStage.ASSEMBLE_DIGEST: None,
+    }
+    statement = session.execute.await_args.args[0]
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+    assert "max(pipeline_jobs.finished_at)" in sql
+    assert "pipeline_jobs.status =" in sql
+    assert "GROUP BY pipeline_jobs.stage" in sql

@@ -1,0 +1,11 @@
+[Unit]
+Description=Check the Mneme weekly Research Briefing scheduler daily
+
+[Timer]
+OnCalendar=*-*-* 03:00:00 UTC
+Persistent=true
+RandomizedDelaySec=15m
+Unit=mneme-digest.service
+
+[Install]
+WantedBy=timers.target

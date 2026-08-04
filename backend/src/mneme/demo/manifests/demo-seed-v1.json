@@ -1,0 +1,65 @@
+{
+  "schema_version": "demo-seed-manifest-v1",
+  "manifest_id": "mneme-live-core-v1",
+  "seed_arxiv_reference": "1706.03762",
+  "display_name": "Mneme Demo Researcher",
+  "onboarding_limit": 5,
+  "topics": [
+    "machine learning",
+    "artificial intelligence",
+    "representation learning"
+  ],
+  "followed_authors": [],
+  "events": [
+    {
+      "key": "rank-1-impression",
+      "paper_rank": 1,
+      "event_type": "paper_impression",
+      "seconds_before_anchor": 7200
+    },
+    {
+      "key": "rank-1-opened",
+      "paper_rank": 1,
+      "event_type": "paper_opened",
+      "seconds_before_anchor": 7000,
+      "duration_ms": 240000
+    },
+    {
+      "key": "rank-1-saved",
+      "paper_rank": 1,
+      "event_type": "paper_saved",
+      "seconds_before_anchor": 6800
+    },
+    {
+      "key": "rank-2-impression",
+      "paper_rank": 2,
+      "event_type": "paper_impression",
+      "seconds_before_anchor": 6500
+    },
+    {
+      "key": "rank-2-skipped",
+      "paper_rank": 2,
+      "event_type": "paper_skipped",
+      "seconds_before_anchor": 6200
+    },
+    {
+      "key": "rank-3-impression",
+      "paper_rank": 3,
+      "event_type": "paper_impression",
+      "seconds_before_anchor": 5900
+    },
+    {
+      "key": "rank-3-opened",
+      "paper_rank": 3,
+      "event_type": "paper_opened",
+      "seconds_before_anchor": 5600,
+      "duration_ms": 150000
+    },
+    {
+      "key": "rank-3-question",
+      "paper_rank": 3,
+      "event_type": "question_asked",
+      "seconds_before_anchor": 5200
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+[Unit]
+Description=Gate Mneme production configuration and dependencies
+After=network-online.target mneme-bootstrap.service
+Wants=network-online.target
+Requires=mneme-bootstrap.service
+
+[Service]
+Type=oneshot
+User=${service_user}
+Group=${service_group}
+WorkingDirectory=${install_dir}/backend
+EnvironmentFile=${environment_file}
+Environment=PGSERVICE=mneme-backup
+Environment=PGSERVICEFILE=/etc/mneme/pg_service.conf
+Environment=PGPASSFILE=/etc/mneme/pgpass
+ExecStart=${install_dir}/backend/.venv/bin/python -m mneme.cli.preflight_deployment --alembic-config ${install_dir}/backend/alembic.ini
+TimeoutStartSec=120
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=${paper_data_dir}
+ReadOnlyPaths=/etc/mneme/pg_service.conf /etc/mneme/pgpass
+UMask=0077
+
+# Manual operator gate; API and worker retain migration-only runtime dependencies.

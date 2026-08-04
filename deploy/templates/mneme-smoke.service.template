@@ -1,0 +1,23 @@
+[Unit]
+Description=Exercise the deployed Mneme MVP over its public API
+After=network-online.target mneme-api.service mneme-worker.service
+Wants=network-online.target
+Requires=mneme-api.service mneme-worker.service
+
+[Service]
+Type=oneshot
+User=${service_user}
+Group=${service_group}
+WorkingDirectory=${install_dir}/backend
+EnvironmentFile=${environment_file}
+ExecStart=${install_dir}/backend/.venv/bin/python -m mneme.cli.smoke_backend --token-file /etc/mneme/demo.token
+TimeoutStartSec=900
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadOnlyPaths=/etc/mneme/demo.token
+UMask=0077
+
+# Run manually after TLS, seeding, and provider validation. Do not enable it as
+# a timer: it may trigger bounded AI work and is an acceptance gate, not health monitoring.

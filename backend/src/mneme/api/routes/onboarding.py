@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Annotated, Final
+from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, status
@@ -16,15 +18,17 @@ from mneme.api.errors import ApiError, ErrorResponse
 from mneme.api.routes.onboarding_support import (
     enqueue_seed_downloads,
     normalize_arxiv_reference,
+    resume_failed_seed_jobs,
     wait_for_seed_papers,
 )
 from mneme.api.schemas.digests import Digest
 from mneme.api.schemas.onboarding import SeedInitializationRequest, SeedInitializationResult
 from mneme.api.schemas.preferences import Preferences
 from mneme.core.config import Settings, get_settings
+from mneme.core.timeouts import SEED_ONBOARDING_ROUTE_TIMEOUT_SECONDS
 from mneme.db.dependencies import get_session
 from mneme.models.digest import DigestEntry, DigestType
-from mneme.models.paper import Paper, PaperAuthor
+from mneme.models.paper import Paper, PaperAuthor, ProcessingStatus
 from mneme.repositories.citation_graph import CitationIdentityConflict
 from mneme.repositories.digests import DigestRepository
 from mneme.repositories.preferences import PreferenceRepository
@@ -51,6 +55,87 @@ _GRAPH_NEIGHBOR_LIMIT: Final = 20
 _LIBRARY_SIZE: Final = 5
 
 
+def _seed_generator_version(seed_arxiv_id: str) -> str:
+    return f"seed-onboarding-v2:{seed_arxiv_id}"
+
+
+async def _load_existing_seed(
+    session: AsyncSession,
+    *,
+    user_id: UUID,
+    seed_arxiv_id: str,
+) -> SeedInitializationResult | None:
+    """Recover a completed seed digest before contacting external providers."""
+    digest = await DigestRepository(session).get_latest_by_generator(
+        user_id=user_id,
+        generator_version=_seed_generator_version(seed_arxiv_id),
+    )
+    if digest is None or len(digest.entries) != _LIBRARY_SIZE:
+        return None
+    preference = await PreferenceRepository(session).get_preferences(user_id)
+    seed_paper = await session.scalar(select(Paper).where(Paper.arxiv_id == seed_arxiv_id).limit(1))
+    if (
+        preference is None
+        or seed_paper is None
+        or seed_paper.processing_status is not ProcessingStatus.READY
+    ):
+        return None
+    return SeedInitializationResult(
+        seed_arxiv_id=seed_arxiv_id,
+        category=seed_paper.primary_category,
+        paper_count=len(digest.entries),
+        preferences=Preferences(
+            topics=preference.topics,
+            followed_authors=preference.followed_authors,
+            model_version=preference.model_version,
+            updated_at=preference.updated_at,
+        ),
+        digest=Digest.from_model(digest),
+    )
+
+
+async def _resume_existing_seed(
+    session: AsyncSession,
+    queue: TaskQueue,
+    existing_seed: SeedInitializationResult,
+    *,
+    deadline: float,
+    embedding_model: str,
+    seed_arxiv_id: str,
+) -> None:
+    """Resume failed preparation stages represented by an existing digest."""
+    seed_paper_id = await session.scalar(
+        select(Paper.id).where(Paper.arxiv_id == seed_arxiv_id).limit(1)
+    )
+    if seed_paper_id is None:
+        raise ApiError(
+            status.HTTP_502_BAD_GATEWAY,
+            "seed_state_incomplete",
+            "The stored demo seed is incomplete. Rebuild it before retrying.",
+        )
+    digest_paper_ids = tuple(entry.paper.id for entry in existing_seed.digest.entries)
+    retry_scope = tuple(dict.fromkeys((seed_paper_id, *digest_paper_ids)))
+    resumed = await resume_failed_seed_jobs(
+        session,
+        queue,
+        retry_scope,
+        embedding_model=embedding_model,
+    )
+    await wait_for_seed_papers(
+        session,
+        retry_scope,
+        embedding_model=embedding_model,
+        required_ready_ids=(seed_paper_id,),
+        deadline=deadline,
+    )
+    if resumed:
+        logger.info(
+            "seed_initialization_resumed",
+            seed_arxiv_id=seed_arxiv_id,
+            resumed_jobs=resumed,
+        )
+
+
 def get_request_settings() -> Settings:
     """Return process settings; overridable in tests."""
     return get_settings()
@@ -70,10 +155,68 @@ async def initialize_from_seed(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> SeedInitializationResult:
     """Prepare five citation-related papers before returning the first briefing."""
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + SEED_ONBOARDING_ROUTE_TIMEOUT_SECONDS
+    try:
+        async with asyncio.timeout_at(deadline):
+            return await _initialize_from_seed(
+                payload,
+                principal,
+                queue,
+                settings,
+                session,
+                deadline=deadline,
+            )
+    except TimeoutError:
+        raise ApiError(
+            status.HTTP_504_GATEWAY_TIMEOUT,
+            "seed_initialization_timeout",
+            "Preparing five related papers took too long. Try again to resume the work.",
+        ) from None
+
+
+async def _initialize_from_seed(
+    payload: SeedInitializationRequest,
+    principal: Principal,
+    queue: TaskQueue,
+    settings: Settings,
+    session: AsyncSession,
+    *,
+    deadline: float,
+) -> SeedInitializationResult:
+    """Run every metadata and preparation stage within one request deadline."""
     try:
         seed_arxiv_id = normalize_arxiv_reference(payload.arxiv_reference)
     except ValueError as error:
         raise ApiError(status.HTTP_400_BAD_REQUEST, "invalid_arxiv_reference", str(error)) from None
+
+    existing_seed = await _load_existing_seed(
+        session,
+        user_id=principal.user_id,
+        seed_arxiv_id=seed_arxiv_id,
+    )
+    if existing_seed is not None:
+        await _resume_existing_seed(
+            session,
+            queue,
+            existing_seed,
+            deadline=deadline,
+            embedding_model=settings.ai_embedding_model,
+            seed_arxiv_id=seed_arxiv_id,
+        )
+        refreshed_seed = await _load_existing_seed(
+            session,
+            user_id=principal.user_id,
+            seed_arxiv_id=seed_arxiv_id,
+        )
+        if refreshed_seed is None:
+            raise ApiError(
+                status.HTTP_502_BAD_GATEWAY,
+                "seed_state_incomplete",
+                "The stored demo seed is incomplete. Rebuild it before retrying.",
+            )
+        logger.info("seed_initialization_reused", seed_arxiv_id=seed_arxiv_id)
+        return refreshed_seed
 
     try:
         async with ArxivClient(settings) as client:
@@ -172,13 +315,20 @@ async def initialize_from_seed(
             "The configured demo user has not been bootstrapped.",
         )
 
-    revisions_to_prepare = (
-        (seed_result.revisions[0], *candidates)
-        if candidate_source == "citation_graph"
-        else candidates
+    revisions_to_prepare = (seed_result.revisions[0], *candidates)
+    paper_ids = await enqueue_seed_downloads(
+        session,
+        queue,
+        revisions_to_prepare,
+        embedding_model=settings.ai_embedding_model,
     )
-    paper_ids = await enqueue_seed_downloads(session, queue, revisions_to_prepare)
-    await wait_for_seed_papers(session, paper_ids)
+    await wait_for_seed_papers(
+        session,
+        paper_ids,
+        embedding_model=settings.ai_embedding_model,
+        required_ready_ids=(seed_result.revisions[0].paper_id,),
+        deadline=deadline,
+    )
 
     candidate_order = [revision.paper_id for revision in candidates]
     prepared_papers = list(
@@ -204,11 +354,22 @@ async def initialize_from_seed(
         )
         for rank, paper_id in enumerate(candidate_order, start=1)
     ]
-    digest_model = await DigestRepository(session).create_digest(
+    digest_repository = DigestRepository(session)
+    await digest_repository.lock_user(principal.user_id)
+    existing_seed = await _load_existing_seed(
+        session,
+        user_id=principal.user_id,
+        seed_arxiv_id=seed_arxiv_id,
+    )
+    if existing_seed is not None:
+        await session.commit()
+        logger.info("seed_initialization_reused", seed_arxiv_id=seed_arxiv_id)
+        return existing_seed
+    digest_model = await digest_repository.create_digest(
         user_id=principal.user_id,
         digest_type=DigestType.MANUAL,
         preference_model_version=preference.model_version,
-        generator_version="seed-onboarding-v1",
+        generator_version=_seed_generator_version(seed_arxiv_id),
         entries=entries,
     )
     await session.commit()

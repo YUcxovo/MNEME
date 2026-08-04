@@ -12,7 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mneme.ai.budget import BudgetExceededError
 from mneme.ai.pipeline import PaperNotReadyError
 from mneme.ai.types import LLMProviderError, ProviderNotConfiguredError
+from mneme.core.timeouts import AI_STAGE_EXECUTION_TIMEOUT_SECONDS
 from mneme.models.job import JobStatus, PipelineStage
+from mneme.repositories.job_identity import PIPELINE_VERSION
 from mneme.repositories.jobs import PipelineJobRepository
 from mneme.services.documents import DocumentStorage, ParsedDocument
 
@@ -23,6 +25,10 @@ StageRunner = Callable[[AsyncSession], Awaitable[object]]
 
 class ParsedDocumentUnavailableError(RuntimeError):
     """The immutable parser sidecar required by an AI stage is unavailable."""
+
+
+class AIStageTimeoutError(TimeoutError):
+    """The complete AI stage exhausted its bounded execution budget."""
 
 
 async def load_parsed_document(
@@ -71,6 +77,7 @@ async def run_ai_stage(
                 job.stage != stage
                 or job.paper_id != resolved_paper_id
                 or job.paper_version_id != resolved_version_id
+                or job.pipeline_version != PIPELINE_VERSION
             ):
                 return "pipeline_job_identity_mismatch"
             if job.status is JobStatus.SUCCEEDED:
@@ -81,7 +88,8 @@ async def run_ai_stage(
             await session.commit()
 
         try:
-            outcome = await runner(session)
+            async with asyncio.timeout(AI_STAGE_EXECUTION_TIMEOUT_SECONDS):
+                outcome = await runner(session)
             await session.commit()
         except BudgetExceededError as error:
             result = ("ai_budget_exhausted", "budget_exhausted", error, False)
@@ -93,6 +101,13 @@ async def run_ai_stage(
             result = ("paper_not_ready", "paper_not_ready", error, False)
         except ParsedDocumentUnavailableError as error:
             result = ("parsed_document_unavailable", "parsed_document_unavailable", error, False)
+        except TimeoutError:
+            result = (
+                "ai_stage_timeout",
+                "ai_stage_timeout",
+                AIStageTimeoutError("The AI stage exceeded its complete execution budget."),
+                True,
+            )
         except BaseException:
             await session.rollback()
             if resolved_job_id is not None:

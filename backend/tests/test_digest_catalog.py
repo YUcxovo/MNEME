@@ -165,6 +165,31 @@ def test_digest_user_lock_serializes_preference_snapshots() -> None:
 
 
 @pytest.mark.base
+@pytest.mark.db
+def test_digest_generator_lookup_is_user_scoped_and_eager() -> None:
+    session = Mock(spec=AsyncSession)
+    session.scalar = AsyncMock(return_value=None)
+    repository = DigestRepository(cast(AsyncSession, session))
+
+    result = asyncio.run(
+        repository.get_latest_by_generator(
+            user_id=USER_ID,
+            generator_version="seed-onboarding-v2:1706.03762",
+        )
+    )
+
+    assert result is None
+    await_args = session.scalar.await_args
+    assert await_args is not None
+    statement = await_args.args[0]
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+    assert "digests.user_id =" in sql
+    assert "digests.generator_version =" in sql
+    assert "ORDER BY digests.generated_at DESC, digests.id DESC" in sql
+    assert statement._with_options
+
+
+@pytest.mark.base
 @pytest.mark.rag
 def test_candidate_query_requires_current_summary_and_usable_status() -> None:
     now = datetime(2026, 7, 21, tzinfo=UTC)

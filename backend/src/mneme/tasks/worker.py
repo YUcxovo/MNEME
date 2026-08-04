@@ -95,6 +95,7 @@ class WorkerSettings:
     queue_name = _settings.arq_queue_name
     max_jobs = _settings.arq_max_jobs
     job_timeout = _settings.arq_job_timeout_seconds
+    job_completion_wait = _settings.arq_job_timeout_seconds
     max_tries = _settings.arq_max_tries
     health_check_interval = _settings.arq_health_check_interval_seconds
     health_check_key = "mneme:worker:health"

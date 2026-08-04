@@ -1,0 +1,24 @@
+[Unit]
+Description=Check private Mneme platform health
+After=network-online.target mneme-api.service mneme-worker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=${service_user}
+Group=${service_group}
+WorkingDirectory=${install_dir}/backend
+EnvironmentFile=${environment_file}
+ExecStart=${install_dir}/backend/.venv/bin/python -m mneme.cli.check_platform --base-url http://${api_host}:${api_port} --backup-dir ${backup_dir}
+# Health probes are intentionally independent and currently run in sequence.
+# Keep the systemd envelope above their aggregate per-probe timeout budget.
+TimeoutStartSec=180
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadOnlyPaths=-${paper_data_dir} -${backup_dir}
+UMask=0077
+
+# The deployment owner may attach a provider-specific alert adapter after validation.
+# OnFailure=mneme-alert@%n.service

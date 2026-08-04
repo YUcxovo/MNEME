@@ -161,7 +161,7 @@ async def parse_pdf(
         version.parser_version = document.parser_version
         version.parse_quality = document.parse_quality
         version.parsed_at = document.parsed_at
-        paper.processing_status = ProcessingStatus.PARTIAL
+        paper.processing_status = ProcessingStatus.PROCESSING
 
         children: list[PendingEnqueue] = []
         identities = (

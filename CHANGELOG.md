@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   post-generation matching against the exact revision's stored chunks, explicit
   unmatched states, provenance recomputation on chunk replacement, and additive
   `claims` fields in the summary API contract.
+- Added a provider-neutral production process configuration and deterministic renderer for loopback Gunicorn, Nginx bootstrap/TLS sites, hardened systemd services, and scheduler timers without provisioning or mutating a host.
+- Added fail-closed production preflight with service-envelope, reserved-connection, and backup-target identity checks; validated local PostgreSQL backup creation and retention; private platform-health checks; and sanitized machine-readable CLI results.
+- Added a strict demo manifest, installation-local resumable seeding with current-artifact recovery, exact persisted-state verification, truthful usable-paper state counts, and a bounded public-API MVP smoke sequence with cross-resource identity checks and optional source-matched Q&A.
+- Added CI rendering plus native systemd and Nginx syntax validation for production deployment artifacts.
 - Added separate public liveness and bounded PostgreSQL/Redis readiness probes with safe dependency-status responses.
 - Added a bounded SQL-backed `platform-operations-v1` JSON report for jobs, papers, parse quality, and briefing generation without raw failure diagnostics.
 - Added Android paper save/share actions backed by the existing durable event queue, plus
@@ -76,6 +80,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Changed
 
+- Kept API and worker startup dependent on database migration while making production preflight an explicit operator gate, preserving the separation between process liveness and deployment acceptance.
 - Audited bounded pagination and platform query indexes, retaining one evidence-gated failed-job index candidate instead of adding speculative global-aggregate indexes.
 - Applied one bounded PostgreSQL connection-pool configuration across the API, worker, schedulers, and standalone backend commands.
 - Replaced unconditional Android source-verification wording with the exact summary/Q&A

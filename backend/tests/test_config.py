@@ -14,6 +14,14 @@ def test_settings_defaults() -> None:
     assert settings.environment is Environment.DEVELOPMENT
     assert settings.debug is False
     assert settings.log_level == "INFO"
+    assert settings.api_host == "127.0.0.1"
+    assert settings.api_port == 8000
+    assert settings.api_workers == 2
+    assert settings.api_timeout_seconds == 120
+    assert settings.api_graceful_timeout_seconds == 90
+    assert settings.api_keepalive_seconds == 5
+    assert settings.api_max_requests == 1000
+    assert settings.api_max_requests_jitter == 100
     assert settings.readiness_timeout_seconds == 2
     assert settings.database_pool_size == 5
     assert settings.database_max_overflow == 5
@@ -47,6 +55,13 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setenv("MNEME_ENVIRONMENT", "testing")
     monkeypatch.setenv("MNEME_DEBUG", "true")
     monkeypatch.setenv("MNEME_LOG_LEVEL", "warning")
+    monkeypatch.setenv("MNEME_API_PORT", "8080")
+    monkeypatch.setenv("MNEME_API_WORKERS", "4")
+    monkeypatch.setenv("MNEME_API_TIMEOUT_SECONDS", "180")
+    monkeypatch.setenv("MNEME_API_GRACEFUL_TIMEOUT_SECONDS", "45")
+    monkeypatch.setenv("MNEME_API_KEEPALIVE_SECONDS", "10")
+    monkeypatch.setenv("MNEME_API_MAX_REQUESTS", "2000")
+    monkeypatch.setenv("MNEME_API_MAX_REQUESTS_JITTER", "200")
     monkeypatch.setenv("MNEME_READINESS_TIMEOUT_SECONDS", "3.5")
     monkeypatch.setenv("MNEME_DATABASE_POOL_SIZE", "8")
     monkeypatch.setenv("MNEME_DATABASE_MAX_OVERFLOW", "3")
@@ -73,6 +88,14 @@ def test_settings_read_prefixed_environment(monkeypatch: pytest.MonkeyPatch) -> 
     assert settings.environment is Environment.TESTING
     assert settings.debug is True
     assert settings.log_level == "warning"
+    assert settings.api_host == "127.0.0.1"
+    assert settings.api_port == 8080
+    assert settings.api_workers == 4
+    assert settings.api_timeout_seconds == 180
+    assert settings.api_graceful_timeout_seconds == 45
+    assert settings.api_keepalive_seconds == 10
+    assert settings.api_max_requests == 2000
+    assert settings.api_max_requests_jitter == 200
     assert settings.readiness_timeout_seconds == 3.5
     assert settings.database_pool_size == 8
     assert settings.database_max_overflow == 3
@@ -125,6 +148,33 @@ def test_readiness_timeout_is_bounded(
     ],
 )
 def test_database_pool_settings_are_bounded(field: str, value: int) -> None:
+    environment_name = f"MNEME_{field.upper()}"
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setenv(environment_name, str(value))
+        with pytest.raises(ValueError):
+            Settings(_env_file=None)
+
+
+@pytest.mark.base
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("api_host", "0.0.0.0"),
+        ("api_port", 1023),
+        ("api_port", 65536),
+        ("api_workers", 0),
+        ("api_workers", 9),
+        ("api_timeout_seconds", 0),
+        ("api_timeout_seconds", 601),
+        ("api_graceful_timeout_seconds", 0),
+        ("api_graceful_timeout_seconds", 301),
+        ("api_keepalive_seconds", 0),
+        ("api_keepalive_seconds", 61),
+        ("api_max_requests", -1),
+        ("api_max_requests_jitter", -1),
+    ],
+)
+def test_api_runtime_settings_are_bounded(field: str, value: int | str) -> None:
     environment_name = f"MNEME_{field.upper()}"
     with pytest.MonkeyPatch.context() as monkeypatch:
         monkeypatch.setenv(environment_name, str(value))

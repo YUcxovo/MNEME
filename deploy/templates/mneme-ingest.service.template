@@ -1,0 +1,18 @@
+[Unit]
+Description=Schedule the Mneme daily arXiv ingestion
+After=network-online.target mneme-worker.service
+Wants=network-online.target
+Requires=mneme-worker.service
+
+[Service]
+Type=oneshot
+User=${service_user}
+Group=${service_group}
+WorkingDirectory=${install_dir}/backend
+EnvironmentFile=${environment_file}
+ExecStart=${install_dir}/backend/.venv/bin/python -m mneme.tasks.fetch_daily
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+UMask=0027
