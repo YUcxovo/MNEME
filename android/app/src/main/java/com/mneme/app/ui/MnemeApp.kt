@@ -84,6 +84,7 @@ internal data class MnemeUiSnapshot(
 
 internal data class MnemeUiActions(
     val refreshBriefing: () -> Unit,
+    val openBriefingDigest: (String) -> Unit,
     val recordPaperImpressions: (List<String>) -> Unit,
     val recordPaperOpened: (String) -> Unit,
     val recordExternalPaperOpened: suspend (String, String) -> Boolean,
@@ -110,6 +111,7 @@ fun mnemeApp(
     val snapshot = viewModel.collectUiSnapshot()
     val externalEnvironment =
         rememberMnemeExternalEnvironment(onOpenSource, onSharePaper, externalNavigation)
+    restoreNotificationBriefing(onboardingState, externalNavigation.request, viewModel::refreshBriefing)
     Surface(
         color = MaterialTheme.colorScheme.background,
         contentColor = MaterialTheme.colorScheme.onBackground,
@@ -197,24 +199,15 @@ private fun mnemeAppScaffold(
     val currentDestination = backStackEntry?.destination
     val topLevelDestination = currentDestination.topLevelDestination()
     val navigationReady = backStackEntry != null
-
-    LaunchedEffect(externalEnvironment.navigation.request, navigationReady) {
-        val request = externalEnvironment.navigation.request
-        if (!navigationReady) return@LaunchedEffect
-        if (request is ExternalNavigationRequest.OpenPaper) {
-            navController.navigate(
-                PaperDetailRoute(
-                    paperId = request.paperId,
-                    externalRequestId = request.requestId,
-                    externalEventId = request.eventId,
-                ),
-            ) {
-                popUpTo(navController.graph.findStartDestination().id)
-                launchSingleTop = true
-            }
-            externalEnvironment.navigation.onRequestConsumed(request.requestId)
-        }
-    }
+    val displayedDigestId =
+        (snapshot.home as? HomeUiState.Content)?.briefing?.digest?.id
+    handleExternalNavigation(
+        navController = navController,
+        actions = actions,
+        externalEnvironment = externalEnvironment,
+        navigationReady = navigationReady,
+        displayedDigestId = displayedDigestId,
+    )
 
     Scaffold(
         modifier = modifier,
@@ -246,6 +239,47 @@ private fun mnemeAppScaffold(
             externalActions = externalEnvironment.actions,
             modifier = Modifier.padding(innerPadding),
         )
+    }
+}
+
+@Composable
+private fun handleExternalNavigation(
+    navController: NavHostController,
+    actions: MnemeUiActions,
+    externalEnvironment: MnemeExternalEnvironment,
+    navigationReady: Boolean,
+    displayedDigestId: String?,
+) {
+    LaunchedEffect(
+        externalEnvironment.navigation.request,
+        navigationReady,
+        displayedDigestId,
+    ) {
+        val request = externalEnvironment.navigation.request
+        if (!navigationReady) return@LaunchedEffect
+        when (request) {
+            is ExternalNavigationRequest.OpenPaper -> {
+                navController.navigate(
+                    PaperDetailRoute(
+                        paperId = request.paperId,
+                        externalRequestId = request.requestId,
+                        externalEventId = request.eventId,
+                    ),
+                ) {
+                    popUpTo(navController.graph.findStartDestination().id)
+                    launchSingleTop = true
+                }
+                externalEnvironment.navigation.onRequestConsumed(request.requestId)
+            }
+            is ExternalNavigationRequest.OpenDigest -> {
+                navController.navigateToTopLevel(TopLevelDestination.BRIEFING)
+                actions.openBriefingDigest(request.digestId)
+                if (displayedDigestId == request.digestId) {
+                    externalEnvironment.navigation.onRequestConsumed(request.requestId)
+                }
+            }
+            is ExternalNavigationRequest.InvalidPaperLink, null -> return@LaunchedEffect
+        }
     }
 }
 

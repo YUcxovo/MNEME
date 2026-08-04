@@ -15,6 +15,11 @@ sealed interface ExternalNavigationRequest : Serializable {
         val eventId: String,
     ) : ExternalNavigationRequest
 
+    data class OpenDigest(
+        override val requestId: Long,
+        val digestId: String,
+    ) : ExternalNavigationRequest
+
     data class InvalidPaperLink(
         override val requestId: Long,
     ) : ExternalNavigationRequest
@@ -41,6 +46,15 @@ internal class ExternalNavigationViewModel(
     fun rejectPaperLink() {
         savedStateHandle[PENDING_REQUEST_KEY] =
             ExternalNavigationRequest.InvalidPaperLink(nextRequestId())
+    }
+
+    fun openDigest(digestId: String) {
+        require(digestId.isNotBlank()) { "A digest identifier is required." }
+        savedStateHandle[PENDING_REQUEST_KEY] =
+            ExternalNavigationRequest.OpenDigest(
+                requestId = nextRequestId(),
+                digestId = digestId,
+            )
     }
 
     fun consume(requestId: Long) {

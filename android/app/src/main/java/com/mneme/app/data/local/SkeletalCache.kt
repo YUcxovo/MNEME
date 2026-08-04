@@ -44,6 +44,8 @@ interface SkeletalCache {
 
     suspend fun getBriefing(): CachedBriefing?
 
+    suspend fun getBriefing(digestId: String): CachedBriefing? = getBriefing()?.takeIf { it.digest.id == digestId }
+
     suspend fun storePaper(
         paper: PaperDto,
         refreshedAtEpochMillis: Long,
@@ -103,6 +105,11 @@ class RoomSkeletalCache(
     override suspend fun getBriefing(): CachedBriefing? {
         val digest = database.digestDao().getLatest()
         return digest?.let { cachedDigest -> readBriefing(cachedDigest) }
+    }
+
+    override suspend fun getBriefing(digestId: String): CachedBriefing? {
+        val digest = database.digestDao().getById(digestId)
+        return digest?.let { readBriefing(it) }
     }
 
     private suspend fun readBriefing(digest: DigestEntity): CachedBriefing? {

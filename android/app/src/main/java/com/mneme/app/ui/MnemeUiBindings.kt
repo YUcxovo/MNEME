@@ -9,6 +9,7 @@ import com.mneme.app.ui.home.HomeUiState
 internal fun MnemeViewModel.uiActions(): MnemeUiActions =
     MnemeUiActions(
         refreshBriefing = ::refreshBriefing,
+        openBriefingDigest = { digestId -> refreshBriefing(digestId) },
         recordPaperImpressions = behavioralEvents::recordPaperImpressions,
         recordPaperOpened = behavioralEvents::recordPaperOpened,
         recordExternalPaperOpened = behavioralEvents::recordPaperOpenedOnce,
@@ -47,6 +48,7 @@ internal class FixtureMnemeState(
     val actions =
         MnemeUiActions(
             refreshBriefing = {},
+            openBriefingDigest = {},
             recordPaperImpressions = {},
             recordPaperOpened = {},
             recordExternalPaperOpened = { _, _ -> false },

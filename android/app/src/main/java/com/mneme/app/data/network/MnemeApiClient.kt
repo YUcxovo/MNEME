@@ -104,7 +104,10 @@ interface MnemeRemoteDataSource : BehavioralEventRemoteDataSource {
 
     suspend fun initializeFromSeed(request: SeedInitializationRequestDto): SeedInitializationDto
 
-    suspend fun listDigests(limit: Int = 20): DigestPageDto
+    suspend fun listDigests(
+        limit: Int = 20,
+        cursor: String? = null,
+    ): DigestPageDto
 
     suspend fun generateRecommendedDigest(): RemoteResource<DigestDto>
 
@@ -154,7 +157,10 @@ internal class RetrofitMnemeRemoteDataSource(
     override suspend fun initializeFromSeed(request: SeedInitializationRequestDto): SeedInitializationDto =
         api.initializeFromSeed(request).requireBody(json)
 
-    override suspend fun listDigests(limit: Int): DigestPageDto = api.listDigests(limit = limit).requireBody(json)
+    override suspend fun listDigests(
+        limit: Int,
+        cursor: String?,
+    ): DigestPageDto = api.listDigests(cursor = cursor, limit = limit).requireBody(json)
 
     override suspend fun generateRecommendedDigest(): RemoteResource<DigestDto> =
         api.generateRecommendedDigest().decodeAcceptedResponse(json)

@@ -36,6 +36,21 @@ class ExternalNavigationViewModelTest {
     }
 
     @Test
+    fun openDigestPublishesExactDigestRequest() {
+        val viewModel = ExternalNavigationViewModel(SavedStateHandle())
+
+        viewModel.openDigest("digest-weekly")
+
+        assertEquals(
+            ExternalNavigationRequest.OpenDigest(
+                requestId = 1L,
+                digestId = "digest-weekly",
+            ),
+            viewModel.request.value,
+        )
+    }
+
+    @Test
     fun consumeClearsOnlyMatchingRequest() {
         val viewModel = ExternalNavigationViewModel(SavedStateHandle())
         viewModel.openPaper(PAPER_ID)

@@ -51,6 +51,8 @@ class MnemeViewModel(
     private var paperLoadJob: Job? = null
     private var qaLoadJob: Job? = null
     private var graphLoadJob: Job? = null
+    private var briefingLoadJob: Job? = null
+    private var activeBriefingDigestId: String? = null
 
     init {
         restoreBriefing()
@@ -58,69 +60,123 @@ class MnemeViewModel(
 
     fun initializeFromSeed(arxivReference: String) {
         require(arxivReference.isNotBlank()) { "An arXiv URL or identifier is required." }
-        viewModelScope.launch {
-            val normalized = arxivReference.trim()
-            _onboardingState.value = OnboardingUiState.Loading(normalized)
-            _homeState.value = HomeUiState.Loading
-            try {
-                _homeState.value = HomeUiState.Content(repository.initializeFromSeed(normalized))
-                _onboardingState.value = OnboardingUiState.Ready
-            } catch (error: IOException) {
-                _onboardingState.value = OnboardingUiState.Error(normalized, error.toUserMessage())
-            } catch (error: SerializationException) {
-                _onboardingState.value = OnboardingUiState.Error(normalized, error.toUserMessage())
+        briefingLoadJob?.cancel()
+        activeBriefingDigestId = null
+        briefingLoadJob =
+            viewModelScope.launch {
+                val normalized = arxivReference.trim()
+                _onboardingState.value = OnboardingUiState.Loading(normalized)
+                _homeState.value = HomeUiState.Loading
+                try {
+                    _homeState.value = HomeUiState.Content(repository.initializeFromSeed(normalized))
+                    _onboardingState.value = OnboardingUiState.Ready
+                } catch (error: IOException) {
+                    _onboardingState.value = OnboardingUiState.Error(normalized, error.toUserMessage())
+                } catch (error: SerializationException) {
+                    _onboardingState.value = OnboardingUiState.Error(normalized, error.toUserMessage())
+                } finally {
+                    if (briefingLoadJob === coroutineContext[Job]) {
+                        activeBriefingDigestId = null
+                    }
+                }
             }
-        }
     }
 
     fun editSeed() {
+        briefingLoadJob?.cancel()
+        activeBriefingDigestId = null
         _onboardingState.value = OnboardingUiState.AwaitingSeed
     }
 
-    fun refreshBriefing() {
-        viewModelScope.launch {
-            _homeState.updateFrom(repository, showLoading = true)
-        }
+    fun refreshBriefing(digestId: String? = null) {
+        if (briefingLoadJob?.isActive == true && activeBriefingDigestId == digestId) return
+        val displayedDigestId =
+            (_homeState.value as? HomeUiState.Content)?.briefing?.digest?.id
+        if (digestId != null && briefingLoadJob?.isActive != true && displayedDigestId == digestId) return
+        briefingLoadJob?.cancel()
+        activeBriefingDigestId = digestId
+        briefingLoadJob =
+            viewModelScope.launch {
+                _homeState.value = HomeUiState.Loading
+                try {
+                    val briefing =
+                        if (digestId == null) {
+                            repository.loadBriefing()
+                        } else {
+                            require(digestId.isNotBlank()) { "A digest identifier is required." }
+                            repository.loadBriefing(digestId)
+                        }
+                    _homeState.value = HomeUiState.Content(briefing)
+                    if (digestId != null) _onboardingState.value = OnboardingUiState.Ready
+                } catch (error: IOException) {
+                    _homeState.value = HomeUiState.Error(error.toUserMessage())
+                    if (digestId != null) _onboardingState.value = OnboardingUiState.Ready
+                } catch (error: SerializationException) {
+                    _homeState.value = HomeUiState.Error(error.toUserMessage())
+                    if (digestId != null) _onboardingState.value = OnboardingUiState.Ready
+                } finally {
+                    if (briefingLoadJob === coroutineContext[Job]) {
+                        activeBriefingDigestId = null
+                    }
+                }
+            }
     }
 
     fun saveInterests(topics: List<String>) {
-        viewModelScope.launch {
-            _interestEditState.value = InterestEditUiState.Saving
-            try {
-                _homeState.value = HomeUiState.Content(repository.updateInterests(topics))
-                _interestEditState.value = InterestEditUiState.Saved
-            } catch (error: IllegalArgumentException) {
-                _interestEditState.value =
-                    InterestEditUiState.Error(
-                        error.message ?: "The research interests are invalid.",
-                    )
-            } catch (error: IOException) {
-                _interestEditState.value = InterestEditUiState.Error(error.toUserMessage())
-            } catch (error: SerializationException) {
-                _interestEditState.value = InterestEditUiState.Error(error.toUserMessage())
+        briefingLoadJob?.cancel()
+        activeBriefingDigestId = null
+        briefingLoadJob =
+            viewModelScope.launch {
+                _interestEditState.value = InterestEditUiState.Saving
+                try {
+                    _homeState.value = HomeUiState.Content(repository.updateInterests(topics))
+                    _interestEditState.value = InterestEditUiState.Saved
+                } catch (error: CancellationException) {
+                    _interestEditState.value = InterestEditUiState.Idle
+                    throw error
+                } catch (error: IllegalArgumentException) {
+                    _interestEditState.value =
+                        InterestEditUiState.Error(
+                            error.message ?: "The research interests are invalid.",
+                        )
+                } catch (error: IOException) {
+                    _interestEditState.value = InterestEditUiState.Error(error.toUserMessage())
+                } catch (error: SerializationException) {
+                    _interestEditState.value = InterestEditUiState.Error(error.toUserMessage())
+                } finally {
+                    if (briefingLoadJob === coroutineContext[Job]) {
+                        activeBriefingDigestId = null
+                    }
+                }
             }
-        }
     }
 
     private fun restoreBriefing() {
-        viewModelScope.launch {
-            try {
-                val restored = repository.restoreBriefing()
-                if (restored == null) {
-                    _onboardingState.value = OnboardingUiState.AwaitingSeed
-                    return@launch
+        briefingLoadJob?.cancel()
+        activeBriefingDigestId = null
+        briefingLoadJob =
+            viewModelScope.launch {
+                try {
+                    val restored = repository.restoreBriefing()
+                    if (restored == null) {
+                        _onboardingState.value = OnboardingUiState.AwaitingSeed
+                        return@launch
+                    }
+                    _homeState.value = HomeUiState.Content(restored)
+                    _onboardingState.value = OnboardingUiState.Ready
+                    _homeState.updateFrom(repository, showLoading = false)
+                } catch (error: IOException) {
+                    _onboardingState.value = OnboardingUiState.Ready
+                    _homeState.value = HomeUiState.Error(error.toUserMessage())
+                } catch (error: SerializationException) {
+                    _onboardingState.value = OnboardingUiState.Ready
+                    _homeState.value = HomeUiState.Error(error.toUserMessage())
+                } finally {
+                    if (briefingLoadJob === coroutineContext[Job]) {
+                        activeBriefingDigestId = null
+                    }
                 }
-                _homeState.value = HomeUiState.Content(restored)
-                _onboardingState.value = OnboardingUiState.Ready
-                _homeState.updateFrom(repository, showLoading = false)
-            } catch (error: IOException) {
-                _onboardingState.value = OnboardingUiState.Ready
-                _homeState.value = HomeUiState.Error(error.toUserMessage())
-            } catch (error: SerializationException) {
-                _onboardingState.value = OnboardingUiState.Ready
-                _homeState.value = HomeUiState.Error(error.toUserMessage())
             }
-        }
     }
 
     fun loadPaper(

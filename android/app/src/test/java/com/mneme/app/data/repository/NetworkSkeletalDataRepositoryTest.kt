@@ -27,6 +27,7 @@ import com.mneme.app.data.network.SeedInitializationDto
 import com.mneme.app.data.network.SeedInitializationRequestDto
 import com.mneme.app.data.network.SummaryDto
 import com.mneme.app.data.network.UserEventDto
+import com.mneme.app.sync.LiveDigestBriefingRefresher
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.GraphAlgorithmUiStatus
 import com.mneme.app.ui.model.SourceMatchUiStatus
@@ -121,6 +122,35 @@ class NetworkSkeletalDataRepositoryTest {
         }
 
     @Test
+    fun loadBriefingById_selectsAndCachesTheNotificationTarget() =
+        runBlocking {
+            val target =
+                digest(
+                    entries = listOf(entry(paper("paper-target", "Target paper"), 1, "Target reason")),
+                ).copy(id = "digest-target", digestType = "weekly")
+            val remote =
+                FakeRemote().apply {
+                    digestPage =
+                        DigestPageDto(
+                            listOf(
+                                digest().copy(id = "digest-newer"),
+                            ),
+                            nextCursor = "target-page",
+                        )
+                    digestPagesByCursor["target-page"] = DigestPageDto(listOf(target))
+                }
+            val cache = FakeCache()
+            val repository = NetworkSkeletalDataRepository(remote, cache) { REFRESHED_AT }
+
+            val briefing = repository.loadBriefing("digest-target")
+
+            assertEquals("digest-target", briefing.digest.id)
+            assertEquals(listOf("paper-target"), briefing.papers.map { it.id })
+            assertEquals("digest-target", cache.storedDigest?.id)
+            assertEquals(ContentOrigin.LIVE_BACKEND, briefing.disclosure.origin)
+        }
+
+    @Test
     fun updateInterests_preservesAuthorsCachesCanonicalTopicsAndFeedsNextBriefing() =
         runBlocking {
             val remote =
@@ -187,6 +217,40 @@ class NetworkSkeletalDataRepositoryTest {
         assertEquals(null, cache.storedPreferences)
         assertEquals(null, cache.storedDigest)
     }
+
+    @Test
+    fun periodicDigestRefresh_usesLatestWeeklyDigestAndStoresItBeforeNotification() =
+        runBlocking {
+            val remote =
+                FakeRemote().apply {
+                    digestPage =
+                        DigestPageDto(
+                            listOf(
+                                digest().copy(
+                                    id = "digest-newer-manual",
+                                ),
+                            ),
+                            nextCursor = "weekly-page",
+                        )
+                    digestPagesByCursor["weekly-page"] =
+                        DigestPageDto(
+                            listOf(
+                                digest().copy(
+                                    id = "digest-periodic",
+                                    digestType = "weekly",
+                                ),
+                            ),
+                        )
+                }
+            val cache = FakeCache()
+            val refresher = LiveDigestBriefingRefresher(remote, cache) { REFRESHED_AT }
+
+            val refreshed = refresher.refreshLatest()
+
+            assertEquals("digest-periodic", refreshed?.id)
+            assertEquals("digest-periodic", cache.storedDigest?.id)
+            assertEquals(REFRESHED_AT, cache.storedBriefingAt)
+        }
 
     @Test
     fun paperAcceptedThenSucceeded_returnsSourceMatchedLiveSummary() =
@@ -437,6 +501,8 @@ class NetworkSkeletalDataRepositoryTest {
     private class FakeRemote : MnemeRemoteDataSource {
         var preferences: PreferencesDto = preferences()
         var digestResult: RemoteResource<DigestDto> = RemoteResource.Ready(digest())
+        var digestPage = DigestPageDto(emptyList())
+        val digestPagesByCursor = mutableMapOf<String, DigestPageDto>()
         var paper: PaperDto = paper("paper-1", "Paper")
         var job: JobDto = JobDto(id = "job-1", stage = "summarize_paper", status = "running")
         var answer: AnswerDto =
@@ -496,7 +562,10 @@ class NetworkSkeletalDataRepositoryTest {
             )
         }
 
-        override suspend fun listDigests(limit: Int): DigestPageDto = DigestPageDto(emptyList())
+        override suspend fun listDigests(
+            limit: Int,
+            cursor: String?,
+        ): DigestPageDto = cursor?.let(digestPagesByCursor::get) ?: digestPage
 
         override suspend fun generateRecommendedDigest(): RemoteResource<DigestDto> {
             operations += "generate_digest"
