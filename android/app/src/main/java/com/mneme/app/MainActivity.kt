@@ -5,8 +5,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.getValue
 import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mneme.app.notifications.DigestNotificationChannel
@@ -39,11 +39,11 @@ class MainActivity : ComponentActivity() {
                 val externalRequest = externalNavigation.request.collectAsStateWithLifecycle()
                 mnemeApp(
                     viewModel = viewModel,
-                    notificationDigestId = digestId,
                     externalNavigation =
                         MnemeExternalNavigationBinding(
                             request = externalRequest.value,
                             onRequestConsumed = externalNavigation::consume,
+                            notificationDigestId = digestId,
                         ),
                 )
             }

@@ -20,7 +20,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,7 +45,6 @@ import com.mneme.app.data.demo.SkeletalContentRepository
 import com.mneme.app.ui.component.LoadingState
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.navigation.BriefingRoute
-import com.mneme.app.ui.navigation.ExternalNavigationRequest
 import com.mneme.app.ui.navigation.GraphRoute
 import com.mneme.app.ui.navigation.InterestsRoute
 import com.mneme.app.ui.navigation.PaperDetailRoute
@@ -103,7 +101,6 @@ fun mnemeApp(
     viewModel: MnemeViewModel,
     modifier: Modifier = Modifier,
     onOpenSource: ((String) -> Unit)? = null,
-    notificationDigestId: String? = null,
     onSharePaper: ((String, String) -> Unit)? = null,
     externalNavigation: MnemeExternalNavigationBinding = MnemeExternalNavigationBinding(),
 ) {
@@ -157,7 +154,6 @@ fun mnemeApp(
                     snapshot = snapshot,
                     actions = viewModel.uiActions(),
                     externalEnvironment = externalEnvironment,
-                    notificationDigestId = notificationDigestId,
                     modifier = modifier,
                 )
         }
@@ -183,7 +179,6 @@ fun mnemeApp(
         snapshot = state.snapshot,
         actions = state.actions,
         externalEnvironment = externalEnvironment,
-        notificationDigestId = null,
         modifier = modifier,
     )
 }
@@ -193,38 +188,18 @@ private fun mnemeAppScaffold(
     snapshot: MnemeUiSnapshot,
     actions: MnemeUiActions,
     externalEnvironment: MnemeExternalEnvironment,
-    notificationDigestId: String?,
     modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
-    LaunchedEffect(notificationDigestId) {
-        if (notificationDigestId != null) {
-            navController.navigateToTopLevel(TopLevelDestination.BRIEFING)
-            actions.refreshBriefing()
-        }
-    }
+    digestNotificationEffect(
+        externalEnvironment.navigation.notificationDigestId,
+        { navController.navigateToTopLevel(TopLevelDestination.BRIEFING) },
+        actions.refreshBriefing,
+    )
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
     val topLevelDestination = currentDestination.topLevelDestination()
-    val navigationReady = backStackEntry != null
-
-    LaunchedEffect(externalEnvironment.navigation.request, navigationReady) {
-        val request = externalEnvironment.navigation.request
-        if (!navigationReady) return@LaunchedEffect
-        if (request is ExternalNavigationRequest.OpenPaper) {
-            navController.navigate(
-                PaperDetailRoute(
-                    paperId = request.paperId,
-                    externalRequestId = request.requestId,
-                    externalEventId = request.eventId,
-                ),
-            ) {
-                popUpTo(navController.graph.findStartDestination().id)
-                launchSingleTop = true
-            }
-            externalEnvironment.navigation.onRequestConsumed(request.requestId)
-        }
-    }
+    externalPaperNavigationEffect(navController, externalEnvironment.navigation)
 
     Scaffold(
         modifier = modifier,

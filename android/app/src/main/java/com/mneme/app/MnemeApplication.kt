@@ -63,12 +63,8 @@ class MnemeApplicationContainer(
                         baseUrl = BuildConfig.MNEME_API_BASE_URL,
                         demoToken = BuildConfig.MNEME_DEMO_TOKEN,
                     )
-<<<<<<< HEAD
                 val eventStore = BehavioralEventRepository(appDatabase.behavioralEventDao())
-=======
-                val eventStore = BehavioralEventRepository(database.behavioralEventDao())
-                val cache = RoomSkeletalCache(database, MnemeApiClient.json)
->>>>>>> 2324597 (feat(android): sync live briefing notifications)
+                val cache = RoomSkeletalCache(appDatabase, MnemeApiClient.json)
                 val eventSyncCoordinator =
                     BehavioralEventSyncCoordinator(
                         store = eventStore,
@@ -78,11 +74,7 @@ class MnemeApplicationContainer(
                     repository =
                         NetworkSkeletalDataRepository(
                             remote = remote,
-<<<<<<< HEAD
-                            cache = RoomSkeletalCache(appDatabase, MnemeApiClient.json),
-=======
                             cache = cache,
->>>>>>> 2324597 (feat(android): sync live briefing notifications)
                         ),
                     eventTracker =
                         QueuedBehavioralEventTracker(
