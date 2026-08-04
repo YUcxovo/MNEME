@@ -113,6 +113,19 @@ internal fun rememberMnemeExternalEnvironment(
     )
 }
 
+@Composable
+internal fun restoreNotificationBriefing(
+    onboardingState: OnboardingUiState,
+    request: ExternalNavigationRequest?,
+    openBriefingDigest: (String) -> Unit,
+) {
+    LaunchedEffect(request) {
+        if (request is ExternalNavigationRequest.OpenDigest && onboardingState != OnboardingUiState.Ready) {
+            openBriefingDigest(request.digestId)
+        }
+    }
+}
+
 internal fun paperShareIntent(
     title: String,
     shareText: String,
