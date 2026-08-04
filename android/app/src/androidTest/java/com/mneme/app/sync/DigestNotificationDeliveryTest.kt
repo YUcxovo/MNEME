@@ -1,12 +1,15 @@
 package com.mneme.app.sync
 
 import android.Manifest
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.mneme.app.data.network.DigestDto
+import com.mneme.app.data.network.DigestEntryDto
+import com.mneme.app.data.network.PaperDto
 import com.mneme.app.notifications.DigestNotifier
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -21,12 +24,11 @@ class DigestNotificationDeliveryTest {
     fun deniedNotificationPermission_keepsDigestRefreshSuccessfulWithoutRecordingNotification() =
         runBlocking {
             val state = InMemoryNotificationState()
-            val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+            val context =
+                DeniedNotificationContext(
+                    ApplicationProvider.getApplicationContext(),
+                )
             assumeTrue(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            InstrumentationRegistry
-                .getInstrumentation()
-                .uiAutomation
-                .revokeRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
             assertEquals(
                 PackageManager.PERMISSION_DENIED,
                 context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS),
@@ -45,13 +47,56 @@ class DigestNotificationDeliveryTest {
             assertNull(state.lastNotifiedDigestId())
         }
 
+    private class DeniedNotificationContext(
+        base: Context,
+    ) : ContextWrapper(base) {
+        override fun checkSelfPermission(permission: String): Int =
+            if (permission == Manifest.permission.POST_NOTIFICATIONS) {
+                PackageManager.PERMISSION_DENIED
+            } else {
+                super.checkSelfPermission(permission)
+            }
+
+        override fun checkPermission(
+            permission: String,
+            pid: Int,
+            uid: Int,
+        ): Int =
+            if (permission == Manifest.permission.POST_NOTIFICATIONS) {
+                PackageManager.PERMISSION_DENIED
+            } else {
+                super.checkPermission(permission, pid, uid)
+            }
+    }
+
     private object FakeRefresher : DigestBriefingRefresher {
         override suspend fun refreshLatest() =
             DigestDto(
                 id = "api34-digest",
-                digestType = "daily",
+                digestType = "weekly",
                 generatedAt = "2026-08-03T00:00:00Z",
-                entries = emptyList(),
+                entries =
+                    listOf(
+                        DigestEntryDto(
+                            paper =
+                                PaperDto(
+                                    id = "paper-1",
+                                    arxivId = "2501.00001",
+                                    title = "A test paper",
+                                    authors = listOf("A. Researcher"),
+                                    abstract = "Test abstract.",
+                                    primaryCategory = "cs.AI",
+                                    categories = listOf("cs.AI"),
+                                    pdfUrl = "https://arxiv.org/pdf/2501.00001",
+                                    processingStatus = "ready",
+                                    publishedAt = "2025-01-01T00:00:00Z",
+                                    updatedAt = "2025-01-01T00:00:00Z",
+                                ),
+                            rank = 1,
+                            relevanceScore = 0.90,
+                            recommendationReason = "Matches the configured research interests.",
+                        ),
+                    ),
             )
     }
 

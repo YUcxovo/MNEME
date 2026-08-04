@@ -1,7 +1,9 @@
 package com.mneme.app.sync
 
 import com.mneme.app.data.network.DigestDto
+import com.mneme.app.data.network.DigestEntryDto
 import com.mneme.app.data.network.MnemeApiException
+import com.mneme.app.data.network.PaperDto
 import com.mneme.app.notifications.DigestNotificationPublisher
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -59,6 +61,29 @@ class DigestRefreshCoordinatorTest {
         }
 
     @Test
+    fun belowThresholdWeeklyDigest_isCachedWithoutNotification() =
+        runCoordinatorTest { refresher, state, notifier ->
+            refresher.digest = digest("digest-below", relevanceScore = 0.74)
+
+            val result = coordinator(refresher, state, notifier).refresh()
+
+            assertEquals(DigestSyncResult.Synced("digest-below"), result)
+            assertTrue(notifier.digestIds.isEmpty())
+            assertNull(state.lastNotifiedDigestId())
+        }
+
+    @Test
+    fun nonWeeklyDigest_doesNotNotifyEvenAboveThreshold() =
+        runCoordinatorTest { refresher, state, notifier ->
+            refresher.digest = digest("digest-daily", digestType = "daily")
+
+            val result = coordinator(refresher, state, notifier).refresh()
+
+            assertEquals(DigestSyncResult.Synced("digest-daily"), result)
+            assertTrue(notifier.digestIds.isEmpty())
+        }
+
+    @Test
     fun transientNetworkFailure_requestsWorkManagerRetry() =
         runCoordinatorTest { refresher, state, notifier ->
             refresher.error = IOException("offline")
@@ -93,12 +118,38 @@ class DigestRefreshCoordinatorTest {
         notifier: FakeNotifier,
     ) = DigestRefreshCoordinator(refresher, state, notifier)
 
-    private fun digest(id: String) =
-        DigestDto(
-            id = id,
-            digestType = "daily",
-            generatedAt = "2026-08-03T00:00:00Z",
-            entries = emptyList(),
+    private fun digest(
+        id: String,
+        digestType: String = "weekly",
+        relevanceScore: Double = 0.90,
+    ) = DigestDto(
+        id = id,
+        digestType = digestType,
+        generatedAt = "2026-08-03T00:00:00Z",
+        entries =
+            listOf(
+                DigestEntryDto(
+                    paper = paper(),
+                    rank = 1,
+                    relevanceScore = relevanceScore,
+                    recommendationReason = "Matches the configured research interests.",
+                ),
+            ),
+    )
+
+    private fun paper() =
+        PaperDto(
+            id = "paper-1",
+            arxivId = "2501.00001",
+            title = "A test paper",
+            authors = listOf("A. Researcher"),
+            abstract = "Test abstract.",
+            primaryCategory = "cs.AI",
+            categories = listOf("cs.AI"),
+            pdfUrl = "https://arxiv.org/pdf/2501.00001",
+            processingStatus = "ready",
+            publishedAt = "2025-01-01T00:00:00Z",
+            updatedAt = "2025-01-01T00:00:00Z",
         )
 
     private fun apiError(statusCode: Int) =
