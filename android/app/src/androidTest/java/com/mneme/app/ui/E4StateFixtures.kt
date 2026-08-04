@@ -8,6 +8,8 @@ import com.mneme.app.ui.model.ContentDisclosureUiModel
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.GraphUiModel
 import com.mneme.app.ui.model.QaUiModel
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.serialization.SerializationException
 import java.util.ArrayDeque
 
@@ -19,6 +21,7 @@ internal class ScenarioRepository(
     private val refreshedBriefing: BriefingUiModel = restoredBriefing ?: e4Briefing(),
     private val seedBriefing: BriefingUiModel = e4Briefing(ContentOrigin.LIVE_BACKEND, "Seed ready."),
     private val invalidStoredBriefing: Boolean = false,
+    private val refreshDelayMillis: Long = 0,
     paperResults: List<PaperContentResult> =
         listOf(
             PaperContentResult.Ready(
@@ -30,7 +33,9 @@ internal class ScenarioRepository(
 ) : SkeletalDataRepository {
     private val paperResults = ArrayDeque(paperResults)
     val refreshedJobIds = mutableListOf<String>()
+    val loadedDigestIds = mutableListOf<String>()
     var submittedSeed: String? = null
+    var genericRefreshCancelled = false
 
     override suspend fun restoreBriefing(): BriefingUiModel? {
         if (invalidStoredBriefing) {
@@ -44,7 +49,25 @@ internal class ScenarioRepository(
         return seedBriefing
     }
 
-    override suspend fun loadBriefing(): BriefingUiModel = refreshedBriefing
+    override suspend fun loadBriefing(): BriefingUiModel =
+        try {
+            delay(refreshDelayMillis)
+            refreshedBriefing
+        } catch (error: CancellationException) {
+            genericRefreshCancelled = true
+            throw error
+        }
+
+    override suspend fun loadBriefing(digestId: String): BriefingUiModel {
+        loadedDigestIds += digestId
+        return refreshedBriefing.copy(
+            digest =
+                refreshedBriefing.digest.copy(
+                    id = digestId,
+                    title = "Weekly research briefing",
+                ),
+        )
+    }
 
     override suspend fun updateInterests(topics: List<String>): BriefingUiModel = refreshedBriefing.copy(interests = topics)
 

@@ -19,6 +19,7 @@ import androidx.compose.ui.test.performTextInput
 import com.mneme.app.data.behavior.BehavioralEventTracker
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.data.repository.ControlledFixtureDataRepository
+import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.navigation.ExternalNavigationRequest
 import com.mneme.app.ui.theme.MnemeTheme
 import org.junit.Assert.assertEquals
@@ -211,6 +212,106 @@ class MnemeExternalNavigationFlowTest {
     }
 
     @Test
+    fun seedRequired_notificationRequestRestoresExactBriefingAndIsConsumedOnce() {
+        val repository = ScenarioRepository(restoredBriefing = null)
+        val viewModel = MnemeViewModel(repository)
+        val consumedRequestIds = mutableListOf<Long>()
+        var externalRequest by
+            mutableStateOf<ExternalNavigationRequest?>(
+                ExternalNavigationRequest.OpenDigest(
+                    requestId = NOTIFICATION_REQUEST_ID,
+                    digestId = NOTIFICATION_DIGEST_ID,
+                ),
+            )
+
+        composeRule.setContent {
+            MnemeTheme {
+                MnemeApp(
+                    viewModel = viewModel,
+                    externalNavigation =
+                        MnemeExternalNavigationBinding(
+                            request = externalRequest,
+                            onRequestConsumed = { requestId ->
+                                consumedRequestIds += requestId
+                                if (externalRequest?.requestId == requestId) {
+                                    externalRequest = null
+                                }
+                            },
+                        ),
+                )
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule
+                .onAllNodesWithText("Weekly research briefing")
+                .fetchSemanticsNodes()
+                .isNotEmpty()
+        }
+        composeRule.onNodeWithText("Weekly research briefing").assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(listOf(NOTIFICATION_DIGEST_ID), repository.loadedDigestIds)
+            assertEquals(listOf(NOTIFICATION_REQUEST_ID), consumedRequestIds)
+        }
+    }
+
+    @Test
+    fun cachedNotificationDigest_cancelsGenericRefreshBeforeConsumingRequest() {
+        val notificationBriefing =
+            e4Briefing().copy(
+                digest =
+                    e4Briefing().digest.copy(
+                        id = NOTIFICATION_DIGEST_ID,
+                        title = "Weekly research briefing",
+                    ),
+            )
+        val repository =
+            ScenarioRepository(
+                restoredBriefing = notificationBriefing,
+                refreshedBriefing = e4Briefing().copy(digest = e4Briefing().digest.copy(id = "manual-digest")),
+                refreshDelayMillis = 5_000,
+            )
+        val viewModel = MnemeViewModel(repository)
+        val consumedRequestIds = mutableListOf<Long>()
+        var externalRequest by
+            mutableStateOf<ExternalNavigationRequest?>(
+                ExternalNavigationRequest.OpenDigest(
+                    requestId = NOTIFICATION_REQUEST_ID,
+                    digestId = NOTIFICATION_DIGEST_ID,
+                ),
+            )
+
+        composeRule.setContent {
+            MnemeTheme {
+                MnemeApp(
+                    viewModel = viewModel,
+                    externalNavigation =
+                        MnemeExternalNavigationBinding(
+                            request = externalRequest,
+                            onRequestConsumed = { requestId ->
+                                consumedRequestIds += requestId
+                                externalRequest = null
+                            },
+                        ),
+                )
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            repository.loadedDigestIds == listOf(NOTIFICATION_DIGEST_ID) &&
+                repository.genericRefreshCancelled
+        }
+        composeRule.onNodeWithText("Weekly research briefing").assertIsDisplayed()
+        composeRule.runOnIdle {
+            assertEquals(listOf(NOTIFICATION_REQUEST_ID), consumedRequestIds)
+            assertEquals(
+                NOTIFICATION_DIGEST_ID,
+                (viewModel.homeState.value as HomeUiState.Content).briefing.digest.id,
+            )
+        }
+    }
+
+    @Test
     fun failedDurableWrite_retriesWithoutClosingThePaperOrDuplicatingTheOpen() {
         val tracker = RetryingOpenEventTracker()
         val viewModel = MnemeViewModel(ControlledFixtureDataRepository(), tracker)
@@ -308,6 +409,8 @@ class MnemeExternalNavigationFlowTest {
         const val UNKNOWN_REQUEST_ID = 42L
         const val ONBOARDING_REQUEST_ID = 43L
         const val RETRY_REQUEST_ID = 44L
+        const val NOTIFICATION_REQUEST_ID = 45L
+        const val NOTIFICATION_DIGEST_ID = "digest-weekly"
         const val VALID_EVENT_ID = "11111111-1111-4111-8111-111111111111"
         const val UNKNOWN_EVENT_ID = "22222222-2222-4222-8222-222222222222"
         const val ONBOARDING_EVENT_ID = "33333333-3333-4333-8333-333333333333"
