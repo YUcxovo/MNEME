@@ -159,6 +159,7 @@ class E4GraphMeasurementTest {
                     graph = graphState.value,
                     onRetry = {},
                     onOpenPaper = {},
+                    onExploreGraph = {},
                 )
             }
         }

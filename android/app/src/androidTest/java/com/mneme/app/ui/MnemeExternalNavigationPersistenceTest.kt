@@ -149,7 +149,7 @@ class MnemeExternalNavigationPersistenceTest {
         val restorationTester = StateRestorationTester(composeRule)
         restorationTester.setContent {
             MnemeTheme {
-                MnemeApp(
+                mnemeApp(
                     viewModel = viewModel,
                     onOpenSource = {},
                     onSharePaper = { _, _ -> },
@@ -203,7 +203,7 @@ class MnemeExternalNavigationPersistenceTest {
 
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(
+                mnemeApp(
                     viewModel = viewModel,
                     modifier = modifier(),
                     onOpenSource = {},

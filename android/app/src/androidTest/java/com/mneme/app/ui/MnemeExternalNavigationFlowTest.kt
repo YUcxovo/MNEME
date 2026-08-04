@@ -47,7 +47,7 @@ class MnemeExternalNavigationFlowTest {
 
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(
+                mnemeApp(
                     viewModel = viewModel,
                     modifier = Modifier.testTag("external-flow-$recompositionToken"),
                     onOpenSource = {},
@@ -106,7 +106,7 @@ class MnemeExternalNavigationFlowTest {
 
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(
+                mnemeApp(
                     viewModel = viewModel,
                     onOpenSource = {},
                     onSharePaper = { _, _ -> },
@@ -157,7 +157,7 @@ class MnemeExternalNavigationFlowTest {
 
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(
+                mnemeApp(
                     viewModel = viewModel,
                     onOpenSource = {},
                     onSharePaper = { _, _ -> },
@@ -225,7 +225,7 @@ class MnemeExternalNavigationFlowTest {
 
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(
+                mnemeApp(
                     viewModel = viewModel,
                     onOpenSource = {},
                     onSharePaper = { _, _ -> },
