@@ -11,6 +11,8 @@ from redis.asyncio import Redis
 
 from mneme.ai.budget import BudgetGuard
 from mneme.ai.cache import LLMCache
+from mneme.ai.evaluation.fixtures import QAFixture
+from mneme.ai.evaluation.harness import RagCaseResult
 from mneme.ai.prompts import (
     QA_CORRECTION_PROMPT_VERSION,
     QA_PROMPT_VERSION,
@@ -28,7 +30,7 @@ from mneme.ai.qa import (
 from mneme.ai.retrieval import RetrievedChunk
 from mneme.ai.routing import ModelRouter
 from mneme.ai.service import LLMService
-from mneme.ai.types import AITask, ProviderName
+from mneme.ai.types import AITask, CompletionResult, ProviderName
 from mneme.models.qa import QaCitationResolution, QaSourceMatchStatus
 
 PAPER_ID = uuid4()
@@ -287,3 +289,143 @@ def test_correction_request_is_deterministic_and_versioned() -> None:
         max_output_tokens=256,
     )
     assert request == again
+
+
+CITED_PLUS_UNCITED_ANSWER = (
+    "Multi-head attention replaces recurrence with parallel heads [1]. "
+    "The approach also generalizes to image patches."
+)
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_uncited_substantive_segment_is_a_defect_and_triggers_correction() -> None:
+    """A supported cited sentence plus an independent uncited one is not verified."""
+    first_prompt, correction_prompt = _prompts(CITED_PLUS_UNCITED_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: CITED_PLUS_UNCITED_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert grounded.model_calls == 2
+
+
+def _harness_completion(*, cached: bool, cost: str, latency_ms: int) -> "CompletionResult":
+    from mneme.ai.types import CompletionResult, TokenUsage
+
+    return CompletionResult(
+        text="answer [1]",
+        task=AITask.QA,
+        provider=ProviderName.ANTHROPIC,
+        model="claude-haiku-4-5",
+        prompt_version="qa-v2",
+        usage=TokenUsage(input_tokens=100, output_tokens=50),
+        estimated_cost=Decimal(cost),
+        latency_ms=latency_ms,
+        cached=cached,
+    )
+
+
+def _harness_fixture() -> "QAFixture":
+    from mneme.ai.evaluation.fixtures import QAFixture
+
+    return QAFixture(
+        fixture_id="qa-corr-001",
+        arxiv_id="1706.03762",
+        arxiv_version=7,
+        question=QUESTION,
+        reference_answer="Attention replaces recurrence.",
+        expected_keywords=("attention",),
+    )
+
+
+def _run_harness(completions: tuple["CompletionResult", ...]) -> "RagCaseResult":
+    import asyncio as _asyncio
+
+    from mneme.ai.evaluation.fixtures import QAFixture
+    from mneme.ai.evaluation.harness import RagCaseOutcome, RagEvaluationHarness
+
+    async def answer(fixture: QAFixture) -> RagCaseOutcome:
+        del fixture
+        return RagCaseOutcome(
+            answer="attention [1]",
+            refused=False,
+            source_match_status=QaSourceMatchStatus.MATCHED,
+            verified_citations=1,
+            completion=completions[-1],
+            all_completions=completions,
+        )
+
+    report = _asyncio.run(
+        RagEvaluationHarness(answer).run((_harness_fixture(),), fixture_version="qa-corr-test")
+    )
+    return report.cases[0]
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_harness_aggregates_tokens_and_latency_across_both_calls() -> None:
+    case = _run_harness(
+        (
+            _harness_completion(cached=False, cost="0.002", latency_ms=20),
+            _harness_completion(cached=False, cost="0.003", latency_ms=30),
+        )
+    )
+
+    assert case.generation_input_tokens == 200
+    assert case.generation_output_tokens == 100
+    assert case.generation_latency_ms == 50
+    assert case.generation_cost == Decimal("0.005")
+    assert case.incremental_cost == Decimal("0.005")
+    assert case.cached is False
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_harness_bills_only_live_calls_when_first_pass_is_cached() -> None:
+    case = _run_harness(
+        (
+            _harness_completion(cached=True, cost="0.002", latency_ms=20),
+            _harness_completion(cached=False, cost="0.003", latency_ms=30),
+        )
+    )
+
+    assert case.generation_cost == Decimal("0.005")
+    assert case.incremental_cost == Decimal("0.003")
+    assert case.cached is False
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_harness_bills_only_live_calls_when_correction_is_cached() -> None:
+    case = _run_harness(
+        (
+            _harness_completion(cached=False, cost="0.002", latency_ms=20),
+            _harness_completion(cached=True, cost="0.003", latency_ms=30),
+        )
+    )
+
+    assert case.generation_cost == Decimal("0.005")
+    assert case.incremental_cost == Decimal("0.002")
+    assert case.cached is False
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_harness_marks_fully_cached_pair_as_zero_incremental_spend() -> None:
+    case = _run_harness(
+        (
+            _harness_completion(cached=True, cost="0.002", latency_ms=20),
+            _harness_completion(cached=True, cost="0.003", latency_ms=30),
+        )
+    )
+
+    assert case.generation_cost == Decimal("0.005")
+    assert case.incremental_cost == Decimal(0)
+    assert case.cached is True

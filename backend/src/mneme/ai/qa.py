@@ -242,14 +242,25 @@ def has_citation_defects(
     """Whether an answer violates the citation contract in any way.
 
     Defects are markers pointing outside the evidence list, an answer with
-    no resolvable citation at all, or any cited claim whose words are not
-    supported by its cited chunk.
+    no resolvable citation at all, any cited claim whose words are not
+    supported by its cited chunk, or any substantive segment carrying no
+    valid marker — the frozen contract requires every claim to cite its
+    evidence, so an uncited sentence next to a cited one is a defect even
+    though the cited one verifies.
     """
     markers = {int(match) for match in _CITATION.findall(answer)}
     if any(marker < 1 or marker > len(evidence) for marker in markers):
         return True
     if not citations:
         return True
+    valid_markers = {citation.marker for citation in citations}
+    for segment in _CLAIM_BOUNDARY.split(answer):
+        stripped = segment.strip()
+        if not stripped or not content_words(stripped):
+            continue
+        segment_markers = {int(match) for match in _CITATION.findall(stripped)}
+        if not (segment_markers & valid_markers):
+            return True
     return status is not QaSourceMatchStatus.MATCHED
 
 
