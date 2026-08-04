@@ -5,12 +5,17 @@ import com.mneme.app.data.network.DigestEntryDto
 import com.mneme.app.data.network.MnemeApiException
 import com.mneme.app.data.network.PaperDto
 import com.mneme.app.notifications.DigestNotificationPublisher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicInteger
 
 class DigestRefreshCoordinatorTest {
     @Test
@@ -104,6 +109,31 @@ class DigestRefreshCoordinatorTest {
             assertEquals(DigestSyncResult.Failed, coordinator(refresher, state, notifier).refresh())
         }
 
+    @Test
+    fun concurrentRefreshes_areSerializedAndNotifyOnce() =
+        runBlocking {
+            val refresher = ConcurrentRefresher(digest("digest-concurrent"))
+            val state = FakeNotificationState()
+            val notifier = FakeNotifier()
+            val coordinator = DigestRefreshCoordinator(refresher, state, notifier)
+
+            val results =
+                listOf(
+                    async(Dispatchers.Default) { coordinator.refresh() },
+                    async(Dispatchers.Default) { coordinator.refresh() },
+                ).awaitAll()
+
+            assertEquals(
+                listOf(
+                    DigestSyncResult.Synced("digest-concurrent"),
+                    DigestSyncResult.Synced("digest-concurrent"),
+                ),
+                results,
+            )
+            assertEquals(1, refresher.maximumConcurrentCalls.get())
+            assertEquals(listOf("digest-concurrent"), notifier.digestIds)
+        }
+
     private fun runCoordinatorTest(
         block: suspend (
             FakeRefresher,
@@ -167,6 +197,28 @@ class DigestRefreshCoordinatorTest {
         override suspend fun refreshLatest(): DigestDto? {
             error?.let { throw it }
             return digest
+        }
+    }
+
+    private class ConcurrentRefresher(
+        private val digest: DigestDto,
+    ) : DigestBriefingRefresher {
+        private val activeCalls = AtomicInteger()
+        val maximumConcurrentCalls = AtomicInteger()
+
+        override suspend fun refreshLatest(): DigestDto {
+            val active = activeCalls.incrementAndGet()
+            maximumConcurrentCalls.accumulateAndGet(active, ::maxOf)
+            return try {
+                delay(CONCURRENT_REFRESH_DELAY_MILLIS)
+                digest
+            } finally {
+                activeCalls.decrementAndGet()
+            }
+        }
+
+        private companion object {
+            const val CONCURRENT_REFRESH_DELAY_MILLIS = 50L
         }
     }
 

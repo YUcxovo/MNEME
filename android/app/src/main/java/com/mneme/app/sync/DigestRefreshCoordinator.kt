@@ -6,6 +6,8 @@ import com.mneme.app.data.network.MnemeApiException
 import com.mneme.app.data.network.MnemeRemoteDataSource
 import com.mneme.app.data.network.findDigest
 import com.mneme.app.notifications.DigestNotificationPublisher
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerializationException
 import java.io.IOException
 
@@ -21,6 +23,8 @@ class DigestRefreshCoordinator(
     private val notifier: DigestNotificationPublisher,
     private val notificationThreshold: Double = DEFAULT_NOTIFICATION_THRESHOLD,
 ) {
+    private val refreshMutex = Mutex()
+
     init {
         require(notificationThreshold in 0.0..1.0) {
             "The digest notification threshold must be between 0 and 1."
@@ -29,20 +33,22 @@ class DigestRefreshCoordinator(
 
     @Suppress("SwallowedException") // Worker results intentionally avoid persisting or exposing transport details.
     suspend fun refresh(): DigestSyncResult =
-        try {
-            val digest = refresher.refreshLatest() ?: return DigestSyncResult.NoCompleteDigest
-            notifyIfNew(digest)
-            DigestSyncResult.Synced(digest.id)
-        } catch (error: MnemeApiException) {
-            if (error.statusCode == RATE_LIMIT_STATUS || error.statusCode >= SERVER_ERROR_STATUS) {
+        refreshMutex.withLock {
+            try {
+                val digest = refresher.refreshLatest() ?: return@withLock DigestSyncResult.NoCompleteDigest
+                notifyIfNew(digest)
+                DigestSyncResult.Synced(digest.id)
+            } catch (error: MnemeApiException) {
+                if (error.statusCode == RATE_LIMIT_STATUS || error.statusCode >= SERVER_ERROR_STATUS) {
+                    DigestSyncResult.Retry
+                } else {
+                    DigestSyncResult.Failed
+                }
+            } catch (error: IOException) {
                 DigestSyncResult.Retry
-            } else {
+            } catch (error: SerializationException) {
                 DigestSyncResult.Failed
             }
-        } catch (error: IOException) {
-            DigestSyncResult.Retry
-        } catch (error: SerializationException) {
-            DigestSyncResult.Failed
         }
 
     private fun notifyIfNew(digest: DigestDto) {
