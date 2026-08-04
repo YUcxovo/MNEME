@@ -155,7 +155,7 @@ class E4GraphMeasurementTest {
         val graphState = mutableStateOf(graph(12, "state-ready", GraphAlgorithmUiStatus.READY))
         composeRule.setContent {
             MnemeTheme {
-                GraphScreen(
+                graphScreen(
                     graph = graphState.value,
                     onRetry = {},
                     onOpenPaper = {},

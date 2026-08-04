@@ -102,7 +102,7 @@ internal data class MnemeExternalActions(
 )
 
 @Composable
-fun MnemeApp(
+fun mnemeApp(
     viewModel: MnemeViewModel,
     modifier: Modifier = Modifier,
     onOpenSource: ((String) -> Unit)? = null,
@@ -144,7 +144,7 @@ fun MnemeApp(
                     modifier = modifier,
                 )
             OnboardingUiState.Ready ->
-                MnemeAppScaffold(
+                mnemeAppScaffold(
                     snapshot = snapshot,
                     actions = viewModel.uiActions(),
                     onOpenSource = onOpenSource,
@@ -156,14 +156,14 @@ fun MnemeApp(
 }
 
 @Composable
-fun MnemeApp(
+fun mnemeApp(
     modifier: Modifier = Modifier,
     repository: SkeletalContentRepository = SeededSkeletalContentRepository,
     onOpenSource: ((String) -> Unit)? = null,
     onSharePaper: ((String, String) -> Unit)? = null,
 ) {
     val state = remember(repository) { FixtureMnemeState(repository) }
-    MnemeAppScaffold(
+    mnemeAppScaffold(
         snapshot = state.snapshot,
         actions = state.actions,
         onOpenSource = onOpenSource,
@@ -173,7 +173,7 @@ fun MnemeApp(
 }
 
 @Composable
-private fun MnemeAppScaffold(
+private fun mnemeAppScaffold(
     snapshot: MnemeUiSnapshot,
     actions: MnemeUiActions,
     onOpenSource: ((String) -> Unit)?,
@@ -223,14 +223,14 @@ private fun MnemeAppScaffold(
         },
         bottomBar = {
             if (topLevelDestination != null) {
-                MnemeNavigationBar(
+                mnemeNavigationBar(
                     selectedDestination = topLevelDestination,
                     onDestinationSelected = navController::navigateToTopLevel,
                 )
             }
         },
     ) { innerPadding ->
-        MnemeNavHost(
+        mnemeNavHost(
             navController = navController,
             snapshot = snapshot,
             actions = actions,
@@ -241,7 +241,7 @@ private fun MnemeAppScaffold(
 }
 
 @Composable
-private fun MnemeNavigationBar(
+private fun mnemeNavigationBar(
     selectedDestination: TopLevelDestination,
     onDestinationSelected: (TopLevelDestination) -> Unit,
 ) {
@@ -277,7 +277,7 @@ private fun MnemeNavigationBar(
 }
 
 @Composable
-private fun MnemeNavHost(
+private fun mnemeNavHost(
     navController: NavHostController,
     snapshot: MnemeUiSnapshot,
     actions: MnemeUiActions,
@@ -300,7 +300,7 @@ private fun MnemeNavHost(
             SavedScreen()
         }
         composable<InterestsRoute> {
-            InterestsDestination(
+            interestsDestination(
                 homeState = snapshot.home,
                 editState = snapshot.interestEdit,
                 onRetry = actions.refreshBriefing,

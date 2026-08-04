@@ -21,6 +21,8 @@
     <string name="graph_empty_title">No citation connections yet</string>
     <string name="graph_gesture_hint">Drag nodes to inspect the layout. Pinch or scroll to zoom, and tap a node to keep it selected.</string>
     <string name="graph_open_selected">Open selected paper</string>
+    <string name="graph_explore_selected">Explore from selected paper</string>
+    <string name="graph_filter_empty">No matching citation neighbors. Choose another filter.</string>
     <string name="graph_retry">Refresh graph</string>
     <string name="graph_selected_center">CENTER PAPER</string>
     <string name="graph_selected_paper">SELECTED PAPER</string>

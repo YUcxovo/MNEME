@@ -17,10 +17,11 @@ internal fun NavGraphBuilder.graphNavigation(
     composable<GraphRoute> { entry ->
         val paperId = entry.toRoute<GraphRoute>().paperId
         LaunchedEffect(paperId) { requestGraph(paperId) }
-        GraphDestination(
+        graphDestination(
             paperId = paperId,
             state = state,
             onRetry = { retryGraph(paperId) },
+            onExploreGraph = { selectedPaperId -> navController.navigate(GraphRoute(selectedPaperId)) },
             onOpenPaper = { selectedPaperId ->
                 navController.navigate(PaperDetailRoute(selectedPaperId))
             },

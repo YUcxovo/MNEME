@@ -8,8 +8,8 @@ import com.mneme.app.ui.theme.MnemeTheme
 
 @Preview(showBackground = true)
 @Composable
-private fun MnemeAppPreview() {
+private fun mnemeAppPreview() {
     MnemeTheme {
-        MnemeApp(onOpenSource = {})
+        mnemeApp(onOpenSource = {})
     }
 }

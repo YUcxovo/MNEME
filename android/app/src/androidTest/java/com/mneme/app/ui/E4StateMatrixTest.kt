@@ -170,7 +170,7 @@ class E4StateMatrixTest {
         val viewModel = MnemeViewModel(repository)
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(viewModel = viewModel, onOpenSource = {})
+                mnemeApp(viewModel = viewModel, onOpenSource = {})
             }
         }
         return viewModel

@@ -30,7 +30,7 @@ import com.mneme.app.R
 import com.mneme.app.ui.model.GraphNodeUiModel
 
 @Composable
-internal fun GraphNodeChooser(
+internal fun graphNodeChooser(
     nodes: List<GraphNodeUiModel>,
     selectedPaperId: String?,
     onNodeSelected: (String) -> Unit,
@@ -59,10 +59,11 @@ internal fun GraphNodeChooser(
 }
 
 @Composable
-internal fun SelectedPaperCard(
+internal fun selectedPaperCard(
     node: GraphNodeUiModel,
     isCenter: Boolean,
     onOpenPaper: () -> Unit,
+    onExploreGraph: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().testTag("selected-graph-paper"),
@@ -98,6 +99,11 @@ internal fun SelectedPaperCard(
                 )
             }
             Button(
+                onClick = onExploreGraph,
+                modifier = Modifier.fillMaxWidth().testTag("explore-selected-graph-paper"),
+                shape = MaterialTheme.shapes.small,
+            ) { Text(stringResource(R.string.graph_explore_selected)) }
+            Button(
                 onClick = onOpenPaper,
                 modifier = Modifier.fillMaxWidth().testTag("open-selected-graph-paper"),
                 shape = MaterialTheme.shapes.small,
@@ -116,7 +122,7 @@ internal fun SelectedPaperCard(
 }
 
 @Composable
-internal fun EmptyGraphScreen(
+internal fun emptyGraphScreen(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {

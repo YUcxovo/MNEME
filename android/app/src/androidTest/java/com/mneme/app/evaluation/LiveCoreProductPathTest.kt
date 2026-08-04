@@ -27,12 +27,12 @@ import com.mneme.app.data.repository.NetworkSkeletalDataRepository
 import com.mneme.app.data.repository.PaperContentResult
 import com.mneme.app.data.repository.SkeletalDataRepository
 import com.mneme.app.ui.GraphUiState
-import com.mneme.app.ui.MnemeApp
 import com.mneme.app.ui.MnemeViewModel
 import com.mneme.app.ui.OnboardingUiState
 import com.mneme.app.ui.PaperDetailUiState
 import com.mneme.app.ui.QaUiState
 import com.mneme.app.ui.home.HomeUiState
+import com.mneme.app.ui.mnemeApp
 import com.mneme.app.ui.model.BriefingUiModel
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.GraphUiModel
@@ -105,7 +105,7 @@ class LiveCoreProductPathTest {
             val openedUrls = mutableListOf<String>()
             composeRule.setContent {
                 MnemeTheme {
-                    MnemeApp(
+                    mnemeApp(
                         viewModel = viewModel,
                         onOpenSource = openedUrls::add,
                     )
