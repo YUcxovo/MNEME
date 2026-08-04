@@ -7,7 +7,10 @@ from pydantic import SecretStr
 from mneme.ai.routing import UnroutableModelError, infer_provider
 from mneme.ai.types import ProviderName
 from mneme.core.config import EmbeddingBackend, Environment, Settings
-from mneme.core.timeouts import ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS
+from mneme.core.timeouts import (
+    AI_STAGE_EXECUTION_TIMEOUT_SECONDS,
+    ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS,
+)
 from mneme.ops.preflight_types import PreflightCheck, boolean_check
 
 _TOKEN_DIGEST_PATTERN = re.compile(r"^[0-9a-f]{64}$")
@@ -41,9 +44,11 @@ def static_preflight_checks(settings: Settings) -> tuple[PreflightCheck, ...]:
             "service_timeouts",
             settings.api_graceful_timeout_seconds <= 90
             and settings.arq_job_timeout_seconds <= 300
+            and settings.llm_timeout_seconds <= AI_STAGE_EXECUTION_TIMEOUT_SECONDS
             and settings.arq_job_timeout_seconds
-            >= settings.llm_timeout_seconds + ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS,
-            "API and worker timeouts cover model calls and fit systemd stop envelopes.",
+            >= AI_STAGE_EXECUTION_TIMEOUT_SECONDS + ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS,
+            "API and worker timeouts cover the complete bounded AI stage and fit "
+            "systemd stop envelopes.",
         )
     )
     token = (

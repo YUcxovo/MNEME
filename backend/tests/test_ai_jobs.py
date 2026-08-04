@@ -14,6 +14,7 @@ from mneme.ai.pipeline import PaperNotReadyError
 from mneme.ai.types import LLMProviderError, ProviderNotConfiguredError
 from mneme.models.job import JobStatus, PipelineStage
 from mneme.tasks import ai_runtime
+from mneme.tasks.ai_runtime import AIStageTimeoutError
 from mneme.tasks.ai_runtime import run_ai_stage as _run_stage
 
 
@@ -112,6 +113,26 @@ def test_terminal_provider_error_is_swallowed_after_recording() -> None:
     outcome, _ = _run(runner)
 
     assert outcome == "provider_error"
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
+def test_complete_stage_budget_bounds_multiple_provider_calls(monkeypatch) -> None:
+    calls = 0
+
+    async def runner(session):
+        nonlocal calls
+        del session
+        while True:
+            calls += 1
+            await asyncio.sleep(0)
+
+    monkeypatch.setattr(ai_runtime, "AI_STAGE_EXECUTION_TIMEOUT_SECONDS", 0.01)
+
+    with pytest.raises(AIStageTimeoutError, match="complete execution budget"):
+        _run(runner)
+
+    assert calls > 1
 
 
 @pytest.mark.base

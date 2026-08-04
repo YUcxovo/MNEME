@@ -11,7 +11,10 @@ import pytest
 
 from mneme.cli import preflight_deployment as preflight_cli
 from mneme.core.config import Settings
-from mneme.core.timeouts import ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS
+from mneme.core.timeouts import (
+    AI_STAGE_EXECUTION_TIMEOUT_SECONDS,
+    ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS,
+)
 from mneme.ops import preflight_probe
 from mneme.ops.preflight import (
     CheckStatus,
@@ -133,7 +136,15 @@ def test_static_preflight_accepts_complete_production_configuration() -> None:
         ({"api_graceful_timeout_seconds": 91}, "service_timeouts"),
         ({"arq_job_timeout_seconds": 301}, "service_timeouts"),
         (
-            {"arq_job_timeout_seconds": 60 + ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS - 1},
+            {
+                "arq_job_timeout_seconds": AI_STAGE_EXECUTION_TIMEOUT_SECONDS
+                + ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS
+                - 1
+            },
+            "service_timeouts",
+        ),
+        (
+            {"llm_timeout_seconds": AI_STAGE_EXECUTION_TIMEOUT_SECONDS + 1},
             "service_timeouts",
         ),
         ({"demo_token_sha256": "not-a-digest"}, "demo_identity"),
@@ -157,11 +168,14 @@ def test_static_preflight_fails_closed(overrides: dict[str, object], failed_chec
 
 
 @pytest.mark.base
-def test_static_preflight_accepts_minimum_worker_model_timeout_margin() -> None:
+def test_static_preflight_accepts_minimum_complete_ai_stage_margin() -> None:
     checks = {
         check.id: check
         for check in static_preflight_checks(
-            _settings(arq_job_timeout_seconds=60 + ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS)
+            _settings(
+                arq_job_timeout_seconds=AI_STAGE_EXECUTION_TIMEOUT_SECONDS
+                + ARQ_JOB_TIMEOUT_OVERHEAD_SECONDS
+            )
         )
     }
 
@@ -233,7 +247,7 @@ def test_live_preflight_contains_dependency_failures(
 @pytest.mark.base
 def test_expected_migration_head_matches_checkout() -> None:
     config_path = Path(__file__).parents[1] / "alembic.ini"
-    assert expected_migration_head(config_path) == "0007"
+    assert expected_migration_head(config_path) == "0008"
 
 
 @pytest.mark.base
