@@ -226,7 +226,7 @@ class MnemeExternalNavigationFlowTest {
 
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(
+                mnemeApp(
                     viewModel = viewModel,
                     externalNavigation =
                         MnemeExternalNavigationBinding(
@@ -283,7 +283,7 @@ class MnemeExternalNavigationFlowTest {
 
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(
+                mnemeApp(
                     viewModel = viewModel,
                     externalNavigation =
                         MnemeExternalNavigationBinding(
