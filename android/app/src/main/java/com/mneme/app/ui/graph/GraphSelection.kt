@@ -1,4 +1,4 @@
-@file:Suppress("ktlint:standard:function-naming")
+﻿@file:Suppress("ktlint:standard:function-naming")
 
 package com.mneme.app.ui.graph
 
@@ -63,6 +63,7 @@ internal fun selectedPaperCard(
     node: GraphNodeUiModel,
     isCenter: Boolean,
     onOpenPaper: () -> Unit,
+    onExploreGraph: () -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth().testTag("selected-graph-paper"),
@@ -97,6 +98,11 @@ internal fun selectedPaperCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            Button(
+                onClick = onExploreGraph,
+                modifier = Modifier.fillMaxWidth().testTag("explore-selected-graph-paper"),
+                shape = MaterialTheme.shapes.small,
+            ) { Text(stringResource(R.string.graph_explore_selected)) }
             Button(
                 onClick = onOpenPaper,
                 modifier = Modifier.fillMaxWidth().testTag("open-selected-graph-paper"),

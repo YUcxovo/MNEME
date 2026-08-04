@@ -1,4 +1,4 @@
-package com.mneme.app.ui
+﻿package com.mneme.app.ui
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavGraphBuilder
@@ -21,6 +21,7 @@ internal fun NavGraphBuilder.graphNavigation(
             paperId = paperId,
             state = state,
             onRetry = { retryGraph(paperId) },
+            onExploreGraph = { selectedPaperId -> navController.navigate(GraphRoute(selectedPaperId)) },
             onOpenPaper = { selectedPaperId ->
                 navController.navigate(PaperDetailRoute(selectedPaperId))
             },

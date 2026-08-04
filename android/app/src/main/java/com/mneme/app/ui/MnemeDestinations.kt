@@ -1,4 +1,4 @@
-@file:Suppress("ktlint:standard:function-naming")
+﻿@file:Suppress("ktlint:standard:function-naming", "FunctionNaming", "LongParameterList", "MaxLineLength")
 
 package com.mneme.app.ui
 
@@ -85,6 +85,7 @@ internal fun graphDestination(
     state: GraphUiState,
     onRetry: () -> Unit,
     onOpenPaper: (String) -> Unit,
+    onExploreGraph: (String) -> Unit,
 ) {
     when (state) {
         GraphUiState.Idle -> LoadingState(message = "Loading citation connections...")
@@ -95,6 +96,7 @@ internal fun graphDestination(
                     graph = state.graph,
                     onRetry = onRetry,
                     onOpenPaper = onOpenPaper,
+                    onExploreGraph = onExploreGraph,
                 )
             } else {
                 LoadingState(message = "Loading citation connections...")
