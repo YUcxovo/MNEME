@@ -150,6 +150,27 @@ opened through the normal paper-detail route. `ready` identifies the ranked/clus
 backend result; `fallback` is displayed as the backend's deterministic citation baseline.
 The graph is not cached, so an unavailable backend produces a retryable error.
 
+### Paper sharing and deep links
+
+The paper-detail Share action opens the Android share chooser with the paper title, a
+Mneme deep link, and the paper's real arXiv URL. Deep links use the form
+`mneme://paper/<backend-paper-UUID>`; the identifier is the UUID returned by the backend,
+not an arXiv identifier.
+
+Opening a valid link can cold-start Mneme or deliver the paper to an existing app task. The
+client then loads the paper through the same repository path used by normal in-app
+navigation; live builds can recover cached paper metadata through the repository's Room
+fallback. If first-run onboarding is still in progress, the requested paper is retained
+until onboarding completes. An unknown or currently unavailable paper remains a retryable
+error, and malformed links are rejected without opening unrelated content.
+Each accepted link carries a stable event UUID through Activity recreation. The client
+awaits the Room write before marking that open as recorded, and a replay of the same UUID
+uses an insert-if-absent boundary so it cannot queue a second `paper_opened` event.
+
+This custom scheme is an installed-app entry point, not a public web page or an account-based
+sharing service. The recipient therefore needs the Mneme app and access to the referenced
+backend paper or a matching local cache entry.
+
 ## Current client boundaries
 
 - Room schema version 4 stores paper metadata, digest cache payloads, preferences, refresh

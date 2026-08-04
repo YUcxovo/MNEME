@@ -59,6 +59,24 @@ class BehavioralEventTrackerTest {
             assertEquals(BehavioralEventType.PAPER_SAVED, store.recorded.single().type)
         }
 
+    @Test
+    fun externalOpenForwardsStableIdentityToTheDurableStore() =
+        runBlocking {
+            val store = RecordingStore()
+            val tracker =
+                QueuedBehavioralEventTracker(
+                    store = store,
+                    scheduleSync = {},
+                    nowEpochMillis = { OCCURRED_AT },
+                )
+
+            tracker.recordPaperOpenedOnce(EXTERNAL_EVENT_ID.toString(), FIRST_PAPER_ID.toString())
+
+            assertEquals(listOf(EXTERNAL_EVENT_ID), store.recordedOnceIds)
+            assertEquals(BehavioralEventType.PAPER_OPENED, store.recorded.single().type)
+            assertEquals(FIRST_PAPER_ID, store.recorded.single().paperId)
+        }
+
     private data class RecordedEvent(
         val type: BehavioralEventType,
         val paperId: UUID?,
@@ -68,6 +86,7 @@ class BehavioralEventTrackerTest {
 
     private class RecordingStore : BehavioralEventStore {
         val recorded = mutableListOf<RecordedEvent>()
+        val recordedOnceIds = mutableListOf<UUID>()
 
         override suspend fun record(
             type: BehavioralEventType,
@@ -77,6 +96,18 @@ class BehavioralEventTrackerTest {
         ): UUID {
             recorded += RecordedEvent(type, paperId, occurredAtEpochMillis, durationMillis)
             return UUID.randomUUID()
+        }
+
+        override suspend fun recordOnce(
+            eventId: UUID,
+            type: BehavioralEventType,
+            paperId: UUID?,
+            occurredAtEpochMillis: Long,
+            durationMillis: Long?,
+        ): UUID {
+            recordedOnceIds += eventId
+            record(type, paperId, occurredAtEpochMillis, durationMillis)
+            return eventId
         }
 
         override suspend fun reservePendingBatch(
@@ -95,6 +126,7 @@ class BehavioralEventTrackerTest {
 
     companion object {
         private val FIRST_PAPER_ID = UUID.fromString("11111111-1111-4111-8111-111111111111")
+        private val EXTERNAL_EVENT_ID = UUID.fromString("77777777-7777-4777-8777-777777777777")
         private const val OCCURRED_AT = 1_784_862_000_000L
     }
 }

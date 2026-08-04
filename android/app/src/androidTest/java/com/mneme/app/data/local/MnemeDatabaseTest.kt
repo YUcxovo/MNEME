@@ -263,6 +263,67 @@ class MnemeDatabaseTest {
         }
 
     @Test
+    fun behavioralEventRepository_replayedStableIdentityRemainsOneQueuedEvent() =
+        runBlocking {
+            val eventId = UUID.fromString("77777777-7777-4777-8777-777777777777")
+            val paperId = UUID.fromString("2d3f275d-2f4f-4144-a9fd-a2cbe8f12c88")
+            val repository = BehavioralEventRepository(database.behavioralEventDao())
+
+            repository.recordOnce(
+                eventId = eventId,
+                type = BehavioralEventType.PAPER_OPENED,
+                paperId = paperId,
+                occurredAtEpochMillis = 20,
+            )
+            repository.recordOnce(
+                eventId = eventId,
+                type = BehavioralEventType.PAPER_OPENED,
+                paperId = paperId,
+                occurredAtEpochMillis = 30,
+            )
+
+            val queued = repository.observeAll().first()
+            assertEquals(1, queued.size)
+            assertEquals(eventId.toString(), queued.single().id)
+            assertEquals(20L, queued.single().occurredAtEpochMillis)
+        }
+
+    @Test
+    fun behavioralEventRepository_rejectsStableIdentityForAnotherPayload() =
+        runBlocking {
+            val eventId = UUID.fromString("77777777-7777-4777-8777-777777777777")
+            val firstPaperId = UUID.fromString("2d3f275d-2f4f-4144-a9fd-a2cbe8f12c88")
+            val otherPaperId = UUID.fromString("3d3f275d-2f4f-4144-a9fd-a2cbe8f12c89")
+            val repository = BehavioralEventRepository(database.behavioralEventDao())
+            repository.recordOnce(
+                eventId = eventId,
+                type = BehavioralEventType.PAPER_OPENED,
+                paperId = firstPaperId,
+                occurredAtEpochMillis = 20,
+            )
+
+            val failure =
+                runCatching {
+                    repository.recordOnce(
+                        eventId = eventId,
+                        type = BehavioralEventType.PAPER_OPENED,
+                        paperId = otherPaperId,
+                        occurredAtEpochMillis = 30,
+                    )
+                }.exceptionOrNull()
+
+            assertTrue(failure is IllegalStateException)
+            assertEquals(
+                firstPaperId.toString(),
+                repository
+                    .observeAll()
+                    .first()
+                    .single()
+                    .paperId,
+            )
+        }
+
+    @Test
     fun behavioralEventRepository_requeuesOnlyStaleInFlightEvents() =
         runBlocking {
             val staleId = UUID.fromString("1332d484-3d95-4596-a99f-5eb01bb30388")

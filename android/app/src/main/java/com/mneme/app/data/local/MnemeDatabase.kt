@@ -41,6 +41,7 @@ abstract class MnemeDatabase : RoomDatabase() {
 
     companion object {
         const val DATABASE_NAME = "mneme.db"
+        const val CONTROLLED_FIXTURE_DATABASE_NAME = "mneme-controlled-fixture.db"
 
         val MIGRATION_1_2 =
             object : Migration(1, 2) {
@@ -89,12 +90,19 @@ abstract class MnemeDatabase : RoomDatabase() {
                 }
             }
 
-        fun create(context: Context): MnemeDatabase =
+        fun create(context: Context): MnemeDatabase = create(context, DATABASE_NAME)
+
+        fun createControlledFixture(context: Context): MnemeDatabase = create(context, CONTROLLED_FIXTURE_DATABASE_NAME)
+
+        private fun create(
+            context: Context,
+            databaseName: String,
+        ): MnemeDatabase =
             Room
                 .databaseBuilder(
                     context.applicationContext,
                     MnemeDatabase::class.java,
-                    DATABASE_NAME,
+                    databaseName,
                 ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .build()
     }

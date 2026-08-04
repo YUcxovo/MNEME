@@ -53,6 +53,7 @@ class GraphScreenTest {
                     graph = graph,
                     onRetry = {},
                     onOpenPaper = openedPaper::set,
+                    onExploreGraph = {},
                 )
             }
         }
@@ -96,6 +97,7 @@ class GraphScreenTest {
                     graph = graph,
                     onRetry = {},
                     onOpenPaper = {},
+                    onExploreGraph = {},
                 )
             }
         }
@@ -129,6 +131,7 @@ class GraphScreenTest {
                     graph = emptyGraph(),
                     onRetry = { retried.set(true) },
                     onOpenPaper = {},
+                    onExploreGraph = {},
                 )
             }
         }
@@ -236,6 +239,7 @@ class GraphScreenTest {
                     state = state,
                     onRetry = { retried.set(true) },
                     onOpenPaper = {},
+                    onExploreGraph = {},
                 )
             }
         }
@@ -317,6 +321,7 @@ class GraphScreenTest {
                     graph = graph,
                     onRetry = {},
                     onOpenPaper = {},
+                    onExploreGraph = {},
                 )
             }
         }

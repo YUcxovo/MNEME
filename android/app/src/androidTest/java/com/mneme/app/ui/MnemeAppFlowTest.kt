@@ -285,7 +285,10 @@ class MnemeAppFlowTest {
             assertEquals(listOf(paperId), tracker.questionPaperIds)
             assertEquals(
                 listOf(
-                    "Attention Is All You Need" to "https://arxiv.org/abs/1706.03762",
+                    "Attention Is All You Need" to
+                        "Attention Is All You Need\n" +
+                        "mneme://paper/${SeededSkeletalContentRepository.PAPER_ID}\n" +
+                        "https://arxiv.org/abs/1706.03762",
                 ),
                 sharedPapers,
             )
@@ -315,11 +318,21 @@ class MnemeAppFlowTest {
                 SeededSkeletalContentRepository.PAPER_ID,
             ) == EventRecordingStatus.FAILED
         }
+        val failureMessage = "Save was not recorded. Tap Retry save to try again."
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("save-paper-action"),
+        )
         composeRule.onNodeWithTag("save-paper-action").assertIsEnabled()
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasText(failureMessage),
+        )
         composeRule
-            .onNodeWithText("Save was not recorded. Tap Retry save to try again.")
+            .onNodeWithText(failureMessage)
             .assertIsDisplayed()
 
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("save-paper-action"),
+        )
         composeRule.onNodeWithTag("save-paper-action").performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
             viewModel.behavioralEvents.engagementState.value.saveStatus(
@@ -432,6 +445,11 @@ class MnemeAppFlowTest {
         override suspend fun recordPaperOpened(paperId: String) {
             openedPaperIds += paperId
         }
+
+        override suspend fun recordPaperOpenedOnce(
+            eventId: String,
+            paperId: String,
+        ) = recordPaperOpened(paperId)
 
         override suspend fun recordPaperSaved(paperId: String) {
             saveAttempts += 1

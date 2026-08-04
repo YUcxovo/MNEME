@@ -40,6 +40,15 @@ class MnemeBehavioralEventRecorder(
         record { tracker.recordPaperOpened(paperId) }
     }
 
+    suspend fun recordPaperOpenedOnce(
+        eventId: String,
+        paperId: String,
+    ): Boolean {
+        if (!tracker.recordsDurably) return false
+        tracker.recordPaperOpenedOnce(eventId, paperId)
+        return true
+    }
+
     fun savePaper(paperId: String) {
         require(paperId.isNotBlank()) { "A paper identifier is required." }
         if (

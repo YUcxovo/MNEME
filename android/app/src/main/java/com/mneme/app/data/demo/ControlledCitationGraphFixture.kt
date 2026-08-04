@@ -11,8 +11,9 @@ import com.mneme.app.ui.model.SourceMatchUiStatus
 import com.mneme.app.ui.model.SourceUiModel
 
 object ControlledCitationGraphFixture {
-    const val PRIMARY_NEIGHBOR_ID = "controlled-neighbor-1"
-    const val DEEP_NEIGHBOR_ID = "controlled-neighbor-11"
+    private const val UUID_SUFFIX_WIDTH = 12
+    const val PRIMARY_NEIGHBOR_ID = "00000000-0000-4000-8000-000000000001"
+    const val DEEP_NEIGHBOR_ID = "00000000-0000-4000-8000-000000000011"
     const val NODE_COUNT = 12
     const val EDGE_COUNT = 18
 
@@ -26,63 +27,63 @@ object ControlledCitationGraphFixture {
                 0.92,
             ),
             ControlledPaperSpec(
-                "controlled-neighbor-2",
+                nodeId(2),
                 "Encoder study",
                 "cs.LG",
                 "attention",
                 0.84,
             ),
             ControlledPaperSpec(
-                "controlled-neighbor-3",
+                nodeId(3),
                 "Retrieval study",
                 "cs.IR",
                 "retrieval",
                 0.78,
             ),
             ControlledPaperSpec(
-                "controlled-neighbor-4",
+                nodeId(4),
                 "Evaluation study",
                 "cs.AI",
                 "evaluation",
                 0.73,
             ),
             ControlledPaperSpec(
-                "controlled-neighbor-5",
+                nodeId(5),
                 "Efficient transformers",
                 "cs.LG",
                 "attention",
                 0.68,
             ),
             ControlledPaperSpec(
-                "controlled-neighbor-6",
+                nodeId(6),
                 "Multilingual models",
                 "cs.CL",
                 "language",
                 0.62,
             ),
             ControlledPaperSpec(
-                "controlled-neighbor-7",
+                nodeId(7),
                 "Dense retrieval",
                 "cs.IR",
                 "retrieval",
                 0.57,
             ),
             ControlledPaperSpec(
-                "controlled-neighbor-8",
+                nodeId(8),
                 "Graph retrieval",
                 "cs.IR",
                 "retrieval",
                 0.52,
             ),
             ControlledPaperSpec(
-                "controlled-neighbor-9",
+                nodeId(9),
                 "Robustness study",
                 "stat.ML",
                 "evaluation",
                 0.47,
             ),
             ControlledPaperSpec(
-                "controlled-neighbor-10",
+                nodeId(10),
                 "Benchmark study",
                 "cs.AI",
                 "evaluation",
@@ -218,7 +219,10 @@ object ControlledCitationGraphFixture {
         weight: Double,
     ): GraphEdgeUiModel = GraphEdgeUiModel(source = source, target = target, weight = weight)
 
-    private fun nodeId(index: Int): String = "controlled-neighbor-$index"
+    private fun nodeId(index: Int): String {
+        val suffix = index.toString().padStart(UUID_SUFFIX_WIDTH, '0')
+        return "00000000-0000-4000-8000-$suffix"
+    }
 
     private data class ControlledPaperSpec(
         val id: String,

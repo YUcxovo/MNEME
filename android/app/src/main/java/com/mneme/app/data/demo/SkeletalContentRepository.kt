@@ -25,7 +25,7 @@ interface SkeletalContentRepository {
 }
 
 object SeededSkeletalContentRepository : SkeletalContentRepository {
-    const val PAPER_ID = "1706.03762"
+    const val PAPER_ID = "00000000-0000-4000-8000-000000000000"
     const val NEIGHBOR_PAPER_ID = ControlledCitationGraphFixture.PRIMARY_NEIGHBOR_ID
     const val DEEP_GRAPH_PAPER_ID = ControlledCitationGraphFixture.DEEP_NEIGHBOR_ID
 

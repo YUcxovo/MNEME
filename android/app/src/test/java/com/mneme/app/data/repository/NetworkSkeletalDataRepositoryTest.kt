@@ -248,6 +248,22 @@ class NetworkSkeletalDataRepositoryTest {
         }
 
     @Test
+    fun mismatchedPaperResponse_usesOnlyTheRequestedCachedPaper() =
+        runBlocking {
+            val remote = FakeRemote().apply { paper = paper("paper-2", "Wrong paper") }
+            val requestedPaper = cachedPaper("paper-1", "Requested cached paper")
+            val cache = FakeCache().apply { papers[requestedPaper.id] = requestedPaper }
+            val repository = NetworkSkeletalDataRepository(remote, cache)
+
+            val ready = repository.loadPaper("paper-1") as PaperContentResult.Ready
+
+            assertEquals("paper-1", ready.paper.paper.id)
+            assertEquals("Requested cached paper", ready.paper.paper.title)
+            assertEquals(ContentOrigin.CACHED_BACKEND, ready.paper.disclosure.origin)
+            assertTrue("paper-2" !in cache.papers)
+        }
+
+    @Test
     fun insufficientEvidenceAnswer_hasNoInventedCitation() =
         runBlocking {
             val remote = FakeRemote()

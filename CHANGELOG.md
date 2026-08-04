@@ -12,6 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   post-generation matching against the exact revision's stored chunks, explicit
   unmatched states, provenance recomputation on chunk replacement, and additive
   `claims` fields in the summary API contract.
+- Added Android paper sharing with both an app deep link and the paper's real arXiv URL,
+  plus `mneme://paper/<backend-paper-UUID>` handling for cold starts and existing app
+  tasks through the normal paper repository, including its Room-backed offline fallback.
 - Added separate public liveness and bounded PostgreSQL/Redis readiness probes with safe dependency-status responses.
 - Added a bounded SQL-backed `platform-operations-v1` JSON report for jobs, papers, parse quality, and briefing generation without raw failure diagnostics.
 - Added Android paper save/share actions backed by the existing durable event queue, plus
@@ -89,6 +92,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Fixed
 
+- Made Android deep-link open events replay-safe by carrying one event UUID through
+  navigation and using an idempotent Room insertion boundary.
 - Preserved citation-backed seed candidates when a temporary arXiv batch failure requires
   smaller metadata requests, and return an explicit retryable error instead of silently
   completing with unrelated papers when their metadata remains unavailable.

@@ -37,18 +37,26 @@ class MnemeApplication : Application() {
 class MnemeApplicationContainer(
     application: Application,
 ) {
+    private val liveDatabase: Result<MnemeDatabase> by lazy {
+        runCatching { MnemeDatabase.create(application) }
+    }
+
+    private val controlledFixtureDatabase: Result<MnemeDatabase> by lazy {
+        runCatching { MnemeDatabase.createControlledFixture(application) }
+    }
+
     private val liveComponents: Result<LiveComponents>? by lazy {
         if (BuildConfig.MNEME_DEMO_TOKEN.isBlank()) {
             null
         } else {
             runCatching {
-                val database = MnemeDatabase.create(application)
+                val appDatabase = liveDatabase.getOrThrow()
                 val remote =
                     MnemeApiClient.create(
                         baseUrl = BuildConfig.MNEME_API_BASE_URL,
                         demoToken = BuildConfig.MNEME_DEMO_TOKEN,
                     )
-                val eventStore = BehavioralEventRepository(database.behavioralEventDao())
+                val eventStore = BehavioralEventRepository(appDatabase.behavioralEventDao())
                 val eventSyncCoordinator =
                     BehavioralEventSyncCoordinator(
                         store = eventStore,
@@ -58,7 +66,7 @@ class MnemeApplicationContainer(
                     repository =
                         NetworkSkeletalDataRepository(
                             remote = remote,
-                            cache = RoomSkeletalCache(database, MnemeApiClient.json),
+                            cache = RoomSkeletalCache(appDatabase, MnemeApiClient.json),
                         ),
                     eventTracker =
                         QueuedBehavioralEventTracker(
@@ -92,7 +100,19 @@ class MnemeApplicationContainer(
 
     private val eventTracker: BehavioralEventTracker by lazy {
         when (val live = liveComponents) {
-            null -> NoOpBehavioralEventTracker
+            null ->
+                controlledFixtureDatabase.fold(
+                    onSuccess = { controlledDatabase ->
+                        QueuedBehavioralEventTracker(
+                            store =
+                                BehavioralEventRepository(
+                                    controlledDatabase.behavioralEventDao(),
+                                ),
+                            scheduleSync = {},
+                        )
+                    },
+                    onFailure = { NoOpBehavioralEventTracker },
+                )
             else -> live.fold(LiveComponents::eventTracker) { NoOpBehavioralEventTracker }
         }
     }

@@ -14,6 +14,8 @@ data object InterestsRoute
 @Serializable
 data class PaperDetailRoute(
     val paperId: String,
+    val externalRequestId: Long? = null,
+    val externalEventId: String? = null,
 )
 
 @Serializable

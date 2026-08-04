@@ -5,6 +5,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.UUID
 
 class SeededSkeletalContentRepositoryTest {
     @Test
@@ -51,9 +52,14 @@ class SeededSkeletalContentRepositoryTest {
         assertTrue(graph.edges.any { it.source == graph.centerId })
         assertTrue(graph.edges.any { it.target == graph.centerId })
         val nodeIds = graph.nodes.mapTo(mutableSetOf()) { it.id }
+        assertTrue(nodeIds.all(::isCanonicalLowercaseUuid))
         assertTrue(graph.edges.all { it.source in nodeIds && it.target in nodeIds })
         assertTrue(graph.nodes.all { repository.paper(it.id) != null })
         assertNotNull(repository.paper(SeededSkeletalContentRepository.DEEP_GRAPH_PAPER_ID))
+        assertEquals(
+            "https://arxiv.org/abs/1706.03762",
+            paper?.source?.url,
+        )
     }
 
     @Test
@@ -64,4 +70,8 @@ class SeededSkeletalContentRepositoryTest {
         assertNull(repository.qa("unknown", "What does this paper claim?"))
         assertNull(repository.graph("unknown"))
     }
+
+    private fun isCanonicalLowercaseUuid(value: String): Boolean =
+        runCatching { UUID.fromString(value).toString() == value }
+            .getOrDefault(false)
 }
