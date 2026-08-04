@@ -150,6 +150,9 @@ opened through the normal paper-detail route. `ready` identifies the ranked/clus
 backend result; `fallback` is displayed as the backend's deterministic citation baseline.
 The graph is not cached, so an unavailable backend produces a retryable error.
 
+### Weekly briefing alerts
+
+Live builds periodically synchronize complete weekly briefings and cache every result. A local notification is eligible only when the weekly digest has at least one entry with a relevance score at or above the configured `0.75` threshold. The threshold is injected into `DigestRefreshCoordinator` for configuration and testing; retries and restarts use the stable digest ID so an eligible briefing is announced at most once. Manual and other digest types remain available in the feed but do not trigger this alert.
 ### Paper sharing and deep links
 
 The paper-detail Share action opens the Android share chooser with the paper title, a
