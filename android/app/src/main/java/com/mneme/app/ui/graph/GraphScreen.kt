@@ -26,14 +26,14 @@ import com.mneme.app.ui.component.MnemeSectionLabel
 import com.mneme.app.ui.model.GraphUiModel
 
 @Composable
-fun GraphScreen(
+fun graphScreen(
     graph: GraphUiModel,
     onRetry: () -> Unit,
     onOpenPaper: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (graph.nodes.isEmpty()) {
-        EmptyGraphScreen(onRetry = onRetry, modifier = modifier)
+        emptyGraphScreen(onRetry = onRetry, modifier = modifier)
         return
     }
     var selectedPaperId by rememberSaveable(graph.centerId) {
@@ -98,7 +98,7 @@ private fun GraphContent(
             MnemeSectionLabel(text = stringResource(R.string.graph_accessible_nodes))
         }
         item {
-            GraphNodeChooser(
+            graphNodeChooser(
                 nodes = graph.nodes,
                 selectedPaperId = selectedPaperId,
                 onNodeSelected = onNodeSelected,
@@ -106,7 +106,7 @@ private fun GraphContent(
         }
         selectedNode?.let { node ->
             item {
-                SelectedPaperCard(
+                selectedPaperCard(
                     node = node,
                     isCenter = node.id == graph.centerId,
                     onOpenPaper = { onOpenPaper(node.id) },

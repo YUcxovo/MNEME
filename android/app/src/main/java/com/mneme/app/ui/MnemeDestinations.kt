@@ -5,7 +5,7 @@ package com.mneme.app.ui
 import androidx.compose.runtime.Composable
 import com.mneme.app.ui.component.ErrorState
 import com.mneme.app.ui.component.LoadingState
-import com.mneme.app.ui.graph.GraphScreen
+import com.mneme.app.ui.graph.graphScreen
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.interests.InterestsScreen
 import com.mneme.app.ui.paper.PaperDetailActions
@@ -13,7 +13,7 @@ import com.mneme.app.ui.paper.PaperDetailScreen
 import com.mneme.app.ui.qa.QaScreen
 
 @Composable
-internal fun InterestsDestination(
+internal fun interestsDestination(
     homeState: HomeUiState,
     editState: InterestEditUiState,
     onRetry: () -> Unit,
@@ -38,7 +38,7 @@ internal fun InterestsDestination(
 }
 
 @Composable
-internal fun PaperDestination(
+internal fun paperDestination(
     paperId: String,
     state: PaperDetailUiState,
     saveStatus: EventRecordingStatus,
@@ -80,7 +80,7 @@ internal data class PaperDestinationActions(
 )
 
 @Composable
-internal fun GraphDestination(
+internal fun graphDestination(
     paperId: String,
     state: GraphUiState,
     onRetry: () -> Unit,
@@ -91,7 +91,7 @@ internal fun GraphDestination(
         is GraphUiState.Loading -> LoadingState(message = "Loading citation connections...")
         is GraphUiState.Content ->
             if (state.graph.centerId == paperId) {
-                GraphScreen(
+                graphScreen(
                     graph = state.graph,
                     onRetry = onRetry,
                     onOpenPaper = onOpenPaper,
@@ -109,7 +109,7 @@ internal fun GraphDestination(
 }
 
 @Composable
-internal fun QaDestination(
+internal fun qaDestination(
     paperId: String,
     state: QaUiState,
     onSubmit: (String) -> Unit,

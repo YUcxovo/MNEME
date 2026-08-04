@@ -17,8 +17,8 @@ import com.mneme.app.data.local.BehavioralEventRepository
 import com.mneme.app.data.local.MnemeDatabase
 import com.mneme.app.data.local.entity.BehavioralEventSyncState
 import com.mneme.app.data.network.MnemeApiClient
-import com.mneme.app.ui.MnemeApp
 import com.mneme.app.ui.MnemeViewModel
+import com.mneme.app.ui.mnemeApp
 import com.mneme.app.ui.theme.MnemeTheme
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -91,7 +91,7 @@ class BehavioralEventDeviceIntegrationTest {
         val viewModel = MnemeViewModel(EventTraceRepository(), tracker)
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(
+                mnemeApp(
                     viewModel = viewModel,
                     onOpenSource = {},
                     onSharePaper = { _, _ -> },

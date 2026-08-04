@@ -37,7 +37,7 @@ class MnemeAppFlowTest {
         val openedUrls = mutableListOf<String>()
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(onOpenSource = openedUrls::add)
+                mnemeApp(onOpenSource = openedUrls::add)
             }
         }
 
@@ -92,7 +92,7 @@ class MnemeAppFlowTest {
     fun topLevelNavigation_updatesSelectedDestination() {
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(onOpenSource = {})
+                mnemeApp(onOpenSource = {})
             }
         }
 
@@ -115,7 +115,7 @@ class MnemeAppFlowTest {
         val viewModel = MnemeViewModel(ControlledFixtureDataRepository())
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(viewModel = viewModel, onOpenSource = {})
+                mnemeApp(viewModel = viewModel, onOpenSource = {})
             }
         }
         composeRule.waitUntil(timeoutMillis = 5_000) {
@@ -161,7 +161,7 @@ class MnemeAppFlowTest {
         val viewModel = MnemeViewModel(ControlledFixtureDataRepository())
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(viewModel = viewModel, onOpenSource = {})
+                mnemeApp(viewModel = viewModel, onOpenSource = {})
             }
         }
 
@@ -189,7 +189,7 @@ class MnemeAppFlowTest {
     fun graphFlow_opensSelectedPaperAndRestoresSelectionOnBack() {
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(onOpenSource = {})
+                mnemeApp(onOpenSource = {})
             }
         }
 
@@ -240,7 +240,7 @@ class MnemeAppFlowTest {
         val sharedPapers = mutableListOf<Pair<String, String>>()
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(
+                mnemeApp(
                     viewModel = viewModel,
                     onOpenSource = {},
                     onSharePaper = { title, url -> sharedPapers += title to url },
@@ -298,7 +298,7 @@ class MnemeAppFlowTest {
         val viewModel = MnemeViewModel(ControlledFixtureDataRepository(), tracker)
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(viewModel = viewModel, onOpenSource = {}, onSharePaper = { _, _ -> })
+                mnemeApp(viewModel = viewModel, onOpenSource = {}, onSharePaper = { _, _ -> })
             }
         }
 
@@ -342,7 +342,7 @@ class MnemeAppFlowTest {
         val viewModel = MnemeViewModel(ControlledFixtureDataRepository())
         composeRule.setContent {
             MnemeTheme {
-                MnemeApp(viewModel = viewModel, onOpenSource = {}, onSharePaper = { _, _ -> })
+                mnemeApp(viewModel = viewModel, onOpenSource = {}, onSharePaper = { _, _ -> })
             }
         }
 

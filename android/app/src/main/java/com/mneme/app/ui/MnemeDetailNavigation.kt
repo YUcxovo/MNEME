@@ -18,7 +18,7 @@ internal fun NavGraphBuilder.paperDetailNavigation(
     composable<PaperDetailRoute> { entry ->
         val paperId = entry.toRoute<PaperDetailRoute>().paperId
         LaunchedEffect(paperId) { actions.requestPaper(paperId) }
-        PaperDestination(
+        paperDestination(
             paperId = paperId,
             state = snapshot.paper,
             saveStatus = snapshot.engagement.saveStatus(paperId),
@@ -51,7 +51,7 @@ internal fun NavGraphBuilder.qaNavigation(
     composable<QaRoute> { entry ->
         val paperId = entry.toRoute<QaRoute>().paperId
         LaunchedEffect(paperId) { actions.openQa(paperId) }
-        QaDestination(
+        qaDestination(
             paperId = paperId,
             state = snapshot.qa,
             onSubmit = { question -> actions.requestQa(paperId, question) },

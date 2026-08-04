@@ -20,8 +20,8 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.unit.dp
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
-import com.mneme.app.ui.GraphDestination
 import com.mneme.app.ui.GraphUiState
+import com.mneme.app.ui.graphDestination
 import com.mneme.app.ui.model.ContentDisclosureUiModel
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.GraphAlgorithmUiStatus
@@ -49,7 +49,7 @@ class GraphScreenTest {
         val openedPaper = AtomicReference<String>()
         composeRule.setContent {
             MnemeTheme {
-                GraphScreen(
+                graphScreen(
                     graph = graph,
                     onRetry = {},
                     onOpenPaper = openedPaper::set,
@@ -92,7 +92,7 @@ class GraphScreenTest {
         val restorationTester = StateRestorationTester(composeRule)
         restorationTester.setContent {
             MnemeTheme {
-                GraphScreen(
+                graphScreen(
                     graph = graph,
                     onRetry = {},
                     onOpenPaper = {},
@@ -125,7 +125,7 @@ class GraphScreenTest {
         val retried = AtomicBoolean(false)
         composeRule.setContent {
             MnemeTheme {
-                GraphScreen(
+                graphScreen(
                     graph = emptyGraph(),
                     onRetry = { retried.set(true) },
                     onOpenPaper = {},
@@ -231,7 +231,7 @@ class GraphScreenTest {
                     )
             }
             MnemeTheme {
-                GraphDestination(
+                graphDestination(
                     paperId = SeededSkeletalContentRepository.PAPER_ID,
                     state = state,
                     onRetry = { retried.set(true) },
@@ -313,7 +313,7 @@ class GraphScreenTest {
             ).copy(algorithmStatus = GraphAlgorithmUiStatus.READY)
         composeRule.setContent {
             MnemeTheme {
-                GraphScreen(
+                graphScreen(
                     graph = graph,
                     onRetry = {},
                     onOpenPaper = {},
