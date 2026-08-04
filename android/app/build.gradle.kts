@@ -31,6 +31,15 @@ val mnemeDemoToken =
         .gradleProperty("MNEME_DEMO_TOKEN")
         .orElse(providers.environmentVariable("MNEME_DEMO_TOKEN"))
         .orElse(localProperties.getProperty("MNEME_DEMO_TOKEN") ?: "")
+val mnemeAllowControlledFixture =
+    providers
+        .gradleProperty("MNEME_ALLOW_CONTROLLED_FIXTURE")
+        .orElse(providers.environmentVariable("MNEME_ALLOW_CONTROLLED_FIXTURE"))
+        .orElse("false")
+        .map { value ->
+            value.toBooleanStrictOrNull()
+                ?: error("MNEME_ALLOW_CONTROLLED_FIXTURE must be true or false.")
+        }
 val mnemeDigestNotificationThreshold =
     providers
         .gradleProperty("MNEME_DIGEST_NOTIFICATION_THRESHOLD")
@@ -69,7 +78,11 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField("boolean", "MNEME_ALLOW_CONTROLLED_FIXTURE", "true")
+            buildConfigField(
+                "boolean",
+                "MNEME_ALLOW_CONTROLLED_FIXTURE",
+                mnemeAllowControlledFixture.get().toString(),
+            )
         }
         release {
             isMinifyEnabled = false
