@@ -18,8 +18,74 @@ your Android SDK path, for example `sdk.dir=/home/user/Android/Sdk`.
 ./gradlew assembleDebug
 ./gradlew test
 ./gradlew ktlintCheck detekt lintDebug
-./gradlew connectedDebugAndroidTest
+./gradlew connectedDebugAndroidTest -PMNEME_ALLOW_CONTROLLED_FIXTURE=true
 ```
+
+## One-command local MVP rehearsal
+
+Run the following setup once from the repository root:
+
+```bash
+cd backend
+uv sync --locked --dev --extra local-embeddings
+```
+
+On a Linux development host, PostgreSQL, Redis, JDK 17, the Android SDK, and an Android
+Virtual Device must already be installed. Store the DeepSeek key in the ignored
+`backend/.env.local` file; the Semantic Scholar key is optional because the backend can use
+rate-limited public access:
+
+```dotenv
+MNEME_DEEPSEEK_API_KEY=<deepseek-key>
+MNEME_SEMANTIC_SCHOLAR_API_KEY=<optional-semantic-scholar-key>
+```
+
+With the default local database URL, the current Linux user must have a matching PostgreSQL
+role with `CREATEDB`; the script creates `mneme_mvp_current` when it is absent. For another
+database, set `MNEME_DATABASE_URL` to an existing database and follow the role setup in the
+backend README. The reset refuses a production environment and a non-local database. A
+remote disposable demo database requires the explicit
+`MNEME_ALLOW_REMOTE_DEMO_RESET=true` safety acknowledgement.
+
+Then start a clean, live local demo with one command:
+
+```bash
+./tools/start_local_mvp_demo.sh
+```
+
+The command applies database migrations, provisions and resets only the configured demo
+identity, starts FastAPI and the ARQ worker, starts or reuses the emulator, installs a live
+debug APK, clears its local state, and opens the seed-paper screen. Shared papers and their
+processed artifacts remain available, so a reset does not replace the real catalog with
+fixtures. The script also rotates the local demo token and validates backend readiness and
+Android authentication before opening the app.
+
+The default AVD is `Mneme_Pixel_9_Pro_XL_API_34`, configured for six CPU cores, 14336 MB
+of RAM, host GPU rendering, and a 1080 by 2400 display override. Override these values when
+needed:
+
+```bash
+MNEME_DEMO_AVD=<avd-name> \
+MNEME_DEMO_EMULATOR_MEMORY_MB=8192 \
+MNEME_DEMO_EMULATOR_CORES=6 \
+./tools/start_local_mvp_demo.sh
+```
+
+After completing seed onboarding and interacting with the briefing, prepare the weekly
+alert used in the MVP demonstration. The production weekly policy requires at least one
+processed paper inside its current recommendation window; the retained local catalog used
+for rehearsal satisfies this precondition. On a new empty database, begin with a recent
+seed so the backend can prepare current candidates.
+
+```bash
+./tools/trigger_local_weekly_notification.sh
+```
+
+This command generates a new weekly briefing through the production recommender and asks
+the existing Android WorkManager path to synchronize it. The normal relevance threshold,
+notification permission, digest deduplication, cache update, and notification navigation
+remain in effect. It refuses to publish before real seed onboarding. The ADB receiver used
+for this rehearsal exists only in the debug build and does not appear in release manifests.
 
 ## Live skeletal product demo
 
@@ -59,6 +125,8 @@ environment variable, ignored `local.properties`, then the documented default:
 - `MNEME_API_BASE_URL`: defaults to `http://10.0.2.2:8000/v1/` for an Android emulator.
 - `MNEME_DEMO_TOKEN`: the raw opaque token whose SHA-256 digest is configured by the
   backend.
+- `MNEME_ALLOW_CONTROLLED_FIXTURE`: defaults to `false`; set it to `true` only for an
+  intentional offline fixture build.
 
 The base URL must end in `/v1/`. For a persistent local emulator setup, add these lines
 to the ignored `local.properties` file alongside `sdk.dir`:
@@ -124,14 +192,15 @@ health route.
 
 ### Controlled fallback
 
-When `MNEME_DEMO_TOKEN` is blank, the app deliberately uses
-`SeededSkeletalContentRepository`. The UI identifies this as controlled fixture data and
-states that no live backend or model call is made. This mode keeps previews, UI tests, and
-an offline presentation path deterministic; it is not evidence of backend integration.
-Its citation graph uses 12 synthetic nodes and 18 synthetic directed edges to exercise
-branching, merging, clusters, rank variation, selection, and navigation. A separate
-50-node device test covers the bounded endpoint limit; neither fixture makes a real
-citation claim.
+To run the deliberate controlled fallback, leave `MNEME_DEMO_TOKEN` blank and build with
+`-PMNEME_ALLOW_CONTROLLED_FIXTURE=true`. The default is `false`, so a missing token produces
+a configuration error instead of silently showing fixture content. In the explicit fixture
+mode, the UI states that no live backend or model call is made. This mode keeps previews,
+UI tests, and an offline presentation path deterministic; it is not evidence of backend
+integration. Its citation graph uses 12 synthetic nodes and 18 synthetic directed edges to
+exercise branching, merging, clusters, rank variation, selection, and navigation. A
+separate 50-node device test covers the bounded endpoint limit; neither fixture makes a
+real citation claim.
 
 When a token is configured, a failed live briefing refresh uses Room only if a previous
 backend briefing exists, and labels that content as cached. With no cache, the app shows a

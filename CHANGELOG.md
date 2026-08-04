@@ -8,6 +8,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added a one-command local MVP rehearsal that resets only demo-user state, starts the
+  backend and a resource-tuned Android emulator, installs the live client, and provides a
+  debug-only trigger for the existing weekly-briefing notification path.
 - Added revision-safe source provenance for summary key claims: deterministic
   post-generation matching against the exact revision's stored chunks, explicit
   unmatched states, provenance recomputation on chunk replacement, and additive
