@@ -17,16 +17,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
 import com.mneme.app.R
 import com.mneme.app.ui.navigation.ExternalNavigationRequest
-import com.mneme.app.ui.navigation.PaperDetailRoute
 
 data class MnemeExternalNavigationBinding(
     val request: ExternalNavigationRequest? = null,
     val onRequestConsumed: (Long) -> Unit = {},
-    val notificationDigestId: String? = null,
 )
 
 internal data class MnemeExternalActions(
@@ -39,42 +35,6 @@ internal data class MnemeExternalEnvironment(
     val snackbarHostState: SnackbarHostState,
     val actions: MnemeExternalActions,
 )
-
-@Composable
-internal fun externalPaperNavigationEffect(
-    navController: NavHostController,
-    navigation: MnemeExternalNavigationBinding,
-) {
-    val navigationReady = navController.currentBackStackEntry != null
-    LaunchedEffect(navigation.request, navigationReady) {
-        val request = navigation.request
-        if (!navigationReady || request !is ExternalNavigationRequest.OpenPaper) return@LaunchedEffect
-        navController.navigate(
-            PaperDetailRoute(
-                paperId = request.paperId,
-                externalRequestId = request.requestId,
-                externalEventId = request.eventId,
-            ),
-        ) {
-            popUpTo(navController.graph.findStartDestination().id)
-            launchSingleTop = true
-        }
-        navigation.onRequestConsumed(request.requestId)
-    }
-}
-
-@Composable
-internal fun digestNotificationEffect(
-    digestId: String?,
-    openBriefing: () -> Unit,
-    refreshBriefing: () -> Unit,
-) {
-    LaunchedEffect(digestId) {
-        if (digestId == null) return@LaunchedEffect
-        openBriefing()
-        refreshBriefing()
-    }
-}
 
 @Composable
 internal fun rememberMnemeExternalEnvironment(

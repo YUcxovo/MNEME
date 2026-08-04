@@ -20,6 +20,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,6 +46,7 @@ import com.mneme.app.data.demo.SkeletalContentRepository
 import com.mneme.app.ui.component.LoadingState
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.navigation.BriefingRoute
+import com.mneme.app.ui.navigation.ExternalNavigationRequest
 import com.mneme.app.ui.navigation.GraphRoute
 import com.mneme.app.ui.navigation.InterestsRoute
 import com.mneme.app.ui.navigation.PaperDetailRoute
