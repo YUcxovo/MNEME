@@ -185,8 +185,12 @@ class GroundedAnswer(BaseModel):
 
     @property
     def model_calls(self) -> int:
-        """How many live model calls this answer consumed."""
-        return len(self.completions)
+        """How many live provider calls this answer consumed.
+
+        Cache hits are excluded: an identical re-ask served entirely from
+        the completion cache truthfully reports zero model calls.
+        """
+        return sum(1 for item in self.completions if not item.cached)
 
 
 def verify_citations(
@@ -254,12 +258,23 @@ def has_citation_defects(
     if not citations:
         return True
     valid_markers = {citation.marker for citation in citations}
+    chunk_words = {citation.marker: content_words(citation.chunk.content) for citation in citations}
     for segment in _CLAIM_BOUNDARY.split(answer):
         stripped = segment.strip()
-        if not stripped or not content_words(stripped):
+        if not stripped or stripped.endswith(":"):
+            # Structural labels and headers ("Key finding:") are not claims.
             continue
-        segment_markers = {int(match) for match in _CITATION.findall(stripped)}
-        if not (segment_markers & valid_markers):
+        segment_words = content_words(_CITATION.sub("", stripped))
+        if not segment_words:
+            continue
+        segment_markers = {int(match) for match in _CITATION.findall(stripped)} & valid_markers
+        if not segment_markers:
+            return True
+        # Each segment must be supported by the chunks it cites itself;
+        # grouping segments by shared marker would let a supported sentence
+        # mask an unsupported one citing the same evidence.
+        cited = set().union(*(chunk_words[marker] for marker in segment_markers))
+        if len(segment_words & cited) / len(segment_words) < _SOURCE_MATCH_MIN_OVERLAP:
             return True
     return status is not QaSourceMatchStatus.MATCHED
 

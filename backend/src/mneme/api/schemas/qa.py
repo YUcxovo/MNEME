@@ -36,8 +36,8 @@ class Answer(BaseModel):
     ``citation_resolution`` and ``model_calls`` extend the contract
     additively: existing fields keep their frozen shapes, and the new fields
     state how the citation contract was resolved (first pass, one bounded
-    correction, or an explicit unresolved state) and how many model calls
-    the answer consumed.
+    correction, or an explicit unresolved state) and how many live model
+    calls the answer consumed (cache hits report zero).
     """
 
     answer: str

@@ -429,3 +429,62 @@ def test_harness_marks_fully_cached_pair_as_zero_incremental_spend() -> None:
     assert case.generation_cost == Decimal("0.005")
     assert case.incremental_cost == Decimal(0)
     assert case.cached is True
+
+
+MASKED_SHARED_MARKER_ANSWER = (
+    "Multi-head attention replaces recurrence with parallel heads [1]. The model cures cancer [1]."
+)
+LABELED_SUPPORTED_ANSWER = (
+    "Key finding:\nMulti-head attention replaces recurrence with parallel heads [1]."
+)
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_shared_marker_cannot_mask_an_unsupported_segment() -> None:
+    """A supported sentence citing [1] must not shield an unsupported one citing [1]."""
+    first_prompt, correction_prompt = _prompts(MASKED_SHARED_MARKER_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: MASKED_SHARED_MARKER_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert len(provider.calls) == 2
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_structural_label_does_not_trigger_spurious_correction() -> None:
+    """A header like 'Key finding:' is not an uncited claim."""
+    first_prompt, _ = _prompts("unused")
+    provider = FakeLLMProvider(responses={first_prompt: LABELED_SUPPORTED_ANSWER})
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == LABELED_SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.VERIFIED
+    assert grounded.model_calls == 1
+    assert len(provider.calls) == 1
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_fully_cached_reask_reports_zero_model_calls() -> None:
+    """model_calls counts live provider calls, not completions."""
+    first_prompt, _ = _prompts("unused")
+    provider = FakeLLMProvider(responses={first_prompt: SUPPORTED_ANSWER})
+    service = _service(provider)
+
+    first_run = asyncio.run(service.answer(question=QUESTION, chunks=_evidence()))
+    second_run = asyncio.run(service.answer(question=QUESTION, chunks=_evidence()))
+
+    assert first_run.model_calls == 1
+    assert second_run.model_calls == 0
+    assert len(second_run.completions) == 1
+    assert len(provider.calls) == 1
