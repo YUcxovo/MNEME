@@ -362,3 +362,89 @@ def test_summarize_stage_backfills_provenance_on_cache_hit_without_model_call(
     validated = StructuredSummary.model_validate(stored.content)
     assert validated.claims[0].source is not None
     assert validated.claims[0].source.chunk_id == ATTENTION_CHUNK.id
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_empty_replacement_clears_stale_provenance() -> None:
+    """Replacing all chunks with none must not leave dead chunk references."""
+    summary = _summary_row(
+        {
+            "tldr": "Transformers explained.",
+            "key_claims": ["Multi-head self-attention replaces recurrence."],
+        }
+    )
+    assert _attach_claim_provenance(summary, [ATTENTION_CHUNK])
+    assert summary.source_match_status is SourceMatchStatus.MATCHED
+
+    assert _attach_claim_provenance(summary, [], chunks_replaced=True)
+
+    assert summary.source_match_status is SourceMatchStatus.UNMATCHED
+    stored = StructuredSummary.model_validate(summary.content)
+    assert stored.claims[0].matched is False
+    assert stored.claims[0].source is None
+    assert str(ATTENTION_CHUNK.id) not in str(summary.content)
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_chunk_stage_recomputes_provenance_on_empty_replacement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The chunk stage itself must invalidate provenance when drafts are empty."""
+    import asyncio
+
+    import mneme.ai.pipeline as pipeline_module
+    from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
+
+    paper_id = uuid4()
+    version_id = uuid4()
+    paper = Paper(
+        id=paper_id,
+        arxiv_id=f"prov-stage.{paper_id.hex[:8]}",
+        title="Attention Is All You Need",
+        abstract="Transformers explained.",
+        primary_category="cs.LG",
+        categories=["cs.LG"],
+        pdf_url="https://arxiv.org/pdf/prov-stage",
+        processing_status=ProcessingStatus.READY,
+    )
+    version = PaperVersion(id=version_id, paper_id=paper_id, version_number=1)
+    summary = _summary_row(
+        {
+            "tldr": "Transformers explained.",
+            "key_claims": ["Multi-head self-attention replaces recurrence."],
+        }
+    )
+    summary.paper_id = paper_id
+    summary.paper_version_id = version_id
+    assert _attach_claim_provenance(summary, [ATTENTION_CHUNK])
+
+    class ReplacingArtifacts:
+        def __init__(self, session: object) -> None:
+            del session
+
+        async def replace_chunks(self, *, paper_id: UUID, paper_version_id: UUID, drafts: list):
+            del paper_id, paper_version_id
+            return drafts
+
+        async def list_summaries_for_version(self, *, paper_version_id: UUID) -> list:
+            assert paper_version_id == version_id
+            return [summary]
+
+    monkeypatch.setattr(pipeline_module, "ArtifactRepository", ReplacingArtifacts)
+    count = asyncio.run(
+        pipeline_module.chunk_paper_stage(
+            _StageSession(paper, version),  # type: ignore[arg-type]
+            paper_id=paper_id,
+            paper_version_id=version_id,
+            sections=[],
+            max_tokens=100,
+            overlap_tokens=10,
+        )
+    )
+
+    assert count == 0
+    assert summary.source_match_status is SourceMatchStatus.UNMATCHED
+    stored = StructuredSummary.model_validate(summary.content)
+    assert stored.claims[0].source is None
