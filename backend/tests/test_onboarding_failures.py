@@ -427,6 +427,64 @@ def test_failed_current_child_aborts_seed_wait_without_sleep(monkeypatch) -> Non
 @pytest.mark.base
 @pytest.mark.api
 @pytest.mark.pipeline
+def test_seed_wait_uses_the_existing_route_deadline(monkeypatch) -> None:
+    paper_id = uuid4()
+    rows = MagicMock()
+    rows.all.return_value = [(paper_id, ProcessingStatus.QUEUED)]
+    session = AsyncMock(spec=AsyncSession)
+    session.execute.return_value = rows
+    monkeypatch.setattr(
+        onboarding_support,
+        "_list_current_failed_seed_jobs",
+        AsyncMock(return_value=[]),
+    )
+    sleep = AsyncMock()
+    monkeypatch.setattr(onboarding_support.asyncio, "sleep", sleep)
+
+    async def wait_with_expired_route_budget() -> None:
+        await onboarding_support.wait_for_seed_papers(
+            session,
+            (paper_id,),
+            embedding_model="test-embedding",
+            deadline=asyncio.get_running_loop().time(),
+        )
+
+    with pytest.raises(ApiError) as raised:
+        asyncio.run(wait_with_expired_route_budget())
+
+    assert raised.value.status_code == status.HTTP_504_GATEWAY_TIMEOUT
+    assert raised.value.code == "seed_initialization_timeout"
+    sleep.assert_not_awaited()
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_complete_seed_route_maps_its_deadline_to_a_stable_error(monkeypatch) -> None:
+    async def exceed_route_budget(*_args: object, **_kwargs: object) -> None:
+        await asyncio.sleep(1)
+
+    monkeypatch.setattr(onboarding, "_initialize_from_seed", exceed_route_budget)
+    monkeypatch.setattr(onboarding, "SEED_ONBOARDING_ROUTE_TIMEOUT_SECONDS", 0.01)
+
+    with pytest.raises(ApiError) as raised:
+        asyncio.run(
+            onboarding.initialize_from_seed(
+                SeedInitializationRequest(arxiv_reference="2607.01234"),
+                Principal(user_id=uuid4()),
+                FailingQueue(),
+                Settings(_env_file=None),
+                AsyncMock(spec=AsyncSession),
+            )
+        )
+
+    assert raised.value.status_code == status.HTTP_504_GATEWAY_TIMEOUT
+    assert raised.value.code == "seed_initialization_timeout"
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
 def test_internal_value_error_is_not_misclassified_as_invalid_input(monkeypatch) -> None:
     monkeypatch.setattr(onboarding, "ArxivClient", InternallyFailingArxivClient)
 

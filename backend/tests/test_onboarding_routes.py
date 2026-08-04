@@ -3,7 +3,7 @@
 import asyncio
 from types import SimpleNamespace
 from typing import cast
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import ANY, AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -96,6 +96,7 @@ def test_completed_seed_is_reloaded_after_recovery_before_external_requests(
         session,
         queue,
         stale,
+        deadline=ANY,
         embedding_model="text-embedding-3-small",
         seed_arxiv_id="1706.03762",
     )
@@ -156,6 +157,7 @@ def test_existing_seed_retries_and_waits_for_ready_seed_paper(
             session,
             queue,
             cast(SeedInitializationResult, existing),
+            deadline=123.0,
             embedding_model="text-embedding-3-small",
             seed_arxiv_id="1706.03762",
         )
@@ -172,6 +174,7 @@ def test_existing_seed_retries_and_waits_for_ready_seed_paper(
         (seed_paper_id, *digest_paper_ids),
         embedding_model="text-embedding-3-small",
         required_ready_ids=(seed_paper_id,),
+        deadline=123.0,
     )
 
 

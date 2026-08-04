@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Annotated, Final
 from uuid import UUID
 
@@ -24,6 +25,7 @@ from mneme.api.schemas.digests import Digest
 from mneme.api.schemas.onboarding import SeedInitializationRequest, SeedInitializationResult
 from mneme.api.schemas.preferences import Preferences
 from mneme.core.config import Settings, get_settings
+from mneme.core.timeouts import SEED_ONBOARDING_ROUTE_TIMEOUT_SECONDS
 from mneme.db.dependencies import get_session
 from mneme.models.digest import DigestEntry, DigestType
 from mneme.models.paper import Paper, PaperAuthor, ProcessingStatus
@@ -97,6 +99,7 @@ async def _resume_existing_seed(
     queue: TaskQueue,
     existing_seed: SeedInitializationResult,
     *,
+    deadline: float,
     embedding_model: str,
     seed_arxiv_id: str,
 ) -> None:
@@ -123,6 +126,7 @@ async def _resume_existing_seed(
         retry_scope,
         embedding_model=embedding_model,
         required_ready_ids=(seed_paper_id,),
+        deadline=deadline,
     )
     if resumed:
         logger.info(
@@ -151,6 +155,36 @@ async def initialize_from_seed(
     session: Annotated[AsyncSession, Depends(get_session)],
 ) -> SeedInitializationResult:
     """Prepare five citation-related papers before returning the first briefing."""
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + SEED_ONBOARDING_ROUTE_TIMEOUT_SECONDS
+    try:
+        async with asyncio.timeout_at(deadline):
+            return await _initialize_from_seed(
+                payload,
+                principal,
+                queue,
+                settings,
+                session,
+                deadline=deadline,
+            )
+    except TimeoutError:
+        raise ApiError(
+            status.HTTP_504_GATEWAY_TIMEOUT,
+            "seed_initialization_timeout",
+            "Preparing five related papers took too long. Try again to resume the work.",
+        ) from None
+
+
+async def _initialize_from_seed(
+    payload: SeedInitializationRequest,
+    principal: Principal,
+    queue: TaskQueue,
+    settings: Settings,
+    session: AsyncSession,
+    *,
+    deadline: float,
+) -> SeedInitializationResult:
+    """Run every metadata and preparation stage within one request deadline."""
     try:
         seed_arxiv_id = normalize_arxiv_reference(payload.arxiv_reference)
     except ValueError as error:
@@ -166,6 +200,7 @@ async def initialize_from_seed(
             session,
             queue,
             existing_seed,
+            deadline=deadline,
             embedding_model=settings.ai_embedding_model,
             seed_arxiv_id=seed_arxiv_id,
         )
@@ -292,6 +327,7 @@ async def initialize_from_seed(
         paper_ids,
         embedding_model=settings.ai_embedding_model,
         required_ready_ids=(seed_result.revisions[0].paper_id,),
+        deadline=deadline,
     )
 
     candidate_order = [revision.paper_id for revision in candidates]

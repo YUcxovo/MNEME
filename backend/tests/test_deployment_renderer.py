@@ -9,6 +9,7 @@ import pytest
 from mneme.cli import render_deployment as render_cli
 from mneme.core.timeouts import (
     PUBLIC_PROXY_READ_TIMEOUT_SECONDS,
+    SEED_ONBOARDING_ROUTE_TIMEOUT_SECONDS,
     SEED_ONBOARDING_WAIT_SECONDS,
 )
 from mneme.ops.deployment import (
@@ -44,7 +45,8 @@ def test_renderer_produces_complete_deterministic_staging_tree(tmp_path: Path) -
     assert "proxy_set_header X-Forwarded-For $remote_addr" in nginx
     assert 'proxy_set_header Connection ""' in nginx
     assert f"proxy_read_timeout {PUBLIC_PROXY_READ_TIMEOUT_SECONDS}s;" in nginx
-    assert PUBLIC_PROXY_READ_TIMEOUT_SECONDS >= SEED_ONBOARDING_WAIT_SECONDS
+    assert SEED_ONBOARDING_ROUTE_TIMEOUT_SECONDS >= SEED_ONBOARDING_WAIT_SECONDS
+    assert PUBLIC_PROXY_READ_TIMEOUT_SECONDS > SEED_ONBOARDING_ROUTE_TIMEOUT_SECONDS
     assert "${" not in nginx
     assert "ExecStart=/opt/mneme/backend/.venv/bin/gunicorn" in (
         output_dir / "mneme-api.service"

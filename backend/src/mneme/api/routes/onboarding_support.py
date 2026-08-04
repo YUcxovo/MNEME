@@ -179,10 +179,13 @@ async def wait_for_seed_papers(
     *,
     embedding_model: str,
     required_ready_ids: tuple[UUID, ...] = (),
+    deadline: float | None = None,
 ) -> None:
     """Block until every selected paper reaches a usable terminal state."""
     loop = asyncio.get_running_loop()
-    deadline = loop.time() + SEED_ONBOARDING_WAIT_SECONDS
+    wait_deadline = loop.time() + SEED_ONBOARDING_WAIT_SECONDS
+    if deadline is not None:
+        wait_deadline = min(wait_deadline, deadline)
     expected_ids = set(paper_ids)
     required_ready = set(required_ready_ids)
     if not required_ready.issubset(expected_ids):
@@ -219,7 +222,7 @@ async def wait_for_seed_papers(
                 "seed_initialization_failed",
                 "The backend could not prepare the papers required for initialization.",
             )
-        if loop.time() >= deadline:
+        if loop.time() >= wait_deadline:
             raise ApiError(
                 status.HTTP_504_GATEWAY_TIMEOUT,
                 "seed_initialization_timeout",
