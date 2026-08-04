@@ -25,7 +25,7 @@ import com.mneme.app.data.local.entity.UserPrefsEntity
         CacheMetadataEntity::class,
         BehavioralEventEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class MnemeDatabase : RoomDatabase() {
@@ -90,6 +90,13 @@ abstract class MnemeDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_4_5 =
+            object : Migration(4, 5) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    database.execSQL("ALTER TABLE papers ADD COLUMN summary_json TEXT")
+                }
+            }
+
         fun create(context: Context): MnemeDatabase = create(context, DATABASE_NAME)
 
         fun createControlledFixture(context: Context): MnemeDatabase = create(context, CONTROLLED_FIXTURE_DATABASE_NAME)
@@ -103,7 +110,7 @@ abstract class MnemeDatabase : RoomDatabase() {
                     context.applicationContext,
                     MnemeDatabase::class.java,
                     databaseName,
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .build()
     }
 }

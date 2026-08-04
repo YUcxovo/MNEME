@@ -89,6 +89,87 @@ class MnemeApiClientTest {
         }
 
     @Test
+    fun summaryReady_decodesMatchedAndUnmatchedClaimSources() =
+        runBlocking {
+            server.enqueue(
+                jsonResponse(
+                    """
+                    {
+                      "paper_id": "$PAPER_ID",
+                      "status": "ready",
+                      "tldr": "A source-linked summary.",
+                      "key_claims": ["Matched claim", "Unmatched claim"],
+                      "source_match_status": "partial",
+                      "claims": [
+                        {
+                          "text": "Matched claim",
+                          "matched": true,
+                          "source": {
+                            "chunk_id": "33333333-3333-4333-8333-333333333333",
+                            "chunk_index": 4,
+                            "section_title": "Evaluation",
+                            "page_start": 7,
+                            "page_end": 8,
+                            "excerpt": "A synthetic evaluation excerpt."
+                          }
+                        },
+                        {
+                          "text": "Unmatched claim",
+                          "matched": false,
+                          "source": null
+                        }
+                      ]
+                    }
+                    """.trimIndent(),
+                ),
+            )
+
+            val result = createRemote().getPaperSummary(PAPER_ID) as RemoteResource.Ready
+            val summary = result.value
+
+            assertEquals(listOf("Matched claim", "Unmatched claim"), summary.keyClaims)
+            assertEquals(2, summary.claims.size)
+            assertTrue(summary.claims.first().matched)
+            assertEquals(
+                "Evaluation",
+                summary.claims
+                    .first()
+                    .source
+                    ?.sectionTitle,
+            )
+            assertEquals(
+                7,
+                summary.claims
+                    .first()
+                    .source
+                    ?.pageStart,
+            )
+            assertEquals(null, summary.claims.last().source)
+        }
+
+    @Test
+    fun legacySummaryReady_defaultsToNoPerClaimSources() =
+        runBlocking {
+            server.enqueue(
+                jsonResponse(
+                    """
+                    {
+                      "paper_id": "$PAPER_ID",
+                      "status": "ready",
+                      "tldr": "A legacy summary.",
+                      "key_claims": ["Legacy claim"],
+                      "source_match_status": "not_checked"
+                    }
+                    """.trimIndent(),
+                ),
+            )
+
+            val result = createRemote().getPaperSummary(PAPER_ID) as RemoteResource.Ready
+
+            assertTrue(result.value.claims.isEmpty())
+        }
+
+    @Test
     fun seedInitialization_serializesReferenceAndDecodesCompletedBriefing() =
         runBlocking {
             server.enqueue(

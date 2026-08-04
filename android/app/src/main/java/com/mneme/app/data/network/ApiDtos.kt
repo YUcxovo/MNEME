@@ -31,6 +31,23 @@ data class PaperPageDto(
 )
 
 @Serializable
+data class ClaimProvenanceDto(
+    @SerialName("chunk_id") val chunkId: String,
+    @SerialName("chunk_index") val chunkIndex: Int,
+    @SerialName("section_title") val sectionTitle: String? = null,
+    @SerialName("page_start") val pageStart: Int? = null,
+    @SerialName("page_end") val pageEnd: Int? = null,
+    val excerpt: String,
+)
+
+@Serializable
+data class SourcedClaimDto(
+    val text: String,
+    val matched: Boolean,
+    val source: ClaimProvenanceDto? = null,
+)
+
+@Serializable
 data class SummaryDto(
     @SerialName("paper_id") val paperId: String,
     val status: String,
@@ -39,6 +56,7 @@ data class SummaryDto(
     val methodology: String? = null,
     val limitations: String? = null,
     @SerialName("source_match_status") val sourceMatchStatus: String,
+    val claims: List<SourcedClaimDto> = emptyList(),
 )
 
 @Serializable

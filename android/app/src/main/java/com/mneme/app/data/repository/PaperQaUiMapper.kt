@@ -27,6 +27,7 @@ internal fun PaperDto.toDetail(summary: SummaryDto): PaperDetailUiModel {
         methodology = summary.methodology,
         limitation = summary.limitations,
         sourceMatchStatus = summary.sourceMatchStatus.toSourceMatchStatus(),
+        summaryClaims = summary.toUiClaims(),
         source =
             SourceUiModel(
                 label = "$title (arXiv:$arxivId)",
@@ -38,26 +39,56 @@ internal fun PaperDto.toDetail(summary: SummaryDto): PaperDetailUiModel {
 
 internal fun CachedPaper.toCachedDetail(): PaperContentResult.Ready =
     PaperContentResult.Ready(
-        PaperDetailUiModel(
-            paper = toPaperUi(abstractText.toSummaryPreview()),
-            disclosure =
-                disclosure(
-                    ContentOrigin.CACHED_BACKEND,
-                    "The live request failed; this view contains cached paper metadata and " +
-                        "does not include a generated summary.",
-                ),
-            abstractText = abstractText,
-            keyClaims = emptyList(),
-            methodology = null,
-            limitation = null,
-            sourceMatchStatus = SourceMatchUiStatus.NOT_CHECKED,
-            source =
-                SourceUiModel(
-                    label = "$title (arXiv:$arxivId)",
-                    location = "Source paper",
-                    url = sourceUrl(arxivId),
-                ),
-        ),
+        summary
+            ?.let { cachedSummary ->
+                runCatching { toCachedSummaryDetail(cachedSummary) }.getOrNull()
+            } ?: toCachedMetadataDetail(),
+    )
+
+private fun CachedPaper.toCachedSummaryDetail(summary: SummaryDto): PaperDetailUiModel {
+    if (summary.paperId != id) {
+        throw SerializationException("The cached summary paper ID does not match its paper.")
+    }
+    return PaperDetailUiModel(
+        paper = toPaperUi(summary.tldr),
+        disclosure =
+            disclosure(
+                ContentOrigin.CACHED_BACKEND,
+                "The live request failed; this view contains a previously cached summary and " +
+                    "its recorded source links.",
+            ),
+        abstractText = abstractText,
+        keyClaims = summary.keyClaims,
+        methodology = summary.methodology,
+        limitation = summary.limitations,
+        sourceMatchStatus = summary.sourceMatchStatus.toSourceMatchStatus(),
+        source = paperSource(),
+        summaryClaims = summary.toUiClaims(),
+    )
+}
+
+private fun CachedPaper.toCachedMetadataDetail(): PaperDetailUiModel =
+    PaperDetailUiModel(
+        paper = toPaperUi(abstractText.toSummaryPreview()),
+        disclosure =
+            disclosure(
+                ContentOrigin.CACHED_BACKEND,
+                "The live request failed; this view contains cached paper metadata and " +
+                    "does not include a generated summary.",
+            ),
+        abstractText = abstractText,
+        keyClaims = emptyList(),
+        methodology = null,
+        limitation = null,
+        sourceMatchStatus = SourceMatchUiStatus.NOT_CHECKED,
+        source = paperSource(),
+    )
+
+private fun CachedPaper.paperSource(): SourceUiModel =
+    SourceUiModel(
+        label = "$title (arXiv:$arxivId)",
+        location = "Source paper",
+        url = sourceUrl(arxivId),
     )
 
 internal fun AnswerDto.toQa(

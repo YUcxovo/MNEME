@@ -48,6 +48,7 @@ internal fun String.toSourceMatchStatus(): SourceMatchUiStatus =
     when (this) {
         "matched" -> SourceMatchUiStatus.MATCHED
         "partial" -> SourceMatchUiStatus.PARTIAL
+        "unmatched" -> SourceMatchUiStatus.UNMATCHED
         "insufficient_evidence" -> SourceMatchUiStatus.INSUFFICIENT_EVIDENCE
         else -> SourceMatchUiStatus.NOT_CHECKED
     }

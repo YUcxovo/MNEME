@@ -9,10 +9,13 @@ import com.mneme.app.data.local.entity.BehavioralEventSyncState
 import com.mneme.app.data.local.entity.CacheMetadataEntity
 import com.mneme.app.data.local.entity.DigestEntity
 import com.mneme.app.data.local.entity.PaperEntity
+import com.mneme.app.data.network.ClaimProvenanceDto
 import com.mneme.app.data.network.DigestDto
 import com.mneme.app.data.network.DigestEntryDto
 import com.mneme.app.data.network.PaperDto
 import com.mneme.app.data.network.PreferencesDto
+import com.mneme.app.data.network.SourcedClaimDto
+import com.mneme.app.data.network.SummaryDto
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -218,6 +221,94 @@ class MnemeDatabaseTest {
             assertEquals(listOf("retrieval", "mobile systems"), cached.interests)
             assertEquals(500L, cached.refreshedAtEpochMillis)
             assertEquals(listOf("A. Researcher"), cached.papers.first().authors)
+        }
+
+    @Test
+    fun skeletalCache_roundTripsClaimSourcesAcrossMetadataRefreshes() =
+        runBlocking {
+            val cache = RoomSkeletalCache(database, Json { ignoreUnknownKeys = true })
+            val paper = paperDto(id = "paper-1", title = "Source-linked paper")
+            val summary =
+                SummaryDto(
+                    paperId = paper.id,
+                    status = "ready",
+                    tldr = "Linked summary",
+                    keyClaims = listOf("Measured claim"),
+                    sourceMatchStatus = "matched",
+                    claims =
+                        listOf(
+                            SourcedClaimDto(
+                                text = "Measured claim",
+                                matched = true,
+                                source =
+                                    ClaimProvenanceDto(
+                                        chunkId = "33333333-3333-4333-8333-333333333333",
+                                        chunkIndex = 3,
+                                        sectionTitle = "Evaluation",
+                                        pageStart = 6,
+                                        pageEnd = 7,
+                                        excerpt = "A synthetic evaluation excerpt.",
+                                    ),
+                            ),
+                        ),
+                )
+
+            cache.storePaper(paper, refreshedAtEpochMillis = 50)
+            cache.markPaperOpened(paper.id, openedAtEpochMillis = 75)
+            cache.storePaperContent(paper, summary, refreshedAtEpochMillis = 100)
+            cache.storePaper(paper.copy(title = "Refreshed title"), refreshedAtEpochMillis = 200)
+            cache.storeBriefing(
+                preferences =
+                    PreferencesDto(
+                        topics = listOf("retrieval"),
+                        followedAuthors = emptyList(),
+                        modelVersion = 3,
+                    ),
+                digest =
+                    DigestDto(
+                        id = "digest-source",
+                        digestType = "manual",
+                        generatedAt = "2026-07-22T08:00:00Z",
+                        entries = listOf(digestEntry(paper, rank = 1, reason = "Relevant")),
+                    ),
+                refreshedAtEpochMillis = 300,
+            )
+
+            val restored = checkNotNull(cache.getPaper(paper.id))
+            val restoredEntity = checkNotNull(database.paperDao().getById(paper.id))
+
+            assertEquals(75L, restoredEntity.lastOpenedAtEpochMillis)
+            assertEquals(
+                "Measured claim",
+                restored.summary
+                    ?.claims
+                    ?.single()
+                    ?.text,
+            )
+            assertEquals(
+                "Evaluation",
+                restored.summary
+                    ?.claims
+                    ?.single()
+                    ?.source
+                    ?.sectionTitle,
+            )
+            assertEquals(
+                6,
+                restored.summary
+                    ?.claims
+                    ?.single()
+                    ?.source
+                    ?.pageStart,
+            )
+            assertEquals(
+                "A synthetic evaluation excerpt.",
+                restored.summary
+                    ?.claims
+                    ?.single()
+                    ?.source
+                    ?.excerpt,
+            )
         }
 
     @Test
