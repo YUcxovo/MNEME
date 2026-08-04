@@ -4,6 +4,7 @@ import com.mneme.app.data.local.SkeletalCache
 import com.mneme.app.data.network.DigestDto
 import com.mneme.app.data.network.MnemeApiException
 import com.mneme.app.data.network.MnemeRemoteDataSource
+import com.mneme.app.data.network.findDigest
 import com.mneme.app.notifications.DigestNotificationPublisher
 import kotlinx.serialization.SerializationException
 import java.io.IOException
@@ -18,7 +19,14 @@ class DigestRefreshCoordinator(
     private val refresher: DigestBriefingRefresher,
     private val notificationState: DigestNotificationState,
     private val notifier: DigestNotificationPublisher,
+    private val notificationThreshold: Double = DEFAULT_NOTIFICATION_THRESHOLD,
 ) {
+    init {
+        require(notificationThreshold in 0.0..1.0) {
+            "The digest notification threshold must be between 0 and 1."
+        }
+    }
+
     @Suppress("SwallowedException") // Worker results intentionally avoid persisting or exposing transport details.
     suspend fun refresh(): DigestSyncResult =
         try {
@@ -38,8 +46,13 @@ class DigestRefreshCoordinator(
         }
 
     private fun notifyIfNew(digest: DigestDto) {
-        if (notificationState.lastNotifiedDigestId() == digest.id) return
-        if (notifier.showNewDigest(digest.id, digest.notificationTitle())) {
+        val maximumRelevance = digest.entries.maxOfOrNull { it.relevanceScore }
+        val shouldNotify =
+            digest.digestType == WEEKLY_DIGEST_TYPE &&
+                maximumRelevance != null &&
+                maximumRelevance >= notificationThreshold &&
+                notificationState.lastNotifiedDigestId() != digest.id
+        if (shouldNotify && notifier.showNewDigest(digest.id, digest.notificationTitle())) {
             notificationState.markNotified(digest.id)
         }
     }
@@ -47,6 +60,8 @@ class DigestRefreshCoordinator(
     private companion object {
         const val RATE_LIMIT_STATUS = 429
         const val SERVER_ERROR_STATUS = 500
+        const val WEEKLY_DIGEST_TYPE = "weekly"
+        const val DEFAULT_NOTIFICATION_THRESHOLD = 0.75
     }
 }
 
@@ -60,13 +75,15 @@ class LiveDigestBriefingRefresher(
     private val nowEpochMillis: () -> Long = System::currentTimeMillis,
 ) : DigestBriefingRefresher {
     override suspend fun refreshLatest(): DigestDto? {
-        val digest = remote.listDigests(limit = LATEST_DIGEST_LIMIT).items.firstOrNull() ?: return null
+        val digest =
+            remote.findDigest { it.digestType == WEEKLY_DIGEST_TYPE }
+                ?: return null
         cache.storeBriefing(remote.getPreferences(), digest, nowEpochMillis())
         return digest
     }
 
     private companion object {
-        const val LATEST_DIGEST_LIMIT = 1
+        const val WEEKLY_DIGEST_TYPE = "weekly"
     }
 }
 

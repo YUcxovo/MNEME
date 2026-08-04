@@ -91,6 +91,7 @@ class MnemeApplicationContainer(
                             refresher = LiveDigestBriefingRefresher(remote, cache),
                             notificationState = SharedPreferencesDigestNotificationState(application),
                             notifier = DigestNotifier(application),
+                            notificationThreshold = BuildConfig.MNEME_DIGEST_NOTIFICATION_THRESHOLD,
                         ),
                 )
             }
@@ -99,7 +100,14 @@ class MnemeApplicationContainer(
 
     private val repository: SkeletalDataRepository by lazy {
         when (val live = liveComponents) {
-            null -> ControlledFixtureDataRepository()
+            null ->
+                if (BuildConfig.MNEME_ALLOW_CONTROLLED_FIXTURE) {
+                    ControlledFixtureDataRepository()
+                } else {
+                    ConfigurationErrorRepository(
+                        message = "The Mneme backend token is required for this build.",
+                    )
+                }
             else ->
                 live.fold(
                     onSuccess = LiveComponents::repository,
@@ -115,18 +123,22 @@ class MnemeApplicationContainer(
     private val eventTracker: BehavioralEventTracker by lazy {
         when (val live = liveComponents) {
             null ->
-                controlledFixtureDatabase.fold(
-                    onSuccess = { controlledDatabase ->
-                        QueuedBehavioralEventTracker(
-                            store =
-                                BehavioralEventRepository(
-                                    controlledDatabase.behavioralEventDao(),
-                                ),
-                            scheduleSync = {},
-                        )
-                    },
-                    onFailure = { NoOpBehavioralEventTracker },
-                )
+                if (!BuildConfig.MNEME_ALLOW_CONTROLLED_FIXTURE) {
+                    NoOpBehavioralEventTracker
+                } else {
+                    controlledFixtureDatabase.fold(
+                        onSuccess = { controlledDatabase ->
+                            QueuedBehavioralEventTracker(
+                                store =
+                                    BehavioralEventRepository(
+                                        controlledDatabase.behavioralEventDao(),
+                                    ),
+                                scheduleSync = {},
+                            )
+                        },
+                        onFailure = { NoOpBehavioralEventTracker },
+                    )
+                }
             else -> live.fold(LiveComponents::eventTracker) { NoOpBehavioralEventTracker }
         }
     }
@@ -177,6 +189,8 @@ private class ConfigurationErrorRepository(
     override suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel = throw error
 
     override suspend fun loadBriefing(): BriefingUiModel = throw error
+
+    override suspend fun loadBriefing(digestId: String): BriefingUiModel = throw error
 
     override suspend fun updateInterests(topics: List<String>): BriefingUiModel = throw error
 

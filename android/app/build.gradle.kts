@@ -31,6 +31,15 @@ val mnemeDemoToken =
         .gradleProperty("MNEME_DEMO_TOKEN")
         .orElse(providers.environmentVariable("MNEME_DEMO_TOKEN"))
         .orElse(localProperties.getProperty("MNEME_DEMO_TOKEN") ?: "")
+val mnemeDigestNotificationThreshold =
+    providers
+        .gradleProperty("MNEME_DIGEST_NOTIFICATION_THRESHOLD")
+        .orElse(providers.environmentVariable("MNEME_DIGEST_NOTIFICATION_THRESHOLD"))
+        .orElse(localProperties.getProperty("MNEME_DIGEST_NOTIFICATION_THRESHOLD") ?: "0.75")
+        .get()
+        .toDoubleOrNull()
+        ?.takeIf { it in 0.0..1.0 }
+        ?: error("MNEME_DIGEST_NOTIFICATION_THRESHOLD must be a number between 0 and 1.")
 
 ksp {
     arg("room.schemaLocation", "$projectDir/src/main/schemas")
@@ -50,6 +59,8 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "MNEME_API_BASE_URL", mnemeApiBaseUrl.get().asBuildConfigString())
         buildConfigField("String", "MNEME_DEMO_TOKEN", mnemeDemoToken.get().asBuildConfigString())
+        buildConfigField("double", "MNEME_DIGEST_NOTIFICATION_THRESHOLD", mnemeDigestNotificationThreshold.toString())
+        buildConfigField("boolean", "MNEME_ALLOW_CONTROLLED_FIXTURE", "false")
     }
 
     sourceSets {
@@ -57,8 +68,12 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("boolean", "MNEME_ALLOW_CONTROLLED_FIXTURE", "true")
+        }
         release {
             isMinifyEnabled = false
+            buildConfigField("boolean", "MNEME_ALLOW_CONTROLLED_FIXTURE", "false")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
