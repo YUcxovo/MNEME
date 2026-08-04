@@ -64,7 +64,7 @@ class PaperSourceStateTest {
     ) {
         composeRule.setContent {
             MnemeTheme {
-                PaperDestination(
+                paperDestination(
                     paperId = PAPER_ID,
                     state = state,
                     saveStatus = EventRecordingStatus.IDLE,
