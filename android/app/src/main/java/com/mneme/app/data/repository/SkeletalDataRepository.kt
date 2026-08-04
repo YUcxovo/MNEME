@@ -9,6 +9,7 @@ import com.mneme.app.data.network.QUESTION_MAX_LENGTH
 import com.mneme.app.data.network.QuestionDto
 import com.mneme.app.data.network.RemoteResource
 import com.mneme.app.data.network.SeedInitializationRequestDto
+import com.mneme.app.data.network.findDigest
 import com.mneme.app.ui.model.BriefingUiModel
 import com.mneme.app.ui.model.ContentOrigin
 import com.mneme.app.ui.model.GraphUiModel
@@ -38,6 +39,8 @@ interface SkeletalDataRepository {
 
     suspend fun loadBriefing(): BriefingUiModel
 
+    suspend fun loadBriefing(digestId: String): BriefingUiModel = loadBriefing()
+
     suspend fun updateInterests(topics: List<String>): BriefingUiModel
 
     suspend fun loadPaper(paperId: String): PaperContentResult
@@ -64,6 +67,8 @@ class ControlledFixtureDataRepository : SkeletalDataRepository {
     override suspend fun initializeFromSeed(arxivReference: String): BriefingUiModel = loadBriefing()
 
     override suspend fun loadBriefing(): BriefingUiModel = currentBriefing()
+
+    override suspend fun loadBriefing(digestId: String): BriefingUiModel = currentBriefing()
 
     override suspend fun updateInterests(topics: List<String>): BriefingUiModel {
         this.topics = normalizeTopics(topics)
@@ -153,6 +158,36 @@ class NetworkSkeletalDataRepository(
         } catch (error: SerializationException) {
             cache.getBriefing()?.toBriefing() ?: throw error
         }
+
+    override suspend fun loadBriefing(digestId: String): BriefingUiModel {
+        require(digestId.isNotBlank()) { "A digest identifier is required." }
+        return try {
+            val (preferences, digest) =
+                coroutineScope {
+                    val preferences = async { remote.getPreferences() }
+                    val digest = async { remote.findDigest { it.id == digestId } }
+                    preferences.await() to digest.await()
+                }
+            val target =
+                digest ?: throw ContentUnavailableException(
+                    "This research briefing is no longer available.",
+                )
+            val refreshedAt = nowEpochMillis()
+            cache.storeBriefing(preferences, target, refreshedAt)
+            target.toBriefing(
+                interests = preferences.topics,
+                disclosure =
+                    disclosure(
+                        ContentOrigin.LIVE_BACKEND,
+                        "Opened the research briefing selected from the notification.",
+                    ),
+            )
+        } catch (error: IOException) {
+            cache.getBriefing(digestId)?.toBriefing() ?: throw error
+        } catch (error: SerializationException) {
+            cache.getBriefing(digestId)?.toBriefing() ?: throw error
+        }
+    }
 
     override suspend fun updateInterests(topics: List<String>): BriefingUiModel {
         val normalized = normalizeTopics(topics)
