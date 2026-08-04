@@ -1,0 +1,2 @@
+schema_version,trial_id,seed_arxiv_id,duration_ms,success,outcome,paper_count,paper_ids,content_origin
+seed-first-initialization-android-v1,trial_02,2010.11929,41731.145,true,live_five_paper_briefing_visible,5,c8be8b59-d082-4fa2-a5a0-9441f23c5fc1;3e4dcd85-9a7c-4972-b273-19a9d036521e;d0cb1550-abb3-42e7-bb33-377b7168aa88;08beeb40-3d2a-41be-8704-e23b18b029ed;5d4923ea-f3a7-4350-911a-073d445bd061,LIVE_BACKEND

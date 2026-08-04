@@ -3,7 +3,6 @@
 package com.mneme.app.ui.graph
 
 import android.os.SystemClock
-import android.webkit.WebView
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -13,6 +12,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.mneme.app.evaluation.E4MeasurementFiles
 import com.mneme.app.ui.model.ContentDisclosureUiModel
 import com.mneme.app.ui.model.ContentOrigin
@@ -25,8 +25,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class E4GraphMeasurementTest {
@@ -34,114 +34,117 @@ class E4GraphMeasurementTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun recordBoundedRendererAndSelectionLatency() {
+    fun recordBoundedRendererLatency() {
+        val arguments = InstrumentationRegistry.getArguments()
+        val sessionId = arguments.getString(SESSION_ID_ARGUMENT)?.takeIf(String::isNotBlank) ?: "standalone"
+        val nodeCounts = parseNodeOrder(arguments.getString(NODE_ORDER_ARGUMENT))
+        val warmupPairs =
+            parsePairCount(
+                arguments.getString(WARMUP_PAIRS_ARGUMENT),
+                defaultValue = DEFAULT_WARMUP_PAIRS,
+                argumentName = WARMUP_PAIRS_ARGUMENT,
+                allowZero = true,
+            )
+        val measuredPairs =
+            parsePairCount(
+                arguments.getString(MEASURED_PAIRS_ARGUMENT),
+                defaultValue = DEFAULT_MEASURED_PAIRS,
+                argumentName = MEASURED_PAIRS_ARGUMENT,
+                allowZero = false,
+            )
         E4MeasurementFiles.resetCsv(GRAPH_FILE, GRAPH_HEADER)
-        val graphState = mutableStateOf(graph(nodeCount = 1, marker = "initial"))
+        val graphState = mutableStateOf(graph(nodeCount = 1, marker = BOOTSTRAP_MARKER))
         val renderKey = mutableIntStateOf(0)
-        val webView = AtomicReference<WebView>()
-        val rendererReadyCount = AtomicInteger()
-        val selectedPaper = AtomicReference<String>()
-        val initialReadyCount = rendererReadyCount.get()
+        val submissions = LinkedBlockingQueue<GraphRenderSubmission>()
+        val completions = LinkedBlockingQueue<GraphRenderCompletion>()
+        val measurementObserver =
+            object : GraphRenderMeasurementObserver {
+                override fun onRenderSubmitted(submission: GraphRenderSubmission) {
+                    submissions.offer(submission)
+                }
+
+                override fun onVisualStateReady(completion: GraphRenderCompletion) {
+                    completions.offer(completion)
+                }
+            }
         composeRule.setContent {
             key(renderKey.intValue) {
                 CitationGraphWebView(
                     graph = graphState.value,
-                    onNodeSelected = selectedPaper::set,
+                    onNodeSelected = {},
                     modifier = Modifier.height(390.dp),
-                    onWebViewCreated = webView::set,
-                    onRendererReady = { rendererReadyCount.incrementAndGet() },
+                    measurementObserver = measurementObserver,
                 )
             }
         }
-        check(waitForRenderer(initialReadyCount, webView, rendererReadyCount))
+        checkBootstrapRender(submissions, completions)
 
         var failures = 0
-        NODE_COUNTS.forEach { nodeCount ->
+        var previousNewWebViewInstanceId: Long? = null
+        nodeCounts.forEachIndexed { nodeOrderIndex, nodeCount ->
             val edgeCount = edgeCount(nodeCount)
-            repeat(COLD_WARMUPS + COLD_ITERATIONS) { index ->
-                val marker = "cold-$nodeCount-$index"
-                val readyBefore = rendererReadyCount.get()
-                webView.set(null)
-                selectedPaper.set(null)
-                val startedAt = SystemClock.elapsedRealtimeNanos()
-                composeRule.runOnIdle {
-                    graphState.value = graph(nodeCount, marker)
-                    renderKey.intValue += 1
-                }
-                val renderSuccess =
-                    waitForRenderer(readyBefore, webView, rendererReadyCount) &&
-                        waitForGraphDom(webView, nodeCount, marker)
-                val renderDuration = elapsedMillis(startedAt)
-                val measured = index >= COLD_WARMUPS
-                if (measured) {
-                    failures += if (renderSuccess) 0 else 1
-                    recordGraphSample(
-                        scenario = "render_ready",
-                        nodeCount = nodeCount,
-                        edgeCount = edgeCount,
-                        phase = "cold_webview",
-                        iteration = index - COLD_WARMUPS + 1,
-                        durationMillis = renderDuration,
-                        success = renderSuccess,
-                        outcome = if (renderSuccess) "dom_ready" else "timeout",
-                    )
-                }
-                if (renderSuccess) {
-                    val selection = measureSelection(webView, selectedPaper, "graph-paper-${nodeCount - 1}")
+            repeat(warmupPairs + measuredPairs) { index ->
+                val measured = index >= warmupPairs
+                val pairIndex = index - warmupPairs + 1
+                val markerPrefix =
                     if (measured) {
-                        failures += if (selection.success) 0 else 1
-                        recordGraphSample(
-                            scenario = "select_node",
-                            nodeCount = nodeCount,
-                            edgeCount = edgeCount,
-                            phase = "cold_webview",
-                            iteration = index - COLD_WARMUPS + 1,
-                            durationMillis = selection.durationMillis,
-                            success = selection.success,
-                            outcome = if (selection.success) "callback_received" else "timeout",
-                        )
+                        "measured-$nodeCount-$pairIndex"
+                    } else {
+                        "warmup-$nodeCount-${index + 1}"
                     }
-                }
-            }
+                val newWebViewMarker = "$markerPrefix-A"
+                val reusedWebViewMarker = "$markerPrefix-B"
+                val newWebViewSample =
+                    measureVisualStateReady(
+                        marker = newWebViewMarker,
+                        expectedNodeCount = nodeCount,
+                        expectedEdgeCount = edgeCount,
+                        submissions = submissions,
+                        completions = completions,
+                    ) {
+                        graphState.value = graph(nodeCount, newWebViewMarker)
+                        renderKey.intValue += 1
+                    }.validateNewWebView(previousNewWebViewInstanceId)
+                previousNewWebViewInstanceId =
+                    newWebViewSample.webViewInstanceId ?: previousNewWebViewInstanceId
 
-            repeat(WARM_WARMUPS + WARM_ITERATIONS) { index ->
-                val marker = "warm-$nodeCount-$index"
-                selectedPaper.set(null)
-                val startedAt = SystemClock.elapsedRealtimeNanos()
-                composeRule.runOnIdle {
-                    graphState.value = graph(nodeCount, marker)
-                }
-                val renderSuccess = waitForGraphDom(webView, nodeCount, marker)
-                val renderDuration = elapsedMillis(startedAt)
-                val measured = index >= WARM_WARMUPS
-                if (measured) {
-                    failures += if (renderSuccess) 0 else 1
+                val reusedWebViewSample =
+                    measureVisualStateReady(
+                        marker = reusedWebViewMarker,
+                        expectedNodeCount = nodeCount,
+                        expectedEdgeCount = edgeCount,
+                        submissions = submissions,
+                        completions = completions,
+                    ) {
+                        graphState.value = graph(nodeCount, reusedWebViewMarker)
+                    }.validateReusedWebView(newWebViewSample.webViewInstanceId)
+
+                if (!measured) {
+                    check(newWebViewSample.success && reusedWebViewSample.success) {
+                        "Graph warm-up failed for $nodeCount nodes: " +
+                            "${newWebViewSample.outcome}, ${reusedWebViewSample.outcome}"
+                    }
+                } else {
+                    failures += if (newWebViewSample.success) 0 else 1
+                    failures += if (reusedWebViewSample.success) 0 else 1
                     recordGraphSample(
-                        scenario = "render_ready",
+                        sessionId = sessionId,
+                        nodeOrderIndex = nodeOrderIndex + 1,
+                        pairIndex = pairIndex,
                         nodeCount = nodeCount,
                         edgeCount = edgeCount,
-                        phase = "warm_update",
-                        iteration = index - WARM_WARMUPS + 1,
-                        durationMillis = renderDuration,
-                        success = renderSuccess,
-                        outcome = if (renderSuccess) "dom_ready" else "timeout",
+                        phase = PHASE_NEW_WEB_VIEW,
+                        sample = newWebViewSample,
                     )
-                }
-                if (renderSuccess) {
-                    val selection = measureSelection(webView, selectedPaper, "graph-paper-${nodeCount - 1}")
-                    if (measured) {
-                        failures += if (selection.success) 0 else 1
-                        recordGraphSample(
-                            scenario = "select_node",
-                            nodeCount = nodeCount,
-                            edgeCount = edgeCount,
-                            phase = "warm_update",
-                            iteration = index - WARM_WARMUPS + 1,
-                            durationMillis = selection.durationMillis,
-                            success = selection.success,
-                            outcome = if (selection.success) "callback_received" else "timeout",
-                        )
-                    }
+                    recordGraphSample(
+                        sessionId = sessionId,
+                        nodeOrderIndex = nodeOrderIndex + 1,
+                        pairIndex = pairIndex,
+                        nodeCount = nodeCount,
+                        edgeCount = edgeCount,
+                        phase = PHASE_REUSED_WEB_VIEW,
+                        sample = reusedWebViewSample,
+                    )
                 }
             }
         }
@@ -219,83 +222,169 @@ class E4GraphMeasurementTest {
         assertEquals("Every graph status must remain visible.", 0, failures)
     }
 
-    private fun waitForRenderer(
-        readyBefore: Int,
-        webView: AtomicReference<WebView>,
-        rendererReadyCount: AtomicInteger,
-    ): Boolean =
-        composeRule.waitUntilOrFalse(RENDER_TIMEOUT_MILLIS) {
-            webView.get() != null && rendererReadyCount.get() > readyBefore
-        }
-
-    private fun waitForGraphDom(
-        webView: AtomicReference<WebView>,
-        nodeCount: Int,
-        marker: String,
-    ): Boolean {
-        val expected = "\"true:$nodeCount:true\""
-        val result = AtomicReference<String>()
-        val script =
-            "document.body.dataset.rendererReady + ':' + " +
-                "document.querySelectorAll('.node').length + ':' + " +
-                "(document.querySelector('.node title').textContent.indexOf('$marker') >= 0)"
-        return composeRule.waitUntilOrFalse(RENDER_TIMEOUT_MILLIS) {
-            if (result.get() != expected) {
-                webView.get()?.let { current ->
-                    composeRule.runOnIdle {
-                        current.evaluateJavascript(script, result::set)
-                    }
-                }
+    private fun checkBootstrapRender(
+        submissions: LinkedBlockingQueue<GraphRenderSubmission>,
+        completions: LinkedBlockingQueue<GraphRenderCompletion>,
+    ) {
+        val deadline = SystemClock.elapsedRealtime() + RENDER_TIMEOUT_MILLIS
+        val submission =
+            pollMatching(submissions, deadline) { candidate ->
+                candidate.requestTag == BOOTSTRAP_MARKER
             }
-            result.get() == expected
+        check(submission != null) { "The graph renderer did not submit its bootstrap payload." }
+        val completion =
+            pollMatching(completions, deadline) { candidate ->
+                candidate.renderId == submission.renderId
+            }
+        check(completion != null) { "The graph renderer did not complete its bootstrap visual state." }
+        check(
+            completion.nodeCount == 1 &&
+                completion.edgeCount == 0 &&
+                completion.tickCount >= 1,
+        ) {
+            "The graph renderer produced an invalid bootstrap visual state."
         }
     }
 
-    private fun measureSelection(
-        webView: AtomicReference<WebView>,
-        selectedPaper: AtomicReference<String>,
-        paperId: String,
-    ): TimedResult {
-        selectedPaper.set(null)
-        val startedAt = SystemClock.elapsedRealtimeNanos()
-        composeRule.runOnIdle {
-            webView.get().evaluateJavascript(
-                "window.MnemeGraph.selectNodeById('$paperId')",
-                null,
-            )
+    private fun measureVisualStateReady(
+        marker: String,
+        expectedNodeCount: Int,
+        expectedEdgeCount: Int,
+        submissions: LinkedBlockingQueue<GraphRenderSubmission>,
+        completions: LinkedBlockingQueue<GraphRenderCompletion>,
+        updateGraph: () -> Unit,
+    ): GraphMeasurement {
+        var startedAtNanos = 0L
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            startedAtNanos = SystemClock.elapsedRealtimeNanos()
+            updateGraph()
         }
-        val success =
-            composeRule.waitUntilOrFalse(SELECTION_TIMEOUT_MILLIS) {
-                selectedPaper.get() == paperId
+        // Drive the pending Compose update without waiting for WebView/D3 idleness.
+        // The native visual-state callback records the measurement endpoint.
+        composeRule.mainClock.advanceTimeByFrame()
+        val deadline = SystemClock.elapsedRealtime() + RENDER_TIMEOUT_MILLIS
+        val submission =
+            pollMatching(submissions, deadline) { candidate ->
+                candidate.requestTag == marker
             }
-        return TimedResult(elapsedMillis(startedAt), success)
+                ?: return GraphMeasurement.timeout(
+                    durationMillis = elapsedMillis(startedAtNanos),
+                    outcome = "submission_timeout",
+                )
+        val completion =
+            pollMatching(completions, deadline) { candidate ->
+                candidate.renderId == submission.renderId
+            }
+                ?: return GraphMeasurement.timeout(
+                    renderId = submission.renderId,
+                    webViewInstanceId = submission.webViewInstanceId,
+                    durationMillis = elapsedMillis(startedAtNanos),
+                    outcome = "visual_state_timeout",
+                )
+        val durationMillis =
+            (completion.completedAtNanos - startedAtNanos) / NANOS_PER_MILLISECOND
+        val outcome =
+            when {
+                completion.requestTag != marker -> "request_tag_mismatch"
+                completion.webViewInstanceId != submission.webViewInstanceId ->
+                    "webview_instance_mismatch"
+                completion.nodeCount != expectedNodeCount -> "node_count_mismatch"
+                completion.edgeCount != expectedEdgeCount -> "edge_count_mismatch"
+                completion.tickCount < 1 -> "simulation_tick_missing"
+                else -> "visual_state_ready"
+            }
+        return GraphMeasurement(
+            renderId = submission.renderId,
+            webViewInstanceId = submission.webViewInstanceId,
+            durationMillis = durationMillis,
+            domNodeCount = completion.nodeCount,
+            domEdgeCount = completion.edgeCount,
+            tickCount = completion.tickCount,
+            success = outcome == "visual_state_ready",
+            outcome = outcome,
+        )
     }
 
     private fun recordGraphSample(
-        scenario: String,
+        sessionId: String,
+        nodeOrderIndex: Int,
+        pairIndex: Int,
         nodeCount: Int,
         edgeCount: Int,
         phase: String,
-        iteration: Int,
-        durationMillis: Double,
-        success: Boolean,
-        outcome: String,
+        sample: GraphMeasurement,
     ) {
         E4MeasurementFiles.appendCsv(
             GRAPH_FILE,
             listOf(
                 "graph",
-                scenario,
+                "visual_state_ready",
+                sessionId,
+                nodeOrderIndex,
+                pairIndex,
                 nodeCount,
                 edgeCount,
-                GraphAlgorithmUiStatus.READY.name,
                 phase,
-                iteration,
-                durationMillis,
-                success,
-                outcome,
+                sample.renderId,
+                sample.webViewInstanceId,
+                sample.durationMillis,
+                sample.domNodeCount,
+                sample.domEdgeCount,
+                sample.tickCount,
+                sample.success,
+                sample.outcome,
             ),
         )
+    }
+
+    private fun parseNodeOrder(rawOrder: String?): List<Int> {
+        if (rawOrder.isNullOrBlank()) {
+            return NODE_COUNTS
+        }
+        val parsed =
+            rawOrder
+                .split(",")
+                .map { value ->
+                    value.trim().toIntOrNull()
+                        ?: throw IllegalArgumentException(
+                            "$NODE_ORDER_ARGUMENT must contain comma-separated integers.",
+                        )
+                }
+        require(parsed.size == NODE_COUNTS.size && parsed.toSet() == NODE_COUNTS.toSet()) {
+            "$NODE_ORDER_ARGUMENT must be a permutation of ${NODE_COUNTS.joinToString(",")}."
+        }
+        return parsed
+    }
+
+    private fun parsePairCount(
+        rawValue: String?,
+        defaultValue: Int,
+        argumentName: String,
+        allowZero: Boolean,
+    ): Int {
+        val value = rawValue?.toIntOrNull() ?: defaultValue
+        val validRange = if (allowZero) 0..MAX_PAIR_COUNT else 1..MAX_PAIR_COUNT
+        require(value in validRange) {
+            "$argumentName must be in ${validRange.first}..${validRange.last}."
+        }
+        return value
+    }
+
+    private fun <T> pollMatching(
+        queue: LinkedBlockingQueue<T>,
+        deadlineMillis: Long,
+        predicate: (T) -> Boolean,
+    ): T? {
+        while (true) {
+            val remainingMillis = deadlineMillis - SystemClock.elapsedRealtime()
+            if (remainingMillis <= 0) {
+                return null
+            }
+            val candidate = queue.poll(remainingMillis, TimeUnit.MILLISECONDS) ?: return null
+            if (predicate(candidate)) {
+                return candidate
+            }
+        }
     }
 
     private fun graph(
@@ -309,7 +398,7 @@ class E4GraphMeasurementTest {
             (0 until nodeCount).map { index ->
                 GraphNodeUiModel(
                     id = "graph-paper-$index",
-                    title = "$marker paper $index",
+                    title = "$nodeCount-node graph paper $index",
                     category = categories[index % categories.size],
                     clusterId = "cluster-${index % 6}",
                     rankScore = 1.0 - index.toDouble() / nodeCount,
@@ -336,7 +425,7 @@ class E4GraphMeasurementTest {
             nodes = nodes,
             edges = chainEdges + crossEdges,
             algorithmStatus = status,
-            graphVersion = "e4-render-measurement-v1",
+            graphVersion = marker,
             disclosure =
                 ContentDisclosureUiModel(
                     origin = ContentOrigin.CONTROLLED_FIXTURE,
@@ -378,10 +467,58 @@ class E4GraphMeasurementTest {
         return condition()
     }
 
-    private data class TimedResult(
+    private data class GraphMeasurement(
+        val renderId: Long?,
+        val webViewInstanceId: Long?,
         val durationMillis: Double,
+        val domNodeCount: Int?,
+        val domEdgeCount: Int?,
+        val tickCount: Int?,
         val success: Boolean,
-    )
+        val outcome: String,
+    ) {
+        fun validateNewWebView(previousInstanceId: Long?): GraphMeasurement {
+            if (!success || previousInstanceId == null || webViewInstanceId != previousInstanceId) {
+                return this
+            }
+            return copy(
+                success = false,
+                outcome = "webview_not_recreated",
+            )
+        }
+
+        fun validateReusedWebView(expectedInstanceId: Long?): GraphMeasurement {
+            if (!success) {
+                return this
+            }
+            if (expectedInstanceId != null && webViewInstanceId == expectedInstanceId) {
+                return this
+            }
+            return copy(
+                success = false,
+                outcome = "webview_reuse_mismatch",
+            )
+        }
+
+        companion object {
+            fun timeout(
+                durationMillis: Double,
+                outcome: String,
+                renderId: Long? = null,
+                webViewInstanceId: Long? = null,
+            ): GraphMeasurement =
+                GraphMeasurement(
+                    renderId = renderId,
+                    webViewInstanceId = webViewInstanceId,
+                    durationMillis = durationMillis,
+                    domNodeCount = null,
+                    domEdgeCount = null,
+                    tickCount = null,
+                    success = false,
+                    outcome = outcome,
+                )
+        }
+    }
 
     private data class GraphStateScenario(
         val name: String,
@@ -393,27 +530,38 @@ class E4GraphMeasurementTest {
         const val GRAPH_FILE = "graph_measurements.csv"
         const val GRAPH_STATE_FILE = "graph_state_measurements.csv"
         const val MAX_GRAPH_NODES = 50
-        const val COLD_WARMUPS = 2
-        const val COLD_ITERATIONS = 20
-        const val WARM_WARMUPS = 3
-        const val WARM_ITERATIONS = 30
+        const val MAX_PAIR_COUNT = 100
+        const val DEFAULT_WARMUP_PAIRS = 1
+        const val DEFAULT_MEASURED_PAIRS = 5
         const val STATE_WARMUPS = 3
         const val STATE_ITERATIONS = 30
         const val RENDER_TIMEOUT_MILLIS = 10_000L
-        const val SELECTION_TIMEOUT_MILLIS = 3_000L
         const val STATE_TIMEOUT_MILLIS = 3_000L
         const val NANOS_PER_MILLISECOND = 1_000_000.0
+        const val BOOTSTRAP_MARKER = "graph-render-bootstrap"
+        const val SESSION_ID_ARGUMENT = "e4SessionId"
+        const val NODE_ORDER_ARGUMENT = "e4GraphNodeOrder"
+        const val WARMUP_PAIRS_ARGUMENT = "e4GraphWarmupPairs"
+        const val MEASURED_PAIRS_ARGUMENT = "e4GraphMeasuredPairs"
+        const val PHASE_NEW_WEB_VIEW = "new_webview_instance"
+        const val PHASE_REUSED_WEB_VIEW = "reused_webview"
         val NODE_COUNTS = listOf(1, 12, 25, 50)
         val GRAPH_HEADER =
             listOf(
                 "track",
                 "scenario",
+                "session_id",
+                "node_order_index",
+                "pair_index",
                 "node_count",
                 "edge_count",
-                "algorithm_status",
                 "phase",
-                "iteration",
+                "render_id",
+                "webview_instance_id",
                 "duration_ms",
+                "dom_node_count",
+                "dom_edge_count",
+                "tick_count",
                 "success",
                 "outcome",
             )

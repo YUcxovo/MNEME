@@ -1,0 +1,1 @@
+Validated and summarized 8 formal sessions under /home/why/Project/ece441/mid_report/MNEME-e4-formal/docs/evaluation/android-formal/raw/resource-formal-20260729-r2. No inferential statistics were calculated.

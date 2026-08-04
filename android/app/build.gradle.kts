@@ -57,6 +57,21 @@ android {
     }
 
     buildTypes {
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            buildConfigField(
+                "String",
+                "MNEME_API_BASE_URL",
+                "http://127.0.0.1:9/v1/".asBuildConfigString(),
+            )
+            buildConfigField(
+                "String",
+                "MNEME_DEMO_TOKEN",
+                "benchmark-cache-only".asBuildConfigString(),
+            )
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

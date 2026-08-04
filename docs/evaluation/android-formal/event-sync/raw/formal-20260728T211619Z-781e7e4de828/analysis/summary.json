@@ -1,0 +1,59 @@
+{
+  "schema_version": "android-formal-event-sync-summary-v1",
+  "run_id": "formal-20260728T211619Z-781e7e4de828",
+  "repository_revision": "781e7e4de828eb0ebf596306273267e087ae072d",
+  "raw_csv_sha256": "9cd1cd813084ae736416bdc13680af824a04cc6d826012bf04c5928e6e3e372f",
+  "descriptive_statistics_only": true,
+  "summaries": [
+    {
+      "scenario": "file_room_queue_write",
+      "label": "Queue write",
+      "sample_count": 10,
+      "success_count": 10,
+      "median_ms": 4.24,
+      "min_ms": 2.99,
+      "max_ms": 8.71,
+      "range_ms": 5.72
+    },
+    {
+      "scenario": "file_room_reopen_pending",
+      "label": "Room reopen",
+      "sample_count": 10,
+      "success_count": 10,
+      "median_ms": 7.94,
+      "min_ms": 6.13,
+      "max_ms": 9.48,
+      "range_ms": 3.34
+    },
+    {
+      "scenario": "http_503_pending_recovery",
+      "label": "HTTP 503",
+      "sample_count": 10,
+      "success_count": 10,
+      "median_ms": 13.39,
+      "min_ms": 10.13,
+      "max_ms": 43.37,
+      "range_ms": 33.24
+    },
+    {
+      "scenario": "live_backend_upload",
+      "label": "Live upload",
+      "sample_count": 10,
+      "success_count": 10,
+      "median_ms": 26.22,
+      "min_ms": 19.83,
+      "max_ms": 49.19,
+      "range_ms": 29.36
+    },
+    {
+      "scenario": "live_backend_duplicate_replay",
+      "label": "Duplicate replay",
+      "sample_count": 10,
+      "success_count": 10,
+      "median_ms": 17.76,
+      "min_ms": 15.14,
+      "max_ms": 32.07,
+      "range_ms": 16.93
+    }
+  ]
+}

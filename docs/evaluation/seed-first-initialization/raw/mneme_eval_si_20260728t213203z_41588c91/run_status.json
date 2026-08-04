@@ -1,0 +1,9 @@
+{
+  "schema_version": "seed-first-initialization-run-status-v1",
+  "status": "passed",
+  "stage": "complete",
+  "reason": null,
+  "signal": null,
+  "exit_code": 0,
+  "recorded_at_utc": "2026-07-28T21:35:44Z"
+}

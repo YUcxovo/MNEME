@@ -1,0 +1,73 @@
+{
+  "schema_version": "android-formal-event-sync-run-v1",
+  "run_id": "formal-20260728T211619Z-781e7e4de828",
+  "mode": "formal",
+  "requested_iterations": 10,
+  "timestamps": {
+    "runner_started_utc": "2026-07-28T21:16:19Z",
+    "instrumentation_started_utc": "2026-07-28T21:16:45Z",
+    "instrumentation_ended_utc": "2026-07-28T21:16:48Z",
+    "runner_finished_utc": "2026-07-28T21:16:48Z"
+  },
+  "repository": {
+    "revision": "781e7e4de828eb0ebf596306273267e087ae072d",
+    "tree": "bc9cc1ee2e7bd95264a42484672a6c95e2cb97b0",
+    "branch": "perf/android-e4-event-formal",
+    "clean_at_start": true,
+    "unchanged_at_finish": true
+  },
+  "backend": {
+    "base_url": "http://10.0.2.2:8017/v1/",
+    "paper_id": "58e554ed-4c48-4ed8-9570-50bdd6d8088e",
+    "isolated_test_instance_acknowledged": true
+  },
+  "android": {
+    "serial": "emulator-5554",
+    "application_package": "com.mneme.app",
+    "test_package": "com.mneme.app.test",
+    "test_class": "com.mneme.app.evaluation.E4LiveBackendClosedLoopTest",
+    "disposable_measurement_app_data": true,
+    "force_stopped_before_clear": true,
+    "app_data_cleared_before_instrumentation": true,
+    "api": 34,
+    "release": "14",
+    "model": "sdk_gphone64_x86_64",
+    "manufacturer": "Google",
+    "boot_id": "8747201b-22af-4576-a378-d9487980b2f3",
+    "webview_version": "113.0.5672.136",
+    "webview_description": "  Current WebView package (name, version): (com.google.android.webview, 113.0.5672.136)"
+  },
+  "host": {
+    "loadavg": "6.61 2.64 2.32 23/1787 279214"
+  },
+  "execution": {
+    "instrumentation_invocations": 1,
+    "shell_exit_status": 0,
+    "instrumentation_exit_status": 0,
+    "instrumentation_reported_success": true,
+    "data_pull_exit_status": 0
+  },
+  "build": {
+    "jdk_major": 17,
+    "build_authentication": "blank",
+    "gradle_tasks": [
+      ":app:assembleDebug",
+      ":app:assembleDebugAndroidTest"
+    ]
+  },
+  "hashes": {
+    "runner_sha256": "f45985b5aa8cf5e1afda752b55ef474362f5e644aecfdb5c1371632985b14bc8",
+    "analyzer_sha256": "c6b35515f5375edfad31374ee9219450db604c9c81dded0ca690c00305997766",
+    "measured_test_source_sha256": "9077546678adcd431de60dbd0e180225fc94984d420fe47f95bf1253d5955db0",
+    "android_code_tree_sha256": "5729a72dcc8f3818d6bec7eaa7fe81d94e52f22bcf2dd4cf8bce090e2abd7202",
+    "application_apk_sha256": "33486fa23d8de37dff17bf2d4814130450eb6f781ba46fd71af75ef7205d5a29",
+    "instrumentation_apk_sha256": "92b0b36c2a13b7ee9de2057bdb7870be2df88e0dc57888849ef371e0b44fbb8f",
+    "raw_csv_sha256": "9cd1cd813084ae736416bdc13680af824a04cc6d826012bf04c5928e6e3e372f",
+    "device_test_environment_sha256": "3169ceab08b4ed9122463a84e071a40a826788eb1ade47d22542adc335a52794",
+    "instrumentation_output_sha256": "d7eef3b4d36d7adac67c180cb1240fb7c37a8277940a5026bfcc8e67d65ebe9a",
+    "build_output_sha256": "206b2d204ad81ec1e17dde7bf21fa218598382b9198f5d02629c1f516ea3c999",
+    "install_output_sha256": "7fa903e02b6af85e2cdd90dd9252caced695c8efc051de91499b6c78de429676",
+    "environment_sha256": "549b449a38d67e50ab87fbc6d07c504ca229f05d94d830fd351dfa7899331997",
+    "adb_pull_output_sha256": "31eca69425fb64fbce4332f883c78fa4f1ba6bd4f9a8a7378131e75726045ed7"
+  }
+}

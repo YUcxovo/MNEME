@@ -1,0 +1,304 @@
+{
+  "entries": [
+    {
+      "relative_path": "analysis/seed_results.csv",
+      "sha256": "7f89eae84dccc458c33baeb8455586c0dd7e9850599cdf6e8744ab7f4a26b1a6",
+      "size_bytes": 828
+    },
+    {
+      "relative_path": "analysis/summary.json",
+      "sha256": "6922b186ef2d688ad4f12997c69b9ad2d97580ab233a5a496f10221bb9966669",
+      "size_bytes": 2306
+    },
+    {
+      "relative_path": "analysis_output.txt",
+      "sha256": "2e58ba8e3f3cee72a4b2346af5cc26a304c86a5199a3257d27d2a17c5ada056f",
+      "size_bytes": 195
+    },
+    {
+      "relative_path": "app_install_output.txt",
+      "sha256": "8cfe21ca9831863004ad6eb25b313f8944786f7a01b291da8fbbe61cc0c847e5",
+      "size_bytes": 32
+    },
+    {
+      "relative_path": "build_output.txt",
+      "sha256": "a7fd5a4ae2d894f85eefcd4aac152c27caf5a9b59a6786c77bf1ebda1b37c2d4",
+      "size_bytes": 7619
+    },
+    {
+      "relative_path": "experiment_completed.json",
+      "sha256": "b1bb59b55ea8a4f73c268e3dc05814d87a4dd05af1722c5e51337c2814f16d1e",
+      "size_bytes": 168
+    },
+    {
+      "relative_path": "run_manifest.json",
+      "sha256": "38d862308cbbf85761b7b7470e5e56a6b5c3b601146486c7683dbc991840ec99",
+      "size_bytes": 3691
+    },
+    {
+      "relative_path": "test_install_output.txt",
+      "sha256": "8cfe21ca9831863004ad6eb25b313f8944786f7a01b291da8fbbe61cc0c847e5",
+      "size_bytes": 32
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/android_data_clear_output.txt",
+      "sha256": "7fc0023a6402c7bd7abd98bb3e580968de4833eed07d88d1cc8d70819d69c7a0",
+      "size_bytes": 8
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/android_measurement.csv",
+      "sha256": "ef3d42895fc37af9d323a86af90552543f7a867a1475ce1bc7528bb43702443f",
+      "size_bytes": 408
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/android_pull_output.txt",
+      "sha256": "2c0ecf39bb9e3e5556bbc9c66a28ec9c22dd92e66bc38cb30bb97ecf4067c804",
+      "size_bytes": 152
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/api_output.txt",
+      "sha256": "b6210bb1aa09058c6d04b194452e49afb99091328878a35fdb3a1500a74f3e9d",
+      "size_bytes": 2247
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/backend_snapshot.json",
+      "sha256": "31ed534bac047607979cf386e10df470f410c4f1c64e32ec352ed9b0868c77ca",
+      "size_bytes": 21213
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/backend_snapshot_output.txt",
+      "sha256": "672545a1cbd1f450ba7b782692bf0f3858b033143a89455f70d22383be4f3edd",
+      "size_bytes": 236
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/candidate_source.json",
+      "sha256": "a8995d90979c32b1c69b5f3b2063a6c182ad330222f4f86c51ca9d129e93ddf0",
+      "size_bytes": 390
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/immediate_validation.json",
+      "sha256": "181cdd5e7996d4bbd85353de71990c68bea1c42ced41dd1bcac537df4c1cae2b",
+      "size_bytes": 480
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/immediate_validation_output.txt",
+      "sha256": "4469ceaada6aa4a46b66751c039fbdcd8562db4c71db412912de421259604694",
+      "size_bytes": 393
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/instrumentation_output.txt",
+      "sha256": "514cde51533e6a4ec42f26e489ef4bd9aa0ca1724e0c95819ada0a94229a07b5",
+      "size_bytes": 916
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/measurement_attempt.json",
+      "sha256": "681070d609ead212341a78fa491715c24c31f8a8f756400b58003fe5d8a9a61d",
+      "size_bytes": 169
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/precondition.json",
+      "sha256": "84b9a56a549912be26b79b76dae2c3b7fee1533b8b10e96a3dc7e3d88a35df8a",
+      "size_bytes": 1027
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/precondition_output.txt",
+      "sha256": "1f717359bdfbd9d0b4f7bdef444ca6c4833215f95461d6ecced40bbe45574058",
+      "size_bytes": 240
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/redis_output.txt",
+      "sha256": "a7afecf4f01c0182ec207297ecb668ed3e5a94c54b2d63370a378dda0c3c663e",
+      "size_bytes": 1190
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/setup_output.txt",
+      "sha256": "017f5c6416c11d69292577140aa08c3b4fd9a495cbc7a009f663766428c13a99",
+      "size_bytes": 1067
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/trial_status.json",
+      "sha256": "31f20e53f181257f2569204e03c69d440c4a53a107d24cb717252b421db97519",
+      "size_bytes": 267
+    },
+    {
+      "relative_path": "trials/trial_01_1706_03762/worker_output.txt",
+      "sha256": "118ff35b7572ff4da3cd4d9cdc027ebc7c892f6e3a367fc4919bbbd00821e4b1",
+      "size_bytes": 34973
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/android_data_clear_output.txt",
+      "sha256": "7fc0023a6402c7bd7abd98bb3e580968de4833eed07d88d1cc8d70819d69c7a0",
+      "size_bytes": 8
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/android_measurement.csv",
+      "sha256": "73583ea9ea8795fd4f70abdd3568ac1f9bac938571a85838469c9712c12443b7",
+      "size_bytes": 408
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/android_pull_output.txt",
+      "sha256": "6671a0a5d805ef315e773baf5e876d48eec86978ec0fff6cdd2c13b74c608e87",
+      "size_bytes": 152
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/api_output.txt",
+      "sha256": "9431c30d0a32a281a73405a837a8a3cbf638241cd8463520ed7cdef057c22d0c",
+      "size_bytes": 2247
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/backend_snapshot.json",
+      "sha256": "8a5b328807c0ac8ca33c6cc4c609442bb7c7c6fea7cff65b6ef7ec00816aa14c",
+      "size_bytes": 21175
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/backend_snapshot_output.txt",
+      "sha256": "ad29b0f4aa5fdd99b6bef09c5a341a441b276bb7349d67767b212a55bd325144",
+      "size_bytes": 236
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/candidate_source.json",
+      "sha256": "d4e621ee420ca5000490b478efd340d35b891b03bd0ff1140453efc39095e9b9",
+      "size_bytes": 390
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/immediate_validation.json",
+      "sha256": "1aa908d86d7e47add7ecf14f8b2e6fba6eacfbc59e411f7d9ff5701ba85d7d8f",
+      "size_bytes": 480
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/immediate_validation_output.txt",
+      "sha256": "3b4861309b88e51d15abdd82abf76daa11b3a4626533a7f98404d9d8904d115b",
+      "size_bytes": 393
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/instrumentation_output.txt",
+      "sha256": "5271d84e336bd48ab4dfbcc6291a15fd5dd2c78daa24ed2abb3ffa0349e84d47",
+      "size_bytes": 916
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/measurement_attempt.json",
+      "sha256": "b8c635ec9c7d77d2a396322be0a1c93cf90afecfe4431ac5cb4e87ac3630a5f3",
+      "size_bytes": 169
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/precondition.json",
+      "sha256": "1c1df509e932aeae61294d0a602afd6b69b42a5d03eb43f89b57da45d2d3762d",
+      "size_bytes": 1027
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/precondition_output.txt",
+      "sha256": "a08f38d27d4877aecfa367ed32008cd6802a36f669b84382204491a6c0529600",
+      "size_bytes": 240
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/redis_output.txt",
+      "sha256": "5bdfec1e7f91fdf48344e3bdd96d6ba411b4c4e39abc563a2edc790261b38186",
+      "size_bytes": 1190
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/setup_output.txt",
+      "sha256": "6d64c5562f5c231444ae1eb24b4bf3bd4c836f4d3a110f25251836cdc156a6ec",
+      "size_bytes": 1067
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/trial_status.json",
+      "sha256": "bffdb7fd1d1710f2e87b3ff2593746997986f1f02f79a1623c227e174f2e0db1",
+      "size_bytes": 267
+    },
+    {
+      "relative_path": "trials/trial_02_2010_11929/worker_output.txt",
+      "sha256": "db5ff681128086f67949b23f0a530f91cf5f24b35555671b91509d2dc86a965b",
+      "size_bytes": 33037
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/android_data_clear_output.txt",
+      "sha256": "7fc0023a6402c7bd7abd98bb3e580968de4833eed07d88d1cc8d70819d69c7a0",
+      "size_bytes": 8
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/android_measurement.csv",
+      "sha256": "2e27e8376a204d175525d306c384d8de0832f62ca2eef4da1b58a1ade0e97144",
+      "size_bytes": 408
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/android_pull_output.txt",
+      "sha256": "30570396860e85a93ee08de48112421ac4e73bcdea3b6e8188e938b44ba18821",
+      "size_bytes": 152
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/api_output.txt",
+      "sha256": "f49007d6c5f33455a35a4bab1dc025ed19d0163473624ad69840c39e9031294f",
+      "size_bytes": 2247
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/backend_snapshot.json",
+      "sha256": "24d08f4258831b073c0e9dc264d3402ae6451c2c8f8bc9855d0266f2f0bdb0c7",
+      "size_bytes": 21236
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/backend_snapshot_output.txt",
+      "sha256": "90fadda59692a9222498ad6735dce82b66c0384d275955e7a13d43267423f0b2",
+      "size_bytes": 236
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/candidate_source.json",
+      "sha256": "7fc8653c30b8a03a477edd6771026153d0754f365500e703804308508b27f30c",
+      "size_bytes": 390
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/immediate_validation.json",
+      "sha256": "483a5f4455740f8dc485c4d8d26c3939198ed8ca8cb8c299909b9eaecff1be76",
+      "size_bytes": 480
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/immediate_validation_output.txt",
+      "sha256": "975fa1699b7adccb178a114897685ce3fbf329d7f8590f7e966a52436c6b0fc3",
+      "size_bytes": 393
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/instrumentation_output.txt",
+      "sha256": "846f5b716bcb46a8ae7e33a01adaefad41adc0c3fddc0d97d13a4d563e3cb8e5",
+      "size_bytes": 916
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/measurement_attempt.json",
+      "sha256": "9125be749a6273dd4e336b32b5f94bfae2e456605df8a25f99cc51f727403289",
+      "size_bytes": 169
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/precondition.json",
+      "sha256": "da24c1235aa06cf3a160d46e6e74d303e3c3fbef17b23454342fd5bbecea1f2f",
+      "size_bytes": 1027
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/precondition_output.txt",
+      "sha256": "32d70b77a61decd08fa594b67ff5f2ac4a1c303233fc5b095f0f212b6951f1c5",
+      "size_bytes": 240
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/redis_output.txt",
+      "sha256": "6b752c5432328ed362f593a34d9399484e4a30a7d3057e37aabec110bab29c6a",
+      "size_bytes": 1190
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/setup_output.txt",
+      "sha256": "176c707ef89f3b38e50592c7788d2eab0207ef17b0800d7fee05a744dde3076f",
+      "size_bytes": 1067
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/trial_status.json",
+      "sha256": "f6d3340279daef2206cc3c68db74fb4cceea289be7c0d648e20d0211f258edd1",
+      "size_bytes": 267
+    },
+    {
+      "relative_path": "trials/trial_03_2106_09685/worker_output.txt",
+      "sha256": "f0304838511141b70665e820a076f45590c5598be4f2996b1be0cc8f9dec23db",
+      "size_bytes": 36283
+    }
+  ],
+  "excluded_mutable_files": [
+    "artifact_hashes.json",
+    "run_status.json"
+  ],
+  "schema_version": "seed-first-initialization-artifact-hashes-v1"
+}

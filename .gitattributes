@@ -20,3 +20,7 @@
 *.pptx filter=lfs diff=lfs merge=lfs -text
 *.xls filter=lfs diff=lfs merge=lfs -text
 *.xlsx filter=lfs diff=lfs merge=lfs -text
+
+# Preserve byte-for-byte hashes for retained Android evaluation CSV artifacts.
+docs/evaluation/android-formal/raw/resource-formal-20260729-r2/sessions/**/startup_measurements.csv -text whitespace=cr-at-eol
+docs/evaluation/seed-first-initialization/raw/**/analysis/seed_results.csv -text whitespace=cr-at-eol

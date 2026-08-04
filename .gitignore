@@ -33,6 +33,10 @@
 !android/app/proguard-rules.pro
 !android/app/src/
 !android/app/src/**
+!android/benchmark/
+!android/benchmark/build.gradle.kts
+!android/benchmark/src/
+!android/benchmark/src/**
 !android/README.md
 
 *.apk

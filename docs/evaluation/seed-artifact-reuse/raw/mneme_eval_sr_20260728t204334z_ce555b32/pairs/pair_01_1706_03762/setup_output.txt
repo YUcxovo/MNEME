@@ -1,0 +1,151 @@
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001, Create the v0.1 application schema.
+Traceback (most recent call last):
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 550, in _prepare_and_execute
+    self._rows = deque(await prepared_stmt.fetch(*parameters))
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py", line 177, in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py", line 268, in __bind_execute
+    data, status, _ = await self.__do_execute(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py", line 257, in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 205, in bind_execute
+asyncpg.exceptions.InsufficientPrivilegeError: permission denied to create extension "vector"
+HINT:  Must be superuser to create this extension.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 585, in execute
+    self._adapt_connection.await_(
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 563, in _prepare_and_execute
+    self._handle_exception(error)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 513, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 797, in _handle_exception
+    raise translated_error from error
+sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.ProgrammingError: <class 'asyncpg.exceptions.InsufficientPrivilegeError'>: permission denied to create extension "vector"
+HINT:  Must be superuser to create this extension.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/bin/alembic", line 10, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/config.py", line 1047, in main
+    CommandLine(prog=prog).main(argv=argv)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/config.py", line 1037, in main
+    self.run_cmd(cfg, options)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/config.py", line 971, in run_cmd
+    fn(
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/command.py", line 490, in upgrade
+    script.run_env()
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/script/base.py", line 556, in run_env
+    util.load_python_file(self.dir, "env.py")
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 116, in load_python_file
+    module = load_module_py(module_id, path)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/util/pyfiles.py", line 136, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 995, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/alembic/env.py", line 78, in <module>
+    run_migrations_online()
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/alembic/env.py", line 72, in run_migrations_online
+    asyncio.run(run_async_migrations())
+  File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/alembic/env.py", line 65, in run_async_migrations
+    await connection.run_sync(do_run_migrations)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/engine.py", line 888, in run_sync
+    return await greenlet_spawn(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 203, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/alembic/env.py", line 50, in do_run_migrations
+    context.run_migrations()
+  File "<string>", line 8, in run_migrations
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/runtime/environment.py", line 969, in run_migrations
+    self.get_context().run_migrations(**kw)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/runtime/migration.py", line 626, in run_migrations
+    step.migration_fn(**kw)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/alembic/versions/0001_create_v01_schema.py", line 35, in upgrade
+    op.execute("CREATE EXTENSION IF NOT EXISTS vector")
+  File "<string>", line 8, in execute
+  File "<string>", line 3, in execute
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/operations/ops.py", line 2667, in execute
+    return operations.invoke(op)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/operations/base.py", line 452, in invoke
+    return fn(self, operation)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/operations/toimpl.py", line 259, in execute_sql
+    operations.migration_context.impl.execute(
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 263, in execute
+    self._exec(sql, execution_options)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/alembic/ddl/impl.py", line 256, in _exec
+    return conn.execute(construct, params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1421, in execute
+    return meth(
+           ^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 585, in execute
+    self._adapt_connection.await_(
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 563, in _prepare_and_execute
+    self._handle_exception(error)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 513, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 797, in _handle_exception
+    raise translated_error from error
+sqlalchemy.exc.ProgrammingError: (sqlalchemy.dialects.postgresql.asyncpg.ProgrammingError) <class 'asyncpg.exceptions.InsufficientPrivilegeError'>: permission denied to create extension "vector"
+HINT:  Must be superuser to create this extension.
+[SQL: CREATE EXTENSION IF NOT EXISTS vector]
+(Background on this error at: https://sqlalche.me/e/20/f405)

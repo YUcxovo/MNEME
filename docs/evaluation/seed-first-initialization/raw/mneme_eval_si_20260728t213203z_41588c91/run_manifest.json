@@ -1,0 +1,85 @@
+{
+  "android_data_cleared_before_each_trial": true,
+  "automatic_experiment_retry_enabled": false,
+  "device_environment": {
+    "android_api": "34",
+    "android_release": "14",
+    "boot_id": "27e90c36-a736-4e37-85ba-ec63e7b8a812",
+    "model": "sdk_gphone64_x86_64",
+    "serial": "emulator-5554",
+    "webview_provider": "(com.google.android.webview, 113.0.5672.136)"
+  },
+  "endpoint_semantics": "Five usable papers may be ready or partial; later AI stages are outside the measured endpoint.",
+  "finish_tree_gate": "passed",
+  "fixed_seeds": [
+    "1706.03762",
+    "2010.11929",
+    "2106.09685"
+  ],
+  "fresh_database_per_trial": true,
+  "fresh_redis_per_trial": true,
+  "fresh_storage_per_trial": true,
+  "fresh_user_per_trial": true,
+  "hashes": {
+    "analyzer_sha256": "9521fc2a97e4f7f3b8274dfb495b715e4dacc64e50dc6416b6f20148ce1c93f0",
+    "android_test_sources_sha256": "9e986809f629168271f34e087a83ac6e79969dd7170eb1f9f1eb3eb06132772a",
+    "app_apk_sha256": "0cf33a6b8a5079889f7c3e3523ed074f9192018f161f89fb857496a12f629425",
+    "inspector_sha256": "efe054c01c52432224a5eb0eba3b90a0010675a58f1b31400ec3d9cd5e4e59c0",
+    "runner_sha256": "7d0378572538513ca364852383ed7748bc7f655414e6b0fd2d8ec370fde2c8e1",
+    "test_apk_sha256": "92c446c76e88a178bf0a7c1a56df9a815eea14e0034cbd86c83b849bb5915635"
+  },
+  "host_and_external_provider_state_reset": false,
+  "host_environment": {
+    "kernel": "Linux 7.0.0-28-generic x86_64 GNU/Linux",
+    "load_average_1m_5m_15m": "",
+    "logical_cpus": "14",
+    "memory_kib": "32330308"
+  },
+  "inter_trial_cooldown_seconds": 10,
+  "measured_at_utc": "2026-07-28T21:33:06Z",
+  "one_measurement_per_seed": true,
+  "repository_revision": "d7433c87ca1b0569fc1076fe3ae8255c6d09c3af",
+  "run_id": "mneme_eval_si_20260728t213203z_41588c91",
+  "schema_version": "seed-first-initialization-run-manifest-v1",
+  "source_tree_clean_at_start": true,
+  "timing_endpoint": "Immediately before submit click to visible live five-paper briefing.",
+  "token_retained": false,
+  "trials": [
+    {
+      "automatic_retry_performed": false,
+      "database_name": "mneme_eval_si_20260728t213203z_41588c91_trial_01",
+      "disposable_user_id": "21e68be0-ee02-43c4-8a8d-5022d8928243",
+      "measurement_invocations": 1,
+      "queue_name": "mneme:jobs:eval:mneme_eval_si_20260728t213203z_41588c91:trial_01",
+      "redis_instance_port": 6381,
+      "relative_dir": "trials/trial_01_1706_03762",
+      "seed_arxiv_id": "1706.03762",
+      "storage_namespace": "mneme_eval_si_20260728t213203z_41588c91_trial_01",
+      "trial_id": "trial_01"
+    },
+    {
+      "automatic_retry_performed": false,
+      "database_name": "mneme_eval_si_20260728t213203z_41588c91_trial_02",
+      "disposable_user_id": "bd4a9e83-9944-4a78-8c17-7c3f8fca5e95",
+      "measurement_invocations": 1,
+      "queue_name": "mneme:jobs:eval:mneme_eval_si_20260728t213203z_41588c91:trial_02",
+      "redis_instance_port": 6382,
+      "relative_dir": "trials/trial_02_2010_11929",
+      "seed_arxiv_id": "2010.11929",
+      "storage_namespace": "mneme_eval_si_20260728t213203z_41588c91_trial_02",
+      "trial_id": "trial_02"
+    },
+    {
+      "automatic_retry_performed": false,
+      "database_name": "mneme_eval_si_20260728t213203z_41588c91_trial_03",
+      "disposable_user_id": "5435f5c2-28a6-4f76-ab2f-4cfbd0e6e7f4",
+      "measurement_invocations": 1,
+      "queue_name": "mneme:jobs:eval:mneme_eval_si_20260728t213203z_41588c91:trial_03",
+      "redis_instance_port": 6383,
+      "relative_dir": "trials/trial_03_2106_09685",
+      "seed_arxiv_id": "2106.09685",
+      "storage_namespace": "mneme_eval_si_20260728t213203z_41588c91_trial_03",
+      "trial_id": "trial_03"
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+schema_version,pair_id,seed_arxiv_id,condition,duration_ms,success,outcome,paper_count,paper_ids,content_origin
+seed-artifact-reuse-android-v1,pair_01,1706.03762,first,34933.185,true,live_five_paper_briefing_visible,5,c406be0b-f135-4a02-b1c7-572bf27490f2;112ff676-abed-4990-bf89-c082ce8d57d7;51ed7593-742a-4491-8fb6-232c71c7f214;4c31833f-515b-4c2c-8310-23fc1748f78d;cae964a3-5018-4269-85d8-3181c78a4147,LIVE_BACKEND

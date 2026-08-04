@@ -1,0 +1,12 @@
+{
+  "api_request_duration_ms": 41163.187,
+  "candidate_source": "citation_graph",
+  "category": "cs.CV",
+  "paper_count": 5,
+  "request_id": "b8c5f50d-b292-4199-b993-95239034630f",
+  "schema_version": "seed-first-initialization-candidate-source-v1",
+  "secrets_retained": false,
+  "seed_arxiv_id": "2010.11929",
+  "source_event": "seed_initialization_completed",
+  "trial_id": "trial_02"
+}

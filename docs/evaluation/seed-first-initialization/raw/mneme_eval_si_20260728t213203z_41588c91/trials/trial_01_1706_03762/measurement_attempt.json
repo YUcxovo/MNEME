@@ -1,0 +1,7 @@
+{
+  "schema_version": "seed-first-initialization-attempt-v1",
+  "trial_id": "trial_01",
+  "seed_arxiv_id": "1706.03762",
+  "invocation": 1,
+  "automatic_retry": false
+}

@@ -1,0 +1,7 @@
+{
+  "schema_version": "android-formal-event-sync-backend-evidence-v1",
+  "collected_at_utc": "2026-07-28T21:16:49Z",
+  "backend_revision": "781e7e4de828eb0ebf596306273267e087ae072d",
+  "postgres_version": "16.14 (Ubuntu 16.14-0ubuntu0.24.04.1)",
+  "user_event_count": 30
+}

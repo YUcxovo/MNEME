@@ -1,0 +1,1 @@
+Extracted 10 retained startup measurements for 16cbec2c-2420-4809-bb0b-74baa80b4389; raw iteration 1 remains only in native benchmarkData JSON. Validated resume assertions in MnemeStartupBenchmark_foregroundResume_contract.json.

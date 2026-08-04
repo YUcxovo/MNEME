@@ -1,0 +1,209 @@
+04:46:11: Starting worker for 9 functions: worker_probe, fetch_metadata, download_pdf, parse_pdf, summarize_paper, chunk_paper, embed_chunks, assemble_digest, cron:recover_revision_dispatches
+04:46:11: redis_version=7.0.15 mem_usage=941.48K clients_connected=1 db_keys=0
+{"queue": "mneme:jobs:eval:mneme_eval_sr_20260728t204607z_751e0cfa:pair_01", "event": "worker_started", "level": "info", "timestamp": "2026-07-28T20:46:11.111424Z"}
+04:46:11:   0.50s → cron:recover_revision_dispatches()
+  0.50s → cron:recover_revision_dispatches()
+{"candidates": 0, "dispatched": 0, "event": "dispatch_recovery_completed", "level": "info", "timestamp": "2026-07-28T20:46:11.637811Z"}
+04:46:11:   0.03s ← cron:recover_revision_dispatches ● 0
+  0.03s ← cron:recover_revision_dispatches ● 0
+04:46:15:   1.00s → cron:recover_revision_dispatches()
+  1.00s → cron:recover_revision_dispatches()
+{"candidates": 0, "dispatched": 0, "event": "dispatch_recovery_completed", "level": "info", "timestamp": "2026-07-28T20:46:15.624729Z"}
+04:46:15:   0.00s ← cron:recover_revision_dispatches ● 0
+  0.00s ← cron:recover_revision_dispatches ● 0
+04:46:17:   0.34s → pipeline:50aee25b-3a81-4492-b0ca-527a61fa682c:attempt:1:download_pdf('2af621cb-f391-49ec-a418-330d380b7293', 'c59cc2db-cb40-43c7-b589-b08ccc95efa1',…)
+  0.34s → pipeline:50aee25b-3a81-4492-b0ca-527a61fa682c:attempt:1:download_pdf('2af621cb-f391-49ec-a418-330d380b7293', 'c59cc2db-cb40-43c7-b589-b08ccc95efa1',…)
+04:46:17:   0.34s → pipeline:6270ebfa-be12-49ae-9db9-5f3ef3b15007:attempt:1:download_pdf('d007adfc-ec22-4688-84df-3a07d8882bf6', '79b3eeef-7471-4503-87b9-8da37dd87d8a',…)
+  0.34s → pipeline:6270ebfa-be12-49ae-9db9-5f3ef3b15007:attempt:1:download_pdf('d007adfc-ec22-4688-84df-3a07d8882bf6', '79b3eeef-7471-4503-87b9-8da37dd87d8a',…)
+04:46:17:   0.34s → pipeline:11a63f98-9db5-421c-832f-53c63a810b8c:attempt:1:download_pdf('25104fc1-0c36-4f74-ace2-9bd38d8acf5c', '1eac684c-8059-477f-8f03-c655806958e1',…)
+  0.34s → pipeline:11a63f98-9db5-421c-832f-53c63a810b8c:attempt:1:download_pdf('25104fc1-0c36-4f74-ace2-9bd38d8acf5c', '1eac684c-8059-477f-8f03-c655806958e1',…)
+04:46:17:   0.34s → pipeline:a4c8be4f-0d12-4038-8d06-a82543d9ab65:attempt:1:download_pdf('67285b4d-5e93-44ca-b4c0-50d3a6d75034', '4a2019a9-68f9-4cea-81e2-4ee913ffcb21',…)
+  0.34s → pipeline:a4c8be4f-0d12-4038-8d06-a82543d9ab65:attempt:1:download_pdf('67285b4d-5e93-44ca-b4c0-50d3a6d75034', '4a2019a9-68f9-4cea-81e2-4ee913ffcb21',…)
+04:46:17:   0.34s → pipeline:cc4ff282-f744-4370-8b72-16eeaf312fc7:attempt:1:download_pdf('07a14895-1db8-4185-a758-751e8e23a149', 'e5e8be76-10aa-4e91-8acc-593252e8eb27',…)
+  0.34s → pipeline:cc4ff282-f744-4370-8b72-16eeaf312fc7:attempt:1:download_pdf('07a14895-1db8-4185-a758-751e8e23a149', 'e5e8be76-10aa-4e91-8acc-593252e8eb27',…)
+HTTP Request: GET https://arxiv.org/pdf/1706.03762v7 "HTTP/1.1 200 OK"
+{"stage": "download_pdf", "paper_id": "2af621cb-f391-49ec-a418-330d380b7293", "paper_version_id": "c59cc2db-cb40-43c7-b589-b08ccc95efa1", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:18.129745Z"}
+04:46:18:   1.00s ← pipeline:50aee25b-3a81-4492-b0ca-527a61fa682c:attempt:1:download_pdf ● 'ok'
+  1.00s ← pipeline:50aee25b-3a81-4492-b0ca-527a61fa682c:attempt:1:download_pdf ● 'ok'
+04:46:18:   1.83s → pipeline:c619071f-7f1c-4953-9e2c-2334a8ea7504:attempt:1:download_pdf('332ac3c7-9853-49c7-98b1-110f72a67211', '69a31faf-45c6-4aef-b727-372c44664c52',…) delayed=1.83s
+  1.83s → pipeline:c619071f-7f1c-4953-9e2c-2334a8ea7504:attempt:1:download_pdf('332ac3c7-9853-49c7-98b1-110f72a67211', '69a31faf-45c6-4aef-b727-372c44664c52',…) delayed=1.83s
+HTTP Request: GET https://arxiv.org/pdf/1705.04304v3 "HTTP/1.1 200 OK"
+{"stage": "download_pdf", "paper_id": "d007adfc-ec22-4688-84df-3a07d8882bf6", "paper_version_id": "79b3eeef-7471-4503-87b9-8da37dd87d8a", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:20.333157Z"}
+04:46:20:   3.21s ← pipeline:6270ebfa-be12-49ae-9db9-5f3ef3b15007:attempt:1:download_pdf ● 'ok'
+  3.21s ← pipeline:6270ebfa-be12-49ae-9db9-5f3ef3b15007:attempt:1:download_pdf ● 'ok'
+04:46:20:   2.50s → pipeline:532be419-675b-43b5-b0b2-ba89d89c0fd4:attempt:1:parse_pdf('2af621cb-f391-49ec-a418-330d380b7293', 'c59cc2db-cb40-43c7-b589-b08ccc95efa1',…) delayed=2.50s
+  2.50s → pipeline:532be419-675b-43b5-b0b2-ba89d89c0fd4:attempt:1:parse_pdf('2af621cb-f391-49ec-a418-330d380b7293', 'c59cc2db-cb40-43c7-b589-b08ccc95efa1',…) delayed=2.50s
+{"stage": "parse_pdf", "paper_id": "2af621cb-f391-49ec-a418-330d380b7293", "paper_version_id": "c59cc2db-cb40-43c7-b589-b08ccc95efa1", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:21.986163Z"}
+04:46:21:   1.35s ← pipeline:532be419-675b-43b5-b0b2-ba89d89c0fd4:attempt:1:parse_pdf ● 'ok'
+  1.35s ← pipeline:532be419-675b-43b5-b0b2-ba89d89c0fd4:attempt:1:parse_pdf ● 'ok'
+04:46:22:   2.14s → pipeline:47f78354-6db6-43e5-93eb-510b7b1f08e6:attempt:1:parse_pdf('d007adfc-ec22-4688-84df-3a07d8882bf6', '79b3eeef-7471-4503-87b9-8da37dd87d8a',…) delayed=2.14s
+  2.14s → pipeline:47f78354-6db6-43e5-93eb-510b7b1f08e6:attempt:1:parse_pdf('d007adfc-ec22-4688-84df-3a07d8882bf6', '79b3eeef-7471-4503-87b9-8da37dd87d8a',…) delayed=2.14s
+{"stage": "parse_pdf", "paper_id": "d007adfc-ec22-4688-84df-3a07d8882bf6", "paper_version_id": "79b3eeef-7471-4503-87b9-8da37dd87d8a", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:23.182227Z"}
+04:46:23:   0.71s ← pipeline:47f78354-6db6-43e5-93eb-510b7b1f08e6:attempt:1:parse_pdf ● 'ok'
+  0.71s ← pipeline:47f78354-6db6-43e5-93eb-510b7b1f08e6:attempt:1:parse_pdf ● 'ok'
+HTTP Request: GET https://arxiv.org/pdf/1703.03906v2 "HTTP/1.1 200 OK"
+{"stage": "download_pdf", "paper_id": "67285b4d-5e93-44ca-b4c0-50d3a6d75034", "paper_version_id": "4a2019a9-68f9-4cea-81e2-4ee913ffcb21", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:23.314260Z"}
+04:46:23:   6.18s ← pipeline:a4c8be4f-0d12-4038-8d06-a82543d9ab65:attempt:1:download_pdf ● 'ok'
+  6.18s ← pipeline:a4c8be4f-0d12-4038-8d06-a82543d9ab65:attempt:1:download_pdf ● 'ok'
+04:46:23:   1.69s → pipeline:67b45bc8-9ef0-4116-8687-7833c39fe02e:attempt:1:summarize_paper('2af621cb-f391-49ec-a418-330d380b7293', 'c59cc2db-cb40-43c7-b589-b08ccc95efa1',…) delayed=1.69s
+  1.69s → pipeline:67b45bc8-9ef0-4116-8687-7833c39fe02e:attempt:1:summarize_paper('2af621cb-f391-49ec-a418-330d380b7293', 'c59cc2db-cb40-43c7-b589-b08ccc95efa1',…) delayed=1.69s
+04:46:23:   1.68s → pipeline:9c7a005b-4a3c-4855-9b35-789c88a9cfa9:attempt:1:chunk_paper('2af621cb-f391-49ec-a418-330d380b7293', 'c59cc2db-cb40-43c7-b589-b08ccc95efa1',…) delayed=1.68s
+  1.68s → pipeline:9c7a005b-4a3c-4855-9b35-789c88a9cfa9:attempt:1:chunk_paper('2af621cb-f391-49ec-a418-330d380b7293', 'c59cc2db-cb40-43c7-b589-b08ccc95efa1',…) delayed=1.68s
+HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+HTTP Request: GET https://arxiv.org/pdf/1705.03122v3 "HTTP/1.1 200 OK"
+{"stage": "download_pdf", "paper_id": "25104fc1-0c36-4f74-ace2-9bd38d8acf5c", "paper_version_id": "1eac684c-8059-477f-8f03-c655806958e1", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:26.342736Z"}
+04:46:26:   9.21s ← pipeline:11a63f98-9db5-421c-832f-53c63a810b8c:attempt:1:download_pdf ● 'ok'
+  9.21s ← pipeline:11a63f98-9db5-421c-832f-53c63a810b8c:attempt:1:download_pdf ● 'ok'
+04:46:26:   3.49s → pipeline:40b523ca-3d93-4179-82f6-3359b0cfac6f:attempt:1:summarize_paper('d007adfc-ec22-4688-84df-3a07d8882bf6', '79b3eeef-7471-4503-87b9-8da37dd87d8a',…) delayed=3.49s
+  3.49s → pipeline:40b523ca-3d93-4179-82f6-3359b0cfac6f:attempt:1:summarize_paper('d007adfc-ec22-4688-84df-3a07d8882bf6', '79b3eeef-7471-4503-87b9-8da37dd87d8a',…) delayed=3.49s
+HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+{"task": "summarize", "provider": "deepseek", "model": "deepseek-v4-flash", "cached": false, "input_tokens": 9758, "output_tokens": 374, "estimated_cost_usd": "0.00147084", "latency_ms": 4482, "event": "llm_completion_served", "level": "info", "timestamp": "2026-07-28T20:46:28.163694Z"}
+{"paper_id": "2af621cb-f391-49ec-a418-330d380b7293", "status": "ready", "cached": false, "estimated_cost_usd": "0.00147084", "event": "summary_stored", "level": "info", "timestamp": "2026-07-28T20:46:28.167541Z"}
+{"stage": "summarize_paper", "paper_id": "2af621cb-f391-49ec-a418-330d380b7293", "paper_version_id": "c59cc2db-cb40-43c7-b589-b08ccc95efa1", "outcome": "<mneme.models.artifact.PaperSummary object at 0x78179ed23f80>", "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:28.181384Z"}
+04:46:28:   4.51s ← pipeline:67b45bc8-9ef0-4116-8687-7833c39fe02e:attempt:1:summarize_paper ● 'ok'
+  4.51s ← pipeline:67b45bc8-9ef0-4116-8687-7833c39fe02e:attempt:1:summarize_paper ● 'ok'
+{"paper_id": "2af621cb-f391-49ec-a418-330d380b7293", "chunks": 25, "event": "chunks_stored", "level": "info", "timestamp": "2026-07-28T20:46:28.188788Z"}
+{"stage": "chunk_paper", "paper_id": "2af621cb-f391-49ec-a418-330d380b7293", "paper_version_id": "c59cc2db-cb40-43c7-b589-b08ccc95efa1", "outcome": 25, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:28.198821Z"}
+04:46:28:   4.53s ← pipeline:9c7a005b-4a3c-4855-9b35-789c88a9cfa9:attempt:1:chunk_paper ● 'ok'
+  4.53s ← pipeline:9c7a005b-4a3c-4855-9b35-789c88a9cfa9:attempt:1:chunk_paper ● 'ok'
+04:46:28:   5.50s → pipeline:39096218-fe70-40d5-9361-0fdeba63fb33:attempt:1:chunk_paper('d007adfc-ec22-4688-84df-3a07d8882bf6', '79b3eeef-7471-4503-87b9-8da37dd87d8a',…) delayed=5.50s
+  5.50s → pipeline:39096218-fe70-40d5-9361-0fdeba63fb33:attempt:1:chunk_paper('d007adfc-ec22-4688-84df-3a07d8882bf6', '79b3eeef-7471-4503-87b9-8da37dd87d8a',…) delayed=5.50s
+04:46:28:   5.36s → pipeline:854950d8-fde1-4d61-9861-109f0ff516d1:attempt:1:parse_pdf('67285b4d-5e93-44ca-b4c0-50d3a6d75034', '4a2019a9-68f9-4cea-81e2-4ee913ffcb21',…) delayed=5.36s
+  5.36s → pipeline:854950d8-fde1-4d61-9861-109f0ff516d1:attempt:1:parse_pdf('67285b4d-5e93-44ca-b4c0-50d3a6d75034', '4a2019a9-68f9-4cea-81e2-4ee913ffcb21',…) delayed=5.36s
+{"stage": "parse_pdf", "paper_id": "67285b4d-5e93-44ca-b4c0-50d3a6d75034", "paper_version_id": "4a2019a9-68f9-4cea-81e2-4ee913ffcb21", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:29.433872Z"}
+04:46:29:   0.76s ← pipeline:854950d8-fde1-4d61-9861-109f0ff516d1:attempt:1:parse_pdf ● 'ok'
+  0.76s ← pipeline:854950d8-fde1-4d61-9861-109f0ff516d1:attempt:1:parse_pdf ● 'ok'
+HTTP Request: GET https://arxiv.org/pdf/1703.03130v1 "HTTP/1.1 200 OK"
+04:46:29:   3.58s → pipeline:7aa8d550-ec53-49d6-95dc-b506d804198f:attempt:1:parse_pdf('25104fc1-0c36-4f74-ace2-9bd38d8acf5c', '1eac684c-8059-477f-8f03-c655806958e1',…) delayed=3.58s
+  3.58s → pipeline:7aa8d550-ec53-49d6-95dc-b506d804198f:attempt:1:parse_pdf('25104fc1-0c36-4f74-ace2-9bd38d8acf5c', '1eac684c-8059-477f-8f03-c655806958e1',…) delayed=3.58s
+{"task": "summarize", "provider": "deepseek", "model": "deepseek-v4-flash", "cached": false, "input_tokens": 10079, "output_tokens": 350, "estimated_cost_usd": "0.00150906", "latency_ms": 4196, "event": "llm_completion_served", "level": "info", "timestamp": "2026-07-28T20:46:30.878938Z"}
+{"paper_id": "d007adfc-ec22-4688-84df-3a07d8882bf6", "status": "ready", "cached": false, "estimated_cost_usd": "0.00150906", "event": "summary_stored", "level": "info", "timestamp": "2026-07-28T20:46:30.891245Z"}
+{"stage": "summarize_paper", "paper_id": "d007adfc-ec22-4688-84df-3a07d8882bf6", "paper_version_id": "79b3eeef-7471-4503-87b9-8da37dd87d8a", "outcome": "<mneme.models.artifact.PaperSummary object at 0x78179bb60380>", "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:30.903212Z"}
+04:46:30:   4.23s ← pipeline:40b523ca-3d93-4179-82f6-3359b0cfac6f:attempt:1:summarize_paper ● 'ok'
+  4.23s ← pipeline:40b523ca-3d93-4179-82f6-3359b0cfac6f:attempt:1:summarize_paper ● 'ok'
+{"stage": "download_pdf", "paper_id": "07a14895-1db8-4185-a758-751e8e23a149", "paper_version_id": "e5e8be76-10aa-4e91-8acc-593252e8eb27", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:30.906048Z"}
+04:46:30:  13.77s ← pipeline:cc4ff282-f744-4370-8b72-16eeaf312fc7:attempt:1:download_pdf ● 'ok'
+ 13.77s ← pipeline:cc4ff282-f744-4370-8b72-16eeaf312fc7:attempt:1:download_pdf ● 'ok'
+{"paper_id": "d007adfc-ec22-4688-84df-3a07d8882bf6", "chunks": 27, "event": "chunks_stored", "level": "info", "timestamp": "2026-07-28T20:46:30.908192Z"}
+{"stage": "parse_pdf", "paper_id": "25104fc1-0c36-4f74-ace2-9bd38d8acf5c", "paper_version_id": "1eac684c-8059-477f-8f03-c655806958e1", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:30.909973Z"}
+04:46:30:   0.99s ← pipeline:7aa8d550-ec53-49d6-95dc-b506d804198f:attempt:1:parse_pdf ● 'ok'
+  0.99s ← pipeline:7aa8d550-ec53-49d6-95dc-b506d804198f:attempt:1:parse_pdf ● 'ok'
+{"stage": "chunk_paper", "paper_id": "d007adfc-ec22-4688-84df-3a07d8882bf6", "paper_version_id": "79b3eeef-7471-4503-87b9-8da37dd87d8a", "outcome": 27, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:30.915459Z"}
+04:46:30:   2.24s ← pipeline:39096218-fe70-40d5-9361-0fdeba63fb33:attempt:1:chunk_paper ● 'ok'
+  2.24s ← pipeline:39096218-fe70-40d5-9361-0fdeba63fb33:attempt:1:chunk_paper ● 'ok'
+04:46:31:   3.18s → pipeline:e71be29d-f783-4d2d-8bdb-f5dd30d133d7:attempt:1:embed_chunks('2af621cb-f391-49ec-a418-330d380b7293', 'c59cc2db-cb40-43c7-b589-b08ccc95efa1',…) delayed=3.18s
+  3.18s → pipeline:e71be29d-f783-4d2d-8bdb-f5dd30d133d7:attempt:1:embed_chunks('2af621cb-f391-49ec-a418-330d380b7293', 'c59cc2db-cb40-43c7-b589-b08ccc95efa1',…) delayed=3.18s
+04:46:31:   1.95s → pipeline:5e0bd0b1-a785-4902-877d-87bc0512cce4:attempt:1:summarize_paper('67285b4d-5e93-44ca-b4c0-50d3a6d75034', '4a2019a9-68f9-4cea-81e2-4ee913ffcb21',…) delayed=1.95s
+  1.95s → pipeline:5e0bd0b1-a785-4902-877d-87bc0512cce4:attempt:1:summarize_paper('67285b4d-5e93-44ca-b4c0-50d3a6d75034', '4a2019a9-68f9-4cea-81e2-4ee913ffcb21',…) delayed=1.95s
+04:46:31:   1.95s → pipeline:027f23eb-664b-4c4d-802e-f223b18e5ed9:attempt:1:chunk_paper('67285b4d-5e93-44ca-b4c0-50d3a6d75034', '4a2019a9-68f9-4cea-81e2-4ee913ffcb21',…) delayed=1.95s
+  1.95s → pipeline:027f23eb-664b-4c4d-802e-f223b18e5ed9:attempt:1:chunk_paper('67285b4d-5e93-44ca-b4c0-50d3a6d75034', '4a2019a9-68f9-4cea-81e2-4ee913ffcb21',…) delayed=1.95s
+04:46:31:   0.48s → pipeline:1e5b6883-2530-4aba-b5d5-8b623d3ca891:attempt:1:summarize_paper('25104fc1-0c36-4f74-ace2-9bd38d8acf5c', '1eac684c-8059-477f-8f03-c655806958e1',…)
+  0.48s → pipeline:1e5b6883-2530-4aba-b5d5-8b623d3ca891:attempt:1:summarize_paper('25104fc1-0c36-4f74-ace2-9bd38d8acf5c', '1eac684c-8059-477f-8f03-c655806958e1',…)
+HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+HTTP Request: GET https://arxiv.org/pdf/1703.10722v3 "HTTP/1.1 200 OK"
+{"stage": "download_pdf", "paper_id": "332ac3c7-9853-49c7-98b1-110f72a67211", "paper_version_id": "69a31faf-45c6-4aef-b727-372c44664c52", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:32.621905Z"}
+04:46:32:  13.99s ← pipeline:c619071f-7f1c-4953-9e2c-2334a8ea7504:attempt:1:download_pdf ● 'ok'
+ 13.99s ← pipeline:c619071f-7f1c-4953-9e2c-2334a8ea7504:attempt:1:download_pdf ● 'ok'
+04:46:32:   2.00s → pipeline:6b13de71-8797-4301-894f-14daa3f3dfb3:attempt:1:parse_pdf('07a14895-1db8-4185-a758-751e8e23a149', 'e5e8be76-10aa-4e91-8acc-593252e8eb27',…) delayed=2.00s
+  2.00s → pipeline:6b13de71-8797-4301-894f-14daa3f3dfb3:attempt:1:parse_pdf('07a14895-1db8-4185-a758-751e8e23a149', 'e5e8be76-10aa-4e91-8acc-593252e8eb27',…) delayed=2.00s
+{"model": "BAAI/bge-small-en-v1.5+fastembed-pad1536-v1", "batch_size": 25, "input_tokens": 6526, "estimated_cost_usd": "0", "event": "embedding_batch_completed", "level": "info", "timestamp": "2026-07-28T20:46:34.794276Z"}
+{"task": "summarize", "provider": "deepseek", "model": "deepseek-v4-flash", "cached": false, "input_tokens": 15483, "output_tokens": 310, "estimated_cost_usd": "0.00225442", "latency_ms": 3399, "event": "llm_completion_served", "level": "info", "timestamp": "2026-07-28T20:46:34.797942Z"}
+{"input_hash": "66a933e8c5d0b088c00338d10f45e852782af5b5be04e605057802bc0b1ab0f8", "error": "Response contains no JSON object.", "event": "summary_parse_failed", "level": "warning", "timestamp": "2026-07-28T20:46:34.798097Z"}
+{"paper_id": "25104fc1-0c36-4f74-ace2-9bd38d8acf5c", "status": "partial", "cached": false, "estimated_cost_usd": "0.00225442", "event": "summary_stored", "level": "info", "timestamp": "2026-07-28T20:46:34.799975Z"}
+{"stage": "summarize_paper", "paper_id": "25104fc1-0c36-4f74-ace2-9bd38d8acf5c", "paper_version_id": "1eac684c-8059-477f-8f03-c655806958e1", "outcome": "<mneme.models.artifact.PaperSummary object at 0x7817a48cab40>", "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:34.812327Z"}
+04:46:34:   3.43s ← pipeline:1e5b6883-2530-4aba-b5d5-8b623d3ca891:attempt:1:summarize_paper ● 'ok'
+  3.43s ← pipeline:1e5b6883-2530-4aba-b5d5-8b623d3ca891:attempt:1:summarize_paper ● 'ok'
+{"stage": "parse_pdf", "paper_id": "07a14895-1db8-4185-a758-751e8e23a149", "paper_version_id": "e5e8be76-10aa-4e91-8acc-593252e8eb27", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:34.818745Z"}
+04:46:34:   1.91s ← pipeline:6b13de71-8797-4301-894f-14daa3f3dfb3:attempt:1:parse_pdf ● 'ok'
+  1.91s ← pipeline:6b13de71-8797-4301-894f-14daa3f3dfb3:attempt:1:parse_pdf ● 'ok'
+{"paper_id": "2af621cb-f391-49ec-a418-330d380b7293", "chunks": 25, "event": "chunks_embedded", "level": "info", "timestamp": "2026-07-28T20:46:34.820232Z"}
+{"stage": "embed_chunks", "paper_id": "2af621cb-f391-49ec-a418-330d380b7293", "paper_version_id": "c59cc2db-cb40-43c7-b589-b08ccc95efa1", "outcome": 25, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:34.826713Z"}
+04:46:34:   3.45s ← pipeline:e71be29d-f783-4d2d-8bdb-f5dd30d133d7:attempt:1:embed_chunks ● 'ok'
+  3.45s ← pipeline:e71be29d-f783-4d2d-8bdb-f5dd30d133d7:attempt:1:embed_chunks ● 'ok'
+04:46:35:   4.39s → pipeline:19038743-1e4e-44c8-8a77-505b3ead136c:attempt:1:chunk_paper('25104fc1-0c36-4f74-ace2-9bd38d8acf5c', '1eac684c-8059-477f-8f03-c655806958e1',…) delayed=4.39s
+  4.39s → pipeline:19038743-1e4e-44c8-8a77-505b3ead136c:attempt:1:chunk_paper('25104fc1-0c36-4f74-ace2-9bd38d8acf5c', '1eac684c-8059-477f-8f03-c655806958e1',…) delayed=4.39s
+04:46:35:   4.38s → pipeline:9cd8a95c-468f-4e70-b41e-791a64e12613:attempt:1:embed_chunks('d007adfc-ec22-4688-84df-3a07d8882bf6', '79b3eeef-7471-4503-87b9-8da37dd87d8a',…) delayed=4.38s
+  4.38s → pipeline:9cd8a95c-468f-4e70-b41e-791a64e12613:attempt:1:embed_chunks('d007adfc-ec22-4688-84df-3a07d8882bf6', '79b3eeef-7471-4503-87b9-8da37dd87d8a',…) delayed=4.38s
+04:46:35:   2.68s → pipeline:4bf09db1-5ea7-43e8-a8ab-be0fc46a0f59:attempt:1:parse_pdf('332ac3c7-9853-49c7-98b1-110f72a67211', '69a31faf-45c6-4aef-b727-372c44664c52',…) delayed=2.68s
+  2.68s → pipeline:4bf09db1-5ea7-43e8-a8ab-be0fc46a0f59:attempt:1:parse_pdf('332ac3c7-9853-49c7-98b1-110f72a67211', '69a31faf-45c6-4aef-b727-372c44664c52',…) delayed=2.68s
+{"task": "summarize", "provider": "deepseek", "model": "deepseek-v4-flash", "cached": false, "input_tokens": 8372, "output_tokens": 361, "estimated_cost_usd": "0.00127316", "latency_ms": 5188, "event": "llm_completion_served", "level": "info", "timestamp": "2026-07-28T20:46:36.589415Z"}
+{"paper_id": "67285b4d-5e93-44ca-b4c0-50d3a6d75034", "status": "ready", "cached": false, "estimated_cost_usd": "0.00127316", "event": "summary_stored", "level": "info", "timestamp": "2026-07-28T20:46:36.597410Z"}
+{"paper_id": "25104fc1-0c36-4f74-ace2-9bd38d8acf5c", "chunks": 35, "event": "chunks_stored", "level": "info", "timestamp": "2026-07-28T20:46:36.605477Z"}
+{"paper_id": "67285b4d-5e93-44ca-b4c0-50d3a6d75034", "chunks": 20, "event": "chunks_stored", "level": "info", "timestamp": "2026-07-28T20:46:36.659509Z"}
+{"stage": "summarize_paper", "paper_id": "67285b4d-5e93-44ca-b4c0-50d3a6d75034", "paper_version_id": "4a2019a9-68f9-4cea-81e2-4ee913ffcb21", "outcome": "<mneme.models.artifact.PaperSummary object at 0x78179f1c9c70>", "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:36.664832Z"}
+04:46:36:   5.29s ← pipeline:5e0bd0b1-a785-4902-877d-87bc0512cce4:attempt:1:summarize_paper ● 'ok'
+  5.29s ← pipeline:5e0bd0b1-a785-4902-877d-87bc0512cce4:attempt:1:summarize_paper ● 'ok'
+{"stage": "chunk_paper", "paper_id": "25104fc1-0c36-4f74-ace2-9bd38d8acf5c", "paper_version_id": "1eac684c-8059-477f-8f03-c655806958e1", "outcome": 35, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:36.673772Z"}
+04:46:36:   1.40s ← pipeline:19038743-1e4e-44c8-8a77-505b3ead136c:attempt:1:chunk_paper ● 'ok'
+  1.40s ← pipeline:19038743-1e4e-44c8-8a77-505b3ead136c:attempt:1:chunk_paper ● 'ok'
+{"stage": "chunk_paper", "paper_id": "67285b4d-5e93-44ca-b4c0-50d3a6d75034", "paper_version_id": "4a2019a9-68f9-4cea-81e2-4ee913ffcb21", "outcome": 20, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:36.697714Z"}
+{"stage": "parse_pdf", "paper_id": "332ac3c7-9853-49c7-98b1-110f72a67211", "paper_version_id": "69a31faf-45c6-4aef-b727-372c44664c52", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:36.698863Z"}
+04:46:36:   1.40s ← pipeline:4bf09db1-5ea7-43e8-a8ab-be0fc46a0f59:attempt:1:parse_pdf ● 'ok'
+  1.40s ← pipeline:4bf09db1-5ea7-43e8-a8ab-be0fc46a0f59:attempt:1:parse_pdf ● 'ok'
+04:46:36:   5.33s ← pipeline:027f23eb-664b-4c4d-802e-f223b18e5ed9:attempt:1:chunk_paper ● 'ok'
+  5.33s ← pipeline:027f23eb-664b-4c4d-802e-f223b18e5ed9:attempt:1:chunk_paper ● 'ok'
+04:46:37:   2.27s → pipeline:900ad236-8017-43a3-9db5-7033e9aeed5b:attempt:1:summarize_paper('07a14895-1db8-4185-a758-751e8e23a149', 'e5e8be76-10aa-4e91-8acc-593252e8eb27',…) delayed=2.27s
+  2.27s → pipeline:900ad236-8017-43a3-9db5-7033e9aeed5b:attempt:1:summarize_paper('07a14895-1db8-4185-a758-751e8e23a149', 'e5e8be76-10aa-4e91-8acc-593252e8eb27',…) delayed=2.27s
+04:46:37:   2.27s → pipeline:a2650887-0167-4487-b2e2-09469953d5ff:attempt:1:chunk_paper('07a14895-1db8-4185-a758-751e8e23a149', 'e5e8be76-10aa-4e91-8acc-593252e8eb27',…) delayed=2.27s
+  2.27s → pipeline:a2650887-0167-4487-b2e2-09469953d5ff:attempt:1:chunk_paper('07a14895-1db8-4185-a758-751e8e23a149', 'e5e8be76-10aa-4e91-8acc-593252e8eb27',…) delayed=2.27s
+04:46:37:   0.43s → pipeline:f785c6a7-5057-46d6-84f8-3c11c6d51a09:attempt:1:summarize_paper('332ac3c7-9853-49c7-98b1-110f72a67211', '69a31faf-45c6-4aef-b727-372c44664c52',…)
+  0.43s → pipeline:f785c6a7-5057-46d6-84f8-3c11c6d51a09:attempt:1:summarize_paper('332ac3c7-9853-49c7-98b1-110f72a67211', '69a31faf-45c6-4aef-b727-372c44664c52',…)
+04:46:37:   0.42s → pipeline:c22b68a5-00ca-46be-bea6-ebf5d9a57015:attempt:1:chunk_paper('332ac3c7-9853-49c7-98b1-110f72a67211', '69a31faf-45c6-4aef-b727-372c44664c52',…)
+  0.42s → pipeline:c22b68a5-00ca-46be-bea6-ebf5d9a57015:attempt:1:chunk_paper('332ac3c7-9853-49c7-98b1-110f72a67211', '69a31faf-45c6-4aef-b727-372c44664c52',…)
+{"paper_id": "332ac3c7-9853-49c7-98b1-110f72a67211", "chunks": 11, "event": "chunks_stored", "level": "info", "timestamp": "2026-07-28T20:46:37.159845Z"}
+{"stage": "chunk_paper", "paper_id": "332ac3c7-9853-49c7-98b1-110f72a67211", "paper_version_id": "69a31faf-45c6-4aef-b727-372c44664c52", "outcome": 11, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:37.181226Z"}
+04:46:37:   0.10s ← pipeline:c22b68a5-00ca-46be-bea6-ebf5d9a57015:attempt:1:chunk_paper ● 'ok'
+  0.10s ← pipeline:c22b68a5-00ca-46be-bea6-ebf5d9a57015:attempt:1:chunk_paper ● 'ok'
+HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+{"model": "BAAI/bge-small-en-v1.5+fastembed-pad1536-v1", "batch_size": 27, "input_tokens": 6930, "estimated_cost_usd": "0", "event": "embedding_batch_completed", "level": "info", "timestamp": "2026-07-28T20:46:37.443208Z"}
+{"paper_id": "d007adfc-ec22-4688-84df-3a07d8882bf6", "chunks": 27, "event": "chunks_embedded", "level": "info", "timestamp": "2026-07-28T20:46:37.476254Z"}
+{"stage": "embed_chunks", "paper_id": "d007adfc-ec22-4688-84df-3a07d8882bf6", "paper_version_id": "79b3eeef-7471-4503-87b9-8da37dd87d8a", "outcome": 27, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:37.489453Z"}
+04:46:37:   2.19s ← pipeline:9cd8a95c-468f-4e70-b41e-791a64e12613:attempt:1:embed_chunks ● 'ok'
+  2.19s ← pipeline:9cd8a95c-468f-4e70-b41e-791a64e12613:attempt:1:embed_chunks ● 'ok'
+04:46:37:   0.89s → pipeline:0597d653-3a76-4131-98ba-1a989cea4748:attempt:1:embed_chunks('25104fc1-0c36-4f74-ace2-9bd38d8acf5c', '1eac684c-8059-477f-8f03-c655806958e1',…)
+  0.89s → pipeline:0597d653-3a76-4131-98ba-1a989cea4748:attempt:1:embed_chunks('25104fc1-0c36-4f74-ace2-9bd38d8acf5c', '1eac684c-8059-477f-8f03-c655806958e1',…)
+04:46:37:   0.88s → pipeline:1b4e432f-86f2-43be-bb79-dd9a09df3462:attempt:1:embed_chunks('67285b4d-5e93-44ca-b4c0-50d3a6d75034', '4a2019a9-68f9-4cea-81e2-4ee913ffcb21',…)
+  0.88s → pipeline:1b4e432f-86f2-43be-bb79-dd9a09df3462:attempt:1:embed_chunks('67285b4d-5e93-44ca-b4c0-50d3a6d75034', '4a2019a9-68f9-4cea-81e2-4ee913ffcb21',…)
+{"task": "summarize", "provider": "deepseek", "model": "deepseek-v4-flash", "cached": false, "input_tokens": 4034, "output_tokens": 409, "estimated_cost_usd": "0.00067928", "latency_ms": 4002, "event": "llm_completion_served", "level": "info", "timestamp": "2026-07-28T20:46:41.193802Z"}
+{"paper_id": "332ac3c7-9853-49c7-98b1-110f72a67211", "status": "ready", "cached": false, "estimated_cost_usd": "0.00067928", "event": "summary_stored", "level": "info", "timestamp": "2026-07-28T20:46:41.195986Z"}
+{"stage": "summarize_paper", "paper_id": "332ac3c7-9853-49c7-98b1-110f72a67211", "paper_version_id": "69a31faf-45c6-4aef-b727-372c44664c52", "outcome": "<mneme.models.artifact.PaperSummary object at 0x78179af76bd0>", "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:41.204935Z"}
+04:46:41:   4.11s ← pipeline:f785c6a7-5057-46d6-84f8-3c11c6d51a09:attempt:1:summarize_paper ● 'ok'
+  4.11s ← pipeline:f785c6a7-5057-46d6-84f8-3c11c6d51a09:attempt:1:summarize_paper ● 'ok'
+04:46:41:   4.39s → pipeline:f26241d1-5560-472f-b3e6-7ff525e77f8c:attempt:1:embed_chunks('332ac3c7-9853-49c7-98b1-110f72a67211', '69a31faf-45c6-4aef-b727-372c44664c52',…) delayed=4.39s
+  4.39s → pipeline:f26241d1-5560-472f-b3e6-7ff525e77f8c:attempt:1:embed_chunks('332ac3c7-9853-49c7-98b1-110f72a67211', '69a31faf-45c6-4aef-b727-372c44664c52',…) delayed=4.39s
+04:46:41: recording health: Jul-29 04:46:41 j_complete=26 j_failed=0 j_retried=0 j_ongoing=5 queued=5
+recording health: Jul-29 04:46:41 j_complete=26 j_failed=0 j_retried=0 j_ongoing=5 queued=5
+{"task": "summarize", "provider": "deepseek", "model": "deepseek-v4-flash", "cached": false, "input_tokens": 11141, "output_tokens": 382, "estimated_cost_usd": "0.0016667", "latency_ms": 4504, "event": "llm_completion_served", "level": "info", "timestamp": "2026-07-28T20:46:41.632049Z"}
+{"paper_id": "07a14895-1db8-4185-a758-751e8e23a149", "status": "ready", "cached": false, "estimated_cost_usd": "0.0016667", "event": "summary_stored", "level": "info", "timestamp": "2026-07-28T20:46:41.638707Z"}
+{"paper_id": "07a14895-1db8-4185-a758-751e8e23a149", "chunks": 31, "event": "chunks_stored", "level": "info", "timestamp": "2026-07-28T20:46:41.660939Z"}
+{"stage": "summarize_paper", "paper_id": "07a14895-1db8-4185-a758-751e8e23a149", "paper_version_id": "e5e8be76-10aa-4e91-8acc-593252e8eb27", "outcome": "<mneme.models.artifact.PaperSummary object at 0x78179c7474d0>", "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:41.669789Z"}
+04:46:41:   4.59s ← pipeline:900ad236-8017-43a3-9db5-7033e9aeed5b:attempt:1:summarize_paper ● 'ok'
+  4.59s ← pipeline:900ad236-8017-43a3-9db5-7033e9aeed5b:attempt:1:summarize_paper ● 'ok'
+{"stage": "chunk_paper", "paper_id": "07a14895-1db8-4185-a758-751e8e23a149", "paper_version_id": "e5e8be76-10aa-4e91-8acc-593252e8eb27", "outcome": 31, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:41.691521Z"}
+04:46:41:   4.61s ← pipeline:a2650887-0167-4487-b2e2-09469953d5ff:attempt:1:chunk_paper ● 'ok'
+  4.61s ← pipeline:a2650887-0167-4487-b2e2-09469953d5ff:attempt:1:chunk_paper ● 'ok'
+04:46:42:   0.39s → pipeline:38b656fe-6380-493b-b5a4-7c6e3c5c32a9:attempt:1:embed_chunks('07a14895-1db8-4185-a758-751e8e23a149', 'e5e8be76-10aa-4e91-8acc-593252e8eb27',…)
+  0.39s → pipeline:38b656fe-6380-493b-b5a4-7c6e3c5c32a9:attempt:1:embed_chunks('07a14895-1db8-4185-a758-751e8e23a149', 'e5e8be76-10aa-4e91-8acc-593252e8eb27',…)
+{"model": "BAAI/bge-small-en-v1.5+fastembed-pad1536-v1", "batch_size": 11, "input_tokens": 2256, "estimated_cost_usd": "0", "event": "embedding_batch_completed", "level": "info", "timestamp": "2026-07-28T20:46:42.769147Z"}
+{"paper_id": "332ac3c7-9853-49c7-98b1-110f72a67211", "chunks": 11, "event": "chunks_embedded", "level": "info", "timestamp": "2026-07-28T20:46:42.782930Z"}
+{"stage": "embed_chunks", "paper_id": "332ac3c7-9853-49c7-98b1-110f72a67211", "paper_version_id": "69a31faf-45c6-4aef-b727-372c44664c52", "outcome": 11, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:42.798509Z"}
+04:46:42:   1.22s ← pipeline:f26241d1-5560-472f-b3e6-7ff525e77f8c:attempt:1:embed_chunks ● 'ok'
+  1.22s ← pipeline:f26241d1-5560-472f-b3e6-7ff525e77f8c:attempt:1:embed_chunks ● 'ok'
+{"model": "BAAI/bge-small-en-v1.5+fastembed-pad1536-v1", "batch_size": 20, "input_tokens": 5486, "estimated_cost_usd": "0", "event": "embedding_batch_completed", "level": "info", "timestamp": "2026-07-28T20:46:47.882177Z"}
+{"paper_id": "67285b4d-5e93-44ca-b4c0-50d3a6d75034", "chunks": 20, "event": "chunks_embedded", "level": "info", "timestamp": "2026-07-28T20:46:47.935867Z"}
+{"stage": "embed_chunks", "paper_id": "67285b4d-5e93-44ca-b4c0-50d3a6d75034", "paper_version_id": "4a2019a9-68f9-4cea-81e2-4ee913ffcb21", "outcome": 20, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:47.960335Z"}
+04:46:47:  10.37s ← pipeline:1b4e432f-86f2-43be-bb79-dd9a09df3462:attempt:1:embed_chunks ● 'ok'
+ 10.37s ← pipeline:1b4e432f-86f2-43be-bb79-dd9a09df3462:attempt:1:embed_chunks ● 'ok'
+{"model": "BAAI/bge-small-en-v1.5+fastembed-pad1536-v1", "batch_size": 31, "input_tokens": 8197, "estimated_cost_usd": "0", "event": "embedding_batch_completed", "level": "info", "timestamp": "2026-07-28T20:46:47.989413Z"}
+{"paper_id": "07a14895-1db8-4185-a758-751e8e23a149", "chunks": 31, "event": "chunks_embedded", "level": "info", "timestamp": "2026-07-28T20:46:48.096577Z"}
+{"stage": "embed_chunks", "paper_id": "07a14895-1db8-4185-a758-751e8e23a149", "paper_version_id": "e5e8be76-10aa-4e91-8acc-593252e8eb27", "outcome": 31, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:46:48.109248Z"}
+04:46:48:   6.02s ← pipeline:38b656fe-6380-493b-b5a4-7c6e3c5c32a9:attempt:1:embed_chunks ● 'ok'
+  6.02s ← pipeline:38b656fe-6380-493b-b5a4-7c6e3c5c32a9:attempt:1:embed_chunks ● 'ok'
+04:46:48: shutdown on SIGTERM ◆ 31 jobs complete ◆ 0 failed ◆ 0 retries ◆ 1 ongoing to cancel
+shutdown on SIGTERM ◆ 31 jobs complete ◆ 0 failed ◆ 0 retries ◆ 1 ongoing to cancel
+{"stage": "embed_chunks", "paper_id": "25104fc1-0c36-4f74-ace2-9bd38d8acf5c", "paper_version_id": "1eac684c-8059-477f-8f03-c655806958e1", "event": "ai_stage_crashed", "level": "error", "timestamp": "2026-07-28T20:46:48.557314Z", "exception": "Traceback (most recent call last):\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/tasks/ai_runtime.py\", line 84, in run_ai_stage\n    outcome = await runner(session)\n              ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/tasks/ai_jobs.py\", line 159, in runner\n    embedded = await embed_chunks_stage(\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/pipeline.py\", line 155, in embed_chunks_stage\n    vectors = await embedder.embed_texts([chunk.content for chunk in chunks])\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/embeddings.py\", line 213, in embed_texts\n    result = await self._provider.embed(model=self._model, texts=batch)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/embeddings.py\", line 144, in embed\n    raw_vectors = await asyncio.to_thread(self._embed_sync, texts)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/threads.py\", line 25, in to_thread\n    return await loop.run_in_executor(None, func_call)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nasyncio.exceptions.CancelledError"}
+04:46:48:  10.98s ↻ pipeline:0597d653-3a76-4131-98ba-1a989cea4748:attempt:1:embed_chunks cancelled, will be run again
+ 10.98s ↻ pipeline:0597d653-3a76-4131-98ba-1a989cea4748:attempt:1:embed_chunks cancelled, will be run again
+{"queue": "mneme:jobs:eval:mneme_eval_sr_20260728t204607z_751e0cfa:pair_01", "event": "worker_stopped", "level": "info", "timestamp": "2026-07-28T20:46:48.597609Z"}

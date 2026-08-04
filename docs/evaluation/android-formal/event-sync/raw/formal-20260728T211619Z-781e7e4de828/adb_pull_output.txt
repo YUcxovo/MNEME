@@ -1,0 +1,2 @@
+/sdcard/Android/data/com.mneme.app/files/e4-evaluation/formal_event_sync_measurements.csv: 1 file pulled, 0 skipped. 2.8 MB/s (10042 bytes in 0.003s)
+/sdcard/Android/data/com.mneme.app/files/e4-evaluation/environment.json: 1 file pulled, 0 skipped. 0.0 MB/s (430 bytes in 0.043s)

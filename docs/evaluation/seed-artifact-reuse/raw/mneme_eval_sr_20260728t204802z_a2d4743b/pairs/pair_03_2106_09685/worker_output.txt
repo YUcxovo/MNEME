@@ -1,0 +1,178 @@
+04:51:24: Starting worker for 9 functions: worker_probe, fetch_metadata, download_pdf, parse_pdf, summarize_paper, chunk_paper, embed_chunks, assemble_digest, cron:recover_revision_dispatches
+04:51:24: redis_version=7.0.15 mem_usage=941.64K clients_connected=1 db_keys=0
+{"queue": "mneme:jobs:eval:mneme_eval_sr_20260728t204802z_a2d4743b:pair_03", "event": "worker_started", "level": "info", "timestamp": "2026-07-28T20:51:24.792474Z"}
+04:51:25:   0.50s → cron:recover_revision_dispatches()
+  0.50s → cron:recover_revision_dispatches()
+{"candidates": 0, "dispatched": 0, "event": "dispatch_recovery_completed", "level": "info", "timestamp": "2026-07-28T20:51:25.326060Z"}
+04:51:25:   0.03s ← cron:recover_revision_dispatches ● 0
+  0.03s ← cron:recover_revision_dispatches ● 0
+04:51:32:   0.50s → pipeline:461ea3dd-6e8c-448f-9fab-77b9c490e109:attempt:1:download_pdf('9d92e3cd-6b2f-4dc2-8f9a-4692306ee234', 'd5dffc3a-b393-4668-b994-941a33b59bdd',…)
+  0.50s → pipeline:461ea3dd-6e8c-448f-9fab-77b9c490e109:attempt:1:download_pdf('9d92e3cd-6b2f-4dc2-8f9a-4692306ee234', 'd5dffc3a-b393-4668-b994-941a33b59bdd',…)
+04:51:32:   0.49s → pipeline:0e997248-abfa-4d0d-95f8-0374f44d7aa9:attempt:1:download_pdf('91bc3189-18de-435b-bd2e-fc974bba35ea', 'd70ccf30-6986-4d5c-ba8a-12e560642fbe',…)
+  0.49s → pipeline:0e997248-abfa-4d0d-95f8-0374f44d7aa9:attempt:1:download_pdf('91bc3189-18de-435b-bd2e-fc974bba35ea', 'd70ccf30-6986-4d5c-ba8a-12e560642fbe',…)
+04:51:32:   0.50s → pipeline:f6a0bcc5-319a-4369-b063-9d1a942d8df4:attempt:1:download_pdf('73ed89a9-741b-4a2d-983e-d144c681ca0e', 'ccf14fcf-8880-439b-b28f-f144a5a0b8b0',…)
+  0.50s → pipeline:f6a0bcc5-319a-4369-b063-9d1a942d8df4:attempt:1:download_pdf('73ed89a9-741b-4a2d-983e-d144c681ca0e', 'ccf14fcf-8880-439b-b28f-f144a5a0b8b0',…)
+04:51:32:   0.50s → pipeline:5832dfe3-d7bd-471b-8389-2c7bee605ebd:attempt:1:download_pdf('baf9653d-af34-4f76-b68c-2f3d2bf571ff', 'bc95ee5b-f97d-4abe-8903-f05df2f0de73',…)
+  0.50s → pipeline:5832dfe3-d7bd-471b-8389-2c7bee605ebd:attempt:1:download_pdf('baf9653d-af34-4f76-b68c-2f3d2bf571ff', 'bc95ee5b-f97d-4abe-8903-f05df2f0de73',…)
+04:51:32:   0.50s → pipeline:d3353bb4-437a-4dc5-86e3-41d413840185:attempt:1:download_pdf('c9b22c5a-a0bc-443a-b2e8-eb2726c28514', '7e0e9232-1894-47f4-b621-dd0880f9e570',…)
+  0.50s → pipeline:d3353bb4-437a-4dc5-86e3-41d413840185:attempt:1:download_pdf('c9b22c5a-a0bc-443a-b2e8-eb2726c28514', '7e0e9232-1894-47f4-b621-dd0880f9e570',…)
+HTTP Request: GET https://arxiv.org/pdf/2106.10199v5 "HTTP/1.1 200 OK"
+{"stage": "download_pdf", "paper_id": "91bc3189-18de-435b-bd2e-fc974bba35ea", "paper_version_id": "d70ccf30-6986-4d5c-ba8a-12e560642fbe", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:33.023966Z"}
+04:51:33:   0.71s ← pipeline:0e997248-abfa-4d0d-95f8-0374f44d7aa9:attempt:1:download_pdf ● 'ok'
+  0.71s ← pipeline:0e997248-abfa-4d0d-95f8-0374f44d7aa9:attempt:1:download_pdf ● 'ok'
+04:51:33:   1.49s → pipeline:4c8372d3-a72f-4ee7-bc64-c0dfa7aec662:attempt:1:download_pdf('50113366-11de-4e1e-a487-7338b02c0a8b', '81d85cc0-4f2b-47ff-8d82-8ec27904d914',…) delayed=1.49s
+  1.49s → pipeline:4c8372d3-a72f-4ee7-bc64-c0dfa7aec662:attempt:1:download_pdf('50113366-11de-4e1e-a487-7338b02c0a8b', '81d85cc0-4f2b-47ff-8d82-8ec27904d914',…) delayed=1.49s
+HTTP Request: GET https://arxiv.org/pdf/2106.09685v2 "HTTP/1.1 200 OK"
+{"stage": "download_pdf", "paper_id": "9d92e3cd-6b2f-4dc2-8f9a-4692306ee234", "paper_version_id": "d5dffc3a-b393-4668-b994-941a33b59bdd", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:35.774260Z"}
+04:51:35:   3.46s ← pipeline:461ea3dd-6e8c-448f-9fab-77b9c490e109:attempt:1:download_pdf ● 'ok'
+  3.46s ← pipeline:461ea3dd-6e8c-448f-9fab-77b9c490e109:attempt:1:download_pdf ● 'ok'
+04:51:35:   2.80s → pipeline:147bd162-532b-49f5-973f-d409a9bb4847:attempt:1:parse_pdf('91bc3189-18de-435b-bd2e-fc974bba35ea', 'd70ccf30-6986-4d5c-ba8a-12e560642fbe',…) delayed=2.80s
+  2.80s → pipeline:147bd162-532b-49f5-973f-d409a9bb4847:attempt:1:parse_pdf('91bc3189-18de-435b-bd2e-fc974bba35ea', 'd70ccf30-6986-4d5c-ba8a-12e560642fbe',…) delayed=2.80s
+{"stage": "parse_pdf", "paper_id": "91bc3189-18de-435b-bd2e-fc974bba35ea", "paper_version_id": "d70ccf30-6986-4d5c-ba8a-12e560642fbe", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:36.433776Z"}
+04:51:36:   0.62s ← pipeline:147bd162-532b-49f5-973f-d409a9bb4847:attempt:1:parse_pdf ● 'ok'
+  0.62s ← pipeline:147bd162-532b-49f5-973f-d409a9bb4847:attempt:1:parse_pdf ● 'ok'
+04:51:36:   1.15s → pipeline:3307ad6f-64ee-4247-8101-54b042d61c07:attempt:1:parse_pdf('9d92e3cd-6b2f-4dc2-8f9a-4692306ee234', 'd5dffc3a-b393-4668-b994-941a33b59bdd',…)
+  1.15s → pipeline:3307ad6f-64ee-4247-8101-54b042d61c07:attempt:1:parse_pdf('9d92e3cd-6b2f-4dc2-8f9a-4692306ee234', 'd5dffc3a-b393-4668-b994-941a33b59bdd',…)
+{"stage": "parse_pdf", "paper_id": "9d92e3cd-6b2f-4dc2-8f9a-4692306ee234", "paper_version_id": "d5dffc3a-b393-4668-b994-941a33b59bdd", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:43.615915Z"}
+04:51:43:   6.70s ← pipeline:3307ad6f-64ee-4247-8101-54b042d61c07:attempt:1:parse_pdf ● 'ok'
+  6.70s ← pipeline:3307ad6f-64ee-4247-8101-54b042d61c07:attempt:1:parse_pdf ● 'ok'
+HTTP Request: GET https://arxiv.org/pdf/2106.04647v2 "HTTP/1.1 200 OK"
+04:51:44:   7.67s → pipeline:9bc6cf22-7f40-4331-bfc6-405306e0383b:attempt:1:summarize_paper('91bc3189-18de-435b-bd2e-fc974bba35ea', 'd70ccf30-6986-4d5c-ba8a-12e560642fbe',…) delayed=7.67s
+  7.67s → pipeline:9bc6cf22-7f40-4331-bfc6-405306e0383b:attempt:1:summarize_paper('91bc3189-18de-435b-bd2e-fc974bba35ea', 'd70ccf30-6986-4d5c-ba8a-12e560642fbe',…) delayed=7.67s
+{"stage": "download_pdf", "paper_id": "73ed89a9-741b-4a2d-983e-d144c681ca0e", "paper_version_id": "ccf14fcf-8880-439b-b28f-f144a5a0b8b0", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:44.096696Z"}
+04:51:44:  11.78s ← pipeline:f6a0bcc5-319a-4369-b063-9d1a942d8df4:attempt:1:download_pdf ● 'ok'
+ 11.78s ← pipeline:f6a0bcc5-319a-4369-b063-9d1a942d8df4:attempt:1:download_pdf ● 'ok'
+HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+04:51:44:   8.17s → pipeline:5bb70bd2-98fd-4f91-b55b-0c021b3d8b16:attempt:1:chunk_paper('91bc3189-18de-435b-bd2e-fc974bba35ea', 'd70ccf30-6986-4d5c-ba8a-12e560642fbe',…) delayed=8.17s
+  8.17s → pipeline:5bb70bd2-98fd-4f91-b55b-0c021b3d8b16:attempt:1:chunk_paper('91bc3189-18de-435b-bd2e-fc974bba35ea', 'd70ccf30-6986-4d5c-ba8a-12e560642fbe',…) delayed=8.17s
+HTTP Request: GET https://arxiv.org/pdf/2105.01029v2 "HTTP/1.1 200 OK"
+{"stage": "download_pdf", "paper_id": "baf9653d-af34-4f76-b68c-2f3d2bf571ff", "paper_version_id": "bc95ee5b-f97d-4abe-8903-f05df2f0de73", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:46.839079Z"}
+04:51:46:  14.52s ← pipeline:5832dfe3-d7bd-471b-8389-2c7bee605ebd:attempt:1:download_pdf ● 'ok'
+ 14.52s ← pipeline:5832dfe3-d7bd-471b-8389-2c7bee605ebd:attempt:1:download_pdf ● 'ok'
+04:51:47:   3.49s → pipeline:bf89c0de-a1ed-4da1-b30e-58d7165b0bd9:attempt:1:summarize_paper('9d92e3cd-6b2f-4dc2-8f9a-4692306ee234', 'd5dffc3a-b393-4668-b994-941a33b59bdd',…) delayed=3.49s
+  3.49s → pipeline:bf89c0de-a1ed-4da1-b30e-58d7165b0bd9:attempt:1:summarize_paper('9d92e3cd-6b2f-4dc2-8f9a-4692306ee234', 'd5dffc3a-b393-4668-b994-941a33b59bdd',…) delayed=3.49s
+HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+{"task": "summarize", "provider": "deepseek", "model": "deepseek-v4-flash", "cached": false, "input_tokens": 9454, "output_tokens": 355, "estimated_cost_usd": "0.00142296", "latency_ms": 4465, "event": "llm_completion_served", "level": "info", "timestamp": "2026-07-28T20:51:48.572055Z"}
+{"paper_id": "91bc3189-18de-435b-bd2e-fc974bba35ea", "status": "ready", "cached": false, "estimated_cost_usd": "0.00142296", "event": "summary_stored", "level": "info", "timestamp": "2026-07-28T20:51:48.575011Z"}
+{"stage": "summarize_paper", "paper_id": "91bc3189-18de-435b-bd2e-fc974bba35ea", "paper_version_id": "d70ccf30-6986-4d5c-ba8a-12e560642fbe", "outcome": "<mneme.models.artifact.PaperSummary object at 0x7d1136e5f890>", "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:48.588833Z"}
+04:51:48:   4.49s ← pipeline:9bc6cf22-7f40-4331-bfc6-405306e0383b:attempt:1:summarize_paper ● 'ok'
+  4.49s ← pipeline:9bc6cf22-7f40-4331-bfc6-405306e0383b:attempt:1:summarize_paper ● 'ok'
+{"paper_id": "91bc3189-18de-435b-bd2e-fc974bba35ea", "chunks": 19, "event": "chunks_stored", "level": "info", "timestamp": "2026-07-28T20:51:48.595990Z"}
+04:51:48:   4.99s → pipeline:c2a2ef4f-1acd-42aa-8e46-0325ff065bb4:attempt:1:chunk_paper('9d92e3cd-6b2f-4dc2-8f9a-4692306ee234', 'd5dffc3a-b393-4668-b994-941a33b59bdd',…) delayed=4.99s
+  4.99s → pipeline:c2a2ef4f-1acd-42aa-8e46-0325ff065bb4:attempt:1:chunk_paper('9d92e3cd-6b2f-4dc2-8f9a-4692306ee234', 'd5dffc3a-b393-4668-b994-941a33b59bdd',…) delayed=4.99s
+{"stage": "chunk_paper", "paper_id": "91bc3189-18de-435b-bd2e-fc974bba35ea", "paper_version_id": "d70ccf30-6986-4d5c-ba8a-12e560642fbe", "outcome": 19, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:48.608806Z"}
+04:51:48:   4.01s ← pipeline:5bb70bd2-98fd-4f91-b55b-0c021b3d8b16:attempt:1:chunk_paper ● 'ok'
+  4.01s ← pipeline:5bb70bd2-98fd-4f91-b55b-0c021b3d8b16:attempt:1:chunk_paper ● 'ok'
+04:51:49:   5.01s → pipeline:0607873b-dd3b-49e0-b29e-ff13153ba5e5:attempt:1:parse_pdf('73ed89a9-741b-4a2d-983e-d144c681ca0e', 'ccf14fcf-8880-439b-b28f-f144a5a0b8b0',…) delayed=5.01s
+  5.01s → pipeline:0607873b-dd3b-49e0-b29e-ff13153ba5e5:attempt:1:parse_pdf('73ed89a9-741b-4a2d-983e-d144c681ca0e', 'ccf14fcf-8880-439b-b28f-f144a5a0b8b0',…) delayed=5.01s
+{"task": "summarize", "provider": "deepseek", "model": "deepseek-v4-flash", "cached": false, "input_tokens": 16894, "output_tokens": 333, "estimated_cost_usd": "0.0024584", "latency_ms": 3650, "event": "llm_completion_served", "level": "info", "timestamp": "2026-07-28T20:51:50.764144Z"}
+{"paper_id": "9d92e3cd-6b2f-4dc2-8f9a-4692306ee234", "status": "ready", "cached": false, "estimated_cost_usd": "0.0024584", "event": "summary_stored", "level": "info", "timestamp": "2026-07-28T20:51:50.765942Z"}
+{"stage": "summarize_paper", "paper_id": "9d92e3cd-6b2f-4dc2-8f9a-4692306ee234", "paper_version_id": "d5dffc3a-b393-4668-b994-941a33b59bdd", "outcome": "<mneme.models.artifact.PaperSummary object at 0x7d11465a6a50>", "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:50.779041Z"}
+04:51:50:   3.68s ← pipeline:bf89c0de-a1ed-4da1-b30e-58d7165b0bd9:attempt:1:summarize_paper ● 'ok'
+  3.68s ← pipeline:bf89c0de-a1ed-4da1-b30e-58d7165b0bd9:attempt:1:summarize_paper ● 'ok'
+{"paper_id": "9d92e3cd-6b2f-4dc2-8f9a-4692306ee234", "chunks": 51, "event": "chunks_stored", "level": "info", "timestamp": "2026-07-28T20:51:50.787351Z"}
+{"stage": "parse_pdf", "paper_id": "73ed89a9-741b-4a2d-983e-d144c681ca0e", "paper_version_id": "ccf14fcf-8880-439b-b28f-f144a5a0b8b0", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:50.790612Z"}
+04:51:50:   1.69s ← pipeline:0607873b-dd3b-49e0-b29e-ff13153ba5e5:attempt:1:parse_pdf ● 'ok'
+  1.69s ← pipeline:0607873b-dd3b-49e0-b29e-ff13153ba5e5:attempt:1:parse_pdf ● 'ok'
+{"stage": "chunk_paper", "paper_id": "9d92e3cd-6b2f-4dc2-8f9a-4692306ee234", "paper_version_id": "d5dffc3a-b393-4668-b994-941a33b59bdd", "outcome": 51, "event": "ai_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:50.797006Z"}
+04:51:50:   2.20s ← pipeline:c2a2ef4f-1acd-42aa-8e46-0325ff065bb4:attempt:1:chunk_paper ● 'ok'
+  2.20s ← pipeline:c2a2ef4f-1acd-42aa-8e46-0325ff065bb4:attempt:1:chunk_paper ● 'ok'
+HTTP Request: GET https://arxiv.org/pdf/2104.08691v2 "HTTP/1.1 200 OK"
+{"stage": "download_pdf", "paper_id": "c9b22c5a-a0bc-443a-b2e8-eb2726c28514", "paper_version_id": "7e0e9232-1894-47f4-b621-dd0880f9e570", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:50.947580Z"}
+04:51:50:  18.62s ← pipeline:d3353bb4-437a-4dc5-86e3-41d413840185:attempt:1:download_pdf ● 'ok'
+ 18.62s ← pipeline:d3353bb4-437a-4dc5-86e3-41d413840185:attempt:1:download_pdf ● 'ok'
+04:51:51:   4.43s → pipeline:61df7e50-dd52-42e7-9fe2-7ebd51fe7bfb:attempt:1:parse_pdf('baf9653d-af34-4f76-b68c-2f3d2bf571ff', 'bc95ee5b-f97d-4abe-8903-f05df2f0de73',…) delayed=4.43s
+  4.43s → pipeline:61df7e50-dd52-42e7-9fe2-7ebd51fe7bfb:attempt:1:parse_pdf('baf9653d-af34-4f76-b68c-2f3d2bf571ff', 'bc95ee5b-f97d-4abe-8903-f05df2f0de73',…) delayed=4.43s
+04:51:51:   2.65s → pipeline:e3f971bd-e1ba-4f45-a0af-190852baadd1:attempt:1:embed_chunks('91bc3189-18de-435b-bd2e-fc974bba35ea', 'd70ccf30-6986-4d5c-ba8a-12e560642fbe',…) delayed=2.65s
+  2.65s → pipeline:e3f971bd-e1ba-4f45-a0af-190852baadd1:attempt:1:embed_chunks('91bc3189-18de-435b-bd2e-fc974bba35ea', 'd70ccf30-6986-4d5c-ba8a-12e560642fbe',…) delayed=2.65s
+04:51:51:   0.48s → pipeline:178cd6e0-cb7f-40ed-830a-811b3d6975d7:attempt:1:summarize_paper('73ed89a9-741b-4a2d-983e-d144c681ca0e', 'ccf14fcf-8880-439b-b28f-f144a5a0b8b0',…)
+  0.48s → pipeline:178cd6e0-cb7f-40ed-830a-811b3d6975d7:attempt:1:summarize_paper('73ed89a9-741b-4a2d-983e-d144c681ca0e', 'ccf14fcf-8880-439b-b28f-f144a5a0b8b0',…)
+04:51:51:   0.48s → pipeline:d237c853-fc57-4d58-8a49-b6fa6b9cd3c0:attempt:1:chunk_paper('73ed89a9-741b-4a2d-983e-d144c681ca0e', 'ccf14fcf-8880-439b-b28f-f144a5a0b8b0',…)
+  0.48s → pipeline:d237c853-fc57-4d58-8a49-b6fa6b9cd3c0:attempt:1:chunk_paper('73ed89a9-741b-4a2d-983e-d144c681ca0e', 'ccf14fcf-8880-439b-b28f-f144a5a0b8b0',…)
+{"stage": "parse_pdf", "paper_id": "baf9653d-af34-4f76-b68c-2f3d2bf571ff", "paper_version_id": "bc95ee5b-f97d-4abe-8903-f05df2f0de73", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:53.553865Z"}
+04:51:53:   2.29s ← pipeline:61df7e50-dd52-42e7-9fe2-7ebd51fe7bfb:attempt:1:parse_pdf ● 'ok'
+  2.29s ← pipeline:61df7e50-dd52-42e7-9fe2-7ebd51fe7bfb:attempt:1:parse_pdf ● 'ok'
+HTTP Request: POST https://api.deepseek.com/chat/completions "HTTP/1.1 200 OK"
+04:51:53:   3.14s → pipeline:6dbc6061-7814-4eab-8977-2445383c7d17:attempt:1:embed_chunks('9d92e3cd-6b2f-4dc2-8f9a-4692306ee234', 'd5dffc3a-b393-4668-b994-941a33b59bdd',…) delayed=3.14s
+  3.14s → pipeline:6dbc6061-7814-4eab-8977-2445383c7d17:attempt:1:embed_chunks('9d92e3cd-6b2f-4dc2-8f9a-4692306ee234', 'd5dffc3a-b393-4668-b994-941a33b59bdd',…) delayed=3.14s
+HTTP Request: GET https://arxiv.org/pdf/2103.10385v2 "HTTP/1.1 200 OK"
+{"stage": "download_pdf", "paper_id": "50113366-11de-4e1e-a487-7338b02c0a8b", "paper_version_id": "81d85cc0-4f2b-47ff-8d82-8ec27904d914", "event": "document_stage_completed", "level": "info", "timestamp": "2026-07-28T20:51:54.287827Z"}
+04:51:54:  20.97s ← pipeline:4c8372d3-a72f-4ee7-bc64-c0dfa7aec662:attempt:1:download_pdf ● 'ok'
+ 20.97s ← pipeline:4c8372d3-a72f-4ee7-bc64-c0dfa7aec662:attempt:1:download_pdf ● 'ok'
+04:51:54:   3.50s → pipeline:e807ddb2-5b7b-41e8-8d05-9cee90e41355:attempt:1:parse_pdf('c9b22c5a-a0bc-443a-b2e8-eb2726c28514', '7e0e9232-1894-47f4-b621-dd0880f9e570',…) delayed=3.50s
+  3.50s → pipeline:e807ddb2-5b7b-41e8-8d05-9cee90e41355:attempt:1:parse_pdf('c9b22c5a-a0bc-443a-b2e8-eb2726c28514', '7e0e9232-1894-47f4-b621-dd0880f9e570',…) delayed=3.50s
+04:51:58: shutdown on SIGINT ◆ 15 jobs complete ◆ 0 failed ◆ 0 retries ◆ 5 ongoing to cancel
+shutdown on SIGINT ◆ 15 jobs complete ◆ 0 failed ◆ 0 retries ◆ 5 ongoing to cancel
+04:51:58: shutdown on SIGTERM ◆ 15 jobs complete ◆ 0 failed ◆ 0 retries ◆ 5 ongoing to cancel
+shutdown on SIGTERM ◆ 15 jobs complete ◆ 0 failed ◆ 0 retries ◆ 5 ongoing to cancel
+04:51:58: shutdown on SIGINT ◆ 15 jobs complete ◆ 0 failed ◆ 0 retries ◆ 5 ongoing to cancel
+shutdown on SIGINT ◆ 15 jobs complete ◆ 0 failed ◆ 0 retries ◆ 5 ongoing to cancel
+{"stage": "embed_chunks", "paper_id": "91bc3189-18de-435b-bd2e-fc974bba35ea", "paper_version_id": "d70ccf30-6986-4d5c-ba8a-12e560642fbe", "event": "ai_stage_crashed", "level": "error", "timestamp": "2026-07-28T20:51:58.338402Z", "exception": "Traceback (most recent call last):\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/connection.py\", line 1139, in ensure_connection\n    if await connection.can_read_destructive():\n       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/connection.py\", line 525, in can_read_destructive\n    return await self._parser.can_read_destructive()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/_parsers/hiredis.py\", line 184, in can_read_destructive\n    return await self.read_from_socket()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/_parsers/hiredis.py\", line 191, in read_from_socket\n    raise ConnectionError(SERVER_CLOSED_CONNECTION_ERROR) from None\nredis.exceptions.ConnectionError: Connection closed by server.\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/tasks/ai_runtime.py\", line 84, in run_ai_stage\n    outcome = await runner(session)\n              ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/tasks/ai_jobs.py\", line 159, in runner\n    embedded = await embed_chunks_stage(\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/pipeline.py\", line 155, in embed_chunks_stage\n    vectors = await embedder.embed_texts([chunk.content for chunk in chunks])\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/embeddings.py\", line 223, in embed_texts\n    await self._budget.record_spend(cost)\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/budget.py\", line 71, in record_spend\n    await pipe.execute()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/client.py\", line 1567, in execute\n    conn = await self.connection_pool.get_connection()\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/connection.py\", line 1100, in get_connection\n    await self.ensure_connection(connection)\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/connection.py\", line 1142, in ensure_connection\n    await connection.disconnect()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/connection.py\", line 442, in disconnect\n    await self._writer.wait_closed()  # type: ignore[union-attr]\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/streams.py\", line 364, in wait_closed\n    await self._protocol._get_close_waiter(self)\nasyncio.exceptions.CancelledError"}
+{"stage": "summarize_paper", "paper_id": "73ed89a9-741b-4a2d-983e-d144c681ca0e", "paper_version_id": "ccf14fcf-8880-439b-b28f-f144a5a0b8b0", "event": "ai_stage_crashed", "level": "error", "timestamp": "2026-07-28T20:51:58.351269Z", "exception": "Traceback (most recent call last):\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/tasks/ai_runtime.py\", line 84, in run_ai_stage\n    outcome = await runner(session)\n              ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/tasks/ai_jobs.py\", line 50, in runner\n    summary = await summarize_paper_stage(\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/pipeline.py\", line 74, in summarize_paper_stage\n    result = await summarizer.summarize(title=paper.title, abstract=paper.abstract, body=body)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/summarization.py\", line 113, in summarize\n    completion = await self._llm.complete(request)\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/service.py\", line 67, in complete\n    response = await provider.complete(model=route.model, request=request)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/providers/deepseek.py\", line 50, in complete\n    response = await self._client.chat.completions.create(\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/openai/resources/chat/completions/completions.py\", line 2877, in create\n    return await self._post(\n           ^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/openai/_base_client.py\", line 1931, in post\n    return await self.request(cast_to, opts, stream=stream, stream_cls=stream_cls)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/openai/_base_client.py\", line 1648, in request\n    response = await self._send_request(\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/openai/_client.py\", line 1074, in _send_request\n    response = await self._send_with_auth_retry(request, stream=stream, **kwargs)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/openai/_client.py\", line 1052, in _send_with_auth_retry\n    response = await super()._send_request(request, stream=stream, **kwargs)\n               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/openai/_base_client.py\", line 1571, in _send_request\n    return await self._client.send(request, stream=stream, **kwargs)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpx/_client.py\", line 1643, in send\n    raise exc\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpx/_client.py\", line 1637, in send\n    await response.aread()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpx/_models.py\", line 979, in aread\n    self._content = b\"\".join([part async for part in self.aiter_bytes()])\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpx/_models.py\", line 997, in aiter_bytes\n    async for raw_bytes in self.aiter_raw():\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpx/_models.py\", line 1063, in aiter_raw\n    await self.aclose()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpx/_models.py\", line 1076, in aclose\n    await self.stream.aclose()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpx/_client.py\", line 182, in aclose\n    await self._stream.aclose()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpx/_transports/default.py\", line 276, in aclose\n    await self._httpcore_stream.aclose()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpcore/_async/connection_pool.py\", line 414, in aclose\n    await self._stream.aclose()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpcore/_async/http11.py\", line 348, in aclose\n    await self._connection._response_closed()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpcore/_async/http11.py\", line 239, in _response_closed\n    async with self._state_lock:\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/httpcore/_synchronization.py\", line 77, in __aenter__\n    await self._anyio_lock.acquire()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 1867, in acquire\n    await AsyncIOBackend.cancel_shielded_checkpoint()\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/anyio/_backends/_asyncio.py\", line 2476, in cancel_shielded_checkpoint\n    await sleep(0)\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 656, in sleep\n    await __sleep0()\n  File \"/usr/lib/python3.12/asyncio/tasks.py\", line 650, in __sleep0\n    yield\nasyncio.exceptions.CancelledError"}
+{"stage": "parse_pdf", "paper_id": "c9b22c5a-a0bc-443a-b2e8-eb2726c28514", "paper_version_id": "7e0e9232-1894-47f4-b621-dd0880f9e570", "event": "document_stage_crashed", "level": "error", "timestamp": "2026-07-28T20:51:58.368716Z", "exception": "Traceback (most recent call last):\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/tasks/document_runtime.py\", line 154, in run_document_stage\n    pending = await runner(session, resolved_paper_id, resolved_version_id)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/tasks/document_jobs.py\", line 154, in runner\n    artifact = await asyncio.to_thread(\n               ^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/threads.py\", line 25, in to_thread\n    return await loop.run_in_executor(None, func_call)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nasyncio.exceptions.CancelledError"}
+{"stage": "embed_chunks", "paper_id": "9d92e3cd-6b2f-4dc2-8f9a-4692306ee234", "paper_version_id": "d5dffc3a-b393-4668-b994-941a33b59bdd", "event": "ai_stage_crashed", "level": "error", "timestamp": "2026-07-28T20:51:58.374126Z", "exception": "Traceback (most recent call last):\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/tasks/ai_runtime.py\", line 84, in run_ai_stage\n    outcome = await runner(session)\n              ^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/tasks/ai_jobs.py\", line 159, in runner\n    embedded = await embed_chunks_stage(\n               ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/pipeline.py\", line 155, in embed_chunks_stage\n    vectors = await embedder.embed_texts([chunk.content for chunk in chunks])\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/embeddings.py\", line 213, in embed_texts\n    result = await self._provider.embed(model=self._model, texts=batch)\n             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/src/mneme/ai/embeddings.py\", line 144, in embed\n    raw_vectors = await asyncio.to_thread(self._embed_sync, texts)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/asyncio/threads.py\", line 25, in to_thread\n    return await loop.run_in_executor(None, func_call)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nasyncio.exceptions.CancelledError"}
+04:51:58:   7.11s ↻ pipeline:e3f971bd-e1ba-4f45-a0af-190852baadd1:attempt:1:embed_chunks cancelled, will be run again
+  7.11s ↻ pipeline:e3f971bd-e1ba-4f45-a0af-190852baadd1:attempt:1:embed_chunks cancelled, will be run again
+04:51:58:   7.11s ↻ pipeline:178cd6e0-cb7f-40ed-830a-811b3d6975d7:attempt:1:summarize_paper cancelled, will be run again
+  7.11s ↻ pipeline:178cd6e0-cb7f-40ed-830a-811b3d6975d7:attempt:1:summarize_paper cancelled, will be run again
+04:51:58:   3.94s ↻ pipeline:e807ddb2-5b7b-41e8-8d05-9cee90e41355:attempt:1:parse_pdf cancelled, will be run again
+  3.94s ↻ pipeline:e807ddb2-5b7b-41e8-8d05-9cee90e41355:attempt:1:parse_pdf cancelled, will be run again
+04:51:58:   4.44s ↻ pipeline:6dbc6061-7814-4eab-8977-2445383c7d17:attempt:1:embed_chunks cancelled, will be run again
+  4.44s ↻ pipeline:6dbc6061-7814-4eab-8977-2445383c7d17:attempt:1:embed_chunks cancelled, will be run again
+Traceback (most recent call last):
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/connection.py", line 1139, in ensure_connection
+    if await connection.can_read_destructive():
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/connection.py", line 525, in can_read_destructive
+    return await self._parser.can_read_destructive()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/_parsers/hiredis.py", line 184, in can_read_destructive
+    return await self.read_from_socket()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/_parsers/hiredis.py", line 191, in read_from_socket
+    raise ConnectionError(SERVER_CLOSED_CONNECTION_ERROR) from None
+redis.exceptions.ConnectionError: Connection closed by server.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/bin/arq", line 10, in <module>
+    sys.exit(cli())
+             ^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/click/core.py", line 1569, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/click/core.py", line 1490, in main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/click/core.py", line 1353, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/click/core.py", line 907, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/arq/cli.py", line 54, in cli
+    run_worker(worker_settings_, **kwargs)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/arq/worker.py", line 899, in run_worker
+    worker.run()
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/arq/worker.py", line 318, in run
+    self.loop.run_until_complete(self.close())
+  File "/usr/lib/python3.12/asyncio/base_events.py", line 687, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/arq/worker.py", line 873, in close
+    await asyncio.gather(*self.tasks.values())
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/arq/worker.py", line 667, in run_job
+    await asyncio.shield(
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/arq/worker.py", line 711, in finish_job
+    await tr.execute()
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/client.py", line 1567, in execute
+    conn = await self.connection_pool.get_connection()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/connection.py", line 1100, in get_connection
+    await self.ensure_connection(connection)
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/connection.py", line 1143, in ensure_connection
+    await connection.connect()
+  File "/home/why/Project/ece441/mid_report/MNEME-e4-formal/backend/.venv/lib/python3.12/site-packages/redis/asyncio/connection.py", line 298, in connect
+    raise ConnectionError(self._error_message(e))
+redis.exceptions.ConnectionError: Error 111 connecting to 127.0.0.1:6383. Connect call failed ('127.0.0.1', 6383).
