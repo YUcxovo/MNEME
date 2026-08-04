@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added
 
+- Added a bounded Q&A citation-correction pass: answers with invalid or
+  unsupported citations trigger at most one corrective regeneration constrained
+  to the verified evidence, still-failing answers return an explicit unresolved
+  state, and responses report citation resolution plus model-call accounting.
 - Added revision-safe source provenance for summary key claims: deterministic
   post-generation matching against the exact revision's stored chunks, explicit
   unmatched states, provenance recomputation on chunk replacement, and additive

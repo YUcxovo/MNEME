@@ -191,6 +191,7 @@ async def evaluate_case(
         source_match_status=grounded.source_match_status,
         verified_citations=len(grounded.citations),
         completion=grounded.completion,
+        all_completions=grounded.completions,
         query_embedding_cost=sum(embedding_spend, start=Decimal(0)),
         pipeline_latency_ms=pipeline_latency_ms,
     )

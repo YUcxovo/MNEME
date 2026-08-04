@@ -153,6 +153,7 @@ class RagCaseOutcome(BaseModel):
     source_match_status: QaSourceMatchStatus | None = None
     verified_citations: int = Field(default=0, ge=0)
     completion: CompletionResult | None = None
+    all_completions: tuple[CompletionResult, ...] = ()
     query_embedding_cost: Decimal = Field(default=Decimal(0), ge=Decimal(0))
     pipeline_latency_ms: int = Field(default=0, ge=0)
 
@@ -271,8 +272,17 @@ class RagEvaluationHarness:
             outcome = await self._answer_fn(fixture)
             completion = outcome.completion
             answerable = not fixture.expect_refusal
-            generation_cost = completion.estimated_cost if completion else Decimal(0)
-            cached = completion.cached if completion else False
+            # A corrected answer carries two completions; cost accounting
+            # covers every model call behind the final answer.
+            billed = outcome.all_completions or ((completion,) if completion is not None else ())
+            generation_cost = sum((item.estimated_cost for item in billed), start=Decimal(0))
+            cached = all(item.cached for item in billed) if billed else False
+            # Incremental spend charges only the calls that actually hit a
+            # provider this run; a cached first pass followed by a live
+            # correction bills the correction alone.
+            live_generation_cost = sum(
+                (item.estimated_cost for item in billed if not item.cached), start=Decimal(0)
+            )
             case = RagCaseResult(
                 fixture_id=fixture.fixture_id,
                 answer=outcome.answer,
@@ -291,14 +301,13 @@ class RagEvaluationHarness:
                 ),
                 source_match_status=outcome.source_match_status,
                 verified_citations=outcome.verified_citations,
-                generation_input_tokens=completion.usage.input_tokens if completion else 0,
-                generation_output_tokens=completion.usage.output_tokens if completion else 0,
+                generation_input_tokens=sum(item.usage.input_tokens for item in billed),
+                generation_output_tokens=sum(item.usage.output_tokens for item in billed),
                 generation_cost=generation_cost,
-                generation_latency_ms=completion.latency_ms if completion else 0,
+                generation_latency_ms=sum(item.latency_ms for item in billed),
                 cached=cached,
                 query_embedding_cost=outcome.query_embedding_cost,
-                incremental_cost=outcome.query_embedding_cost
-                + (Decimal(0) if cached else generation_cost),
+                incremental_cost=outcome.query_embedding_cost + live_generation_cost,
                 pipeline_latency_ms=outcome.pipeline_latency_ms,
             )
             cases.append(case)

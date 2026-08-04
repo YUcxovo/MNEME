@@ -12,20 +12,21 @@ import re
 import structlog
 from pydantic import BaseModel, ConfigDict, Field
 
-from mneme.ai.prompts import build_qa_request
+from mneme.ai.prompts import build_qa_correction_request, build_qa_request
 from mneme.ai.retrieval import RetrievedChunk
 from mneme.ai.service import LLMService
 from mneme.ai.types import CompletionResult
-from mneme.models.qa import QaSourceMatchStatus
+from mneme.models.qa import QaCitationResolution, QaSourceMatchStatus
 
 logger = structlog.get_logger(__name__)
 
 REFUSAL_ANSWER = "The paper does not contain enough evidence to answer this question."
+UNRESOLVED_ANSWER = "The generated answer could not be verified against this paper's evidence."
 _INSUFFICIENT_MARKER = "INSUFFICIENT_EVIDENCE"
 
 _WORD = re.compile(r"[a-z0-9]+")
 _CITATION = re.compile(r"\[(\d+)\]")
-_CLAIM_BOUNDARY = re.compile(r"(?<=[.!?])\s+|\n+")
+_CLAIM_BOUNDARY = re.compile(r"(?<=[.!?;])\s+|\n+")
 _STOPWORDS = frozenset(
     [
         "a",
@@ -84,6 +85,7 @@ _STOPWORDS = frozenset(
 _VECTOR_WEIGHT = 0.7
 _LEXICAL_WEIGHT = 0.3
 _SOURCE_MATCH_MIN_OVERLAP = 0.3
+_LABEL_MAX_CONTENT_WORDS = 2
 
 
 def content_words(text: str) -> set[str]:
@@ -162,14 +164,34 @@ class AnswerCitation(BaseModel):
 
 
 class GroundedAnswer(BaseModel):
-    """The final grounded answer with verification results and telemetry."""
+    """The final grounded answer with verification results and telemetry.
+
+    ``completions`` records every model call behind the final answer (at
+    most two: the first generation plus one bounded correction), so cost
+    and token accounting cover the whole exchange, not only the last call.
+    """
 
     model_config = ConfigDict(frozen=True)
 
     answer: str
     citations: tuple[AnswerCitation, ...]
     source_match_status: QaSourceMatchStatus
-    completion: CompletionResult | None = None
+    citation_resolution: QaCitationResolution = QaCitationResolution.NOT_APPLICABLE
+    completions: tuple[CompletionResult, ...] = ()
+
+    @property
+    def completion(self) -> CompletionResult | None:
+        """The completion that produced the final answer text."""
+        return self.completions[-1] if self.completions else None
+
+    @property
+    def model_calls(self) -> int:
+        """How many live provider calls this answer consumed.
+
+        Cache hits are excluded: an identical re-ask served entirely from
+        the completion cache truthfully reports zero model calls.
+        """
+        return sum(1 for item in self.completions if not item.cached)
 
 
 def verify_citations(
@@ -216,6 +238,64 @@ def verify_citations(
     return tuple(citations), status
 
 
+def has_citation_defects(
+    answer: str,
+    citations: tuple[AnswerCitation, ...],
+    status: QaSourceMatchStatus,
+    evidence: list[RetrievedChunk],
+) -> bool:
+    """Whether an answer violates the citation contract in any way.
+
+    Defects are markers pointing outside the evidence list, an answer with
+    no resolvable citation at all, any cited claim whose words are not
+    supported by its cited chunk, or any substantive segment carrying no
+    valid marker; the frozen contract requires every claim to cite its
+    evidence, so an uncited sentence next to a cited one is a defect even
+    though the cited one verifies.
+    """
+    markers = {int(match) for match in _CITATION.findall(answer)}
+    if any(marker < 1 or marker > len(evidence) for marker in markers):
+        return True
+    if not citations:
+        return True
+    valid_markers = {citation.marker for citation in citations}
+    chunk_words = {citation.marker: content_words(citation.chunk.content) for citation in citations}
+    for segment in _CLAIM_BOUNDARY.split(answer):
+        stripped = segment.strip()
+        if not stripped:
+            continue
+        segment_words = content_words(_CITATION.sub("", stripped))
+        if not segment_words:
+            continue
+        if stripped.endswith(":") and len(segment_words) <= _LABEL_MAX_CONTENT_WORDS:
+            # Only short colon-terminated headers ("Key finding:") count as
+            # structural labels; a longer colon-ended statement is still a
+            # claim, so an assertion cannot dress up as a label to skip
+            # citation checking.
+            continue
+        segment_markers = {int(match) for match in _CITATION.findall(stripped)} & valid_markers
+        if not segment_markers:
+            return True
+        # Each segment must be supported by the chunks it cites itself;
+        # grouping segments by shared marker would let a supported sentence
+        # mask an unsupported one citing the same evidence.
+        cited = set().union(*(chunk_words[marker] for marker in segment_markers))
+        if len(segment_words & cited) / len(segment_words) < _SOURCE_MATCH_MIN_OVERLAP:
+            return True
+    return status is not QaSourceMatchStatus.MATCHED
+
+
+def _clean_answer_text(raw: str) -> str | None:
+    """Strip refusal markers from a completion; ``None`` means a refusal."""
+    text = raw.strip()
+    if not text or text == _INSUFFICIENT_MARKER:
+        return None
+    text = "\n".join(
+        line for line in text.splitlines() if line.strip() != _INSUFFICIENT_MARKER
+    ).strip()
+    return text or None
+
+
 class GroundedAnswerService:
     """Generate a citation-verified answer from reranked evidence."""
 
@@ -233,7 +313,14 @@ class GroundedAnswerService:
         self._max_output_tokens = max_output_tokens
 
     async def answer(self, *, question: str, chunks: list[RetrievedChunk]) -> GroundedAnswer:
-        """Answer from retrieved chunks, refusing when evidence is too weak."""
+        """Answer from retrieved chunks, refusing when evidence is too weak.
+
+        A first answer whose citations all resolve to the evidence returns
+        without another model call. Any citation defect triggers exactly one
+        corrective regeneration constrained to the same evidence bundle; if
+        verification still fails, the result is an explicit unresolved state
+        rather than an answer with unsupported citations.
+        """
         evidence = rerank(question, chunks, top_n=self._rerank_top_n)
         if not evidence or evidence[0].score < self._min_evidence_score:
             logger.info(
@@ -247,41 +334,90 @@ class GroundedAnswerService:
                 source_match_status=QaSourceMatchStatus.INSUFFICIENT_EVIDENCE,
             )
 
-        request = build_qa_request(
-            question=question,
-            evidence=[_render_evidence(chunk) for chunk in evidence],
-            max_output_tokens=self._max_output_tokens,
-        )
-        completion = await self._llm.complete(request)
-        text = completion.text.strip()
-        if not text or text == _INSUFFICIENT_MARKER:
-            return GroundedAnswer(
-                answer=REFUSAL_ANSWER,
-                citations=(),
-                source_match_status=QaSourceMatchStatus.INSUFFICIENT_EVIDENCE,
-                completion=completion,
+        rendered = [_render_evidence(chunk) for chunk in evidence]
+        completion = await self._llm.complete(
+            build_qa_request(
+                question=question,
+                evidence=rendered,
+                max_output_tokens=self._max_output_tokens,
             )
-        text = "\n".join(
-            line for line in text.splitlines() if line.strip() != _INSUFFICIENT_MARKER
-        ).strip()
-        if not text:
+        )
+        text = _clean_answer_text(completion.text)
+        if text is None:
             return GroundedAnswer(
                 answer=REFUSAL_ANSWER,
                 citations=(),
                 source_match_status=QaSourceMatchStatus.INSUFFICIENT_EVIDENCE,
-                completion=completion,
+                completions=(completion,),
             )
 
         citations, status = verify_citations(text, evidence)
-        logger.info(
-            "qa_answer_generated",
-            citations=len(citations),
-            source_match_status=status.value,
-            cached=completion.cached,
+        if not has_citation_defects(text, citations, status, evidence):
+            logger.info(
+                "qa_answer_generated",
+                citations=len(citations),
+                source_match_status=status.value,
+                citation_resolution=QaCitationResolution.VERIFIED.value,
+                cached=completion.cached,
+            )
+            return GroundedAnswer(
+                answer=text,
+                citations=citations,
+                source_match_status=status,
+                citation_resolution=QaCitationResolution.VERIFIED,
+                completions=(completion,),
+            )
+
+        correction = await self._llm.complete(
+            build_qa_correction_request(
+                question=question,
+                evidence=rendered,
+                previous_answer=text,
+                max_output_tokens=self._max_output_tokens,
+            )
+        )
+        completions = (completion, correction)
+        corrected_text = _clean_answer_text(correction.text)
+        if corrected_text is None:
+            logger.info(
+                "qa_correction_refused",
+                cached=correction.cached,
+            )
+            return GroundedAnswer(
+                answer=REFUSAL_ANSWER,
+                citations=(),
+                source_match_status=QaSourceMatchStatus.INSUFFICIENT_EVIDENCE,
+                citation_resolution=QaCitationResolution.CORRECTED,
+                completions=completions,
+            )
+
+        corrected_citations, corrected_status = verify_citations(corrected_text, evidence)
+        if not has_citation_defects(
+            corrected_text, corrected_citations, corrected_status, evidence
+        ):
+            logger.info(
+                "qa_answer_corrected",
+                citations=len(corrected_citations),
+                source_match_status=corrected_status.value,
+                cached=correction.cached,
+            )
+            return GroundedAnswer(
+                answer=corrected_text,
+                citations=corrected_citations,
+                source_match_status=corrected_status,
+                citation_resolution=QaCitationResolution.CORRECTED,
+                completions=completions,
+            )
+
+        logger.warning(
+            "qa_answer_unresolved",
+            first_status=status.value,
+            corrected_status=corrected_status.value,
         )
         return GroundedAnswer(
-            answer=text,
-            citations=citations,
-            source_match_status=status,
-            completion=completion,
+            answer=UNRESOLVED_ANSWER,
+            citations=(),
+            source_match_status=QaSourceMatchStatus.INSUFFICIENT_EVIDENCE,
+            citation_resolution=QaCitationResolution.UNRESOLVED,
+            completions=completions,
         )

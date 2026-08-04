@@ -41,6 +41,23 @@ class QaSourceMatchStatus(StrEnum):
     INSUFFICIENT_EVIDENCE = "insufficient_evidence"
 
 
+class QaCitationResolution(StrEnum):
+    """How an answer's citation contract was resolved.
+
+    ``VERIFIED`` answers passed verification on the first generation;
+    ``CORRECTED`` answers passed (or honestly refused) after the single
+    bounded regeneration; ``UNRESOLVED`` answers failed verification twice
+    and are returned as an explicit insufficient state instead of retaining
+    unsupported citations. Refusals and weak-evidence short-circuits carry
+    ``NOT_APPLICABLE``.
+    """
+
+    VERIFIED = "verified"
+    CORRECTED = "corrected"
+    UNRESOLVED = "unresolved"
+    NOT_APPLICABLE = "not_applicable"
+
+
 class QaConversation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     """A conversation explicitly scoped to one paper."""
 
@@ -87,6 +104,10 @@ class QaMessage(UUIDPrimaryKeyMixin, Base):
             "latency_ms IS NULL OR latency_ms >= 0",
             name="ck_qa_messages_latency_non_negative",
         ),
+        CheckConstraint(
+            "model_calls IS NULL OR model_calls >= 0",
+            name="ck_qa_messages_model_calls_non_negative",
+        ),
     )
 
     conversation_id: Mapped[UUID] = mapped_column(
@@ -117,6 +138,17 @@ class QaMessage(UUIDPrimaryKeyMixin, Base):
         ),
         nullable=True,
     )
+    citation_resolution: Mapped[QaCitationResolution | None] = mapped_column(
+        Enum(
+            QaCitationResolution,
+            name="qa_citation_resolution",
+            native_enum=False,
+            create_constraint=True,
+            values_callable=lambda values: [item.value for item in values],
+        ),
+        nullable=True,
+    )
+    model_calls: Mapped[int | None] = mapped_column(Integer, nullable=True)
     provider: Mapped[str | None] = mapped_column(String(100), nullable=True)
     model_snapshot: Mapped[str | None] = mapped_column(String(200), nullable=True)
     prompt_version: Mapped[str | None] = mapped_column(String(100), nullable=True)

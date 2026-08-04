@@ -1,0 +1,536 @@
+"""Bounded Q&A citation correction: pass-through, one retry, explicit unresolved."""
+
+import asyncio
+from decimal import Decimal
+from typing import cast
+from uuid import uuid4
+
+import pytest
+from conftest import FakeRedis
+from redis.asyncio import Redis
+
+from mneme.ai.budget import BudgetGuard
+from mneme.ai.cache import LLMCache
+from mneme.ai.evaluation.fixtures import QAFixture
+from mneme.ai.evaluation.harness import RagCaseResult
+from mneme.ai.prompts import (
+    QA_CORRECTION_PROMPT_VERSION,
+    QA_PROMPT_VERSION,
+    build_qa_correction_request,
+    build_qa_request,
+)
+from mneme.ai.providers import LLMProvider
+from mneme.ai.providers.fake import FakeLLMProvider
+from mneme.ai.qa import (
+    REFUSAL_ANSWER,
+    UNRESOLVED_ANSWER,
+    GroundedAnswerService,
+    _render_evidence,
+)
+from mneme.ai.retrieval import RetrievedChunk
+from mneme.ai.routing import ModelRouter
+from mneme.ai.service import LLMService
+from mneme.ai.types import AITask, CompletionResult, ProviderName
+from mneme.models.qa import QaCitationResolution, QaSourceMatchStatus
+
+PAPER_ID = uuid4()
+QUESTION = "How does the attention mechanism replace recurrence?"
+
+SUPPORTED_ANSWER = "Multi-head attention replaces recurrence with parallel heads [1]."
+UNSUPPORTED_ANSWER = "The model was trained on seventeen proprietary datasets [1]."
+INVALID_MARKER_ANSWER = "Attention replaces recurrence entirely [7]."
+
+
+def _chunk(index: int, content: str, score: float) -> RetrievedChunk:
+    return RetrievedChunk(
+        chunk_id=uuid4(),
+        paper_id=PAPER_ID,
+        chunk_index=index,
+        section_title=f"Section {index}",
+        content=content,
+        score=score,
+    )
+
+
+def _evidence() -> list[RetrievedChunk]:
+    return [
+        _chunk(0, "Multi-head attention replaces recurrence with parallel attention heads.", 0.9),
+        _chunk(1, "Positional encodings inject order information into the model.", 0.8),
+    ]
+
+
+def _service(provider: FakeLLMProvider) -> GroundedAnswerService:
+    redis = cast(Redis, FakeRedis())
+    llm = LLMService(
+        router=ModelRouter({AITask.SUMMARIZE: "claude-haiku-4-5", AITask.QA: "claude-haiku-4-5"}),
+        providers={ProviderName.ANTHROPIC: cast(LLMProvider, provider)},
+        cache=LLMCache(
+            redis, enabled=True, ttl_seconds={AITask.SUMMARIZE: 604800, AITask.QA: 86400}
+        ),
+        budget=BudgetGuard(redis, daily_cap_usd=Decimal("5")),
+    )
+    return GroundedAnswerService(llm, rerank_top_n=3, min_evidence_score=0.2, max_output_tokens=256)
+
+
+def _prompts(first_answer: str) -> tuple[str, str]:
+    """The exact first-pass and correction user messages for the fixed evidence."""
+    evidence = [_render_evidence(chunk) for chunk in _evidence()]
+    first = (
+        build_qa_request(question=QUESTION, evidence=evidence, max_output_tokens=256)
+        .messages[0]
+        .content
+    )
+    correction = (
+        build_qa_correction_request(
+            question=QUESTION,
+            evidence=evidence,
+            previous_answer=first_answer,
+            max_output_tokens=256,
+        )
+        .messages[0]
+        .content
+    )
+    return first, correction
+
+
+def _answer(provider: FakeLLMProvider):
+    return asyncio.run(_service(provider).answer(question=QUESTION, chunks=_evidence()))
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_valid_first_answer_returns_without_second_model_call() -> None:
+    first_prompt, _ = _prompts("unused")
+    provider = FakeLLMProvider(responses={first_prompt: SUPPORTED_ANSWER})
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.VERIFIED
+    assert grounded.source_match_status is QaSourceMatchStatus.MATCHED
+    assert grounded.model_calls == 1
+    assert len(provider.calls) == 1
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_invalid_marker_triggers_exactly_one_correction() -> None:
+    first_prompt, correction_prompt = _prompts(INVALID_MARKER_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: INVALID_MARKER_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert grounded.source_match_status is QaSourceMatchStatus.MATCHED
+    assert grounded.model_calls == 2
+    assert len(provider.calls) == 2
+    assert provider.calls[1][1].prompt_version == QA_CORRECTION_PROMPT_VERSION
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_unsupported_citation_triggers_correction() -> None:
+    first_prompt, correction_prompt = _prompts(UNSUPPORTED_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: UNSUPPORTED_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert grounded.model_calls == 2
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_failed_correction_returns_explicit_unresolved_state() -> None:
+    first_prompt, correction_prompt = _prompts(UNSUPPORTED_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: UNSUPPORTED_ANSWER,
+            correction_prompt: INVALID_MARKER_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == UNRESOLVED_ANSWER
+    assert grounded.citations == ()
+    assert grounded.citation_resolution is QaCitationResolution.UNRESOLVED
+    assert grounded.source_match_status is QaSourceMatchStatus.INSUFFICIENT_EVIDENCE
+    assert grounded.model_calls == 2
+    assert len(provider.calls) == 2, "the correction pass is bounded to one attempt"
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_correction_refusal_is_an_honest_insufficient_state() -> None:
+    first_prompt, correction_prompt = _prompts(UNSUPPORTED_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: UNSUPPORTED_ANSWER,
+            correction_prompt: "INSUFFICIENT_EVIDENCE",
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == REFUSAL_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert grounded.source_match_status is QaSourceMatchStatus.INSUFFICIENT_EVIDENCE
+    assert grounded.model_calls == 2
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_first_pass_refusal_never_triggers_correction() -> None:
+    first_prompt, _ = _prompts("unused")
+    provider = FakeLLMProvider(responses={first_prompt: "INSUFFICIENT_EVIDENCE"})
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == REFUSAL_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.NOT_APPLICABLE
+    assert grounded.model_calls == 1
+    assert len(provider.calls) == 1
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_weak_evidence_refusal_spends_no_model_calls() -> None:
+    provider = FakeLLMProvider()
+    service = _service(provider)
+
+    grounded = asyncio.run(
+        service.answer(
+            question=QUESTION,
+            chunks=[_chunk(0, "unrelated words entirely", 0.05)],
+        )
+    )
+
+    assert grounded.answer == REFUSAL_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.NOT_APPLICABLE
+    assert grounded.model_calls == 0
+    assert provider.calls == []
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_correction_cost_accounting_covers_both_calls() -> None:
+    first_prompt, correction_prompt = _prompts(UNSUPPORTED_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: UNSUPPORTED_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert len(grounded.completions) == 2
+    total = sum(item.estimated_cost for item in grounded.completions)
+    assert total > grounded.completions[-1].estimated_cost >= Decimal(0)
+    assert grounded.completion is grounded.completions[-1]
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_corrected_answers_are_served_from_cache_on_identical_reask() -> None:
+    first_prompt, correction_prompt = _prompts(UNSUPPORTED_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: UNSUPPORTED_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+    service = _service(provider)
+
+    first_run = asyncio.run(service.answer(question=QUESTION, chunks=_evidence()))
+    second_run = asyncio.run(service.answer(question=QUESTION, chunks=_evidence()))
+
+    assert first_run.answer == second_run.answer == SUPPORTED_ANSWER
+    assert second_run.citation_resolution is QaCitationResolution.CORRECTED
+    assert len(provider.calls) == 2, "the identical re-ask is served from cache"
+    assert all(item.cached for item in second_run.completions)
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_correction_request_is_deterministic_and_versioned() -> None:
+    evidence = [_render_evidence(chunk) for chunk in _evidence()]
+    request = build_qa_correction_request(
+        question=QUESTION,
+        evidence=evidence,
+        previous_answer=UNSUPPORTED_ANSWER,
+        max_output_tokens=256,
+    )
+
+    assert request.prompt_version == QA_CORRECTION_PROMPT_VERSION
+    assert request.prompt_version != QA_PROMPT_VERSION
+    assert request.task is AITask.QA
+    first = build_qa_request(question=QUESTION, evidence=evidence, max_output_tokens=256)
+    assert request.system == first.system
+    assert UNSUPPORTED_ANSWER in request.messages[0].content
+    assert request.messages[0].content.startswith("Evidence excerpts:")
+    again = build_qa_correction_request(
+        question=QUESTION,
+        evidence=evidence,
+        previous_answer=UNSUPPORTED_ANSWER,
+        max_output_tokens=256,
+    )
+    assert request == again
+
+
+CITED_PLUS_UNCITED_ANSWER = (
+    "Multi-head attention replaces recurrence with parallel heads [1]. "
+    "The approach also generalizes to image patches."
+)
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_uncited_substantive_segment_is_a_defect_and_triggers_correction() -> None:
+    """A supported cited sentence plus an independent uncited one is not verified."""
+    first_prompt, correction_prompt = _prompts(CITED_PLUS_UNCITED_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: CITED_PLUS_UNCITED_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert grounded.model_calls == 2
+
+
+def _harness_completion(*, cached: bool, cost: str, latency_ms: int) -> "CompletionResult":
+    from mneme.ai.types import CompletionResult, TokenUsage
+
+    return CompletionResult(
+        text="answer [1]",
+        task=AITask.QA,
+        provider=ProviderName.ANTHROPIC,
+        model="claude-haiku-4-5",
+        prompt_version="qa-v2",
+        usage=TokenUsage(input_tokens=100, output_tokens=50),
+        estimated_cost=Decimal(cost),
+        latency_ms=latency_ms,
+        cached=cached,
+    )
+
+
+def _harness_fixture() -> "QAFixture":
+    from mneme.ai.evaluation.fixtures import QAFixture
+
+    return QAFixture(
+        fixture_id="qa-corr-001",
+        arxiv_id="1706.03762",
+        arxiv_version=7,
+        question=QUESTION,
+        reference_answer="Attention replaces recurrence.",
+        expected_keywords=("attention",),
+    )
+
+
+def _run_harness(completions: tuple["CompletionResult", ...]) -> "RagCaseResult":
+    import asyncio as _asyncio
+
+    from mneme.ai.evaluation.fixtures import QAFixture
+    from mneme.ai.evaluation.harness import RagCaseOutcome, RagEvaluationHarness
+
+    async def answer(fixture: QAFixture) -> RagCaseOutcome:
+        del fixture
+        return RagCaseOutcome(
+            answer="attention [1]",
+            refused=False,
+            source_match_status=QaSourceMatchStatus.MATCHED,
+            verified_citations=1,
+            completion=completions[-1],
+            all_completions=completions,
+        )
+
+    report = _asyncio.run(
+        RagEvaluationHarness(answer).run((_harness_fixture(),), fixture_version="qa-corr-test")
+    )
+    return report.cases[0]
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_harness_aggregates_tokens_and_latency_across_both_calls() -> None:
+    case = _run_harness(
+        (
+            _harness_completion(cached=False, cost="0.002", latency_ms=20),
+            _harness_completion(cached=False, cost="0.003", latency_ms=30),
+        )
+    )
+
+    assert case.generation_input_tokens == 200
+    assert case.generation_output_tokens == 100
+    assert case.generation_latency_ms == 50
+    assert case.generation_cost == Decimal("0.005")
+    assert case.incremental_cost == Decimal("0.005")
+    assert case.cached is False
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_harness_bills_only_live_calls_when_first_pass_is_cached() -> None:
+    case = _run_harness(
+        (
+            _harness_completion(cached=True, cost="0.002", latency_ms=20),
+            _harness_completion(cached=False, cost="0.003", latency_ms=30),
+        )
+    )
+
+    assert case.generation_cost == Decimal("0.005")
+    assert case.incremental_cost == Decimal("0.003")
+    assert case.cached is False
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_harness_bills_only_live_calls_when_correction_is_cached() -> None:
+    case = _run_harness(
+        (
+            _harness_completion(cached=False, cost="0.002", latency_ms=20),
+            _harness_completion(cached=True, cost="0.003", latency_ms=30),
+        )
+    )
+
+    assert case.generation_cost == Decimal("0.005")
+    assert case.incremental_cost == Decimal("0.002")
+    assert case.cached is False
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_harness_marks_fully_cached_pair_as_zero_incremental_spend() -> None:
+    case = _run_harness(
+        (
+            _harness_completion(cached=True, cost="0.002", latency_ms=20),
+            _harness_completion(cached=True, cost="0.003", latency_ms=30),
+        )
+    )
+
+    assert case.generation_cost == Decimal("0.005")
+    assert case.incremental_cost == Decimal(0)
+    assert case.cached is True
+
+
+MASKED_SHARED_MARKER_ANSWER = (
+    "Multi-head attention replaces recurrence with parallel heads [1]. The model cures cancer [1]."
+)
+LABELED_SUPPORTED_ANSWER = (
+    "Key finding:\nMulti-head attention replaces recurrence with parallel heads [1]."
+)
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_shared_marker_cannot_mask_an_unsupported_segment() -> None:
+    """A supported sentence citing [1] must not shield an unsupported one citing [1]."""
+    first_prompt, correction_prompt = _prompts(MASKED_SHARED_MARKER_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: MASKED_SHARED_MARKER_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert len(provider.calls) == 2
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_structural_label_does_not_trigger_spurious_correction() -> None:
+    """A header like 'Key finding:' is not an uncited claim."""
+    first_prompt, _ = _prompts("unused")
+    provider = FakeLLMProvider(responses={first_prompt: LABELED_SUPPORTED_ANSWER})
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == LABELED_SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.VERIFIED
+    assert grounded.model_calls == 1
+    assert len(provider.calls) == 1
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_fully_cached_reask_reports_zero_model_calls() -> None:
+    """model_calls counts live provider calls, not completions."""
+    first_prompt, _ = _prompts("unused")
+    provider = FakeLLMProvider(responses={first_prompt: SUPPORTED_ANSWER})
+    service = _service(provider)
+
+    first_run = asyncio.run(service.answer(question=QUESTION, chunks=_evidence()))
+    second_run = asyncio.run(service.answer(question=QUESTION, chunks=_evidence()))
+
+    assert first_run.model_calls == 1
+    assert second_run.model_calls == 0
+    assert len(second_run.completions) == 1
+    assert len(provider.calls) == 1
+
+
+COLON_CLAIM_ANSWER = (
+    "The model cures cancer:\nMulti-head attention replaces recurrence with parallel heads [1]."
+)
+SEMICOLON_MASK_ANSWER = (
+    "Multi-head attention replaces recurrence with parallel heads; the model cures cancer [1]."
+)
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_colon_terminated_claim_is_not_exempt_as_label() -> None:
+    """Only short structural labels are exempt; a colon-ended assertion is a claim."""
+    first_prompt, correction_prompt = _prompts(COLON_CLAIM_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: COLON_CLAIM_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert len(provider.calls) == 2
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_semicolon_clause_cannot_be_masked_by_supported_clause() -> None:
+    """Semicolon-joined clauses are verified independently."""
+    first_prompt, correction_prompt = _prompts(SEMICOLON_MASK_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: SEMICOLON_MASK_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert len(provider.calls) == 2
