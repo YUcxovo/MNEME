@@ -244,7 +244,7 @@ def has_citation_defects(
     Defects are markers pointing outside the evidence list, an answer with
     no resolvable citation at all, any cited claim whose words are not
     supported by its cited chunk, or any substantive segment carrying no
-    valid marker — the frozen contract requires every claim to cite its
+    valid marker; the frozen contract requires every claim to cite its
     evidence, so an uncited sentence next to a cited one is a defect even
     though the cited one verifies.
     """
