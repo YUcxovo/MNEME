@@ -11,7 +11,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from mneme.models.job import JobStatus, PipelineJob, PipelineStage
-from mneme.models.paper import Paper, PaperVersion, ParseQuality
+from mneme.models.paper import Paper, PaperVersion, ParseQuality, ProcessingStatus
 from mneme.services.documents import (
     DocumentStorage,
     ParsedDocument,
@@ -281,6 +281,7 @@ def test_abstract_fallback_is_stored_and_fans_out_by_ids(
     assert version.parsed_checksum is not None
     assert version.parser_version == "fake-parser-v1"
     assert version.parse_quality is ParseQuality.ABSTRACT_ONLY
+    assert paper.processing_status is ProcessingStatus.PROCESSING
     assert [job.stage for job in repository.created] == [
         PipelineStage.SUMMARIZE_PAPER,
         PipelineStage.CHUNK_PAPER,

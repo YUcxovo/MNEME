@@ -136,15 +136,27 @@ def test_structured_summary_and_fully_embedded_chunks_become_ready() -> None:
 
 @pytest.mark.base
 @pytest.mark.pipeline
+def test_complete_degraded_artifacts_become_terminal_partial() -> None:
+    status, session = _reconcile(
+        quality=ParseQuality.ABSTRACT_ONLY,
+        summary_status=SummaryStatus.PARTIAL,
+        counts=(1, 1),
+    )
+
+    assert status is ProcessingStatus.PARTIAL
+    assert session.paper.processing_status is ProcessingStatus.PARTIAL
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
 @pytest.mark.parametrize(
     ("quality", "summary_status", "counts"),
     [
-        (ParseQuality.ABSTRACT_ONLY, SummaryStatus.PARTIAL, (1, 1)),
         (ParseQuality.TEXT_ONLY, SummaryStatus.READY, (2, 1)),
         (ParseQuality.TEXT_ONLY, None, (2, 2)),
     ],
 )
-def test_incomplete_or_fallback_artifacts_remain_partial(
+def test_incomplete_artifacts_remain_transient_processing(
     quality: ParseQuality,
     summary_status: SummaryStatus | None,
     counts: tuple[int, int],
@@ -155,7 +167,7 @@ def test_incomplete_or_fallback_artifacts_remain_partial(
         counts=counts,
     )
 
-    assert status is ProcessingStatus.PARTIAL
+    assert status is ProcessingStatus.PROCESSING
 
 
 @pytest.mark.base

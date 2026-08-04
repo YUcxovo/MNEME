@@ -57,8 +57,11 @@ async def reconcile_processing_status(
         and summary is not None
         and summary.status is SummaryStatus.READY
     )
-    paper.processing_status = (
-        ProcessingStatus.READY if complete and full_quality else ProcessingStatus.PARTIAL
-    )
+    if not complete:
+        paper.processing_status = ProcessingStatus.PROCESSING
+    else:
+        paper.processing_status = (
+            ProcessingStatus.READY if full_quality else ProcessingStatus.PARTIAL
+        )
     await session.flush()
     return paper.processing_status

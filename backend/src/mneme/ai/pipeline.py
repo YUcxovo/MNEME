@@ -136,7 +136,7 @@ async def summarize_paper_stage(
     stored_chunks = await artifacts.list_chunks_for_version(paper_version_id=version.id)
     _attach_claim_provenance(stored, cast("Sequence[ChunkSource]", stored_chunks))
     if paper.processing_status in (ProcessingStatus.METADATA_ONLY, ProcessingStatus.QUEUED):
-        paper.processing_status = ProcessingStatus.PARTIAL
+        paper.processing_status = ProcessingStatus.PROCESSING
     logger.info(
         "summary_stored",
         paper_id=str(paper_id),
