@@ -91,6 +91,18 @@ class MainActivityDeepLinkTest {
         // rather than revealing the earlier cold-start paper underneath it.
         composeRule.onNodeWithTag("navigate-back").performClick()
         composeRule.onNodeWithTag("briefing-screen").assertIsDisplayed()
+
+        // Android can redeliver the original ACTION_VIEW intent when the user opens the
+        // existing task from recents. That is a task relaunch, not a new paper interaction:
+        // it must leave the briefing in place and must not enqueue another open event.
+        val historyRelaunchIntent =
+            paperIntent(SeededSkeletalContentRepository.PAPER_ID).apply {
+                addFlags(Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY)
+            }
+        targetContext().startActivity(historyRelaunchIntent.asWarmDelivery())
+        waitForActivityIntent(historyRelaunchIntent.dataString)
+        composeRule.onNodeWithTag("briefing-screen").assertIsDisplayed()
+
         val openedPaperIds = paperOpenEvents().mapNotNull { it.paperId }
         assertEquals(1, openedPaperIds.count { it == SeededSkeletalContentRepository.PAPER_ID })
         assertEquals(1, openedPaperIds.count { it == SeededSkeletalContentRepository.NEIGHBOR_PAPER_ID })

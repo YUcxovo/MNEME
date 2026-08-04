@@ -51,7 +51,10 @@ class MainActivity : ComponentActivity() {
     }
 
     internal fun acceptExternalIntent(intent: Intent) {
-        if (intent.action != Intent.ACTION_VIEW) {
+        if (
+            intent.action != Intent.ACTION_VIEW ||
+            intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
+        ) {
             return
         }
         val paperId = intent.dataString?.let(PaperDeepLink::parseUri)
