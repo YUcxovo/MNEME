@@ -26,7 +26,7 @@ _INSUFFICIENT_MARKER = "INSUFFICIENT_EVIDENCE"
 
 _WORD = re.compile(r"[a-z0-9]+")
 _CITATION = re.compile(r"\[(\d+)\]")
-_CLAIM_BOUNDARY = re.compile(r"(?<=[.!?])\s+|\n+")
+_CLAIM_BOUNDARY = re.compile(r"(?<=[.!?;])\s+|\n+")
 _STOPWORDS = frozenset(
     [
         "a",
@@ -85,6 +85,7 @@ _STOPWORDS = frozenset(
 _VECTOR_WEIGHT = 0.7
 _LEXICAL_WEIGHT = 0.3
 _SOURCE_MATCH_MIN_OVERLAP = 0.3
+_LABEL_MAX_CONTENT_WORDS = 2
 
 
 def content_words(text: str) -> set[str]:
@@ -261,11 +262,16 @@ def has_citation_defects(
     chunk_words = {citation.marker: content_words(citation.chunk.content) for citation in citations}
     for segment in _CLAIM_BOUNDARY.split(answer):
         stripped = segment.strip()
-        if not stripped or stripped.endswith(":"):
-            # Structural labels and headers ("Key finding:") are not claims.
+        if not stripped:
             continue
         segment_words = content_words(_CITATION.sub("", stripped))
         if not segment_words:
+            continue
+        if stripped.endswith(":") and len(segment_words) <= _LABEL_MAX_CONTENT_WORDS:
+            # Only short colon-terminated headers ("Key finding:") count as
+            # structural labels; a longer colon-ended statement is still a
+            # claim, so an assertion cannot dress up as a label to skip
+            # citation checking.
             continue
         segment_markers = {int(match) for match in _CITATION.findall(stripped)} & valid_markers
         if not segment_markers:

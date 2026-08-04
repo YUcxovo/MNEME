@@ -488,3 +488,49 @@ def test_fully_cached_reask_reports_zero_model_calls() -> None:
     assert second_run.model_calls == 0
     assert len(second_run.completions) == 1
     assert len(provider.calls) == 1
+
+
+COLON_CLAIM_ANSWER = (
+    "The model cures cancer:\nMulti-head attention replaces recurrence with parallel heads [1]."
+)
+SEMICOLON_MASK_ANSWER = (
+    "Multi-head attention replaces recurrence with parallel heads; the model cures cancer [1]."
+)
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_colon_terminated_claim_is_not_exempt_as_label() -> None:
+    """Only short structural labels are exempt; a colon-ended assertion is a claim."""
+    first_prompt, correction_prompt = _prompts(COLON_CLAIM_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: COLON_CLAIM_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert len(provider.calls) == 2
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_semicolon_clause_cannot_be_masked_by_supported_clause() -> None:
+    """Semicolon-joined clauses are verified independently."""
+    first_prompt, correction_prompt = _prompts(SEMICOLON_MASK_ANSWER)
+    provider = FakeLLMProvider(
+        responses={
+            first_prompt: SEMICOLON_MASK_ANSWER,
+            correction_prompt: SUPPORTED_ANSWER,
+        }
+    )
+
+    grounded = _answer(provider)
+
+    assert grounded.answer == SUPPORTED_ANSWER
+    assert grounded.citation_resolution is QaCitationResolution.CORRECTED
+    assert len(provider.calls) == 2
