@@ -78,6 +78,18 @@ class DigestRefreshCoordinatorTest {
         }
 
     @Test
+    fun relevanceAtConfiguredThreshold_notifiesTheWeeklyDigest() =
+        runCoordinatorTest { refresher, state, notifier ->
+            refresher.digest = digest("digest-at-threshold", relevanceScore = 0.75)
+
+            val result = coordinator(refresher, state, notifier).refresh()
+
+            assertEquals(DigestSyncResult.Synced("digest-at-threshold"), result)
+            assertEquals(listOf("digest-at-threshold"), notifier.digestIds)
+            assertEquals("digest-at-threshold", state.lastNotifiedDigestId())
+        }
+
+    @Test
     fun nonWeeklyDigest_doesNotNotifyEvenAboveThreshold() =
         runCoordinatorTest { refresher, state, notifier ->
             refresher.digest = digest("digest-daily", digestType = "daily")
