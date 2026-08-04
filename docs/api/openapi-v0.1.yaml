@@ -343,7 +343,27 @@ components:
         key_claims: {type: array, items: {type: string}}
         methodology: {type: string}
         limitations: {type: string}
-        source_match_status: {type: string, enum: [matched, partial, not_checked]}
+        source_match_status: {type: string, enum: [matched, partial, not_checked, unmatched]}
+        claims: {type: array, items: {$ref: "#/components/schemas/SourcedClaim"}}
+    SourcedClaim:
+      type: object
+      required: [text, matched]
+      properties:
+        text: {type: string}
+        matched: {type: boolean}
+        source:
+          $ref: "#/components/schemas/ClaimProvenance"
+          nullable: true
+    ClaimProvenance:
+      type: object
+      required: [chunk_id, chunk_index, excerpt]
+      properties:
+        chunk_id: {type: string, format: uuid}
+        chunk_index: {type: integer, minimum: 0}
+        section_title: {type: string, nullable: true}
+        page_start: {type: integer, nullable: true}
+        page_end: {type: integer, nullable: true}
+        excerpt: {type: string, maxLength: 300}
     Preferences:
       type: object
       required: [topics, followed_authors, model_version]
