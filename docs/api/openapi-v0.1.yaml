@@ -110,6 +110,7 @@ paths:
                 $ref: "#/components/schemas/Preferences"
         default:
           $ref: "#/components/responses/Error"
+  /users/me/preferences/refresh:
     post:
       operationId: refreshPreferences
       requestBody:
