@@ -75,6 +75,7 @@ class FakeDigestRepository:
         self.list_calls: list[tuple[UUID, int, DigestCursor | None]] = []
         self.candidate_calls: list[tuple[datetime, datetime | None, int]] = []
         self.ready_candidate_calls: list[tuple[datetime | None, int]] = []
+        self.included_candidate_calls: list[tuple[tuple[UUID, ...], datetime | None]] = []
         self.embeddings = embeddings or {}
         self.embedding_calls: list[tuple[list[UUID], str]] = []
         self.operation_calls: list[str] = []
@@ -121,6 +122,16 @@ class FakeDigestRepository:
     ) -> list[Paper]:
         self.ready_candidate_calls.append((before, limit))
         return self.ready_papers[:limit]
+
+    async def list_candidates_by_ids(
+        self,
+        paper_ids: tuple[UUID, ...],
+        *,
+        before: datetime | None = None,
+    ) -> list[Paper]:
+        self.included_candidate_calls.append((paper_ids, before))
+        wanted = set(paper_ids)
+        return [paper for paper in [*self.ready_papers, *self.papers] if paper.id in wanted]
 
     async def mean_chunk_embeddings(
         self,
@@ -585,6 +596,40 @@ def test_fresh_manual_digest_is_read_while_holding_user_lock() -> None:
     assert bundle.digest is fresh
     assert repository.created == []
     assert repository.operation_calls == ["lock", "fresh"]
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_acquired_interest_papers_are_included_before_ranking() -> None:
+    recent = _paper("A recent unrelated systems paper", age_days=1)
+    acquired = _paper("Interfaces for programming teams", age_days=90)
+    acquired.abstract = "A controlled HCI study of collaborative developer tools."
+    preferences = UserPreference(
+        user_id=USER_ID,
+        explicit_topics=["hci"],
+        followed_authors=[],
+        model_version=1,
+    )
+    repository = FakeDigestRepository(
+        papers=[recent],
+        ready_papers=[acquired],
+        preferences=preferences,
+    )
+    service = RecommendedDigestService(
+        cast(DigestRepository, repository), candidate_days=14, max_entries=1
+    )
+
+    bundle = asyncio.run(
+        service.generate(
+            USER_ID,
+            digest_type=DigestType.MANUAL,
+            as_of=NOW,
+            include_paper_ids=(acquired.id,),
+        )
+    )
+
+    assert [entry.paper_id for entry in bundle.entries] == [acquired.id]
+    assert repository.included_candidate_calls == [((acquired.id,), NOW)]
 
 
 @pytest.mark.base

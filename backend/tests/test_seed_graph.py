@@ -261,6 +261,49 @@ def test_discovery_rejects_missing_center_and_incomplete_arxiv_results() -> None
 
 
 @pytest.mark.base
+@pytest.mark.pipeline
+def test_general_neighborhood_fetches_both_citation_directions() -> None:
+    arxiv = cast(ArxivClient, MagicMock(spec=ArxivClient))
+    semantic = MagicMock(spec=SemanticScholarClient)
+    reference = _provider("1705.00001", paper_id="reference")
+    citation = _provider("1705.00002", paper_id="citation")
+    semantic.fetch_paper_references = AsyncMock(
+        return_value=(_provider(SEED_ID, paper_id="center"), (reference,))
+    )
+    semantic.fetch_neighbors = AsyncMock(return_value=(citation,))
+    service = SeedGraphCandidateService(arxiv, cast(SemanticScholarClient, semantic))
+
+    result = asyncio.run(service.discover_neighborhood(SEED_ID, neighbor_limit=20))
+
+    assert result.references == (reference,)
+    assert result.citations == (citation,)
+    semantic.fetch_neighbors.assert_awaited_once_with(
+        "center",
+        CitationDirection.CITATIONS,
+        limit=20,
+    )
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
+def test_general_metadata_resolution_retains_a_real_partial_batch() -> None:
+    arxiv = MagicMock(spec=ArxivClient)
+    arxiv.fetch_by_ids = AsyncMock(return_value=_feed("1705.00001"))
+    semantic = cast(SemanticScholarClient, MagicMock(spec=SemanticScholarClient))
+    service = SeedGraphCandidateService(cast(ArxivClient, arxiv), semantic)
+
+    result = asyncio.run(
+        service.resolve_available_arxiv_records(
+            ("1705.00001", "1705.00002"),
+            limit=2,
+        )
+    )
+
+    assert tuple(record.arxiv_id for record in result) == ("1705.00001",)
+    arxiv.fetch_by_ids.assert_awaited_once_with(("1705.00001", "1705.00002"))
+
+
+@pytest.mark.base
 @pytest.mark.db
 @pytest.mark.pipeline
 def test_persistence_writes_both_directions_in_one_transaction() -> None:

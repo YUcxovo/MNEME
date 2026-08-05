@@ -40,6 +40,15 @@ class SeedGraphCandidates:
 
 
 @dataclass(frozen=True, slots=True)
+class SeedGraphNeighborhood:
+    """A bounded Semantic Scholar neighborhood before arXiv metadata resolution."""
+
+    center: SemanticPaper
+    references: tuple[SemanticPaper, ...]
+    citations: tuple[SemanticPaper, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class SeedGraphPersistence:
     """Persistence outcomes for both citation directions."""
 
@@ -114,6 +123,52 @@ class SeedGraphCandidateService:
             center=center,
             references=references,
             citations=citations,
+        )
+
+    async def discover_neighborhood(
+        self,
+        seed_arxiv_id: str,
+        *,
+        neighbor_limit: int,
+    ) -> SeedGraphNeighborhood:
+        """Return both real citation directions without requiring a fixed library size."""
+        center, references = await self._semantic_client.fetch_paper_references(
+            f"ARXIV:{seed_arxiv_id}",
+            limit=neighbor_limit,
+        )
+        self._validate_center(center, seed_arxiv_id)
+        citations = await self._semantic_client.fetch_neighbors(
+            center.paper_id,
+            CitationDirection.CITATIONS,
+            limit=neighbor_limit,
+        )
+        return SeedGraphNeighborhood(
+            center=center,
+            references=references,
+            citations=citations,
+        )
+
+    async def resolve_available_arxiv_records(
+        self,
+        candidate_ids: tuple[str, ...],
+        *,
+        limit: int,
+    ) -> tuple[ArxivPaperRecord, ...]:
+        """Resolve one bounded batch of real records, preserving provider order."""
+        if not candidate_ids or limit < 1:
+            return ()
+        selected_ids = candidate_ids[:limit]
+        try:
+            records = (await self._arxiv_client.fetch_by_ids(selected_ids)).records
+        except (ArxivClientError, ArxivParseError, ValueError) as error:
+            raise SeedGraphMetadataUnavailable(
+                "arXiv citation-neighbor metadata remained unavailable after retry"
+            ) from error
+        records_by_id = {
+            record.arxiv_id: record for record in records if record.arxiv_id in selected_ids
+        }
+        return tuple(
+            records_by_id[arxiv_id] for arxiv_id in selected_ids if arxiv_id in records_by_id
         )
 
     async def _resolve_arxiv_records(

@@ -54,6 +54,54 @@ def test_category_query_and_user_agent() -> None:
 
 
 @pytest.mark.pipeline
+@pytest.mark.parametrize(
+    ("topics", "expected"),
+    [
+        (["hci"], 'all:"hci"'),
+        (["human computer interaction"], 'all:"human computer interaction"'),
+        (["cs.HC"], "cat:cs.HC"),
+        (["cs.hc"], "(cat:cs.hc OR cat:cs.HC)"),
+        (["hci", "cs.HC"], '(all:"hci" OR cat:cs.HC)'),
+    ],
+)
+def test_topic_search_uses_phrase_or_recognizable_category(
+    topics: list[str], expected: str
+) -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, content=FEED)
+
+    async def exercise() -> None:
+        settings = Settings(_env_file=None)
+        async with ArxivClient(settings, transport=httpx.MockTransport(handler)) as client:
+            await client.fetch_by_topics(topics, max_results=7)
+
+    asyncio.run(exercise())
+    request = requests[0]
+    assert request.url.params["search_query"] == expected
+    assert request.url.params["max_results"] == "7"
+
+
+@pytest.mark.pipeline
+def test_topic_search_quotes_user_syntax_instead_of_executing_it() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, content=FEED)
+
+    async def exercise() -> None:
+        settings = Settings(_env_file=None)
+        async with ArxivClient(settings, transport=httpx.MockTransport(handler)) as client:
+            await client.fetch_by_topics(['hci" OR cat:cs.AI\\draft\nnext'])
+
+    asyncio.run(exercise())
+    assert requests[0].url.params["search_query"] == ('all:"hci\\" OR cat:cs.AI\\\\draft next"')
+
+
+@pytest.mark.pipeline
 def test_id_query_uses_arxiv_id_list() -> None:
     requests: list[httpx.Request] = []
 
