@@ -6,9 +6,10 @@ from datetime import datetime
 from uuid import UUID
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import and_, func, select, type_coerce
+from sqlalchemy import and_, func, select, type_coerce, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncSessionTransaction
+from sqlalchemy.orm.attributes import set_committed_value
 
 from mneme.models.artifact import PaperChunk
 from mneme.models.paper import Paper, PaperVersion
@@ -64,10 +65,10 @@ class EventRepository:
             (await self._session.scalars(select(Paper.id).where(Paper.id.in_(paper_ids)))).all()
         )
 
-    async def insert_events(self, user_id: UUID, events: list[EventRecord]) -> int:
-        """Insert events once and return the number accepted by PostgreSQL."""
+    async def insert_events(self, user_id: UUID, events: list[EventRecord]) -> set[UUID]:
+        """Insert events once and return the IDs accepted by PostgreSQL."""
         if not events:
-            return 0
+            return set()
         statement = (
             pg_insert(UserEvent)
             .values(
@@ -87,8 +88,7 @@ class EventRepository:
             .on_conflict_do_nothing(index_elements=[UserEvent.id])
             .returning(UserEvent.id)
         )
-        inserted_ids = list((await self._session.scalars(statement)).all())
-        return len(inserted_ids)
+        return set((await self._session.scalars(statement)).all())
 
     async def list_recent_signals(
         self,
@@ -187,8 +187,9 @@ class EventRepository:
         *,
         profile: BehaviorProfile,
         embedding_model: str,
+        advance_freshness: bool = True,
     ) -> None:
-        """Persist a derived contrastive profile while preserving explicit preferences."""
+        """Persist a derived profile and advance freshness only for ranking changes."""
         preference = await self.lock_preferences(user_id)
         positive = _as_pgvector_tuple(profile.positive_embedding)
         negative = _as_pgvector_tuple(profile.negative_embedding)
@@ -200,14 +201,19 @@ class EventRepository:
             "model_version": profile.model_version,
             **profile.evidence.as_json(),
         }
-        if (
+        ranking_state_changed = (
             current_positive != positive
             or current_negative != negative
             or preference.behavior_embedding_model != stored_model
             or preference.behavior_confidence != profile.confidence
-            or preference.behavior_evidence != evidence
             or preference.model_version != profile.model_version
-        ):
+        )
+        identity_changed = (
+            preference.behavior_embedding_model != stored_model
+            or preference.model_version != profile.model_version
+        )
+        evidence_changed = preference.behavior_evidence != evidence
+        if ranking_state_changed and (advance_freshness or identity_changed):
             preference.behavior_embedding = list(positive) if positive is not None else None
             preference.negative_behavior_embedding = (
                 list(negative) if negative is not None else None
@@ -217,6 +223,31 @@ class EventRepository:
             preference.behavior_evidence = evidence
             preference.model_version = profile.model_version
             await self._session.flush()
+        elif ranking_state_changed or evidence_changed:
+            # Keep the complete derived snapshot inspectable without expiring a digest when
+            # the newly accepted batch has no effect on recommendation semantics.
+            stored_positive = list(positive) if positive is not None else None
+            stored_negative = list(negative) if negative is not None else None
+            await self._session.execute(
+                update(UserPreference)
+                .where(UserPreference.user_id == user_id)
+                .values(
+                    behavior_embedding=stored_positive,
+                    negative_behavior_embedding=stored_negative,
+                    behavior_embedding_model=stored_model,
+                    behavior_confidence=profile.confidence,
+                    behavior_evidence=evidence,
+                    model_version=profile.model_version,
+                    updated_at=preference.updated_at,
+                )
+                .execution_options(synchronize_session=False)
+            )
+            set_committed_value(preference, "behavior_embedding", stored_positive)
+            set_committed_value(preference, "negative_behavior_embedding", stored_negative)
+            set_committed_value(preference, "behavior_embedding_model", stored_model)
+            set_committed_value(preference, "behavior_confidence", profile.confidence)
+            set_committed_value(preference, "behavior_evidence", evidence)
+            set_committed_value(preference, "model_version", profile.model_version)
 
 
 def _as_float_tuple(value: list[float] | None) -> tuple[float, ...] | None:

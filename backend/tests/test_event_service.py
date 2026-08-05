@@ -60,7 +60,7 @@ class FakeEventRepository:
         self.signal_since: datetime | None = None
         self.signal_until: datetime | None = None
         self.embedding_model: str | None = None
-        self.stored: tuple[UUID, BehaviorProfile, str] | None = None
+        self.stored: tuple[UUID, BehaviorProfile, str, bool] | None = None
 
     def transaction(self) -> FakeTransaction:
         return self.transaction_state
@@ -75,10 +75,10 @@ class FakeEventRepository:
     async def existing_paper_ids(self, _paper_ids: set[UUID]) -> set[UUID]:
         return self.known_papers
 
-    async def insert_events(self, user_id: UUID, events: list[EventRecord]) -> int:
+    async def insert_events(self, user_id: UUID, events: list[EventRecord]) -> set[UUID]:
         assert user_id == USER_ID
         self.inserted = events
-        return len(events)
+        return {event.event_id for event in events}
 
     async def list_recent_signals(
         self, user_id: UUID, *, since: datetime, until: datetime
@@ -100,16 +100,23 @@ class FakeEventRepository:
         *,
         profile: BehaviorProfile,
         embedding_model: str,
+        advance_freshness: bool = True,
     ) -> None:
-        self.stored = (user_id, profile, embedding_model)
+        self.stored = (user_id, profile, embedding_model, advance_freshness)
 
 
-def _event(event_id: UUID, *, paper_id: UUID = PAPER_ID) -> EventRecord:
+def _event(
+    event_id: UUID,
+    *,
+    paper_id: UUID = PAPER_ID,
+    event_type: UserEventType = UserEventType.PAPER_SAVED,
+    occurred_at: datetime = NOW,
+) -> EventRecord:
     return EventRecord(
         event_id=event_id,
-        event_type=UserEventType.PAPER_SAVED,
+        event_type=event_type,
         paper_id=paper_id,
-        occurred_at=NOW,
+        occurred_at=occurred_at,
         duration_ms=None,
         context={},
     )
@@ -152,13 +159,130 @@ def test_event_service_deduplicates_and_recomputes_in_one_transaction() -> None:
     assert repository.signal_until == NOW + timedelta(minutes=5)
     assert repository.embedding_model == "embedding-test-v1"
     assert repository.stored is not None
-    stored_user, profile, stored_model = repository.stored
+    stored_user, profile, stored_model, advance_freshness = repository.stored
     assert stored_user == USER_ID
     assert profile.positive_embedding == pytest.approx((1.0, 0.0))
     assert profile.negative_embedding is None
     assert profile.model_version == BEHAVIOR_MODEL_VERSION
     assert 0 < profile.confidence < 1
     assert stored_model == "embedding-test-v1"
+    assert advance_freshness
+
+
+@pytest.mark.base
+@pytest.mark.db
+def test_zero_weight_impression_does_not_advance_recommendation_freshness() -> None:
+    repository = FakeEventRepository()
+    impression = _event(
+        uuid4(),
+        event_type=UserEventType.PAPER_IMPRESSION,
+    )
+    repository.signals = [
+        BehaviorSignal(UserEventType.PAPER_SAVED, PAPER_ID, NOW - timedelta(hours=1)),
+        BehaviorSignal(impression.event_type, impression.paper_id, impression.occurred_at),
+    ]
+    repository.embeddings = {PAPER_ID: (1.0, 0.0)}
+
+    result = asyncio.run(_service(repository).ingest(USER_ID, [impression]))
+
+    assert result.accepted == 1
+    assert repository.stored is not None
+    _, profile, _, advance_freshness = repository.stored
+    assert profile.evidence.signal_count == 2
+    assert not advance_freshness
+
+
+@pytest.mark.base
+@pytest.mark.db
+def test_late_impression_advances_freshness_when_it_enables_an_existing_skip() -> None:
+    repository = FakeEventRepository()
+    impression = _event(
+        uuid4(),
+        event_type=UserEventType.PAPER_IMPRESSION,
+        occurred_at=NOW - timedelta(hours=2),
+    )
+    repository.signals = [
+        BehaviorSignal(impression.event_type, impression.paper_id, impression.occurred_at),
+        BehaviorSignal(UserEventType.PAPER_SKIPPED, PAPER_ID, NOW - timedelta(hours=1)),
+    ]
+    repository.embeddings = {PAPER_ID: (1.0, 0.0)}
+
+    result = asyncio.run(_service(repository).ingest(USER_ID, [impression]))
+
+    assert result.accepted == 1
+    assert repository.stored is not None
+    _, profile, _, advance_freshness = repository.stored
+    assert profile.negative_embedding == pytest.approx((1.0, 0.0))
+    assert advance_freshness
+
+
+@pytest.mark.base
+@pytest.mark.db
+def test_same_batch_impression_and_skip_advance_freshness() -> None:
+    repository = FakeEventRepository()
+    impression = _event(
+        uuid4(),
+        event_type=UserEventType.PAPER_IMPRESSION,
+        occurred_at=NOW - timedelta(hours=2),
+    )
+    skipped = _event(
+        uuid4(),
+        event_type=UserEventType.PAPER_SKIPPED,
+        occurred_at=NOW - timedelta(hours=1),
+    )
+    repository.signals = [
+        BehaviorSignal(impression.event_type, impression.paper_id, impression.occurred_at),
+        BehaviorSignal(skipped.event_type, skipped.paper_id, skipped.occurred_at),
+    ]
+    repository.embeddings = {PAPER_ID: (1.0, 0.0)}
+
+    result = asyncio.run(_service(repository).ingest(USER_ID, [impression, skipped]))
+
+    assert result.accepted == 2
+    assert repository.stored is not None
+    _, profile, _, advance_freshness = repository.stored
+    assert profile.negative_embedding == pytest.approx((1.0, 0.0))
+    assert advance_freshness
+
+
+@pytest.mark.base
+@pytest.mark.db
+def test_impression_after_skip_remains_exposure_only() -> None:
+    repository = FakeEventRepository()
+    impression = _event(
+        uuid4(),
+        event_type=UserEventType.PAPER_IMPRESSION,
+        occurred_at=NOW - timedelta(hours=1),
+    )
+    repository.signals = [
+        BehaviorSignal(UserEventType.PAPER_SKIPPED, PAPER_ID, NOW - timedelta(hours=2)),
+        BehaviorSignal(impression.event_type, impression.paper_id, impression.occurred_at),
+    ]
+    repository.embeddings = {PAPER_ID: (1.0, 0.0)}
+
+    asyncio.run(_service(repository).ingest(USER_ID, [impression]))
+
+    assert repository.stored is not None
+    _, profile, _, advance_freshness = repository.stored
+    assert profile.negative_embedding is None
+    assert not advance_freshness
+
+
+@pytest.mark.base
+@pytest.mark.db
+def test_duplicate_event_replay_does_not_advance_freshness() -> None:
+    repository = FakeEventRepository()
+    event = _event(uuid4())
+    repository.existing_ids = {event.event_id}
+    repository.signals = [BehaviorSignal(event.event_type, event.paper_id, event.occurred_at)]
+    repository.embeddings = {PAPER_ID: (1.0, 0.0)}
+
+    result = asyncio.run(_service(repository).ingest(USER_ID, [event]))
+
+    assert result.accepted == 0
+    assert result.duplicates == 1
+    assert repository.stored is not None
+    assert not repository.stored[3]
 
 
 @pytest.mark.base
@@ -198,13 +322,14 @@ def test_empty_batch_can_deterministically_clear_stale_behavior() -> None:
     assert result.accepted == 0
     assert result.duplicates == 0
     assert repository.stored is not None
-    stored_user, profile, stored_model = repository.stored
+    stored_user, profile, stored_model, advance_freshness = repository.stored
     assert stored_user == USER_ID
     assert profile.positive_embedding is None
     assert profile.negative_embedding is None
     assert profile.model_version == BEHAVIOR_MODEL_VERSION
     assert profile.confidence == 0
     assert stored_model == "embedding-test-v1"
+    assert not advance_freshness
 
 
 @pytest.mark.base
@@ -222,7 +347,7 @@ def test_recompute_replays_raw_history_without_inserting_events() -> None:
     assert repository.transaction_state.entered
     assert repository.transaction_state.exception_type is None
     assert profile.positive_embedding == pytest.approx((0.0, 1.0))
-    assert repository.stored == (USER_ID, profile, "embedding-test-v1")
+    assert repository.stored == (USER_ID, profile, "embedding-test-v1", True)
 
 
 @pytest.mark.base
