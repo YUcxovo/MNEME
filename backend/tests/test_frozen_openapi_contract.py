@@ -17,12 +17,14 @@ IMPLEMENTED_OPERATIONS = (
     ("/papers/{paper_id}/summary", "get"),
     ("/users/me/preferences", "get"),
     ("/users/me/preferences", "put"),
+    ("/users/me/preferences/refresh", "post"),
     ("/onboarding/seed", "post"),
     ("/events", "post"),
     ("/digests", "get"),
     ("/digests/recommended", "post"),
     ("/qa/ask", "post"),
     ("/graph/{paper_id}", "get"),
+    ("/graph/{paper_id}/prepare", "post"),
     ("/jobs/{job_id}", "get"),
 )
 
