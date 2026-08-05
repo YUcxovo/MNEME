@@ -21,8 +21,13 @@ import com.mneme.app.data.behavior.BehavioralEventTracker
 import com.mneme.app.data.behavior.EVENT_TRACE_PAPER_ID
 import com.mneme.app.data.behavior.EventTraceRepository
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
+import com.mneme.app.data.local.SavedPaper
+import com.mneme.app.data.local.SavedPaperStore
 import com.mneme.app.data.repository.ControlledFixtureDataRepository
+import com.mneme.app.data.repository.SkeletalDataRepository
+import com.mneme.app.ui.interests.InterestsScreen
 import com.mneme.app.ui.theme.MnemeTheme
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -111,6 +116,73 @@ class MnemeAppFlowTest {
     }
 
     @Test
+    fun savingPaper_populatesSavedAndOpensNormalPaperDetail() {
+        composeRule.setContent {
+            MnemeTheme {
+                mnemeApp(onOpenSource = {})
+            }
+        }
+
+        composeRule.onNodeWithText("Attention Is All You Need").performClick()
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("save-paper-action"),
+        )
+        composeRule.onNodeWithTag("save-paper-action").performClick()
+        composeRule.onNodeWithTag("navigate-back").performClick()
+        composeRule.onNodeWithTag("nav-saved").performClick()
+        composeRule.onNodeWithText("Attention Is All You Need").assertIsDisplayed().performClick()
+        composeRule.onNodeWithTag("paper-detail-screen").assertIsDisplayed()
+        composeRule.onNodeWithText("Attention Is All You Need").assertIsDisplayed()
+    }
+
+    @Test
+    fun persistedSavedPaper_restoresDisabledSavedAction() {
+        val tracker = RecordingBehavioralEventTracker()
+        val savedPaperStore =
+            object : SavedPaperStore {
+                override fun observeSavedPapers() =
+                    flowOf(
+                        listOf(
+                            SavedPaper(
+                                id = SeededSkeletalContentRepository.PAPER_ID,
+                                title = "Attention Is All You Need",
+                                authors = listOf("Ashish Vaswani"),
+                                category = "cs.CL",
+                                abstractText = "A cached abstract.",
+                                savedAtEpochMillis = 1,
+                            ),
+                        ),
+                    )
+            }
+        val viewModel =
+            MnemeViewModel(
+                repository = ControlledFixtureDataRepository(),
+                eventTracker = tracker,
+                savedPaperStore = savedPaperStore,
+            )
+        composeRule.setContent {
+            MnemeTheme {
+                mnemeApp(viewModel = viewModel, onOpenSource = {})
+            }
+        }
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Attention Is All You Need").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeRule.onNodeWithTag("nav-saved").performClick()
+        composeRule.onNodeWithText("Attention Is All You Need").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            tracker.openedPaperIds == listOf(SeededSkeletalContentRepository.PAPER_ID)
+        }
+        composeRule.onNodeWithTag("paper-detail-screen").performScrollToNode(
+            hasTestTag("save-paper-action"),
+        )
+
+        composeRule.onNodeWithTag("save-paper-action").assertIsNotEnabled()
+        composeRule.onNodeWithTag("save-paper-action").assertTextContains("Saved")
+    }
+
+    @Test
     fun interests_addEditRemoveSaveAndRemainVisibleAfterNavigation() {
         val viewModel = MnemeViewModel(ControlledFixtureDataRepository())
         composeRule.setContent {
@@ -157,6 +229,63 @@ class MnemeAppFlowTest {
     }
 
     @Test
+    fun interestsSaving_explainsThatUpdatedPapersAreBeingPrepared() {
+        val briefing = SeededSkeletalContentRepository.briefing()
+        composeRule.setContent {
+            MnemeTheme {
+                InterestsScreen(
+                    interests = briefing.interests,
+                    disclosure = briefing.disclosure,
+                    editState = InterestEditUiState.Saving,
+                    onSave = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithTag("interests-screen").performScrollToNode(
+            hasTestTag("interest-save"),
+        )
+        composeRule
+            .onNodeWithTag("interest-save")
+            .assertTextContains("Saving interests and preparing papers", substring = true)
+    }
+
+    @Test
+    fun interestsRefreshFailure_keepsBriefingAndLeavesSaveRetryable() {
+        val fixture = ControlledFixtureDataRepository()
+        val repository =
+            object : SkeletalDataRepository by fixture {
+                override suspend fun updateInterests(topics: List<String>) = throw IOException("controlled refresh failure")
+            }
+        val viewModel = MnemeViewModel(repository)
+        composeRule.setContent {
+            MnemeTheme {
+                mnemeApp(viewModel = viewModel, onOpenSource = {})
+            }
+        }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithText("Attention Is All You Need").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithTag("nav-interests").performClick()
+        composeRule.onNodeWithTag("interest-topic-0").performTextReplacement("HCI")
+        composeRule.onNodeWithTag("interests-screen").performScrollToNode(
+            hasTestTag("interest-save"),
+        )
+        composeRule.onNodeWithTag("interest-save").performClick()
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(hasTestTag("interest-save-error")).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule
+            .onNodeWithTag("interest-save-error")
+            .assertTextContains("Mneme cannot connect right now", substring = true)
+        composeRule.onNodeWithTag("interest-save").assertIsEnabled()
+        composeRule.onNodeWithTag("nav-briefing").performClick()
+        composeRule.onNodeWithText("Attention Is All You Need").assertIsDisplayed()
+    }
+
+    @Test
     fun viewModelBackedApp_loadsRepositoryAndAccurateSourceStatus() {
         val viewModel = MnemeViewModel(ControlledFixtureDataRepository())
         composeRule.setContent {
@@ -182,7 +311,7 @@ class MnemeAppFlowTest {
             composeRule.onAllNodesWithText("Citation connections").fetchSemanticsNodes().isNotEmpty()
         }
         composeRule.onNodeWithTag("graph-screen").assertIsDisplayed()
-        composeRule.onNodeWithText("Deterministic citation baseline").assertIsDisplayed()
+        composeRule.onNodeWithText("Citation connections").assertIsDisplayed()
     }
 
     @Test
@@ -287,7 +416,6 @@ class MnemeAppFlowTest {
                 listOf(
                     "Attention Is All You Need" to
                         "Attention Is All You Need\n" +
-                        "mneme://paper/${SeededSkeletalContentRepository.PAPER_ID}\n" +
                         "https://arxiv.org/abs/1706.03762",
                 ),
                 sharedPapers,
@@ -375,17 +503,22 @@ class MnemeAppFlowTest {
         composeRule.waitUntil(timeoutMillis = 5_000) {
             (viewModel.qaState.value as? QaUiState.Content)?.exchanges?.size == 1
         }
+        composeRule.onNodeWithTag("qa-screen").performScrollToNode(
+            hasTestTag("qa-question-input"),
+        )
         composeRule.onNodeWithTag("qa-question-input").performTextInput(secondQuestion)
         composeRule.onNodeWithTag("qa-submit-question").performClick()
         composeRule.waitUntil(timeoutMillis = 5_000) {
             (viewModel.qaState.value as? QaUiState.Content)?.exchanges?.size == 2
         }
+        composeRule.waitForIdle()
 
         composeRule.runOnIdle {
             val exchanges = (viewModel.qaState.value as QaUiState.Content).exchanges
             assertEquals(2, exchanges.size)
             assertEquals(1, exchanges.map { it.conversationId }.distinct().size)
         }
+        composeRule.onNodeWithTag("qa-answer-turn-1").assertIsDisplayed()
         composeRule.onNodeWithTag("qa-screen").performScrollToNode(hasText(firstQuestion))
         composeRule.onNodeWithText(firstQuestion).assertIsDisplayed()
         composeRule.onNodeWithTag("qa-screen").performScrollToNode(hasText(secondQuestion))

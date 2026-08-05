@@ -37,17 +37,16 @@ object PaperDeepLink {
         }
     }
 
-    /** Builds share text from the selected paper's real title, identifier, and arXiv URL. */
+    /** Builds public share text from the selected paper's title and arXiv URL. */
     fun buildShareText(
         title: String,
-        paperId: String,
         arxivUrl: String,
     ): String {
         val normalizedTitle = title.trim()
         val normalizedArxivUrl = arxivUrl.trim()
         require(normalizedTitle.isNotEmpty()) { "Paper title must not be blank." }
         require(normalizedArxivUrl.isNotEmpty()) { "The arXiv URL must not be blank." }
-        return "$normalizedTitle\n${buildUri(paperId)}\n$normalizedArxivUrl"
+        return "$normalizedTitle\n$normalizedArxivUrl"
     }
 
     private fun requireCanonicalPaperId(paperId: String) {

@@ -19,6 +19,23 @@ import org.junit.Test
 
 class MnemeBehavioralEventRecorderTest {
     @Test
+    fun persistedSavedPaperRestoresRecordedButtonState() {
+        val state =
+            PaperEngagementUiState(
+                saveStatuses = mapOf(PAPER_ID to EventRecordingStatus.FAILED),
+            )
+
+        assertEquals(
+            EventRecordingStatus.RECORDED,
+            state.saveStatus(PAPER_ID, setOf(PAPER_ID)),
+        )
+        assertEquals(
+            EventRecordingStatus.IDLE,
+            state.saveStatus(OTHER_PAPER_ID, setOf(PAPER_ID)),
+        )
+    }
+
+    @Test
     fun externalOpenReturnsOnlyAfterTheDurableWriteCompletes() =
         runBlocking {
             val allowWrite = CompletableDeferred<Unit>()
@@ -206,5 +223,6 @@ class MnemeBehavioralEventRecorderTest {
     private companion object {
         const val EVENT_ID = "77777777-7777-4777-8777-777777777777"
         const val PAPER_ID = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        const val OTHER_PAPER_ID = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
     }
 }

@@ -102,6 +102,8 @@ interface MnemeRemoteDataSource : BehavioralEventRemoteDataSource {
 
     suspend fun updatePreferences(update: PreferenceUpdateDto): PreferencesDto
 
+    suspend fun refreshPreferences(update: PreferenceUpdateDto): PreferenceRefreshDto
+
     suspend fun initializeFromSeed(request: SeedInitializationRequestDto): SeedInitializationDto
 
     suspend fun listDigests(
@@ -120,6 +122,12 @@ interface MnemeRemoteDataSource : BehavioralEventRemoteDataSource {
         depth: Int = 1,
         limit: Int = 50,
     ): GraphDto
+
+    suspend fun preparePaperGraph(
+        paperId: String,
+        depth: Int = 1,
+        limit: Int = 50,
+    ): GraphDto = getPaperGraph(paperId, depth, limit)
 }
 
 interface BehavioralEventRemoteDataSource {
@@ -154,6 +162,9 @@ internal class RetrofitMnemeRemoteDataSource(
         return response.requireBody(json)
     }
 
+    override suspend fun refreshPreferences(update: PreferenceUpdateDto): PreferenceRefreshDto =
+        api.refreshPreferences(update).requireBody(json)
+
     override suspend fun initializeFromSeed(request: SeedInitializationRequestDto): SeedInitializationDto =
         api.initializeFromSeed(request).requireBody(json)
 
@@ -174,6 +185,12 @@ internal class RetrofitMnemeRemoteDataSource(
         depth: Int,
         limit: Int,
     ): GraphDto = api.getPaperGraph(paperId, depth, limit).requireBody(json)
+
+    override suspend fun preparePaperGraph(
+        paperId: String,
+        depth: Int,
+        limit: Int,
+    ): GraphDto = api.preparePaperGraph(paperId, depth, limit).requireBody(json)
 
     override suspend fun uploadEvents(events: List<UserEventDto>) = api.uploadEvents(events).requireBody(json)
 }

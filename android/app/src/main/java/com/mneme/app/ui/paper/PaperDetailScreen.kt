@@ -157,7 +157,8 @@ private fun PaperEngagementActions(
             Button(
                 onClick = onSavePaper,
                 enabled =
-                    saveStatus != EventRecordingStatus.RECORDING &&
+                    saveStatus != EventRecordingStatus.CHECKING &&
+                        saveStatus != EventRecordingStatus.RECORDING &&
                         saveStatus != EventRecordingStatus.RECORDED,
                 modifier = Modifier.weight(1f).testTag("save-paper-action"),
                 shape = MaterialTheme.shapes.small,
@@ -186,14 +187,14 @@ private fun PaperEngagementActions(
             EngagementFeedback(
                 text = stringResource(feedback),
                 testTag = "save-paper-feedback",
-                isFailure = saveStatus == EventRecordingStatus.FAILED,
+                isFailure = saveStatus.feedbackIsFailure(),
             )
         }
         shareStatus.feedbackRes(isShare = true)?.let { feedback ->
             EngagementFeedback(
                 text = stringResource(feedback),
                 testTag = "share-paper-feedback",
-                isFailure = shareStatus == EventRecordingStatus.FAILED,
+                isFailure = shareStatus.feedbackIsFailure(isShare = true),
             )
         }
     }

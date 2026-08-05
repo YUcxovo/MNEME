@@ -51,7 +51,7 @@ fun graphScreen(
     onExploreGraph: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (graph.nodes.isEmpty()) {
+    if (graph.nodes.isEmpty() || graph.edges.isEmpty()) {
         emptyGraphScreen(onRetry, modifier)
         return
     }

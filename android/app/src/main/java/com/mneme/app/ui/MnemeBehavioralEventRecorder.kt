@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 enum class EventRecordingStatus {
+    CHECKING,
     IDLE,
     RECORDING,
     RECORDED,
@@ -20,7 +21,15 @@ data class PaperEngagementUiState(
     val saveStatuses: Map<String, EventRecordingStatus> = emptyMap(),
     val shareStatuses: Map<String, EventRecordingStatus> = emptyMap(),
 ) {
-    fun saveStatus(paperId: String): EventRecordingStatus = saveStatuses[paperId] ?: EventRecordingStatus.IDLE
+    fun saveStatus(
+        paperId: String,
+        persistedSavedPaperIds: Set<String> = emptySet(),
+    ): EventRecordingStatus =
+        if (paperId in persistedSavedPaperIds) {
+            EventRecordingStatus.RECORDED
+        } else {
+            saveStatuses[paperId] ?: EventRecordingStatus.IDLE
+        }
 
     fun shareStatus(paperId: String): EventRecordingStatus = shareStatuses[paperId] ?: EventRecordingStatus.IDLE
 }

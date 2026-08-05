@@ -55,7 +55,7 @@ internal fun String.toSourceMatchStatus(): SourceMatchUiStatus =
 
 internal fun String.toDateLabel(): String =
     runCatching { Instant.parse(this).toDateLabel() }
-        .getOrDefault("Backend briefing")
+        .getOrDefault("Research briefing")
 
 internal fun Instant.toDateLabel(): String = DATE_FORMATTER.format(this)
 

@@ -91,7 +91,7 @@ class MnemeExternalNavigationPersistenceTest {
         )
 
         waitForText(TARGET_PAPER.title)
-        composeRule.onNodeWithText("CACHED BACKEND DATA").assertIsDisplayed()
+        composeRule.onNodeWithText("OFFLINE COPY").assertIsDisplayed()
         waitForTargetOpenEventCount(1)
 
         composeRule.runOnIdle { recompositionToken += 1 }
@@ -110,14 +110,13 @@ class MnemeExternalNavigationPersistenceTest {
 
         launchDeepLink(networkAvailable, scheduledSyncs)
 
-        waitForText("Cannot reach the Mneme backend. Check the API and network, then retry.")
+        waitForText("Mneme cannot connect right now. Check the network and try again.")
         assertTrue(targetOpenEvents().isEmpty())
 
         networkAvailable.set(true)
         composeRule.onNodeWithText("Try again").performClick()
 
         waitForText(TARGET_PAPER.title)
-        composeRule.onNodeWithText("LIVE BACKEND DATA").assertIsDisplayed()
         waitForTargetOpenEventCount(1)
         assertEquals(1, targetOpenEvents().size)
         assertTrue(scheduledSyncs.get() >= 1)

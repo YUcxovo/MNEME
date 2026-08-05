@@ -74,6 +74,12 @@ data class PreferenceUpdateDto(
 )
 
 @Serializable
+data class PreferenceRefreshDto(
+    val preferences: PreferencesDto,
+    val digest: DigestDto,
+)
+
+@Serializable
 data class SeedInitializationRequestDto(
     @SerialName("arxiv_reference") val arxivReference: String,
 )

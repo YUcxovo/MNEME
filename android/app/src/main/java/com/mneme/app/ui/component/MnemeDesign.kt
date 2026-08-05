@@ -2,6 +2,7 @@
 
 package com.mneme.app.ui.component
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -39,6 +40,8 @@ fun ContentSourceNotice(
     modifier: Modifier = Modifier,
     testTag: String? = null,
 ) {
+    val label = disclosure.origin.noticeLabel() ?: return
+
     val noticeModifier =
         if (testTag == null) {
             modifier
@@ -58,14 +61,7 @@ fun ContentSourceNotice(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text =
-                    stringResource(
-                        when (disclosure.origin) {
-                            ContentOrigin.LIVE_BACKEND -> R.string.content_source_live
-                            ContentOrigin.CACHED_BACKEND -> R.string.content_source_cached
-                            ContentOrigin.CONTROLLED_FIXTURE -> R.string.controlled_demo_title
-                        },
-                    ),
+                text = stringResource(label),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -77,6 +73,14 @@ fun ContentSourceNotice(
         }
     }
 }
+
+@StringRes
+internal fun ContentOrigin.noticeLabel(): Int? =
+    when (this) {
+        ContentOrigin.LIVE_BACKEND -> null
+        ContentOrigin.CACHED_BACKEND -> R.string.content_source_cached
+        ContentOrigin.CONTROLLED_FIXTURE -> R.string.controlled_demo_title
+    }
 
 @Composable
 fun SourceMatchStatusPill(

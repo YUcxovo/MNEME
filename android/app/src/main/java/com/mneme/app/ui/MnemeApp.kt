@@ -80,6 +80,7 @@ internal data class MnemeUiSnapshot(
     val graph: GraphUiState,
     val interestEdit: InterestEditUiState,
     val engagement: PaperEngagementUiState,
+    val savedPapers: SavedPapersUiState,
 )
 
 internal data class MnemeUiActions(
@@ -97,6 +98,7 @@ internal data class MnemeUiActions(
     val saveInterests: (List<String>) -> Unit,
     val savePaper: (String) -> Unit,
     val sharePaper: (String) -> Unit,
+    val retrySavedPapers: () -> Unit = {},
 )
 
 @Composable
@@ -340,7 +342,14 @@ private fun mnemeNavHost(
             recordPaperOpened = actions.recordPaperOpened,
         )
         composable<SavedRoute> {
-            SavedScreen()
+            SavedScreen(
+                state = snapshot.savedPapers,
+                onPaperClick = { paperId ->
+                    actions.recordPaperOpened(paperId)
+                    navController.navigate(PaperDetailRoute(paperId))
+                },
+                onRetry = actions.retrySavedPapers,
+            )
         }
         composable<InterestsRoute> {
             interestsDestination(

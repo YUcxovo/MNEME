@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -28,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -44,6 +47,7 @@ import com.mneme.app.data.network.QUESTION_MAX_LENGTH
 import com.mneme.app.ui.QaUiState
 import com.mneme.app.ui.completedExchanges
 import com.mneme.app.ui.component.MnemeSectionLabel
+import com.mneme.app.ui.model.QaUiModel
 import com.mneme.app.ui.theme.MnemeTheme
 
 @Composable
@@ -55,47 +59,94 @@ fun QaScreen(
     modifier: Modifier = Modifier,
 ) {
     var question by rememberSaveable(paperId) { mutableStateOf("") }
+    var locateRequest by remember(paperId) { mutableStateOf<QaLocateRequest?>(null) }
     val isLoading = state is QaUiState.Loading
+    val listState = rememberLazyListState()
+    val completedExchanges = state.completedExchanges()
     val focusManager = LocalFocusManager.current
     val submitQuestion = {
         if (question.isNotBlank() && question.length <= QUESTION_MAX_LENGTH && !isLoading) {
             val submitted = question
             question = ""
+            locateRequest = QaLocateRequest(completedExchanges.size, submitted)
             focusManager.clearFocus()
             onSubmit(submitted)
         }
     }
-
-    LazyColumn(
+    trackQaScroll(
+        paperId = paperId,
+        listState = listState,
+        target = locateRequest?.let(state::scrollTargetFor),
+        onAnswerLocated = { locateRequest = null },
+    )
+    QaConversationList(
         modifier = modifier.fillMaxSize().testTag("qa-screen"),
+        listState = listState,
+        content =
+            QaConversationContent(
+                state = state,
+                completedExchanges = completedExchanges,
+                question = question,
+                isLoading = isLoading,
+            ),
+        actions =
+            QaConversationActions(
+                onQuestionChange = { updated -> question = updated },
+                onSubmit = submitQuestion,
+                onRetry = onSubmit,
+                onOpenSource = onOpenSource,
+            ),
+    )
+}
+
+private data class QaConversationContent(
+    val state: QaUiState,
+    val completedExchanges: List<QaUiModel>,
+    val question: String,
+    val isLoading: Boolean,
+)
+
+private data class QaConversationActions(
+    val onQuestionChange: (String) -> Unit,
+    val onSubmit: () -> Unit,
+    val onRetry: (String) -> Unit,
+    val onOpenSource: (String) -> Unit,
+)
+
+@Composable
+private fun QaConversationList(
+    content: QaConversationContent,
+    actions: QaConversationActions,
+    listState: LazyListState,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier,
+        state = listState,
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
             QuestionComposer(
-                question = question,
-                isLoading = isLoading,
+                question = content.question,
+                isLoading = content.isLoading,
                 onQuestionChange = { updated ->
                     if (updated.length <= QUESTION_MAX_LENGTH) {
-                        question = updated
+                        actions.onQuestionChange(updated)
                     }
                 },
-                onSubmit = submitQuestion,
+                onSubmit = actions.onSubmit,
             )
         }
-
-        state.completedExchanges().forEachIndexed { index, exchange ->
-            item {
-                QuestionBubble(question = exchange.question)
-            }
+        content.completedExchanges.forEachIndexed { index, exchange ->
+            item { QuestionBubble(question = exchange.question) }
             qaResponseItems(
                 qa = exchange,
                 turnIndex = index,
-                onOpenSource = onOpenSource,
+                onOpenSource = actions.onOpenSource,
             )
         }
-
-        qaStateItems(state = state, onSubmit = onSubmit)
+        qaStateItems(state = content.state, onSubmit = actions.onRetry)
     }
 }
 

@@ -192,25 +192,17 @@ class NetworkSkeletalDataRepository(
     override suspend fun updateInterests(topics: List<String>): BriefingUiModel {
         val normalized = normalizeTopics(topics)
         val current = remote.getPreferences()
-        val updated =
-            remote.updatePreferences(
+        val refreshed =
+            remote.refreshPreferences(
                 PreferenceUpdateDto(
                     topics = normalized,
                     followedAuthors = current.followedAuthors,
                 ),
             )
-        val digest =
-            when (val result = remote.generateRecommendedDigest()) {
-                is RemoteResource.Ready -> result.value
-                is RemoteResource.Accepted ->
-                    throw ContentPendingException(
-                        "The updated research briefing is still being prepared. Try saving again shortly.",
-                    )
-            }
         val refreshedAt = nowEpochMillis()
-        cache.storeBriefing(updated, digest, refreshedAt)
-        return digest.toBriefing(
-            interests = updated.topics,
+        cache.storeBriefing(refreshed.preferences, refreshed.digest, refreshedAt)
+        return refreshed.digest.toBriefing(
+            interests = refreshed.preferences.topics,
             disclosure =
                 disclosure(
                     ContentOrigin.LIVE_BACKEND,
@@ -264,7 +256,7 @@ class NetworkSkeletalDataRepository(
             "succeeded" -> loadPaper(paperId)
             "failed" ->
                 throw ContentUnavailableException(
-                    "The backend could not prepare this paper summary. Retry the paper to start recovery.",
+                    "Mneme could not prepare this paper summary. Tap Retry to try again.",
                 )
             else ->
                 throw SerializationException(
@@ -300,17 +292,32 @@ class NetworkSkeletalDataRepository(
 
     override suspend fun loadGraph(paperId: String): GraphUiModel {
         require(paperId.isNotBlank()) { "A paper identifier is required." }
-        return remote
-            .getPaperGraph(
+        val cached =
+            remote.getPaperGraph(
                 paperId = paperId,
                 depth = GRAPH_DEPTH,
                 limit = GRAPH_NODE_LIMIT,
-            ).toGraphUi()
+            )
+        val cachedUi = cached.toGraphUi()
+        return try {
+            remote
+                .preparePaperGraph(
+                    paperId = paperId,
+                    depth = GRAPH_DEPTH,
+                    limit = GRAPH_NODE_LIMIT,
+                ).toGraphUi()
+        } catch (error: MnemeApiException) {
+            if (error.statusCode !in SERVER_ERROR_STATUS_RANGE) throw error
+            cachedUi
+        } catch (_: IOException) {
+            cachedUi
+        }
     }
 
     private companion object {
         const val GRAPH_DEPTH = 2
         const val GRAPH_NODE_LIMIT = 50
+        val SERVER_ERROR_STATUS_RANGE = 500..599
     }
 }
 
@@ -350,8 +357,8 @@ fun Throwable.toUserMessage(): String =
         is ContentPendingException, is ContentUnavailableException ->
             message ?: "The requested content is unavailable."
         is SerializationException ->
-            "The backend response does not match the frozen v0.1 API contract."
+            "Mneme received content it could not display. Please try again."
         is IOException ->
-            "Cannot reach the Mneme backend. Check the API and network, then retry."
+            "Mneme cannot connect right now. Check the network and try again."
         else -> "The requested content could not be loaded."
     }

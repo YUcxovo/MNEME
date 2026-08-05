@@ -77,6 +77,50 @@ class MnemeDatabaseMigrationTest {
             }
     }
 
+    @Test
+    fun migrate5To6_preservesEventsAndAddsSavedPaperLookupIndex() {
+        migrationHelper
+            .createDatabase(TEST_DATABASE, 5)
+            .use { database ->
+                database.execSQL(
+                    "INSERT INTO behavioral_events " +
+                        "(id, event_type, paper_id, occurred_at, duration_millis, sync_state, " +
+                        "sync_attempt_count, last_sync_attempt_at, last_sync_error) VALUES " +
+                        "('saved-event', 'paper_saved', 'paper-1', 30, NULL, 'synced', 0, NULL, NULL)",
+                )
+            }
+
+        migrationHelper
+            .runMigrationsAndValidate(
+                TEST_DATABASE,
+                6,
+                true,
+                MnemeDatabase.MIGRATION_5_6,
+            ).use { database ->
+                database
+                    .query("SELECT paper_id FROM behavioral_events WHERE id = 'saved-event'")
+                    .use { cursor ->
+                        cursor.moveToFirst()
+                        assertEquals("paper-1", cursor.getString(0))
+                    }
+                database
+                    .query("PRAGMA index_list('behavioral_events')")
+                    .use { cursor ->
+                        val nameColumn = cursor.getColumnIndexOrThrow("name")
+                        val indexNames =
+                            buildSet {
+                                while (cursor.moveToNext()) {
+                                    add(cursor.getString(nameColumn))
+                                }
+                            }
+                        assertEquals(
+                            true,
+                            "index_behavioral_events_event_type_paper_id_occurred_at" in indexNames,
+                        )
+                    }
+            }
+    }
+
     companion object {
         private const val TEST_DATABASE = "mneme-migration-test"
     }

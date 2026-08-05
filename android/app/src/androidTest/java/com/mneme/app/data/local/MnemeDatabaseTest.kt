@@ -63,6 +63,108 @@ class MnemeDatabaseTest {
         }
 
     @Test
+    fun savedPaperStore_retainsSyncedSaveWithCachedPaper() =
+        runBlocking {
+            database.paperDao().upsertAll(
+                listOf(paper(id = "saved-paper", arxivId = "2401.00020", updatedAt = 20)),
+            )
+            database.behavioralEventDao().insert(
+                BehavioralEventEntity(
+                    id = UUID.randomUUID().toString(),
+                    eventType = BehavioralEventType.PAPER_SAVED.wireValue,
+                    paperId = "saved-paper",
+                    occurredAtEpochMillis = 30,
+                    syncState = BehavioralEventSyncState.SYNCED.value,
+                ),
+            )
+
+            val saved =
+                RoomSavedPaperStore(
+                    paperDao = database.paperDao(),
+                    json = Json,
+                ).observeSavedPapers().first()
+
+            assertEquals(listOf("saved-paper"), saved.map(SavedPaper::id))
+            assertEquals(30L, saved.single().savedAtEpochMillis)
+        }
+
+    @Test
+    fun paperDao_pruneRetainsSavedPaper() =
+        runBlocking {
+            database.paperDao().upsertAll(
+                listOf(
+                    paper(id = "saved-paper", arxivId = "2401.00020", updatedAt = 10),
+                    paper(id = "expired-paper", arxivId = "2401.00021", updatedAt = 10),
+                ),
+            )
+            database.behavioralEventDao().insert(
+                BehavioralEventEntity(
+                    id = UUID.randomUUID().toString(),
+                    eventType = BehavioralEventType.PAPER_SAVED.wireValue,
+                    paperId = "saved-paper",
+                    occurredAtEpochMillis = 20,
+                    syncState = BehavioralEventSyncState.SYNCED.value,
+                ),
+            )
+
+            assertEquals(1, database.paperDao().deleteExpired(50, 50))
+            assertEquals(
+                listOf("saved-paper"),
+                database
+                    .paperDao()
+                    .observeAll()
+                    .first()
+                    .map(PaperEntity::id),
+            )
+        }
+
+    @Test
+    fun savedPaper_survivesFileDatabaseReopenAndOfflinePrune() =
+        runBlocking {
+            val context = ApplicationProvider.getApplicationContext<Context>()
+            val databaseName = "saved-paper-recreation-test.db"
+            context.deleteDatabase(databaseName)
+            var persisted =
+                Room
+                    .databaseBuilder(context, MnemeDatabase::class.java, databaseName)
+                    .allowMainThreadQueries()
+                    .build()
+            try {
+                persisted.paperDao().upsertAll(
+                    listOf(paper(id = "saved-paper", arxivId = "2401.00030", updatedAt = 10)),
+                )
+                persisted.behavioralEventDao().insert(
+                    BehavioralEventEntity(
+                        id = UUID.randomUUID().toString(),
+                        eventType = BehavioralEventType.PAPER_SAVED.wireValue,
+                        paperId = "saved-paper",
+                        occurredAtEpochMillis = 20,
+                        syncState = BehavioralEventSyncState.SYNCED.value,
+                    ),
+                )
+                persisted.close()
+
+                persisted =
+                    Room
+                        .databaseBuilder(context, MnemeDatabase::class.java, databaseName)
+                        .allowMainThreadQueries()
+                        .build()
+                assertEquals(0, persisted.paperDao().deleteExpired(50, 50))
+                val saved =
+                    RoomSavedPaperStore(
+                        paperDao = persisted.paperDao(),
+                        json = Json,
+                    ).observeSavedPapers().first()
+
+                assertEquals(listOf("saved-paper"), saved.map(SavedPaper::id))
+                assertEquals("Paper saved-paper", saved.single().title)
+            } finally {
+                if (persisted.isOpen) persisted.close()
+                context.deleteDatabase(databaseName)
+            }
+        }
+
+    @Test
     fun cacheDaos_retainRecentAndOpenedContent() =
         runBlocking {
             database.paperDao().upsertAll(

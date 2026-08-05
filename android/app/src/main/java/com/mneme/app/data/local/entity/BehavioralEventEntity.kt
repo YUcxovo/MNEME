@@ -7,7 +7,10 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "behavioral_events",
-    indices = [Index(value = ["sync_state", "occurred_at"])],
+    indices = [
+        Index(value = ["sync_state", "occurred_at"]),
+        Index(value = ["event_type", "paper_id", "occurred_at"]),
+    ],
 )
 data class BehavioralEventEntity(
     @PrimaryKey val id: String,

@@ -43,6 +43,7 @@ class MainActivityDeepLinkTest {
         MnemeDatabase.createControlledFixture(targetContext())
     }
     private val liveDatabase by lazy { MnemeDatabase.create(targetContext()) }
+    private lateinit var liveEventIdsBeforeTest: Set<String>
 
     @After
     fun closeDatabaseConnection() {
@@ -55,6 +56,10 @@ class MainActivityDeepLinkTest {
         check(BuildConfig.MNEME_DEMO_TOKEN.isBlank()) {
             "MainActivityDeepLinkTest requires the controlled-fixture Android build."
         }
+        check(BuildConfig.MNEME_ALLOW_CONTROLLED_FIXTURE) {
+            "Run this test with -PMNEME_ALLOW_CONTROLLED_FIXTURE=true."
+        }
+        liveEventIdsBeforeTest = liveEvents().mapTo(mutableSetOf()) { it.id }
     }
 
     @Test
@@ -108,7 +113,7 @@ class MainActivityDeepLinkTest {
         assertEquals(1, openedPaperIds.count { it == SeededSkeletalContentRepository.NEIGHBOR_PAPER_ID })
         assertTrue(
             "Controlled interactions must not enter the live upload queue.",
-            liveEvents().isEmpty(),
+            liveEvents().mapTo(mutableSetOf()) { it.id } == liveEventIdsBeforeTest,
         )
 
         // ActivityScenario identifies its Activity by the launch Intent. MainActivity

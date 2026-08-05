@@ -9,6 +9,7 @@ import com.mneme.app.ui.navigation.GraphRoute
 import com.mneme.app.ui.navigation.PaperDeepLink
 import com.mneme.app.ui.navigation.PaperDetailRoute
 import com.mneme.app.ui.navigation.QaRoute
+import com.mneme.app.ui.saved.saveStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 
@@ -55,7 +56,7 @@ internal fun NavGraphBuilder.paperDetailNavigation(
         paperDestination(
             paperId = paperId,
             state = snapshot.paper,
-            saveStatus = snapshot.engagement.saveStatus(paperId),
+            saveStatus = snapshot.persistedSaveStatus(paperId),
             shareStatus = snapshot.engagement.shareStatus(paperId),
             actions =
                 PaperDestinationActions(
@@ -76,6 +77,9 @@ internal fun NavGraphBuilder.paperDetailNavigation(
         )
     }
 }
+
+@Suppress("MaxLineLength")
+private fun MnemeUiSnapshot.persistedSaveStatus(paperId: String): EventRecordingStatus = savedPapers.saveStatus(paperId, engagement)
 
 private const val EXTERNAL_EVENT_WRITE_ATTEMPTS = 3
 private const val EXTERNAL_EVENT_RETRY_DELAY_MILLIS = 100L
@@ -111,7 +115,6 @@ private fun shareCurrentPaper(
     val shareText =
         PaperDeepLink.buildShareText(
             title = paper.paper.title,
-            paperId = paper.paper.id,
             arxivUrl = paper.source.url,
         )
     externalActions.sharePaper(paper.paper.title, shareText)

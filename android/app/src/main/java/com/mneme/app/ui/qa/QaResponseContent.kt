@@ -4,6 +4,7 @@ package com.mneme.app.ui.qa
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,7 +36,11 @@ internal fun LazyListScope.qaResponseItems(
     onOpenSource: (String) -> Unit,
 ) {
     item { ContentSourceNotice(disclosure = qa.disclosure) }
-    item { AnswerBubble(answer = qa.answer) }
+    item {
+        Box(modifier = Modifier.testTag("qa-answer-turn-$turnIndex")) {
+            AnswerBubble(answer = qa.answer)
+        }
+    }
     item {
         Row(
             modifier = Modifier.fillMaxWidth(),

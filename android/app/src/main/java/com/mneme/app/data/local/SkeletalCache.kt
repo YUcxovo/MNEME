@@ -243,9 +243,9 @@ private fun DigestDto.title(): String =
 
 private fun DigestDto.description(): String =
     when (entries.size) {
-        0 -> "No papers currently match the configured demo profile."
-        1 -> "One paper selected from the current backend catalog."
-        else -> "${entries.size} papers selected from the current backend catalog."
+        0 -> "No papers are available for this briefing yet."
+        1 -> "One paper prepared for this briefing."
+        else -> "${entries.size} papers prepared for this briefing."
     }
 
 private fun PaperDto.toEntity(

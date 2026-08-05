@@ -170,12 +170,12 @@ class E4GraphMeasurementTest {
                 GraphStateScenario(
                     name = "ready",
                     graph = graph(12, "state-ready", GraphAlgorithmUiStatus.READY),
-                    expectedText = "Ranked and clustered graph",
+                    expectedText = "Citation connections",
                 ),
                 GraphStateScenario(
                     name = "fallback",
                     graph = graph(12, "state-fallback", GraphAlgorithmUiStatus.FALLBACK),
-                    expectedText = "Deterministic citation baseline",
+                    expectedText = "Citation connections",
                 ),
                 GraphStateScenario(
                     name = "empty",

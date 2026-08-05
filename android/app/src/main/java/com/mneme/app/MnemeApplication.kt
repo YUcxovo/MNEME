@@ -8,8 +8,11 @@ import com.mneme.app.data.behavior.BehavioralEventTracker
 import com.mneme.app.data.behavior.NoOpBehavioralEventTracker
 import com.mneme.app.data.behavior.QueuedBehavioralEventTracker
 import com.mneme.app.data.local.BehavioralEventRepository
+import com.mneme.app.data.local.EmptySavedPaperStore
 import com.mneme.app.data.local.MnemeDatabase
+import com.mneme.app.data.local.RoomSavedPaperStore
 import com.mneme.app.data.local.RoomSkeletalCache
+import com.mneme.app.data.local.SavedPaperStore
 import com.mneme.app.data.network.MnemeApiClient
 import com.mneme.app.data.repository.ContentUnavailableException
 import com.mneme.app.data.repository.ControlledFixtureDataRepository
@@ -44,6 +47,8 @@ class MnemeApplication : Application() {
 class MnemeApplicationContainer(
     application: Application,
 ) {
+    private val configurationErrorMessage = application.getString(R.string.configuration_error)
+
     private val liveDatabase: Result<MnemeDatabase> by lazy {
         runCatching { MnemeDatabase.create(application) }
     }
@@ -85,6 +90,11 @@ class MnemeApplicationContainer(
                                 )
                             },
                         ),
+                    savedPaperStore =
+                        RoomSavedPaperStore(
+                            paperDao = appDatabase.paperDao(),
+                            json = MnemeApiClient.json,
+                        ),
                     eventSyncCoordinator = eventSyncCoordinator,
                     digestRefreshCoordinator =
                         DigestRefreshCoordinator(
@@ -105,15 +115,15 @@ class MnemeApplicationContainer(
                     ControlledFixtureDataRepository()
                 } else {
                     ConfigurationErrorRepository(
-                        message = "The Mneme backend token is required for this build.",
+                        message = configurationErrorMessage,
                     )
                 }
             else ->
                 live.fold(
                     onSuccess = LiveComponents::repository,
-                    onFailure = { error ->
+                    onFailure = {
                         ConfigurationErrorRepository(
-                            message = error.message ?: "The Android backend configuration is invalid.",
+                            message = configurationErrorMessage,
                         )
                     },
                 )
@@ -123,23 +133,44 @@ class MnemeApplicationContainer(
     private val eventTracker: BehavioralEventTracker by lazy {
         when (val live = liveComponents) {
             null ->
-                if (!BuildConfig.MNEME_ALLOW_CONTROLLED_FIXTURE) {
-                    NoOpBehavioralEventTracker
-                } else {
+                if (BuildConfig.MNEME_ALLOW_CONTROLLED_FIXTURE) {
                     controlledFixtureDatabase.fold(
                         onSuccess = { controlledDatabase ->
                             QueuedBehavioralEventTracker(
-                                store =
-                                    BehavioralEventRepository(
-                                        controlledDatabase.behavioralEventDao(),
-                                    ),
+                                store = BehavioralEventRepository(controlledDatabase.behavioralEventDao()),
                                 scheduleSync = {},
                             )
                         },
                         onFailure = { NoOpBehavioralEventTracker },
                     )
+                } else {
+                    NoOpBehavioralEventTracker
                 }
             else -> live.fold(LiveComponents::eventTracker) { NoOpBehavioralEventTracker }
+        }
+    }
+
+    private val savedPaperStore: SavedPaperStore by lazy {
+        when (val live = liveComponents) {
+            null ->
+                if (BuildConfig.MNEME_ALLOW_CONTROLLED_FIXTURE) {
+                    controlledFixtureDatabase.fold(
+                        onSuccess = { database ->
+                            RoomSavedPaperStore(
+                                paperDao = database.paperDao(),
+                                json = MnemeApiClient.json,
+                            )
+                        },
+                        onFailure = { EmptySavedPaperStore },
+                    )
+                } else {
+                    EmptySavedPaperStore
+                }
+            else ->
+                live.fold(
+                    onSuccess = LiveComponents::savedPaperStore,
+                    onFailure = { EmptySavedPaperStore },
+                )
         }
     }
 
@@ -150,13 +181,14 @@ class MnemeApplicationContainer(
         get() = liveComponents?.getOrNull()?.digestRefreshCoordinator
 
     val viewModelFactory: MnemeViewModel.Factory by lazy {
-        MnemeViewModel.Factory(repository, eventTracker)
+        MnemeViewModel.Factory(repository, eventTracker, savedPaperStore)
     }
 }
 
 private data class LiveComponents(
     val repository: SkeletalDataRepository,
     val eventTracker: BehavioralEventTracker,
+    val savedPaperStore: SavedPaperStore,
     val eventSyncCoordinator: BehavioralEventSyncCoordinator,
     val digestRefreshCoordinator: DigestRefreshCoordinator,
 )

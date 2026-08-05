@@ -38,15 +38,14 @@ internal fun DigestDto.toBriefing(
 internal fun CachedBriefing.toBriefing(): BriefingUiModel =
     toBriefing(
         message =
-            "The live refresh failed; showing the last successful backend briefing " +
+            "Updates are temporarily unavailable. Showing your saved briefing " +
                 "from ${Instant.ofEpochMilli(refreshedAtEpochMillis).toDateLabel()}.",
     )
 
 internal fun CachedBriefing.toRestoredBriefing(): BriefingUiModel =
     toBriefing(
         message =
-            "Restored the last successful briefing from this device while checking " +
-                "for updates.",
+            "Showing your saved briefing while checking for updates.",
     )
 
 private fun CachedBriefing.toBriefing(message: String): BriefingUiModel =
@@ -83,7 +82,7 @@ private fun DigestDto.title(): String =
 
 private fun DigestDto.description(): String =
     when (entries.size) {
-        0 -> "No papers currently match the configured demo profile."
-        1 -> "One paper selected from the current backend catalog."
-        else -> "${entries.size} papers selected from the current backend catalog."
+        0 -> "No papers are available for this briefing yet."
+        1 -> "One paper prepared for this briefing."
+        else -> "${entries.size} papers prepared for this briefing."
     }
