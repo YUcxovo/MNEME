@@ -43,6 +43,7 @@ find "$RAW_DIR" -mindepth 1 -maxdepth 1 -type f -delete
         ANDROID_SDK_ROOT="$ANDROID_SDK_ROOT" \
         JAVA_HOME="$JAVA_HOME" \
         ./gradlew \
+        -PMNEME_ALLOW_CONTROLLED_FIXTURE=true \
         ktlintCheck \
         detekt \
         lintDebug \
