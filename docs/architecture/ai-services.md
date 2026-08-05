@@ -170,6 +170,12 @@ are requeued on the next client retry. AI failures map to stable codes:
   generation telemetry) in `qa_conversations` / `qa_messages` and returns
   the frozen `Answer` schema. Papers without embedded chunks get the stable
   refusal with `insufficient_evidence`, not an error.
+- A request carrying `conversation_id` loads at most the latest eight messages,
+  in chronological order, through a query constrained by conversation, authenticated
+  user, and paper. Those turns expand the retrieval query and resolve references in
+  the answering prompt, but are explicitly non-evidence: only newly retrieved chunks
+  from the paper's current revision receive citation numbers, and citation verification
+  runs against that current evidence list.
 
 ## Recommendations
 

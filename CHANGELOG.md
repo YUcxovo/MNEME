@@ -11,12 +11,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Added a one-command local MVP rehearsal that resets only demo-user state, starts the
   backend and a resource-tuned Android emulator, installs the live client, and provides a
   debug-only trigger for the existing weekly-briefing notification path.
+- Added a Room-backed Android Saved screen that projects durable paper-save events onto
+  cached papers, survives event synchronization and app restarts, and opens normal paper details.
 - Added revision-safe source provenance for summary key claims: deterministic
   post-generation matching against the exact revision's stored chunks, explicit
   unmatched states, provenance recomputation on chunk replacement, and additive
   `claims` fields in the summary API contract.
-- Added Android paper sharing with both an app deep link and the paper's real arXiv URL,
-  plus `mneme://paper/<backend-paper-UUID>` handling for cold starts and existing app
+- Added Android paper sharing through the paper's public arXiv URL, plus separate
+  `mneme://paper/<backend-paper-UUID>` handling for cold starts and existing app
   tasks through the normal paper repository, including its Room-backed offline fallback.
 - Added live Android briefing synchronization with network-constrained periodic work,
   Room cache refresh, digest-identity notification deduplication, and Android 13+ permission-safe delivery.
