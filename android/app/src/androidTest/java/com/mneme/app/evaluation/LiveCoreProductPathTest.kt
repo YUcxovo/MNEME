@@ -124,7 +124,6 @@ class LiveCoreProductPathTest {
             }
             val briefing = (viewModel.homeState.value as HomeUiState.Content).briefing
             val selectedPaperId = briefing.papers.first().id
-            waitForTag("content-source-notice")
             record(
                 track = LIVE_UI_TRACK,
                 scenario = "seed_to_five_paper_briefing",
@@ -394,7 +393,7 @@ class LiveCoreProductPathTest {
             val briefing = repository.loadBriefing()
             val selectedPaperId = briefing.papers.first().id
             recordBriefing(
-                scenario = "live_five_paper_briefing",
+                scenario = "live_recommended_briefing",
                 iteration = iteration,
                 startedAt = briefingStartedAt,
                 seed = seed,
@@ -406,7 +405,7 @@ class LiveCoreProductPathTest {
             val cacheStartedAt = now()
             val restored = repository.restoreBriefing()
             recordBriefing(
-                scenario = "cached_briefing_restore",
+                scenario = "cached_recommended_briefing_restore",
                 iteration = iteration,
                 startedAt = cacheStartedAt,
                 seed = seed,
@@ -592,7 +591,7 @@ class LiveCoreProductPathTest {
             iteration = iteration,
             startedAt = startedAt,
             success =
-                briefing?.papers?.size == EXPECTED_PAPER_COUNT &&
+                briefing?.papers?.isNotEmpty() == true &&
                     briefing.disclosure.origin == expectedOrigin,
             outcome = "briefing_ui_model_returned",
             seed = seed,

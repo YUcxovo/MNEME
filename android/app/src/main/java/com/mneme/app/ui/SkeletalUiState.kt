@@ -2,6 +2,7 @@ package com.mneme.app.ui
 
 import com.mneme.app.ui.model.GraphUiModel
 import com.mneme.app.ui.model.PaperDetailUiModel
+import com.mneme.app.ui.model.PaperUiModel
 import com.mneme.app.ui.model.QaUiModel
 
 sealed interface OnboardingUiState {
@@ -88,6 +89,18 @@ sealed interface InterestEditUiState {
     data class Error(
         val message: String,
     ) : InterestEditUiState
+}
+
+sealed interface SavedPapersUiState {
+    data object Loading : SavedPapersUiState
+
+    data class Content(
+        val papers: List<PaperUiModel>,
+    ) : SavedPapersUiState
+
+    data class Error(
+        val message: String,
+    ) : SavedPapersUiState
 }
 
 internal fun QaUiState.paperIdOrNull(): String? =

@@ -38,6 +38,11 @@ interface MnemeApi {
         @Body update: PreferenceUpdateDto,
     ): Response<PreferencesDto>
 
+    @POST("users/me/preferences/refresh")
+    suspend fun refreshPreferences(
+        @Body update: PreferenceUpdateDto,
+    ): Response<PreferenceRefreshDto>
+
     @POST("onboarding/seed")
     suspend fun initializeFromSeed(
         @Body request: SeedInitializationRequestDto,
@@ -64,6 +69,13 @@ interface MnemeApi {
 
     @GET("graph/{paper_id}")
     suspend fun getPaperGraph(
+        @Path("paper_id") paperId: String,
+        @Query("depth") depth: Int = 1,
+        @Query("limit") limit: Int = 50,
+    ): Response<GraphDto>
+
+    @POST("graph/{paper_id}/prepare")
+    suspend fun preparePaperGraph(
         @Path("paper_id") paperId: String,
         @Query("depth") depth: Int = 1,
         @Query("limit") limit: Int = 50,

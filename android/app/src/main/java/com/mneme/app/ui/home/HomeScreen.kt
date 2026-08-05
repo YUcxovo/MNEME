@@ -120,6 +120,7 @@ private fun LazyListScope.briefingItems(
     items(items = briefing.papers, key = PaperUiModel::id) { paper ->
         PaperCard(
             paper = paper,
+            supportingTextLabel = stringResource(R.string.briefing_recommendation_reason),
             onClick = { onPaperClick(paper.id) },
         )
     }

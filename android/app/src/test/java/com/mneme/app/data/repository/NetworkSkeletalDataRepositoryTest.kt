@@ -16,9 +16,11 @@ import com.mneme.app.data.network.GraphEdgeDto
 import com.mneme.app.data.network.GraphNodeDto
 import com.mneme.app.data.network.HealthDto
 import com.mneme.app.data.network.JobDto
+import com.mneme.app.data.network.MnemeApiException
 import com.mneme.app.data.network.MnemeRemoteDataSource
 import com.mneme.app.data.network.PaperDto
 import com.mneme.app.data.network.PaperPageDto
+import com.mneme.app.data.network.PreferenceRefreshDto
 import com.mneme.app.data.network.PreferenceUpdateDto
 import com.mneme.app.data.network.PreferencesDto
 import com.mneme.app.data.network.QUESTION_MAX_LENGTH
@@ -41,6 +43,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
 
+@Suppress("LargeClass")
 class NetworkSkeletalDataRepositoryTest {
     @Test
     fun restoreBriefing_withoutDeviceCache_requiresSeedOnboarding() =
@@ -59,7 +62,7 @@ class NetworkSkeletalDataRepositoryTest {
             val restored = checkNotNull(repository.restoreBriefing())
 
             assertEquals(ContentOrigin.CACHED_BACKEND, restored.disclosure.origin)
-            assertTrue(restored.disclosure.message.contains("this device"))
+            assertTrue(restored.disclosure.message.contains("saved briefing"))
             assertEquals(listOf("paper-1"), restored.papers.map { it.id })
             assertEquals("Cached reason", restored.papers.single().summary)
         }
@@ -118,7 +121,7 @@ class NetworkSkeletalDataRepositoryTest {
             val briefing = repository.loadBriefing()
 
             assertEquals(ContentOrigin.CACHED_BACKEND, briefing.disclosure.origin)
-            assertTrue(briefing.disclosure.message.contains("live refresh failed"))
+            assertTrue(briefing.disclosure.message.contains("temporarily unavailable"))
             assertEquals(listOf("paper-1"), briefing.papers.map { it.id })
             assertEquals("Cached reason", briefing.papers.single().summary)
         }
@@ -161,6 +164,17 @@ class NetworkSkeletalDataRepositoryTest {
                         preferences().copy(
                             followedAuthors = listOf("ada lovelace"),
                         )
+                    preferenceRefreshDigest =
+                        digest(
+                            entries =
+                                listOf(
+                                    entry(
+                                        paper("paper-refreshed", "Refreshed paper"),
+                                        rank = 1,
+                                        reason = "Matches the updated interests",
+                                    ),
+                                ),
+                        ).copy(id = "digest-refreshed")
                 }
             val cache = FakeCache()
             val repository = NetworkSkeletalDataRepository(remote, cache) { REFRESHED_AT }
@@ -185,39 +199,35 @@ class NetworkSkeletalDataRepositoryTest {
             )
             assertEquals(topics, cache.storedPreferences?.topics)
             assertEquals(topics, briefing.interests)
+            assertEquals("digest-refreshed", briefing.digest.id)
+            assertEquals(listOf("paper-refreshed"), briefing.papers.map { it.id })
+            assertEquals("digest-refreshed", cache.storedDigest?.id)
             assertEquals(
-                listOf("get_preferences", "update_preferences"),
-                remote.operations.take(2),
-            )
-            assertTrue(
-                remote.operations.indexOf("update_preferences") <
-                    remote.operations.indexOf("generate_digest"),
+                listOf("get_preferences", "refresh_preferences"),
+                remote.operations,
             )
         }
 
     @Test
-    fun updateInterests_pendingDigestDoesNotChangeDeviceCache() {
+    fun updateInterests_atomicRefreshFailureDoesNotCallLegacyMutationOrChangeDeviceCache() {
         val remote =
             FakeRemote().apply {
-                digestResult =
-                    RemoteResource.Accepted(
-                        JobDto(
-                            id = "preparing-updated-digest",
-                            stage = "generate_digest",
-                            status = "running",
-                        ),
-                    )
+                preferenceRefreshFailure = IOException("refresh failed")
             }
         val cache = FakeCache()
         val repository = NetworkSkeletalDataRepository(remote, cache)
 
-        assertThrows(ContentPendingException::class.java) {
+        assertThrows(IOException::class.java) {
             runBlocking { repository.updateInterests(listOf("systems")) }
         }
 
         assertEquals(listOf("systems"), remote.preferenceUpdates.single().topics)
         assertEquals(null, cache.storedPreferences)
         assertEquals(null, cache.storedDigest)
+        assertEquals(
+            listOf("get_preferences", "refresh_preferences"),
+            remote.operations,
+        )
     }
 
     @Test
@@ -470,7 +480,7 @@ class NetworkSkeletalDataRepositoryTest {
             assertTrue(ready.paper.keyClaims.isEmpty())
             assertTrue(
                 ready.paper.disclosure.message
-                    .contains("does not include a generated summary"),
+                    .contains("no generated summary yet"),
             )
         }
 
@@ -601,10 +611,11 @@ class NetworkSkeletalDataRepositoryTest {
     }
 
     @Test
-    fun loadGraph_mapsFrozenDirectionAndRequestsBoundedDepthTwoView() =
+    fun loadGraph_preparesCurrentCenterAndMapsBoundedDepthTwoView() =
         runBlocking {
             val remote = FakeRemote()
-            remote.graph =
+            remote.graph = graph(status = "ready")
+            remote.preparedGraph =
                 graph(
                     status = "ready",
                     edges = listOf(GraphEdgeDto(source = "paper-1", target = "paper-2", weight = 0.8)),
@@ -620,7 +631,111 @@ class NetworkSkeletalDataRepositoryTest {
             assertEquals("paper-2", graph.edges.single().target)
             assertEquals(ContentOrigin.LIVE_BACKEND, graph.disclosure.origin)
             assertEquals(Triple("paper-1", 2, 50), remote.graphRequests.single())
+            assertEquals(Triple("paper-1", 2, 50), remote.graphPrepareRequests.single())
         }
+
+    @Test
+    fun loadGraph_preparesARealNeighborhoodWhenTheCachedGraphHasNoEdges() =
+        runBlocking {
+            val remote =
+                FakeRemote().apply {
+                    graph = graph(status = "ready")
+                    preparedGraph =
+                        graph(
+                            status = "ready",
+                            edges =
+                                listOf(
+                                    GraphEdgeDto(
+                                        source = "paper-1",
+                                        target = "paper-2",
+                                        weight = null,
+                                    ),
+                                ),
+                        )
+                }
+            val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+            val graph = repository.loadGraph("paper-1")
+
+            assertEquals(1, graph.edges.size)
+            assertEquals(listOf(Triple("paper-1", 2, 50)), remote.graphRequests)
+            assertEquals(listOf(Triple("paper-1", 2, 50)), remote.graphPrepareRequests)
+        }
+
+    @Test
+    fun loadGraph_prepareIoFailureReturnsTheSuccessfulEmptyGetGraph() =
+        runBlocking {
+            val remote =
+                FakeRemote().apply {
+                    graph = graph(status = "ready")
+                    graphPrepareFailure = IOException("provider unavailable")
+                }
+            val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+            val graph = repository.loadGraph("paper-1")
+
+            assertTrue(graph.edges.isEmpty())
+            assertEquals(GraphAlgorithmUiStatus.READY, graph.algorithmStatus)
+            assertEquals(listOf(Triple("paper-1", 2, 50)), remote.graphRequests)
+            assertEquals(listOf(Triple("paper-1", 2, 50)), remote.graphPrepareRequests)
+        }
+
+    @Test
+    fun loadGraph_prepareServerFailureReturnsTheSuccessfulGetGraphWithEdges() =
+        runBlocking {
+            val remote =
+                FakeRemote().apply {
+                    graph =
+                        graph(
+                            status = "ready",
+                            edges =
+                                listOf(
+                                    GraphEdgeDto(
+                                        source = "paper-1",
+                                        target = "paper-2",
+                                        weight = 0.8,
+                                    ),
+                                ),
+                        )
+                    graphPrepareFailure =
+                        MnemeApiException(
+                            statusCode = 503,
+                            errorCode = "service_unavailable",
+                            message = "Graph provider unavailable.",
+                            requestId = "request-1",
+                        )
+                }
+            val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+            val graph = repository.loadGraph("paper-1")
+
+            assertEquals(1, graph.edges.size)
+            assertEquals("paper-2", graph.edges.single().target)
+            assertEquals(listOf(Triple("paper-1", 2, 50)), remote.graphRequests)
+            assertEquals(listOf(Triple("paper-1", 2, 50)), remote.graphPrepareRequests)
+        }
+
+    @Test
+    fun loadGraph_prepareClientFailureIsNotHiddenByTheGetGraph() {
+        val remote =
+            FakeRemote().apply {
+                graph = graph(status = "ready")
+                graphPrepareFailure =
+                    MnemeApiException(
+                        statusCode = 401,
+                        errorCode = "unauthorized",
+                        message = "Authentication required.",
+                        requestId = "request-2",
+                    )
+            }
+        val repository = NetworkSkeletalDataRepository(remote, FakeCache())
+
+        assertThrows(MnemeApiException::class.java) {
+            runBlocking { repository.loadGraph("paper-1") }
+        }
+        assertEquals(listOf(Triple("paper-1", 2, 50)), remote.graphRequests)
+        assertEquals(listOf(Triple("paper-1", 2, 50)), remote.graphPrepareRequests)
+    }
 
     @Test
     fun fallbackGraph_isDisclosedAsBackendBaseline() =
@@ -664,6 +779,8 @@ class NetworkSkeletalDataRepositoryTest {
     private class FakeRemote : MnemeRemoteDataSource {
         var preferences: PreferencesDto = preferences()
         var digestResult: RemoteResource<DigestDto> = RemoteResource.Ready(digest())
+        var preferenceRefreshDigest: DigestDto = digest()
+        var preferenceRefreshFailure: Exception? = null
         var digestPage = DigestPageDto(emptyList())
         val digestPagesByCursor = mutableMapOf<String, DigestPageDto>()
         var paper: PaperDto = paper("paper-1", "Paper")
@@ -676,12 +793,15 @@ class NetworkSkeletalDataRepositoryTest {
                 conversationId = "conversation-1",
             )
         var graph: GraphDto = graph(status = "fallback")
+        var preparedGraph: GraphDto = graph(status = "fallback")
+        var graphPrepareFailure: Exception? = null
         var briefingFailure: Exception? = null
         var paperFailure: Exception? = null
         val summaryResults = ArrayDeque<RemoteResource<SummaryDto>>()
         val questions = mutableListOf<QuestionDto>()
         val seedRequests = mutableListOf<SeedInitializationRequestDto>()
         val graphRequests = mutableListOf<Triple<String, Int, Int>>()
+        val graphPrepareRequests = mutableListOf<Triple<String, Int, Int>>()
         val preferenceUpdates = mutableListOf<PreferenceUpdateDto>()
         val operations = mutableListOf<String>()
 
@@ -711,6 +831,21 @@ class NetworkSkeletalDataRepositoryTest {
                     followedAuthors = update.followedAuthors,
                 )
             return preferences
+        }
+
+        override suspend fun refreshPreferences(update: PreferenceUpdateDto): PreferenceRefreshDto {
+            operations += "refresh_preferences"
+            preferenceUpdates += update
+            preferenceRefreshFailure?.let { throw it }
+            preferences =
+                preferences.copy(
+                    topics = update.topics,
+                    followedAuthors = update.followedAuthors,
+                )
+            return PreferenceRefreshDto(
+                preferences = preferences,
+                digest = preferenceRefreshDigest,
+            )
         }
 
         override suspend fun initializeFromSeed(request: SeedInitializationRequestDto): SeedInitializationDto {
@@ -750,6 +885,16 @@ class NetworkSkeletalDataRepositoryTest {
         ): GraphDto {
             graphRequests += Triple(paperId, depth, limit)
             return graph
+        }
+
+        override suspend fun preparePaperGraph(
+            paperId: String,
+            depth: Int,
+            limit: Int,
+        ): GraphDto {
+            graphPrepareRequests += Triple(paperId, depth, limit)
+            graphPrepareFailure?.let { throw it }
+            return preparedGraph
         }
 
         override suspend fun uploadEvents(events: List<UserEventDto>): EventIngestionResultDto =

@@ -5,12 +5,15 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.mneme.app.data.behavior.BehavioralEventTracker
 import com.mneme.app.data.behavior.NoOpBehavioralEventTracker
+import com.mneme.app.data.local.EmptySavedPaperStore
+import com.mneme.app.data.local.SavedPaperStore
 import com.mneme.app.data.network.QUESTION_MAX_LENGTH
 import com.mneme.app.data.repository.PaperContentResult
 import com.mneme.app.data.repository.SkeletalDataRepository
 import com.mneme.app.data.repository.toUserMessage
 import com.mneme.app.ui.home.HomeUiState
 import com.mneme.app.ui.model.QaUiModel
+import com.mneme.app.ui.saved.SavedPapersStateHolder
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,8 +27,13 @@ import java.io.IOException
 class MnemeViewModel(
     private val repository: SkeletalDataRepository,
     private val eventTracker: BehavioralEventTracker = NoOpBehavioralEventTracker,
+    savedPaperStore: SavedPaperStore = EmptySavedPaperStore,
 ) : ViewModel() {
     val behavioralEvents = MnemeBehavioralEventRecorder(eventTracker, viewModelScope)
+
+    private val savedPapersStateHolder = SavedPapersStateHolder(savedPaperStore, viewModelScope)
+    val savedPapers: StateFlow<SavedPapersUiState> = savedPapersStateHolder.state
+    val retrySavedPapers: () -> Unit = savedPapersStateHolder::retry
 
     private val _onboardingState =
         MutableStateFlow<OnboardingUiState>(OnboardingUiState.Checking)
@@ -307,13 +315,14 @@ class MnemeViewModel(
     class Factory(
         private val repository: SkeletalDataRepository,
         private val eventTracker: BehavioralEventTracker = NoOpBehavioralEventTracker,
+        private val savedPaperStore: SavedPaperStore = EmptySavedPaperStore,
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MnemeViewModel::class.java)) {
                 "Unsupported ViewModel class: ${modelClass.name}"
             }
-            return MnemeViewModel(repository, eventTracker) as T
+            return MnemeViewModel(repository, eventTracker, savedPaperStore) as T
         }
     }
 

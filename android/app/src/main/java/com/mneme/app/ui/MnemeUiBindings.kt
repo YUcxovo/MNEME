@@ -19,6 +19,7 @@ internal fun MnemeViewModel.uiActions(): MnemeUiActions =
         requestQa = ::askQuestion,
         requestGraph = { paperId -> loadGraph(paperId) },
         retryGraph = { paperId -> loadGraph(paperId, force = true) },
+        retrySavedPapers = retrySavedPapers,
         saveInterests = ::saveInterests,
         savePaper = behavioralEvents::savePaper,
         sharePaper = behavioralEvents::sharePaper,
@@ -32,6 +33,7 @@ internal class FixtureMnemeState(
     private var graphState by mutableStateOf<GraphUiState>(GraphUiState.Idle)
     private var interestEditState by mutableStateOf<InterestEditUiState>(InterestEditUiState.Idle)
     private var engagement by mutableStateOf(PaperEngagementUiState())
+    private var savedPapers by mutableStateOf(emptyList<com.mneme.app.ui.model.PaperUiModel>())
     private var briefing by mutableStateOf(repository.briefing())
 
     val snapshot: MnemeUiSnapshot
@@ -43,6 +45,7 @@ internal class FixtureMnemeState(
                 graph = graphState,
                 interestEdit = interestEditState,
                 engagement = engagement,
+                savedPapers = SavedPapersUiState.Content(savedPapers),
             )
 
     val actions =
@@ -69,6 +72,11 @@ internal class FixtureMnemeState(
                             engagement.saveStatuses +
                                 (paperId to EventRecordingStatus.RECORDED),
                     )
+                repository.briefing().papers.firstOrNull { it.id == paperId }?.let { paper ->
+                    if (savedPapers.none { it.id == paper.id }) {
+                        savedPapers = listOf(paper) + savedPapers
+                    }
+                }
             },
             sharePaper = { paperId ->
                 engagement =

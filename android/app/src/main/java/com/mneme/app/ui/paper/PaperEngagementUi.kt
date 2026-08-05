@@ -7,6 +7,7 @@ import com.mneme.app.ui.EventRecordingStatus
 @StringRes
 internal fun EventRecordingStatus.saveLabel(): Int =
     when (this) {
+        EventRecordingStatus.CHECKING -> R.string.action_checking_saved
         EventRecordingStatus.IDLE -> R.string.action_save_paper
         EventRecordingStatus.RECORDING -> R.string.action_saving_paper
         EventRecordingStatus.RECORDED -> R.string.action_saved
@@ -16,11 +17,15 @@ internal fun EventRecordingStatus.saveLabel(): Int =
 @StringRes
 internal fun EventRecordingStatus.feedbackRes(isShare: Boolean = false): Int? =
     when (this) {
+        EventRecordingStatus.CHECKING -> null
         EventRecordingStatus.IDLE -> null
         EventRecordingStatus.RECORDING ->
             if (isShare) R.string.share_recording else R.string.save_recording
         EventRecordingStatus.RECORDED ->
             if (isShare) R.string.share_recorded else R.string.save_recorded
         EventRecordingStatus.FAILED ->
-            if (isShare) R.string.share_record_failed else R.string.save_record_failed
+            if (isShare) R.string.share_recorded else R.string.save_record_failed
     }
+
+@Suppress("MaxLineLength")
+internal fun EventRecordingStatus.feedbackIsFailure(isShare: Boolean = false): Boolean = this == EventRecordingStatus.FAILED && !isShare

@@ -22,7 +22,6 @@ class PaperShareIntentTest {
         const val PAPER_TITLE = "Repository paper"
         const val SHARE_TEXT =
             "Repository paper\n" +
-                "mneme://paper/8f0a1d3b-cc41-43f0-97c2-c175341ef07c\n" +
                 "https://arxiv.org/abs/2401.12345"
     }
 }

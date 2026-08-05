@@ -41,7 +41,7 @@ class GraphScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun fallbackGraph_disclosesOriginAndOpensSelectedPaper() {
+    fun citationGraph_opensSelectedPaperWithoutEngineeringLabels() {
         val graph =
             requireNotNull(
                 SeededSkeletalContentRepository.graph(SeededSkeletalContentRepository.PAPER_ID),
@@ -60,8 +60,6 @@ class GraphScreenTest {
 
         composeRule.onNodeWithTag("graph-screen").assertIsDisplayed()
         composeRule.onNodeWithTag("citation-graph-webview").assertIsDisplayed()
-        composeRule.onNodeWithTag("graph-source-notice").assertIsDisplayed()
-        composeRule.onNodeWithText("Deterministic citation baseline").assertIsDisplayed()
         composeRule.onNodeWithTag("graph-screen").performScrollToNode(
             hasTestTag("graph-node-chooser"),
         )
@@ -310,7 +308,7 @@ class GraphScreenTest {
     }
 
     @Test
-    fun readyGraph_reportsRankedAndClusteredStatus() {
+    fun readyGraph_usesProductFacingHeading() {
         val graph =
             requireNotNull(
                 SeededSkeletalContentRepository.graph(SeededSkeletalContentRepository.PAPER_ID),
@@ -326,7 +324,7 @@ class GraphScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("Ranked and clustered graph").assertIsDisplayed()
+        composeRule.onNodeWithText("Citation connections").assertIsDisplayed()
     }
 
     private fun emptyGraph(): GraphUiModel =

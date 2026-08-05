@@ -3,6 +3,7 @@
 package com.mneme.app.ui.interests
 
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.Button
@@ -116,6 +117,10 @@ private fun SaveInterestsButton(
     ) {
         if (isSaving) {
             CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+            Text(
+                text = stringResource(R.string.interests_saving),
+                modifier = Modifier.padding(start = 8.dp),
+            )
         } else {
             Text(stringResource(R.string.interests_save))
         }

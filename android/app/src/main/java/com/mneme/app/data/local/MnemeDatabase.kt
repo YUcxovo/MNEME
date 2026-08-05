@@ -25,7 +25,7 @@ import com.mneme.app.data.local.entity.UserPrefsEntity
         CacheMetadataEntity::class,
         BehavioralEventEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 abstract class MnemeDatabase : RoomDatabase() {
@@ -97,6 +97,17 @@ abstract class MnemeDatabase : RoomDatabase() {
                 }
             }
 
+        val MIGRATION_5_6 =
+            object : Migration(5, 6) {
+                override fun migrate(database: SupportSQLiteDatabase) {
+                    database.execSQL(
+                        "CREATE INDEX IF NOT EXISTS " +
+                            "index_behavioral_events_event_type_paper_id_occurred_at " +
+                            "ON behavioral_events (event_type, paper_id, occurred_at)",
+                    )
+                }
+            }
+
         fun create(context: Context): MnemeDatabase = create(context, DATABASE_NAME)
 
         fun createControlledFixture(context: Context): MnemeDatabase = create(context, CONTROLLED_FIXTURE_DATABASE_NAME)
@@ -110,7 +121,12 @@ abstract class MnemeDatabase : RoomDatabase() {
                     context.applicationContext,
                     MnemeDatabase::class.java,
                     databaseName,
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
-                .build()
+                ).addMigrations(
+                    MIGRATION_1_2,
+                    MIGRATION_2_3,
+                    MIGRATION_3_4,
+                    MIGRATION_4_5,
+                    MIGRATION_5_6,
+                ).build()
     }
 }

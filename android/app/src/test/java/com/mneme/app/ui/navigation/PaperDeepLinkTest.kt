@@ -99,10 +99,9 @@ class PaperDeepLinkTest {
     @Test
     fun buildsShareTextFromCallerProvidedPaperValues() {
         assertEquals(
-            "A Real Paper Title\nmneme://paper/$PAPER_ID\n$ARXIV_URL",
+            "A Real Paper Title\n$ARXIV_URL",
             PaperDeepLink.buildShareText(
                 title = "A Real Paper Title",
-                paperId = PAPER_ID,
                 arxivUrl = ARXIV_URL,
             ),
         )
@@ -110,14 +109,12 @@ class PaperDeepLinkTest {
 
     @Test
     fun shareTextUsesEachPaperValuesWithoutAPlaceholderMapping() {
-        val otherPaperId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
         val otherArxivUrl = "https://arxiv.org/abs/2608.54321"
 
         assertEquals(
-            "Another Paper\nmneme://paper/$otherPaperId\n$otherArxivUrl",
+            "Another Paper\n$otherArxivUrl",
             PaperDeepLink.buildShareText(
                 title = " Another Paper ",
-                paperId = otherPaperId,
                 arxivUrl = " $otherArxivUrl ",
             ),
         )
@@ -126,13 +123,10 @@ class PaperDeepLinkTest {
     @Test
     fun rejectsShareTextWithoutRealCallerProvidedMetadata() {
         assertThrows(IllegalArgumentException::class.java) {
-            PaperDeepLink.buildShareText(" ", PAPER_ID, ARXIV_URL)
+            PaperDeepLink.buildShareText(" ", ARXIV_URL)
         }
         assertThrows(IllegalArgumentException::class.java) {
-            PaperDeepLink.buildShareText("Paper", PAPER_ID, " ")
-        }
-        assertThrows(IllegalArgumentException::class.java) {
-            PaperDeepLink.buildShareText("Paper", "not-a-uuid", ARXIV_URL)
+            PaperDeepLink.buildShareText("Paper", " ")
         }
     }
 

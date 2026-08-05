@@ -20,7 +20,7 @@ internal fun PaperDto.toDetail(summary: SummaryDto): PaperDetailUiModel {
         disclosure =
             disclosure(
                 ContentOrigin.LIVE_BACKEND,
-                "Paper metadata and summary came from the Mneme backend.",
+                "Paper details are up to date.",
             ),
         abstractText = abstract,
         keyClaims = summary.keyClaims,
@@ -54,8 +54,8 @@ private fun CachedPaper.toCachedSummaryDetail(summary: SummaryDto): PaperDetailU
         disclosure =
             disclosure(
                 ContentOrigin.CACHED_BACKEND,
-                "The live request failed; this view contains a previously cached summary and " +
-                    "its recorded source links.",
+                "Updates are temporarily unavailable. This saved summary includes its " +
+                    "recorded source links.",
             ),
         abstractText = abstractText,
         keyClaims = summary.keyClaims,
@@ -73,8 +73,8 @@ private fun CachedPaper.toCachedMetadataDetail(): PaperDetailUiModel =
         disclosure =
             disclosure(
                 ContentOrigin.CACHED_BACKEND,
-                "The live request failed; this view contains cached paper metadata and " +
-                    "does not include a generated summary.",
+                "Updates are temporarily unavailable. This saved paper has no generated " +
+                    "summary yet.",
             ),
         abstractText = abstractText,
         keyClaims = emptyList(),

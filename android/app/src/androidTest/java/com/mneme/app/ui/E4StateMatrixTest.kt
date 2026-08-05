@@ -44,7 +44,9 @@ class E4StateMatrixTest {
         composeRule.onNodeWithTag("seed-onboarding-screen").assertIsDisplayed()
         composeRule.onNodeWithTag("seed-paper-input").performTextInput("https://arxiv.org/abs/1706.03762")
         composeRule.onNodeWithTag("seed-paper-submit").performClick()
-        waitForText("LIVE BACKEND DATA")
+        waitForText(E4_PAPER_TITLE)
+        assertTrue(composeRule.onAllNodesWithText("SAMPLE CONTENT").fetchSemanticsNodes().isEmpty())
+        assertTrue(composeRule.onAllNodesWithText("OFFLINE COPY").fetchSemanticsNodes().isEmpty())
         composeRule.runOnIdle {
             val state = viewModel.homeState.value as HomeUiState.Content
             assertEquals(5, state.briefing.papers.size)
@@ -68,7 +70,7 @@ class E4StateMatrixTest {
                 ),
             )
 
-        waitForText("CACHED BACKEND DATA")
+        waitForText("OFFLINE COPY")
         composeRule.onNodeWithText(E4_PAPER_TITLE).assertIsDisplayed()
         composeRule.onNodeWithText("Network unavailable; cached briefing retained.").assertIsDisplayed()
         composeRule.runOnIdle {
@@ -152,7 +154,7 @@ class E4StateMatrixTest {
                 ),
             )
 
-        waitForText("The backend response does not match the frozen v0.1 API contract.")
+        waitForText("Mneme received content it could not display. Please try again.")
         assertTrue(composeRule.onAllNodesWithText(E4_PAPER_TITLE).fetchSemanticsNodes().isEmpty())
         assertTrue(
             composeRule

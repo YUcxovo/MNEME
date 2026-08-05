@@ -65,6 +65,49 @@ class MnemeApiClientTest {
         }
 
     @Test
+    fun preferenceRefresh_postsFullReplacementAndDecodesAtomicBriefing() =
+        runBlocking {
+            server.enqueue(
+                jsonResponse(
+                    """
+                    {
+                      "preferences": {
+                        "topics": ["hci"],
+                        "followed_authors": ["ada lovelace"],
+                        "model_version": 2,
+                        "updated_at": "2026-08-05T08:00:00Z"
+                      },
+                      "digest": {
+                        "id": "77777777-7777-4777-8777-777777777777",
+                        "digest_type": "manual",
+                        "generated_at": "2026-08-05T08:00:01Z",
+                        "entries": []
+                      }
+                    }
+                    """.trimIndent(),
+                ),
+            )
+
+            val result =
+                createRemote().refreshPreferences(
+                    PreferenceUpdateDto(
+                        topics = listOf("HCI"),
+                        followedAuthors = listOf("ada lovelace"),
+                    ),
+                )
+
+            assertEquals(listOf("hci"), result.preferences.topics)
+            assertEquals("77777777-7777-4777-8777-777777777777", result.digest.id)
+            val request = server.takeRequest()
+            assertEquals("POST", request.method)
+            assertEquals("/v1/users/me/preferences/refresh", request.path)
+            assertEquals("Bearer local-test-token", request.getHeader("Authorization"))
+            val body = request.body.readUtf8()
+            assertTrue(body.contains("\"topics\":[\"HCI\"]"))
+            assertTrue(body.contains("\"followed_authors\":[\"ada lovelace\"]"))
+        }
+
+    @Test
     fun summaryAccepted_decodesDurableJobWithoutTreatingItAsSummary() =
         runBlocking {
             server.enqueue(
