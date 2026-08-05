@@ -1,5 +1,6 @@
 """Atomic behavioral-event ingestion and preference recomputation."""
 
+from collections import Counter
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.models.base import utc_now
 from mneme.repositories.events import EventRecord, EventRepository
+from mneme.services.behavior import BehaviorSignal
 from mneme.services.behavior_v2 import (
     BEHAVIOR_MODEL_NAME,
     DEFAULT_BEHAVIOR_CONFIG,
@@ -92,12 +94,18 @@ class BehaviorEventService:
             if referenced_papers - known_papers:
                 raise EventPaperNotFoundError
 
-            accepted = await self._repository.insert_events(user_id, new_events)
-            profile = await self._recompute_locked(user_id, now=now, latest_allowed=latest_allowed)
+            inserted_ids = await self._repository.insert_events(user_id, new_events)
+            accepted_events = [event for event in new_events if event.event_id in inserted_ids]
+            profile = await self._recompute_locked(
+                user_id,
+                now=now,
+                latest_allowed=latest_allowed,
+                accepted_events=accepted_events,
+            )
 
         result = EventIngestionStats(
-            accepted=accepted,
-            duplicates=len(events) - accepted,
+            accepted=len(inserted_ids),
+            duplicates=len(events) - len(inserted_ids),
         )
         logger.info(
             "behavior_events_ingested",
@@ -137,6 +145,7 @@ class BehaviorEventService:
         *,
         now: datetime,
         latest_allowed: datetime,
+        accepted_events: Sequence[EventRecord] | None = None,
     ) -> BehaviorProfile:
         signals = await self._repository.list_recent_signals(
             user_id,
@@ -149,9 +158,46 @@ class BehaviorEventService:
             embedding_model=self._embedding_model,
         )
         profile = aggregate_behavior_profile(signals, embeddings, now=now)
+        advance_freshness = True
+        if accepted_events is not None:
+            prior_profile = aggregate_behavior_profile(
+                _without_events(signals, accepted_events),
+                embeddings,
+                now=now,
+            )
+            advance_freshness = not _same_recommendation_profile(prior_profile, profile)
         await self._repository.store_behavior_profile(
             user_id,
             profile=profile,
             embedding_model=self._embedding_model,
+            advance_freshness=advance_freshness,
         )
         return profile
+
+
+def _without_events(
+    signals: Sequence[BehaviorSignal],
+    events: Sequence[EventRecord],
+) -> list[BehaviorSignal]:
+    """Remove the exactly accepted event multiset from a loaded signal history."""
+    accepted = Counter(
+        (event.event_type, event.paper_id, event.occurred_at, event.duration_ms) for event in events
+    )
+    prior: list[BehaviorSignal] = []
+    for signal in signals:
+        key = (signal.event_type, signal.paper_id, signal.occurred_at, signal.duration_ms)
+        if accepted[key] > 0:
+            accepted[key] -= 1
+        else:
+            prior.append(signal)
+    return prior
+
+
+def _same_recommendation_profile(left: BehaviorProfile, right: BehaviorProfile) -> bool:
+    """Compare only profile fields consumed by recommendation scoring."""
+    return (
+        left.positive_embedding == right.positive_embedding
+        and left.negative_embedding == right.negative_embedding
+        and left.confidence == right.confidence
+        and left.model_version == right.model_version
+    )
