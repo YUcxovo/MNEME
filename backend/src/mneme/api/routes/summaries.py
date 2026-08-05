@@ -145,7 +145,7 @@ async def get_paper_summary(
             raise ApiError(
                 status.HTTP_503_SERVICE_UNAVAILABLE,
                 "queue_unavailable",
-                "The paper pipeline is temporarily unavailable.",
+                "Paper preparation is temporarily unavailable. Try again.",
             ) from error
         logger.info(
             "summary_pipeline_enqueued",
