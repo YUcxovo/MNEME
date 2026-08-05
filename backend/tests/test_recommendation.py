@@ -54,6 +54,45 @@ def test_topic_match_covers_title_and_categories() -> None:
 
 
 @pytest.mark.base
+def test_topic_match_covers_abstract_without_topic_specific_aliases() -> None:
+    candidate = _candidate(title="A study of interactive systems")
+    candidate = candidate.model_copy(
+        update={"abstract": "We evaluate an HCI technique with working programmers."}
+    )
+
+    strength, matched = topic_match(("hci",), candidate)
+
+    assert strength == 1
+    assert matched == ("hci",)
+
+
+@pytest.mark.base
+def test_changed_interest_can_change_top_paper_via_abstract_match() -> None:
+    language_model = _candidate(title="LLM inference systems", age_days=1)
+    interaction = _candidate(title="Interfaces for collaborative programming", age_days=1)
+    interaction = interaction.model_copy(
+        update={"abstract": "A controlled HCI evaluation with software teams."}
+    )
+    candidates = [language_model, interaction]
+
+    before = rank_candidates(
+        candidates,
+        PreferenceView(explicit_topics=("llm",)),
+        now=NOW,
+        limit=1,
+    )
+    after = rank_candidates(
+        candidates,
+        PreferenceView(explicit_topics=("hci",)),
+        now=NOW,
+        limit=1,
+    )
+
+    assert before[0].paper_id == language_model.paper_id
+    assert after[0].paper_id == interaction.paper_id
+
+
+@pytest.mark.base
 def test_recency_decays_with_a_one_week_half_life() -> None:
     fresh = recency_score(NOW, now=NOW)
     week_old = recency_score(NOW - timedelta(days=7), now=NOW)

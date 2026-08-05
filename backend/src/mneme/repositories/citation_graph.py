@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from uuid import UUID, uuid4
 
-from sqlalchemy import or_, select
+from sqlalchemy import or_, select, update
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,6 +11,9 @@ from mneme.models.base import utc_now
 from mneme.models.graph import Citation
 from mneme.models.paper import Paper
 from mneme.services.semantic_scholar.types import CitationDirection, SemanticPaper
+
+GRAPH_PREPARED_AS_SOURCE = "graph_prepared_as_source"
+GRAPH_PREPARED_AS_TARGET = "graph_prepared_as_target"
 
 
 class CitationIdentityConflict(RuntimeError):
@@ -28,12 +31,127 @@ class CitationPersistenceResult:
     skipped_self: int
 
 
+@dataclass(frozen=True, slots=True)
+class LocalCitationPersistenceResult:
+    """Counts from persisting arXiv-identified edges with two local endpoints."""
+
+    observed: int
+    inserted: int
+    duplicates: int
+    unresolved: int
+    skipped_self: int
+
+
 def _citation_insert(rows: list[dict[str, object]]):
     return postgresql_insert(Citation).values(rows).on_conflict_do_nothing().returning(Citation.id)
 
 
 class CitationGraphRepository:
     """Persist provider observations without owning commit or rollback."""
+
+    async def persist_local_arxiv_edges(
+        self,
+        session: AsyncSession,
+        *,
+        center_paper_id: UUID,
+        reference_arxiv_ids: tuple[str, ...],
+        citation_arxiv_ids: tuple[str, ...],
+        evidence_source: str,
+    ) -> LocalCitationPersistenceResult | None:
+        """Idempotently persist real directed edges resolved only by local arXiv IDs."""
+        requested_ids = set(reference_arxiv_ids) | set(citation_arxiv_ids)
+        locked_papers = list(
+            (
+                await session.scalars(
+                    select(Paper)
+                    .where(
+                        or_(
+                            Paper.id == center_paper_id,
+                            Paper.arxiv_id.in_(tuple(sorted(requested_ids))),
+                        )
+                    )
+                    .order_by(Paper.id)
+                    .with_for_update()
+                )
+            ).all()
+        )
+        center = next((paper for paper in locked_papers if paper.id == center_paper_id), None)
+        if center is None:
+            return None
+
+        by_arxiv = {paper.arxiv_id: paper for paper in locked_papers}
+        now = utc_now()
+        rows: dict[tuple[UUID, UUID], dict[str, object]] = {}
+        preparation_markers: dict[tuple[UUID, UUID], dict[str, bool]] = {}
+        skipped_self = 0
+        unresolved = 0
+
+        for arxiv_id, references_center in (
+            *((arxiv_id, True) for arxiv_id in reference_arxiv_ids),
+            *((arxiv_id, False) for arxiv_id in citation_arxiv_ids),
+        ):
+            neighbor = by_arxiv.get(arxiv_id)
+            if neighbor is None:
+                unresolved += 1
+                continue
+            if neighbor.id == center.id:
+                skipped_self += 1
+                continue
+            source_id, target_id = (
+                (center.id, neighbor.id) if references_center else (neighbor.id, center.id)
+            )
+            marker = {
+                (
+                    GRAPH_PREPARED_AS_SOURCE if source_id == center.id else GRAPH_PREPARED_AS_TARGET
+                ): True
+            }
+            preparation_markers[(source_id, target_id)] = marker
+            rows.setdefault(
+                (source_id, target_id),
+                {
+                    "id": uuid4(),
+                    "source_paper_id": source_id,
+                    "external_source_id": None,
+                    "target_paper_id": target_id,
+                    "external_target_id": None,
+                    "algorithm_weight": None,
+                    "algorithm_metadata": {
+                        "evidence_source": evidence_source,
+                        **marker,
+                    },
+                    "created_at": now,
+                    "updated_at": now,
+                },
+            )
+
+        inserted = 0
+        if rows:
+            ordered_edge_ids = sorted(rows)
+            result = await session.execute(
+                _citation_insert([rows[edge_id] for edge_id in ordered_edge_ids])
+            )
+            inserted = len(result.scalars().all())
+            for source_id, target_id in ordered_edge_ids:
+                marker = preparation_markers[(source_id, target_id)]
+                await session.execute(
+                    update(Citation)
+                    .where(
+                        Citation.source_paper_id == source_id,
+                        Citation.target_paper_id == target_id,
+                    )
+                    .values(
+                        algorithm_metadata=Citation.algorithm_metadata.op("||")(marker),
+                        updated_at=now,
+                    )
+                )
+        observed = len(reference_arxiv_ids) + len(citation_arxiv_ids)
+        return LocalCitationPersistenceResult(
+            observed=observed,
+            inserted=inserted,
+            duplicates=max(0, observed - unresolved - skipped_self - inserted),
+            unresolved=unresolved,
+            skipped_self=skipped_self,
+        )
 
     async def persist_neighbors(
         self,

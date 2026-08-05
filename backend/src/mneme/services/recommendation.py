@@ -83,12 +83,18 @@ class RecommendedDigestService:
         *,
         digest_type: DigestType,
         as_of: datetime,
+        include_paper_ids: tuple[UUID, ...] = (),
     ) -> DigestBundle:
         """Persist a deterministic digest snapshot for one cutoff instant."""
         if as_of.tzinfo is None:
             raise ValueError("Digest generation cutoff must be timezone-aware.")
         await self._repository.lock_user(user_id)
-        return await self._generate_locked(user_id, digest_type=digest_type, as_of=as_of)
+        return await self._generate_locked(
+            user_id,
+            digest_type=digest_type,
+            as_of=as_of,
+            include_paper_ids=include_paper_ids,
+        )
 
     async def _generate_locked(
         self,
@@ -96,6 +102,7 @@ class RecommendedDigestService:
         *,
         digest_type: DigestType,
         as_of: datetime,
+        include_paper_ids: tuple[UUID, ...] = (),
     ) -> DigestBundle:
         """Generate while holding the same user lock as event ingestion."""
         preference_row = await self._repository.get_preferences(user_id)
@@ -120,6 +127,15 @@ class RecommendedDigestService:
             limit=_CANDIDATE_POOL_LIMIT,
             before=as_of,
         )
+        if include_paper_ids:
+            acquired = await self._repository.list_candidates_by_ids(
+                include_paper_ids,
+                before=as_of,
+            )
+            acquired_ids = {paper.id for paper in acquired}
+            papers = (acquired + [paper for paper in papers if paper.id not in acquired_ids])[
+                :_CANDIDATE_POOL_LIMIT
+            ]
         if digest_type is DigestType.MANUAL and not papers:
             papers = await self._repository.list_ready_candidates(
                 limit=_CANDIDATE_POOL_LIMIT,
@@ -147,6 +163,7 @@ class RecommendedDigestService:
             PaperCandidate(
                 paper_id=paper.id,
                 title=paper.title,
+                abstract=paper.abstract,
                 categories=tuple(paper.categories),
                 published_at=paper.published_at,
                 embedding=embeddings.get(paper.id),

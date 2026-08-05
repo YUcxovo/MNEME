@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.api.dependencies.ai import TaskQueue
 from mneme.api.errors import ApiError
-from mneme.models.job import JobStatus, PipelineStage
+from mneme.models.job import JobStatus, PipelineJob, PipelineStage
 from mneme.models.paper import Paper, ProcessingStatus
 from mneme.repositories.job_identity import download_idempotency_key
 from mneme.repositories.jobs import PipelineJobRepository, arq_attempt_id
@@ -102,7 +102,12 @@ async def enqueue_seed_downloads(
     return tuple(revision.paper_id for revision in revisions)
 
 
-async def wait_for_seed_papers(session: AsyncSession, paper_ids: tuple[UUID, ...]) -> None:
+async def wait_for_seed_papers(
+    session: AsyncSession,
+    paper_ids: tuple[UUID, ...],
+    *,
+    paper_version_ids: tuple[UUID, ...] = (),
+) -> None:
     """Block until every selected paper reaches a usable terminal state."""
     loop = asyncio.get_running_loop()
     deadline = loop.time() + _INITIALIZATION_TIMEOUT_SECONDS
@@ -113,22 +118,100 @@ async def wait_for_seed_papers(session: AsyncSession, paper_ids: tuple[UUID, ...
                 select(Paper.id, Paper.processing_status).where(Paper.id.in_(expected_ids))
             )
         ).all()
+        failed_job_id = None
+        if paper_version_ids:
+            failed_job_id = await session.scalar(
+                select(PipelineJob.id)
+                .where(
+                    PipelineJob.paper_version_id.in_(paper_version_ids),
+                    PipelineJob.status == JobStatus.FAILED,
+                )
+                .limit(1)
+            )
         await session.rollback()
         statuses = {paper_id: processing_status for paper_id, processing_status in rows}
         if set(statuses) == expected_ids and all(
             item in {ProcessingStatus.READY, ProcessingStatus.PARTIAL} for item in statuses.values()
         ):
             return
-        if any(item is ProcessingStatus.FAILED for item in statuses.values()):
+        if failed_job_id is not None or any(
+            item is ProcessingStatus.FAILED for item in statuses.values()
+        ):
             raise ApiError(
                 status.HTTP_502_BAD_GATEWAY,
                 "seed_initialization_failed",
-                "The backend could not prepare the papers required for initialization.",
+                "Mneme could not prepare the selected papers. Try again.",
             )
         if loop.time() >= deadline:
             raise ApiError(
                 status.HTTP_504_GATEWAY_TIMEOUT,
                 "seed_initialization_timeout",
                 "Preparing five related papers took too long. Try again to resume the work.",
+            )
+        await asyncio.sleep(_POLL_INTERVAL_SECONDS)
+
+
+async def wait_for_refresh_papers(
+    session: AsyncSession,
+    revisions: tuple[ArxivObservedRevision, ...],
+) -> tuple[UUID, ...]:
+    """Wait for an interest-refresh batch and return its usable papers.
+
+    Interest refresh is allowed to continue when an individual newly fetched
+    PDF is unavailable.  The strict seed-onboarding helper above still requires
+    every one of its five papers.  Here, all selected revisions must reach a
+    usable or failed terminal state before the digest is generated, so papers
+    that finish after the first failure are not accidentally omitted.
+    """
+    if not revisions:
+        return ()
+
+    ordered_paper_ids = tuple(dict.fromkeys(revision.paper_id for revision in revisions))
+    expected_ids = set(ordered_paper_ids)
+    paper_by_version = {revision.paper_version_id: revision.paper_id for revision in revisions}
+    loop = asyncio.get_running_loop()
+    deadline = loop.time() + _INITIALIZATION_TIMEOUT_SECONDS
+
+    while True:
+        rows = (
+            await session.execute(
+                select(Paper.id, Paper.processing_status).where(Paper.id.in_(expected_ids))
+            )
+        ).all()
+        failed_versions = set(
+            (
+                await session.scalars(
+                    select(PipelineJob.paper_version_id).where(
+                        PipelineJob.paper_version_id.in_(paper_by_version),
+                        PipelineJob.status == JobStatus.FAILED,
+                    )
+                )
+            ).all()
+        )
+        await session.rollback()
+
+        statuses = {paper_id: processing_status for paper_id, processing_status in rows}
+        usable_ids = {
+            paper_id
+            for paper_id, processing_status in statuses.items()
+            if processing_status in {ProcessingStatus.READY, ProcessingStatus.PARTIAL}
+        }
+        failed_ids = {
+            paper_id
+            for paper_id, processing_status in statuses.items()
+            if processing_status is ProcessingStatus.FAILED
+        }
+        failed_ids.update(
+            paper_by_version[version_id]
+            for version_id in failed_versions
+            if version_id is not None and paper_by_version[version_id] not in usable_ids
+        )
+        if expected_ids <= usable_ids | failed_ids:
+            return tuple(paper_id for paper_id in ordered_paper_ids if paper_id in usable_ids)
+        if loop.time() >= deadline:
+            raise ApiError(
+                status.HTTP_504_GATEWAY_TIMEOUT,
+                "interest_refresh_timeout",
+                "Preparing papers for the updated interests took too long. Try again.",
             )
         await asyncio.sleep(_POLL_INTERVAL_SECONDS)

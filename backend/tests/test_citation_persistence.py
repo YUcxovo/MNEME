@@ -13,9 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mneme.models.graph import Citation
 from mneme.models.paper import Paper
 from mneme.repositories.citation_graph import (
+    GRAPH_PREPARED_AS_SOURCE,
+    GRAPH_PREPARED_AS_TARGET,
     CitationGraphRepository,
     CitationIdentityConflict,
     CitationPersistenceResult,
+    LocalCitationPersistenceResult,
 )
 from mneme.services.semantic_scholar import CitationDirection, SemanticPaper
 
@@ -122,6 +125,74 @@ def test_identity_conflicts_are_never_silently_overwritten() -> None:
     paper = _paper(semantic_id="existing")
     with pytest.raises(CitationIdentityConflict, match="different"):
         CitationGraphRepository._assign_identity(paper, "incoming")
+
+
+@pytest.mark.base
+@pytest.mark.db
+@pytest.mark.pipeline
+def test_local_arxiv_edges_are_directed_idempotent_and_do_not_assign_provider_ids() -> None:
+    async def exercise() -> tuple[
+        AsyncMock,
+        LocalCitationPersistenceResult,
+        Insert,
+        str,
+    ]:
+        session = AsyncMock(spec=AsyncSession)
+        center = _paper(arxiv_id="1706.03762")
+        reference = _paper(arxiv_id="1810.04805")
+        citation = _paper(arxiv_id="2005.14165")
+        session.scalars.return_value = _collection([center, reference, citation])
+        inserted = MagicMock()
+        inserted.scalars.return_value.all.return_value = [uuid4(), uuid4()]
+        session.execute.side_effect = [inserted, MagicMock(), MagicMock()]
+
+        result = await CitationGraphRepository().persist_local_arxiv_edges(
+            cast(AsyncSession, session),
+            center_paper_id=center.id,
+            reference_arxiv_ids=(reference.arxiv_id,),
+            citation_arxiv_ids=(citation.arxiv_id,),
+            evidence_source="openalex",
+        )
+        assert result is not None
+        return (
+            session,
+            result,
+            cast(Insert, session.execute.await_args_list[0].args[0]),
+            str(session.scalars.await_args.args[0].compile(dialect=postgresql.dialect())),
+        )
+
+    session, result, statement, lock_sql = asyncio.run(exercise())
+    assert (result.observed, result.inserted, result.duplicates) == (2, 2, 0)
+    compiled = statement.compile(dialect=postgresql.dialect())
+    assert compiled.params["source_paper_id_m0"] != compiled.params["target_paper_id_m0"]
+    assert compiled.params["source_paper_id_m1"] != compiled.params["target_paper_id_m1"]
+    metadata = (
+        compiled.params["algorithm_metadata_m0"],
+        compiled.params["algorithm_metadata_m1"],
+    )
+    assert all(value["evidence_source"] == "openalex" for value in metadata)
+    assert all(
+        value.get(GRAPH_PREPARED_AS_SOURCE) is True or value.get(GRAPH_PREPARED_AS_TARGET) is True
+        for value in metadata
+    )
+    assert "ORDER BY papers.id" in lock_sql
+    assert "FOR UPDATE" in lock_sql
+    marker_updates = [
+        call.args[0].compile(dialect=postgresql.dialect()).params
+        for call in session.execute.await_args_list[1:]
+    ]
+    assert all(
+        any(
+            value
+            in (
+                {GRAPH_PREPARED_AS_SOURCE: True},
+                {GRAPH_PREPARED_AS_TARGET: True},
+            )
+            for value in parameters.values()
+        )
+        for parameters in marker_updates
+    )
+    assert session.flush.await_count == 0
 
 
 @pytest.mark.base

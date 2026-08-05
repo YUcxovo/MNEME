@@ -161,7 +161,10 @@ async def parse_pdf(
         version.parser_version = document.parser_version
         version.parse_quality = document.parse_quality
         version.parsed_at = document.parsed_at
-        paper.processing_status = ProcessingStatus.PARTIAL
+        # Parsing is only an intermediate stage.  Keep the paper visibly in
+        # progress until reconciliation has observed both the summary and all
+        # chunk embeddings; PARTIAL is reserved for a usable terminal result.
+        paper.processing_status = ProcessingStatus.PROCESSING
 
         children: list[PendingEnqueue] = []
         identities = (

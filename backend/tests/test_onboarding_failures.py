@@ -4,7 +4,7 @@ import asyncio
 from types import SimpleNamespace
 from typing import ClassVar
 from unittest.mock import AsyncMock, MagicMock
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import status
@@ -64,9 +64,9 @@ class FakeJobRepository:
         self.released.append(job_id)
 
 
-def _revision() -> ArxivObservedRevision:
+def _revision(paper_id: UUID | None = None) -> ArxivObservedRevision:
     return ArxivObservedRevision(
-        paper_id=uuid4(),
+        paper_id=paper_id or uuid4(),
         paper_version_id=uuid4(),
         arxiv_id="2607.01234",
         version_number=1,
@@ -118,6 +118,63 @@ def test_failed_seed_pipeline_returns_stable_public_error() -> None:
     assert raised.value.status_code == status.HTTP_502_BAD_GATEWAY
     assert raised.value.code == "seed_initialization_failed"
     assert raised.value.details is None
+    session.rollback.assert_awaited_once()
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_failed_revision_job_is_detected_before_paper_status_times_out() -> None:
+    paper_id = uuid4()
+    paper_version_id = uuid4()
+    rows = MagicMock()
+    rows.all.return_value = [(paper_id, ProcessingStatus.PROCESSING)]
+    session = AsyncMock(spec=AsyncSession)
+    session.execute.return_value = rows
+    session.scalar.return_value = uuid4()
+
+    with pytest.raises(ApiError) as raised:
+        asyncio.run(
+            onboarding_support.wait_for_seed_papers(
+                session,
+                (paper_id,),
+                paper_version_ids=(paper_version_id,),
+            )
+        )
+
+    assert raised.value.status_code == status.HTTP_502_BAD_GATEWAY
+    assert raised.value.code == "seed_initialization_failed"
+    session.scalar.assert_awaited_once()
+    session.rollback.assert_awaited_once()
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_interest_refresh_keeps_usable_papers_after_another_pdf_fails() -> None:
+    ready_paper_id = uuid4()
+    failed_paper_id = uuid4()
+    ready_revision = _revision(ready_paper_id)
+    failed_revision = _revision(failed_paper_id)
+    rows = MagicMock()
+    rows.all.return_value = [
+        (ready_paper_id, ProcessingStatus.READY),
+        (failed_paper_id, ProcessingStatus.PROCESSING),
+    ]
+    failed_versions = MagicMock()
+    failed_versions.all.return_value = [failed_revision.paper_version_id]
+    session = AsyncMock(spec=AsyncSession)
+    session.execute.return_value = rows
+    session.scalars.return_value = failed_versions
+
+    usable = asyncio.run(
+        onboarding_support.wait_for_refresh_papers(
+            session,
+            (ready_revision, failed_revision),
+        )
+    )
+
+    assert usable == (ready_paper_id,)
     session.rollback.assert_awaited_once()
 
 

@@ -10,6 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from mneme.ai.recommendation import PaperCandidate, PreferenceView, rank_candidates
 from mneme.api.dependencies.ai import TaskQueue, get_task_queue
 from mneme.api.dependencies.auth import Principal, require_principal
 from mneme.api.errors import ApiError, ErrorResponse
@@ -23,6 +24,7 @@ from mneme.api.schemas.onboarding import SeedInitializationRequest, SeedInitiali
 from mneme.api.schemas.preferences import Preferences
 from mneme.core.config import Settings, get_settings
 from mneme.db.dependencies import get_session
+from mneme.models.base import utc_now
 from mneme.models.digest import DigestEntry, DigestType
 from mneme.models.paper import Paper, PaperAuthor
 from mneme.repositories.citation_graph import CitationIdentityConflict
@@ -110,23 +112,12 @@ async def initialize_from_seed(
                     reference_edges=graph_result.references.observed,
                     citation_edges=graph_result.citations.observed,
                 )
-            except SeedGraphMetadataUnavailable as error:
-                logger.warning(
-                    "seed_graph_metadata_unavailable",
-                    seed_arxiv_id=seed_arxiv_id,
-                    error_type=type(error.__cause__).__name__,
-                )
-                raise ApiError(
-                    status.HTTP_502_BAD_GATEWAY,
-                    "citation_metadata_unavailable",
-                    "The backend could not finish the citation-backed paper library. "
-                    "Please retry the seed.",
-                ) from error
             except (
                 ArxivClientError,
                 ArxivParseError,
                 CitationIdentityConflict,
                 InsufficientSeedGraphCandidates,
+                SeedGraphMetadataUnavailable,
                 SemanticScholarClientError,
             ) as error:
                 candidate_source = "same_category_fallback"
@@ -147,7 +138,7 @@ async def initialize_from_seed(
         raise ApiError(
             status.HTTP_502_BAD_GATEWAY,
             "arxiv_unavailable",
-            "The backend could not read the requested paper from arXiv.",
+            "Mneme could not load the requested paper from arXiv. Try again.",
         ) from error
 
     candidates = tuple(
@@ -169,7 +160,7 @@ async def initialize_from_seed(
         raise ApiError(
             status.HTTP_404_NOT_FOUND,
             "user_not_found",
-            "The configured demo user has not been bootstrapped.",
+            "Mneme has not been initialized for this user.",
         )
 
     revisions_to_prepare = (
@@ -191,18 +182,32 @@ async def initialize_from_seed(
         ).all()
     )
     papers_by_id = {paper.id: paper for paper in prepared_papers}
+    ranked = rank_candidates(
+        [
+            PaperCandidate(
+                paper_id=paper.id,
+                title=paper.title,
+                abstract=paper.abstract,
+                categories=tuple(paper.categories),
+                published_at=paper.published_at,
+            )
+            for paper in prepared_papers
+        ],
+        PreferenceView(
+            explicit_topics=tuple(preference.topics),
+            model_version=preference.model_version,
+        ),
+        now=utc_now(),
+        limit=_LIBRARY_SIZE,
+    )
     entries = [
         DigestEntry(
-            paper_id=paper_id,
+            paper_id=scored.paper_id,
             rank=rank,
-            relevance_score=round(1.0 - ((rank - 1) * 0.05), 2),
-            recommendation_reason=(
-                "Connected to your seed paper through its citation neighborhood."
-                if candidate_source == "citation_graph"
-                else f"Same arXiv category as your seed paper: {seed_record.primary_category}"
-            ),
+            relevance_score=scored.score,
+            recommendation_reason="; ".join(scored.reasons),
         )
-        for rank, paper_id in enumerate(candidate_order, start=1)
+        for rank, scored in enumerate(ranked, start=1)
     ]
     digest_model = await DigestRepository(session).create_digest(
         user_id=principal.user_id,
@@ -223,7 +228,7 @@ async def initialize_from_seed(
         raise ApiError(
             status.HTTP_502_BAD_GATEWAY,
             "briefing_incomplete",
-            "The backend could not assemble a five-paper briefing.",
+            "Mneme could not prepare a five-paper briefing. Try again.",
         )
 
     logger.info(

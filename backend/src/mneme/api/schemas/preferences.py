@@ -8,6 +8,8 @@ from typing import Annotated, Any
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, field_validator
 from pydantic.json_schema import SkipJsonSchema
 
+from mneme.api.schemas.digests import Digest
+
 Topic = Annotated[str, StringConstraints(min_length=1, max_length=100)]
 FollowedAuthor = Annotated[str, StringConstraints(min_length=1, max_length=200)]
 
@@ -58,3 +60,10 @@ class PreferenceUpdate(BaseModel):
     _normalize_authors = field_validator("followed_authors", mode="before")(
         normalize_preference_values
     )
+
+
+class PreferenceRefreshResult(BaseModel):
+    """Updated preferences and the newly materialized digest snapshot."""
+
+    preferences: Preferences
+    digest: Digest

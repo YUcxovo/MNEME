@@ -71,6 +71,10 @@ class Settings(BaseSettings):
     semantic_scholar_batch_size: int = Field(default=100, ge=1, le=500)
     semantic_scholar_page_size: int = Field(default=100, ge=1, le=1000)
     semantic_scholar_max_neighbors: int = Field(default=1000, ge=1, le=9999)
+    openalex_api_url: HttpUrl = HttpUrl("https://api.openalex.org")
+    openalex_api_key: SecretStr | None = None
+    openalex_timeout_seconds: float = Field(default=30.0, gt=0)
+    openalex_max_attempts: int = Field(default=3, ge=1, le=10)
     paper_storage_dir: Path = Path(".data/papers")
     pdf_max_bytes: int = Field(default=50 * 1024 * 1024, ge=1024)
     pdf_download_timeout_seconds: float = Field(default=60.0, gt=0)

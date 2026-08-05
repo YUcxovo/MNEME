@@ -38,6 +38,7 @@ class PaperCandidate(BaseModel):
 
     paper_id: UUID
     title: str
+    abstract: str = ""
     categories: tuple[str, ...]
     published_at: datetime
     embedding: tuple[float, ...] | None = None
@@ -84,9 +85,14 @@ def topic_match(
     if not topics:
         return 0.0, ()
     title = candidate.title.casefold()
+    abstract = candidate.abstract.casefold()
     categories = {category.casefold() for category in candidate.categories}
     matched = tuple(
-        topic for topic in topics if topic.casefold() in title or topic.casefold() in categories
+        topic
+        for topic in topics
+        if topic.casefold() in title
+        or topic.casefold() in abstract
+        or topic.casefold() in categories
     )
     return len(matched) / len(topics), matched
 

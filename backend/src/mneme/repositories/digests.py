@@ -146,13 +146,29 @@ class DigestRepository:
         self, *, since: datetime, limit: int, before: datetime | None = None
     ) -> list[Paper]:
         """Return recent latest-revision papers with a usable summary."""
-        return await self._list_candidates(since=since, limit=limit, before=before)
+        return await self._list_candidates(since=since, limit=limit, before=before, paper_ids=None)
 
     async def list_ready_candidates(
         self, *, limit: int, before: datetime | None = None
     ) -> list[Paper]:
         """Return latest-revision papers with a usable summary at any age."""
-        return await self._list_candidates(since=None, limit=limit, before=before)
+        return await self._list_candidates(since=None, limit=limit, before=before, paper_ids=None)
+
+    async def list_candidates_by_ids(
+        self,
+        paper_ids: tuple[UUID, ...],
+        *,
+        before: datetime | None = None,
+    ) -> list[Paper]:
+        """Return usable latest revisions for a bounded acquired-paper set."""
+        if not paper_ids:
+            return []
+        return await self._list_candidates(
+            since=None,
+            limit=len(paper_ids),
+            before=before,
+            paper_ids=paper_ids,
+        )
 
     async def _list_candidates(
         self,
@@ -160,6 +176,7 @@ class DigestRepository:
         since: datetime | None,
         limit: int,
         before: datetime | None,
+        paper_ids: tuple[UUID, ...] | None,
     ) -> list[Paper]:
         latest_version_id = (
             select(PaperVersion.id)
@@ -188,6 +205,8 @@ class DigestRepository:
             statement = statement.where(Paper.published_at >= since)
         if before is not None:
             statement = statement.where(Paper.published_at < before)
+        if paper_ids is not None:
+            statement = statement.where(Paper.id.in_(paper_ids))
         return list((await self._session.scalars(statement)).all())
 
     async def mean_chunk_embeddings(
