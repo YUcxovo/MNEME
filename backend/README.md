@@ -55,6 +55,7 @@ Available authenticated API routes include:
 - `GET /v1/jobs/{job_id}` (durable public job state without raw operational errors)
 - `GET /v1/digests` and `POST /v1/digests/recommended`
 - `POST /v1/qa/ask`
+- `GET /v1/graph/{paper_id}` and `POST /v1/graph/{paper_id}/prepare`
 
 `GET /v1/health` is public process liveness and never waits for infrastructure. `GET /v1/health/ready` concurrently probes PostgreSQL and Redis within `MNEME_READINESS_TIMEOUT_SECONDS`; it returns a safe `503 service_unavailable` envelope if either required dependency is unavailable. Protected requests use `Authorization: Bearer <raw-token>`. Responses include `X-Request-ID`, and errors use the stable `ErrorResponse` shape without secrets, raw inputs, database diagnostics, or tracebacks.
 
@@ -108,6 +109,19 @@ neighbor metadata remains unavailable, onboarding returns a retryable error rath
 silently replacing the graph-backed selection. If Semantic Scholar is unavailable or fewer
 than five neighbors can be identified, onboarding uses the existing five-paper same-category
 fallback without creating citation edges. Graph reads remain free of external provider calls.
+
+The authenticated `POST /v1/graph/{paper_id}/prepare` route fills a missing local neighborhood
+on demand before returning the same `Graph` contract as the read endpoint. An already resolved
+graph is returned without provider traffic. Preparation first resolves real arXiv-linked
+Semantic Scholar neighbors. If that provider is unavailable, it verifies the center and its
+neighbors through exact arXiv URLs in OpenAlex locations; title search alone is never accepted
+as identity evidence. If OpenAlex has not indexed the center, explicit arXiv identifiers in the
+latest parsed References or Bibliography chunks provide an outgoing-reference fallback.
+Neighbor metadata still comes from arXiv, and only locally resolved directed citation edges are
+stored. Provider failure or absent evidence therefore produces a valid single-node graph rather
+than category-based or synthetic relationships. OpenAlex currently documents a free API key as
+part of its API contract; set `MNEME_OPENALEX_API_KEY` for that fallback, or leave it unset and
+allow the verified parsed-reference fallback to proceed if OpenAlex rejects anonymous access.
 
 `POST /v1/events` stores raw client UUIDs once and recomputes the active `behavior-v2` profile in the same PostgreSQL transaction. Event timestamps must be timezone-aware ISO 8601 values and cannot be more than five minutes ahead of the server clock; the recomputation query uses the same upper bound. The active model uses positive and negative channels, continuous opened-paper duration weighting, 14/60-day decay, per-paper saturation, exposure-gated skips, bounded confidence, a 180-day window, and latest-revision paper embeddings from the configured model. ADR 0003 freezes the parameters, while `behavior-v1` remains callable as the replay baseline.
 

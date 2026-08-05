@@ -110,6 +110,23 @@ paths:
                 $ref: "#/components/schemas/Preferences"
         default:
           $ref: "#/components/responses/Error"
+    post:
+      operationId: refreshPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreferenceUpdate"
+      responses:
+        "200":
+          description: Updated preferences and refreshed briefing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreferenceRefreshResult"
+        default:
+          $ref: "#/components/responses/Error"
   /onboarding/seed:
     post:
       operationId: initializeFromSeed
@@ -222,6 +239,34 @@ paths:
       responses:
         "200":
           description: Bounded citation graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Graph"
+        default:
+          $ref: "#/components/responses/Error"
+  /graph/{paper_id}/prepare:
+    post:
+      operationId: preparePaperGraph
+      parameters:
+        - $ref: "#/components/parameters/PaperId"
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 2
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Prepared bounded citation graph
           content:
             application/json:
               schema:
@@ -379,6 +424,12 @@ components:
       properties:
         topics: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 100}}
         followed_authors: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 200}}
+    PreferenceRefreshResult:
+      type: object
+      required: [preferences, digest]
+      properties:
+        preferences: {$ref: "#/components/schemas/Preferences"}
+        digest: {$ref: "#/components/schemas/Digest"}
     SeedInitializationRequest:
       type: object
       required: [arxiv_reference]

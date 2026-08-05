@@ -2,7 +2,7 @@
 
 The frozen OpenAPI document is `openapi-v0.1.yaml`. It remains the v0.1 compatibility baseline between the Android and backend sub-teams. All frozen routes now exist, so FastAPI-generated OpenAPI from the checked-out application is the runtime implementation source of truth.
 
-FastAPI implements all 14 frozen operations: process liveness, dependency readiness, paper list/detail, explicit preferences, seed-paper onboarding, revision-safe summaries, event ingestion, digest list/recommendation, single-paper Q&A, bounded citation graphs, and durable job status. The contract regression compares every operation ID and each documented response's top-level schema reference with `openapi-v0.1.yaml`; focused schema and route tests cover reviewed authentication, parameter, request, payload, and stable-error invariants. This is not a byte-for-byte or complete structural diff of the two OpenAPI documents.
+FastAPI implements all 16 frozen operations: process liveness, dependency readiness, paper list/detail, explicit preferences and refresh, seed-paper onboarding, revision-safe summaries, event ingestion, digest list/recommendation, single-paper Q&A, bounded citation graph reads and preparation, and durable job status. The contract regression compares every operation ID and each documented response's top-level schema reference with `openapi-v0.1.yaml`; focused schema and route tests cover reviewed authentication, parameter, request, payload, and stable-error invariants. This is not a byte-for-byte or complete structural diff of the two OpenAPI documents.
 
 ## Ownership
 
@@ -32,6 +32,8 @@ The generated document is authoritative for what the running checkout serves. Th
 - Errors use the shared `ErrorResponse` schema with a stable machine-readable code
 - Paper lists use descending `(published_at, id)` keyset pagination encoded as an opaque cursor
 - `PUT /users/me/preferences` is a complete replacement of both explicit preference lists
+- `POST /users/me/preferences/refresh` replaces explicit preferences and returns the newly prepared manual briefing
+- `POST /graph/{paper_id}/prepare` resolves a bounded real citation neighborhood on demand and returns the standard graph contract
 - Behavioral-event timestamps must be timezone-aware ISO 8601 values and no more than five minutes ahead of the server clock
 
 ## Shared Error Codes

@@ -22,16 +22,18 @@ Current implementation status (2026-07-30): the checkout contains the backend/da
 This checkout connects seed-paper onboarding -> Android briefing -> paper summary ->
 single-paper Q&A -> arXiv source flow to those implemented REST APIs. It adds
 Retrofit/OkHttp, frozen-contract DTOs, a production ViewModel, summary-job polling, and
-Room-backed fallback with explicit data source labels. A blank Android demo token
-deliberately selects the existing controlled fixture instead. Supported live interactions
+Room-backed fallback with explicit data source labels. A blank Android demo token displays a
+configuration error; the controlled fixture is available only through an explicit test-build
+flag. Supported live interactions
 are queued locally and uploaded through the frozen event contract, and paper details expose
 the bounded citation graph. Paper details also expose Save and Share actions through that
 durable event path, while repeated questions reuse the backend's paper-scoped conversation
 identity and remain visible as one ordered session. Seed onboarding now prefers five
 arXiv-resolvable citation neighbors and persists their real edges before returning the
 briefing, so a selected briefing paper can open the prepared multi-node neighborhood. The original same-category
-selection remains the fallback when provider graph data is unavailable. Background digest
-refresh and production authentication remain outside the Android integration. The backend
+selection remains the fallback when provider graph data is unavailable. The Android client
+also performs network-constrained weekly briefing checks and posts deduplicated threshold
+notifications. Production authentication and deployment remain outside this integration. The backend
 also provides explicit Semantic Scholar graph synchronization for other local papers,
 bounded graph persistence/API, transactional behavior events, and confidence-calibrated
 contrastive behavior profiles while retaining behavior-v1 replay.
@@ -44,9 +46,9 @@ contrastive behavior profiles while retaining behavior-v1 replay.
 
 The Gradle manifests under `android/` are authoritative for installed versions. The client
 uses Compose/Material 3, type-safe Navigation Compose, Room, DataStore, WorkManager,
-kotlinx.serialization, Retrofit/OkHttp, and MVVM with a manual application container. Hilt,
-notification permission UX, and live background synchronization remain later feature
-units. The table below combines installed and target client dependencies.
+kotlinx.serialization, Retrofit/OkHttp, and MVVM with a manual application container.
+Notification permission and weekly briefing synchronization are implemented; Hilt remains
+a target-stack choice. The table below combines installed and target client dependencies.
 
 | Dependency | Version | Purpose | Link |
 |-----------|---------|---------|------|

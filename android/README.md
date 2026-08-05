@@ -108,7 +108,8 @@ FastAPI backend:
 9. Queue visible-paper impressions, paper opens, and submitted paper-scoped questions,
    then upload them to the M3 behavior endpoint without blocking foreground navigation.
 
-The UI labels live, cached, and controlled-fixture content separately. It also renders
+The UI labels cached and explicitly enabled controlled-fixture content separately; normal
+live content has no diagnostic source badge. It also renders
 `matched`, `partial`, `unmatched`, `not_checked`, and `insufficient_evidence` states without
 claiming that every answer or summary is verified.
 
@@ -190,17 +191,15 @@ The Android token must be the raw value whose digest is stored in
 `MNEME_DEMO_TOKEN_SHA256`. The app never logs the token and does not send it to the public
 health route.
 
-### Controlled fallback
+### Test fixtures
 
-To run the deliberate controlled fallback, leave `MNEME_DEMO_TOKEN` blank and build with
-`-PMNEME_ALLOW_CONTROLLED_FIXTURE=true`. The default is `false`, so a missing token produces
-a configuration error instead of silently showing fixture content. In the explicit fixture
-mode, the UI states that no live backend or model call is made. This mode keeps previews,
-UI tests, and an offline presentation path deterministic; it is not evidence of backend
-integration. Its citation graph uses 12 synthetic nodes and 18 synthetic directed edges to
-exercise branching, merging, clusters, rank variation, selection, and navigation. A
-separate 50-node device test covers the bounded endpoint limit; neither fixture makes a
-real citation claim.
+When `MNEME_DEMO_TOKEN` is blank, a normal build shows a configuration error and does not
+substitute sample papers. The controlled fixture is available only to previews and explicit
+UI tests built with `-PMNEME_ALLOW_CONTROLLED_FIXTURE=true`; the UI then states that no live
+backend or model call is made. Its citation graph uses 12 synthetic nodes and 18 synthetic
+directed edges to exercise branching, merging, clusters, rank variation, selection, and
+navigation. A separate 50-node device test covers the bounded endpoint limit; neither
+fixture is part of the live product path or makes a real citation claim.
 
 When a token is configured, a failed live briefing refresh uses Room only if a previous
 backend briefing exists, and labels that content as cached. With no cache, the app shows a
@@ -226,10 +225,14 @@ The graph is not cached, so an unavailable backend produces a retryable error.
 Live builds periodically synchronize complete weekly briefings and cache every result. A local notification is eligible only when the weekly digest has at least one entry with a relevance score at or above the configured `0.75` threshold. The threshold is injected into `DigestRefreshCoordinator` for configuration and testing; retries and restarts use the stable digest ID so an eligible briefing is announced at most once. Manual and other digest types remain available in the feed but do not trigger this alert.
 ### Paper sharing and deep links
 
-The paper-detail Share action opens the Android share chooser with the paper title, a
-Mneme deep link, and the paper's real arXiv URL. Deep links use the form
+The paper-detail Share action opens the Android share chooser with the paper title and the
+paper's public arXiv URL as plain text. The outbound payload does not expose Mneme's internal
+paper UUID, and a recipient can open the paper without installing Mneme.
+
+Mneme also accepts installed-app deep links of the form
 `mneme://paper/<backend-paper-UUID>`; the identifier is the UUID returned by the backend,
-not an arXiv identifier.
+not an arXiv identifier. These links support trusted app-entry flows and are not included in
+the public Share payload.
 
 Opening a valid link can cold-start Mneme or deliver the paper to an existing app task. The
 client then loads the paper through the same repository path used by normal in-app
@@ -242,15 +245,15 @@ awaits the Room write before marking that open as recorded, and a replay of the 
 uses an insert-if-absent boundary so it cannot queue a second `paper_opened` event.
 
 This custom scheme is an installed-app entry point, not a public web page or an account-based
-sharing service. The recipient therefore needs the Mneme app and access to the referenced
+sharing service. A caller using it therefore needs the Mneme app and access to the referenced
 backend paper or a matching local cache entry.
 
 ## Current client boundaries
 
-- Room schema version 5 stores paper metadata, nullable source-linked summary payloads,
+- Room schema version 6 stores paper metadata, nullable source-linked summary payloads,
   digest cache payloads, preferences, refresh metadata, and the contract-aligned
-  behavioral-event retry queue. A v4 cache migrates with an empty summary payload, so its
-  paper metadata remains available without inventing a cached summary or source actions.
+  behavioral-event retry queue. A v4 cache migrates with an empty summary payload, and the
+  v5-to-v6 migration adds the saved-paper lookup index without changing retained events.
 - The default Activity uses a production `MnemeViewModel` and a manually constructed
   application container. Hilt remains a target-stack choice rather than a dependency of
   this feature unit.
@@ -259,16 +262,18 @@ backend paper or a matching local cache entry.
 - DataStore persists explicit local settings. `BehavioralEventSyncWorker` uploads pending
   events with network constraints and exponential backoff. A live configuration also
   schedules a recovery pass on application start so an interrupted pending batch does not
-  require another user interaction. The separate digest-refresh worker remains a no-op.
+  require another user interaction. `DigestSyncWorker` fetches completed weekly briefings,
+  updates the Room cache, and publishes each eligible threshold notification at most once.
 - The client records the interactions exposed by the current product: paper impressions,
   paper opens, paper-scoped questions, Save actions, and Share chooser launches. Save and
   Share confirm their Room queue write in a live configuration; a failed or unavailable
   local write remains visible and retryable instead of being reported as queued. Skip and
   digest-dismiss events are not fabricated while those UI controls are absent.
-- The Save control records a behavioral event and provides per-session feedback; it does
-  not create a persistent saved-paper library. Saved-paper browsing, live background digest
-  refresh, search, login/JWT, FCM, notification
-  permission UX, and production deployment remain outside this integration unit.
+- The Save control writes a durable behavioral event and exposes the corresponding cached
+  paper in the Saved screen across process restarts and offline use. Saved papers open through
+  the same detail route as briefing papers and remain protected from ordinary cache pruning.
+  Search, login/JWT, FCM delivery, and production deployment remain outside this integration
+  unit; the current weekly alert path uses WorkManager and a local Android notification.
 
 The Retrofit DTOs follow [`../docs/api/openapi-v0.1.yaml`](../docs/api/openapi-v0.1.yaml).
 The seed coordinator is an additive API contract change and does not change the database
