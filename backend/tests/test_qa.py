@@ -23,7 +23,7 @@ from mneme.ai.qa import (
 from mneme.ai.retrieval import RetrievedChunk
 from mneme.ai.routing import ModelRouter
 from mneme.ai.service import LLMService
-from mneme.ai.types import AITask, ProviderName
+from mneme.ai.types import AITask, ChatMessage, ProviderName
 from mneme.models.qa import QaSourceMatchStatus
 
 PAPER_ID = uuid4()
@@ -177,6 +177,39 @@ def test_answer_flow_returns_verified_citations() -> None:
     assert grounded.source_match_status is QaSourceMatchStatus.MATCHED
     assert len(grounded.citations) == 1
     assert grounded.completion is not None
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_follow_up_history_is_context_not_citable_evidence() -> None:
+    provider = FakeLLMProvider(default_response="The paper proves quantum teleportation [1].")
+    service = _service(provider)
+    chunk = _chunk(
+        0,
+        "The transformer uses multi-head attention instead of recurrence",
+        0.9,
+    )
+    history = (
+        ChatMessage(role="user", content="What is the paper's central claim?"),
+        ChatMessage(
+            role="assistant",
+            content="It proves quantum teleportation [1].",
+        ),
+    )
+
+    grounded = asyncio.run(
+        service.answer(question="What evidence supports it?", chunks=[chunk], history=history)
+    )
+
+    assert grounded.source_match_status is QaSourceMatchStatus.INSUFFICIENT_EVIDENCE
+    assert len(grounded.citations) == 1
+    assert grounded.citations[0].chunk.chunk_id == chunk.chunk_id
+    assert grounded.citations[0].source_match is False
+    request = provider.calls[0][1]
+    assert request.messages[:2] == history
+    assert request.system is not None
+    assert "context, not evidence" in request.system
+    assert chunk.content in request.messages[-1].content
 
 
 @pytest.mark.base

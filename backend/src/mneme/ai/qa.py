@@ -8,6 +8,7 @@ its cited evidence to count as source-matched.
 """
 
 import re
+from collections.abc import Sequence
 
 import structlog
 from pydantic import BaseModel, ConfigDict, Field
@@ -15,7 +16,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from mneme.ai.prompts import build_qa_request
 from mneme.ai.retrieval import RetrievedChunk
 from mneme.ai.service import LLMService
-from mneme.ai.types import CompletionResult
+from mneme.ai.types import ChatMessage, CompletionResult
 from mneme.models.qa import QaSourceMatchStatus
 
 logger = structlog.get_logger(__name__)
@@ -97,6 +98,14 @@ def lexical_overlap(question: str, text: str) -> float:
     if not question_words:
         return 0.0
     return len(question_words & content_words(text)) / len(question_words)
+
+
+def contextualize_question(question: str, history: Sequence[ChatMessage]) -> str:
+    """Expand an ambiguous follow-up for retrieval without treating history as evidence."""
+    if not history:
+        return question
+    prior_turns = "\n".join(f"Previous {message.role}: {message.content}" for message in history)
+    return f"{prior_turns}\nCurrent question: {question}"
 
 
 def rerank(question: str, chunks: list[RetrievedChunk], *, top_n: int) -> list[RetrievedChunk]:
@@ -232,9 +241,16 @@ class GroundedAnswerService:
         self._min_evidence_score = min_evidence_score
         self._max_output_tokens = max_output_tokens
 
-    async def answer(self, *, question: str, chunks: list[RetrievedChunk]) -> GroundedAnswer:
-        """Answer from retrieved chunks, refusing when evidence is too weak."""
-        evidence = rerank(question, chunks, top_n=self._rerank_top_n)
+    async def answer(
+        self,
+        *,
+        question: str,
+        chunks: list[RetrievedChunk],
+        history: Sequence[ChatMessage] = (),
+    ) -> GroundedAnswer:
+        """Answer from current chunks, using prior turns only to resolve follow-ups."""
+        contextual_question = contextualize_question(question, history)
+        evidence = rerank(contextual_question, chunks, top_n=self._rerank_top_n)
         if not evidence or evidence[0].score < self._min_evidence_score:
             logger.info(
                 "qa_refused_weak_evidence",
@@ -251,6 +267,7 @@ class GroundedAnswerService:
             question=question,
             evidence=[_render_evidence(chunk) for chunk in evidence],
             max_output_tokens=self._max_output_tokens,
+            history=history,
         )
         completion = await self._llm.complete(request)
         text = completion.text.strip()

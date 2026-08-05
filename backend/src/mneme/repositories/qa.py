@@ -9,6 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.models.qa import QaConversation, QaMessage, QaRole
 
+QA_HISTORY_MAX_MESSAGES = 8
+
 
 class ConversationMismatchError(ValueError):
     """The conversation exists but belongs to another user or paper."""
@@ -49,6 +51,39 @@ class QaConversationRepository:
             )
         )
         return 0 if result is None else result + 1
+
+    async def get_recent_messages(
+        self,
+        *,
+        conversation_id: UUID,
+        user_id: UUID,
+        paper_id: UUID,
+        limit: int = QA_HISTORY_MAX_MESSAGES,
+    ) -> list[QaMessage]:
+        """Return a bounded chronological history for one user's paper conversation.
+
+        The user and paper predicates deliberately repeat the checks performed by
+        :meth:`resolve_conversation`. Keeping those boundaries in the history query
+        prevents a future caller from loading turns by conversation id alone.
+        """
+        if limit < 0:
+            raise ValueError("limit must not be negative")
+        if limit == 0:
+            return []
+        statement = (
+            select(QaMessage)
+            .join(QaConversation, QaMessage.conversation_id == QaConversation.id)
+            .where(
+                QaConversation.id == conversation_id,
+                QaConversation.user_id == user_id,
+                QaConversation.paper_id == paper_id,
+            )
+            .order_by(QaMessage.sequence_number.desc())
+            .limit(limit)
+        )
+        messages = list((await self._session.scalars(statement)).all())
+        messages.reverse()
+        return messages
 
     async def append_exchange(
         self,

@@ -60,7 +60,7 @@ def test_run_config_snapshots_reproducibility_settings() -> None:
 
     assert config.llm_provider == "anthropic"
     assert config.llm_model == "claude-opus-4-8"
-    assert config.prompt_version == "qa-v2"
+    assert config.prompt_version == "qa-v3"
     assert config.embedding_backend == "openai"
     assert config.embedding_model == "text-embedding-3-small"
     assert config.retrieval_top_k == 8
