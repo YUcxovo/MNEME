@@ -5,7 +5,9 @@ product-flow presentation requested in the supervisor feedback. The images are
 individual captures so that the Chapter 4 owner can arrange them as readable
 subfigures without treating a contact sheet as the only evidence.
 
-## Capture environment
+## Capture environments
+
+The seed-onboarding images were captured in the original integrated session:
 
 - Device: Pixel 9 Pro XL emulator
 - Android: API 34
@@ -14,12 +16,19 @@ subfigures without treating a contact sheet as the only evidence.
 - Seed: `https://arxiv.org/abs/1706.03762`
 - Data path: Android connected to the live local FastAPI, PostgreSQL, Redis,
   worker, DeepSeek completion, and local FastEmbed embedding services
-- Graph result: six local papers and five persisted directed citations
 
 The database was empty before the seed-onboarding run. The candidate papers,
-paper summaries, citation edges, cited answer, explicit-interest update, and
-refreshed briefing were returned through the backend during the capture
-session.
+and initial briefing were returned through the backend during that session.
+
+Images 06--11, 13--19, 21, and 22 were refreshed on 10 August 2026 using the
+current integrated Android product and a separate empty PostgreSQL database.
+The refresh used a Pixel 9 Pro XL API 34 emulator at 1080 x 2400 with six CPU
+cores, Android connected to the local FastAPI service, PostgreSQL, Redis, the
+ARQ worker, completion service, and embedding service. Controlled fixtures were
+disabled. The selected live paper produced 21 papers and 20 persisted directed
+citations; the same session produced the cited answer, explicit-interest
+update, refreshed five-paper briefing, offline cache disclosure, and online
+recovery shown in the retained images.
 
 ## Suggested figure groups
 
@@ -42,7 +51,7 @@ and the resulting multi-paper briefing.
 4. `09-graph-selected-node.png`
 5. `10-open-selected-paper.png`
 
-This group shows the transition from a paper account to a six-node citation
+This group shows the transition from a paper account to a 21-paper citation
 neighbourhood, persistent node selection, and graph-to-paper navigation.
 
 ### 3. Evidence-linked question answering

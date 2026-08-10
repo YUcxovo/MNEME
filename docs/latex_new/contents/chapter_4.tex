@@ -41,10 +41,22 @@ The home surface is the briefing list, composed of cards that pair each recommen
 The paper detail screen presents the structured summary with its source-linked elements, and the question-answering surface accepts a free-form question and renders the grounded answer together with its citation markers, so a reader can move from a cited claim to its supporting evidence excerpt.
 Verification labels sit adjacent to the claims they qualify, following the formative usability observations reported in Chapter~3.
 
+The paper view also provides Save and Share actions. Saving records the supported
+behavioral event and projects the paper into a Room-backed Saved collection,
+where it can be reopened through the same paper-detail route after navigation or
+process restoration. Sharing opens Android's standard chooser with the selected
+paper's title and public arXiv URL.
+
 The citation graph is the one control that leaves the Compose toolkit.
 It is rendered by a locally bundled D3 visualization inside a WebView, so no network fetch is required for the visualization itself, while node selection is mirrored back into native state through a JavaScript bridge.
 Before a graph is serialized for the WebView, the client validates unique node identities, the presence of the centre node, and the absence of dangling edges; the return bridge accepts only an identifier present in the displayed graph and posts the selection to the Android main thread.
 The native side therefore remains the single source of truth for the current selection, which enables the persistent ``open paper'' action, a distinct selected-node style, and the selection-restoration behavior verified under UI Testing.
+Native filter chips select all relations, references from the center, citations
+to the center, or one visible subject category before a reduced node-and-edge
+payload is sent to the renderer. The center paper always remains present. A
+selected node can also become the center of a new bounded graph request, allowing
+the reader to continue exploration without interpreting a filtered view as a
+new citation relation.
 Graph size is bounded at fifty nodes by the client request contract, limiting the amount of graph content presented on a phone screen.
 
 Interest management uses standard Material list and editing controls, reachable from the briefing surface, through which explicit topics can be added, edited, and removed. The screen validates the draft locally and sends the complete topic list through the preference endpoint. The client preserves the independent followed-author list and immediately requests a recommended briefing from the canonical preference response. The updated preferences and briefing are stored together after that briefing returns. A successful state is shown only after this sequence completes; a failed request leaves the draft available for correction or retry. This sequence connects the visible edit to the recommendation path while leaving previously generated briefings unchanged.
@@ -63,10 +75,24 @@ start reconstructs the briefing surface from the local cache, while bringing
 an existing task back to the foreground preserves its current state. The
 startup experiment measures these two paths separately.
 
+A briefing notification uses the same typed route as an ordinary briefing
+selection. It carries the digest identity, so tapping the alert restores that
+specific briefing instead of starting an unrelated refresh. Delivery is
+consumed once when an existing activity receives the intent again.
+
 \subsection{Other Aspects}
 
 Persistence is provided by Room with explicit schema migrations; briefing and paper caches carry offline metadata and retention policies.
-Behavioral-event upload uses a unique WorkManager request with a network constraint and exponential retry~\cite{androidWorkManager2026}. The worker delegates to the synchronization coordinator that reserves queued rows, returns retryable uploads to the pending state, and applies accepted or duplicate acknowledgements. The evaluated briefing path uses explicit foreground refresh; scheduled briefing delivery and notification behavior are outside the evidence reported in this thesis.
+Behavioral-event upload uses a unique WorkManager request with a network constraint and exponential retry~\cite{androidWorkManager2026}. The worker delegates to the synchronization coordinator that reserves queued rows, returns retryable uploads to the pending state, and applies accepted or duplicate acknowledgements.
+
+A separate periodic WorkManager task retrieves the latest weekly briefing and
+stores it before considering a notification. A weekly result produces one alert
+when its maximum paper relevance reaches the configured threshold of 0.75 and
+its digest identity has not already been notified. Android permission and
+channel state remain authoritative: when delivery is unavailable, the briefing
+refresh still completes and the digest is not recorded as notified. Transient
+network, rate-limit, and server failures request a later retry. The notification
+opens the same digest identity that passed the threshold.
 First-run onboarding derives an initial arXiv category from a seed paper and prepares an initial set of papers through the backend pipeline before the first briefing is shown.
 
 Paper resolution gives each route a single active load, so a late response for a previously selected paper cannot replace the newly selected one. Algorithm~\ref{alg:mobile-paper-resolution} states the implemented procedure realizing the origin-disclosure states designed in Chapter~3; the three-stage polling behavior it produces is verified under Acceptance Testing.
@@ -88,7 +114,9 @@ Paper resolution gives each route a single active load, so a late response for a
 
 Device-level results were collected on Android~14 under the resource-controlled emulator configurations described under Testing Tool.
 The study varies CPU and RAM within one emulation host.
-Physical-device validation and notification-permission testing across additional Android versions remain future work.
+The implemented notification path and permission-denied outcome were tested on
+Android~14. Physical-device validation and testing across additional Android
+versions remain future work.
 
 \subsection{Implemented Product Flow}
 \label{subsec:implemented-product-flow}
@@ -133,7 +161,7 @@ result visible.
 Opening a briefing item leads to the structured paper view. The overview,
 claims, method, limitations, source action, question interface, and citation
 graph remain attached to the selected paper. Figure~\ref{fig:android-reading-graph}
-shows the transition from paper detail to a six-paper citation neighbourhood.
+shows the transition from paper detail to a 21-paper citation neighbourhood.
 Selecting a neighbouring node highlights it and exposes the action that opens
 the neighbour through the ordinary paper-detail route.
 
@@ -183,6 +211,35 @@ a common route.
   \label{fig:android-graph-paper}
 \end{figure}
 
+The implemented paper view also connects reading to retention and exchange.
+Figure~\ref{fig:android-save-share} shows the source-linked action area, the
+resulting Saved collection, and Android's share chooser. The saved item reopens
+through the ordinary paper route. The share payload contains the title and the
+paper's public arXiv URL, making the exported object usable outside MNEME.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.255\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-mvp-final/01-paper-actions.png}
+    \caption{Paper actions.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.255\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-mvp-final/02-saved-list.png}
+    \caption{Persisted Saved item.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.255\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-mvp-final/03-share-chooser.png}
+    \caption{Public share payload.}
+  \end{subfigure}
+  \caption{Retention and sharing in the implemented paper flow. Save places the
+  selected paper in the local research collection, while Share delegates its
+  title and public arXiv URL to the Android chooser.}
+  \label{fig:android-save-share}
+\end{figure}
+
 Question answering also continues from the selected paper.
 Figure~\ref{fig:android-qa-flow} follows a free-form question from composition
 through processing to a cited answer and the associated source card. Paper
@@ -215,6 +272,44 @@ passage.
   \caption{Evidence-linked question answering from question composition to
   inspection of the source associated with the returned answer.}
   \label{fig:android-qa-flow}
+\end{figure}
+
+The returned conversation identity connects later questions to the same paper.
+Figure~\ref{fig:android-qa-follow-up} shows a second question that refers to the
+recommendations in the preceding answer. The interface retains the earlier turn,
+and the backend uses the bounded conversation history to interpret the follow-up
+while retrieving its answer evidence from the current paper revision.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.34\textwidth]{../thesis-handoffs/hanyang/ui-ux-mvp-final/04-qa-follow-up.png}
+  \caption{A follow-up question in the same paper-scoped conversation. The
+  second answer remains source-linked to the selected paper.}
+  \label{fig:android-qa-follow-up}
+\end{figure}
+
+The implemented graph view supports larger neighborhoods and direct reduction of the
+visible relation set. Figure~\ref{fig:android-graph-filtering} shows the same
+50-paper, 53-edge graph before and after applying the References filter. The
+filtered view keeps the center paper and its outgoing reference edges, while the
+original directed graph remains unchanged for later filters or recentering.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.34\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-mvp-final/05-graph-all.png}
+    \caption{All directed relations.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.34\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-mvp-final/06-graph-references.png}
+    \caption{References from the center.}
+  \end{subfigure}
+  \caption{Relation filtering in a dynamically prepared citation neighborhood.
+  The filter changes the visible nodes and edges while preserving citation
+  direction and the current center.}
+  \label{fig:android-graph-filtering}
 \end{figure}
 
 Explicit interests give the reader a direct way to correct later briefing
@@ -250,10 +345,32 @@ briefing keeps the updated topics available for inspection.
   \label{fig:android-interest-flow}
 \end{figure}
 
-Recovery preserves the screen structure used by the live path.
+Periodic re-entry uses the same briefing surface as an explicit refresh.
+Figure~\ref{fig:android-weekly-reentry} records a weekly briefing whose maximum
+relevance exceeded the configured threshold of 0.75. Android displayed one
+notification, and tapping it opened the corresponding ten-paper weekly briefing.
+
+\begin{figure}[H]
+  \centering
+  \begin{subfigure}[t]{0.34\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-mvp-final/07-weekly-notification.png}
+    \caption{Weekly briefing alert.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.34\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-mvp-final/08-weekly-briefing.png}
+    \caption{The notified briefing.}
+  \end{subfigure}
+  \caption{Weekly notification and exact-briefing navigation. The displayed
+  alert opens the digest that satisfied the notification policy.}
+  \label{fig:android-weekly-reentry}
+\end{figure}
+
+Recovery preserves the screen structure used by the online path.
 Figure~\ref{fig:android-recovery-flow} shows the retained briefing while the
 backend is unavailable and the same workflow after connectivity is restored.
-The visible origin changes from cached to live while the paper list and its
+The offline disclosure is removed after recovery, while the paper list and its
 reading actions remain available.
 
 \begin{figure}[H]
@@ -268,9 +385,9 @@ reading actions remain available.
     \includegraphics[width=\linewidth]{../thesis-handoffs/hanyang/ui-ux-product-flow/22-live-recovery-after-offline.png}
     \caption{Restored live briefing.}
   \end{subfigure}
-  \caption{Offline and live recovery. Retained content remains readable with
-  its cached origin and returns to a live-backend state after connectivity is
-  restored.}
+  \caption{Offline and online recovery. Retained content remains readable with
+  an offline disclosure, and the briefing returns to the online state after
+  connectivity is restored.}
   \label{fig:android-recovery-flow}
 \end{figure}
 
@@ -345,6 +462,14 @@ Generation is refused before any model call when no evidence reaches a minimum s
 After generation, citation verification checks every bracketed marker against the evidence list. A marker outside that list produces no verified citation record and therefore cannot be presented to the reader as evidence, while the generated answer text is returned unchanged. Each remaining cited excerpt is compared with the claim sentences that carry its marker.
 A citation counts as source-matched when at least 30\% of the claim's content words appear in the cited chunk, and answers are labeled matched, partially matched, or insufficient.
 Retrieved context can coexist with unsupported or contradictory generation~\cite{niu2024ragtruth}, and following the distinction drawn in citation-quality research~\cite{gao2023alce}, this mechanism performs retrieved-source matching. It verifies lexical anchoring in retrieved text and does not establish semantic entailment or scientific correctness.
+
+Follow-up questions reuse a conversation identifier bound to one user and one
+paper. The service loads at most eight recent messages in chronological order
+and combines them with the new question to resolve references such as ``these
+recommendations'' during retrieval and generation. Conversation history never
+becomes a source record: every citation in the new answer must still identify a
+chunk from the current paper revision. A conversation identifier presented for
+another user or paper is rejected before history is loaded.
 
 Algorithm~\ref{alg:qa-evidence} combines these stages into the implemented procedure.
 
@@ -547,7 +672,36 @@ Figure~\ref{fig:behavior-loop} connects these mechanisms to the mobile observati
 \subsection{Bounded Citation-Graph Construction}
 \label{subsec:backend-graph}
 
-The citation graph that the client renders is produced by a deterministic algorithm layer over persisted citation observations. An edge records that a source paper cites a target paper. A provider observation may initially identify one citation endpoint only by an external identifier, but at least one endpoint is local; the unresolved observation is retained until it can be associated with a local paper. Self-edges and duplicates are removed during resolution, and only edges whose endpoints resolve to local paper identities enter the public graph, so a missing external node does not imply an absent citation.
+Graph access begins with evidence acquisition when the selected paper has no
+persisted neighborhood. The preparation service first reuses an existing local
+neighborhood. Otherwise it requests directed references and citations from
+Semantic Scholar, then OpenAlex when that source is unavailable, and finally
+examines bibliography sections for explicit arXiv identifiers. Candidate
+identities are normalized through arXiv metadata before their directed relations
+are stored. Repeated preparation therefore reuses the new local result, and a
+paper with no resolvable evidence receives an explicit empty neighborhood.
+
+Algorithm~\ref{alg:graph-preparation} states this evidence-backed preparation
+path. It is separate from the same-category candidate fallback used during seed
+onboarding: category similarity can supply briefing candidates, while a public
+citation edge requires an observed reference or citation direction.
+
+\begin{algorithm}[htbp]
+  \caption{Evidence-backed on-demand citation-graph preparation}
+  \label{alg:graph-preparation}
+  \KwIn{Local center paper \(p\), requested neighbor limit \(L\)}
+  \KwOut{Persisted directed neighborhood and an evidence-source state}
+  Validate \(L\) and resolve the local identity and arXiv identity of \(p\)\;
+  \If{a prepared neighborhood already exists}{\Return the cached state without an external request\;}
+  Request references and citations from Semantic Scholar within \(L\)\;
+  \If{no resolvable relation is returned}{request the corresponding OpenAlex neighborhood\;}
+  \If{provider evidence remains unavailable}{extract explicit arXiv identifiers from bibliography sections as outgoing references\;}
+  Resolve candidate metadata, discard self-relations, and preserve the observed direction\;
+  \If{at least one endpoint resolves locally}{persist papers and citation observations idempotently\;}
+  \Return the evidence-source state and number of resolved neighbors\;
+\end{algorithm}
+
+The citation graph that the client renders is produced by a deterministic algorithm layer over these persisted citation observations. An edge records that a source paper cites a target paper. A provider observation may initially identify one citation endpoint only by an external identifier, but at least one endpoint is local; the unresolved observation is retained until it can be associated with a local paper. Self-edges and duplicates are removed during resolution, and only edges whose endpoints resolve to local paper identities enter the public graph, so a missing external node does not imply an absent citation.
 The public graph service currently supplies persisted citation edges and no keyword co-occurrence input, so its returned edges represent resolved citation relations.
 
 Citation edges are damped by the inverse logarithm of the target's citation in-degree, reducing the influence of ubiquitously cited papers on layout and ranking.
@@ -607,8 +761,13 @@ Unit tests check deterministic transformations and boundary validation; reposito
 
 The backend test suite runs under \texttt{pytest} in a \texttt{uv}-managed Python environment, with \texttt{ruff} for lint and formatting and \texttt{pyrefly} for type checking as static gates.
 Provider-dependent code is tested against deterministic fake LLM and embedding providers and an in-memory Redis stand-in, so the software suite is fully reproducible without network access or provider credentials.
-The executed suite comprised 533 tests, all of which passed against PostgreSQL~16 with \texttt{pgvector}, with no failure or skip.
-Full-suite line coverage was 89.05\% and branch coverage 76.15\%. Recommendation scoring reached 97.87\% line coverage and the evaluation harness reached 97.85\%; coverage provides supporting software evidence and does not establish semantic correctness.
+The executed backend suite comprised 716 tests, all of which passed against
+PostgreSQL~16 with \texttt{pgvector}, with no failure or skip.
+A separate coverage-instrumented run of 533 tests reported 89.05\% line
+coverage and 76.15\% branch coverage. Recommendation scoring reached 97.87\%
+line coverage and the evaluation harness reached 97.85\%. These coverage
+figures provide supporting software evidence and do not measure semantic
+correctness.
 The behavior-model database migration was additionally exercised in both directions, upgrading to its target revision, downgrading one revision, and upgrading again without error.
 
 The Android suite uses JUnit-based unit tests for ViewModel and repository
@@ -682,16 +841,40 @@ The complete configuration is stored with the evaluation record, and every compl
 
 \subsection{UI Testing}
 
-Interactive graph behavior was verified by the graph and app-flow suite, which passed 11 of 11 tests, including node selection through the WebView bridge, navigation to a selected paper through the persistent open action, and restoration of the previous selection after returning from paper detail.
-Together, these results establish the tested graph presentation, selection, navigation, and restoration behaviors.
+The connected-device regression ran 32 tests on the Android~14
+emulator, covering the main application flow, Saved collection, public sharing,
+notification delivery, and citation-graph interaction. All
+32 tests passed. The graph cases included a bounded 50-node payload, node
+selection through the WebView bridge, navigation through the persistent paper
+action, selection restoration after returning from paper detail, and truthful
+empty and retryable states. Unit tests additionally checked relation and subject
+filters, including preservation of the center paper and removal of edges whose
+endpoints are hidden.
 The formative five-participant usability study that motivated the graph's redesign is design-stage evidence and is reported in Chapter~3.
 
-The interest editor was exercised as one complete device path. The test edited an existing topic, removed another, added a new topic, saved the profile, navigated away, and returned to the interest screen. The updated topics remained visible after the round trip. Client data-layer tests additionally cover canonical server values, preservation of followed authors, local caching, refresh ordering, and a failed save that leaves the last confirmed local state unchanged.
+The retention and notification re-entry cases exercised the same paper identities used
+by the ordinary reading path. Saving a paper populated the Saved screen and the
+saved item reopened as a normal paper detail; restored state also kept the Save
+action disabled for an already retained paper. The share-intent test checked the
+selected title and arXiv URL. Notification navigation restored the digest named
+by the notification and consumed that request once.
+
+The question flow submitted two turns through one paper conversation and kept
+the returned conversation identity scoped to that paper. The interest editor
+was exercised as one complete device path: the test edited an existing topic,
+removed another, added a new topic, saved the profile, navigated away, and
+returned to the interest screen. The updated topics remained visible after the
+round trip. Client data-layer tests additionally cover canonical server values,
+preservation of followed authors, local caching, refresh ordering, and a failed
+save that leaves the last confirmed local state unchanged.
 
 \subsection{Acceptance Testing for Features}
 
 Feature acceptance maps the acceptance criteria of Chapter~3 to executable checks.
-Table~\ref{tab:feature-acceptance} summarizes the main user-facing tasks, their expected outcomes, and the recorded results. Performance measurements are reported separately in Section~\ref{sec:android-performance}.
+Table~\ref{tab:feature-acceptance} summarizes the principal product tasks and
+the continuity properties that support them, together with their expected and
+recorded outcomes. Performance measurements are reported separately in
+Section~\ref{sec:android-performance}.
 
 \begingroup
 \scriptsize
@@ -746,10 +929,34 @@ Show claims, method, limitations, source access, and next actions &
 The specified summary sections and paper actions were visible &
 Pass \\
 \MnemeRowRule
+Saved papers &
+Save the selected paper and open the Saved destination &
+Retain the paper and reopen it through the ordinary detail route &
+The Saved screen listed the selected paper, which reopened with its saved state preserved &
+Pass \\
+\MnemeRowRule
+Public sharing &
+Share the selected paper &
+Open the Android chooser with the paper's public identity &
+The chooser displayed the selected title and public arXiv URL &
+Pass \\
+\MnemeRowRule
 Citation graph &
 Open the graph for the selected paper &
 Render the backend citation neighbourhood &
-The graph displayed six papers and five directed citations &
+The recorded product flow displayed 50 papers and 53 directed citations &
+Pass \\
+\MnemeRowRule
+Dynamic graph preparation &
+Open a graph for a paper without a stored neighbourhood &
+Prepare citation relations on demand or show a clear empty state &
+Tests produced directed relations from available citation evidence and returned an empty state when no relation could be resolved &
+Pass \\
+\MnemeRowRule
+Graph filtering &
+Select the References relation filter &
+Keep the center and show its outgoing reference relations &
+The view retained the center and reduced the graph to its visible reference edges &
 Pass \\
 \MnemeRowRule
 Graph selection &
@@ -782,6 +989,12 @@ Display an answer with evidence markers &
 The returned answer contained inline citations and evidence status &
 Pass \\
 \MnemeRowRule
+Follow-up question &
+Refer to the preceding answer in a second question &
+Interpret the follow-up in the context of the selected paper and retrieve new evidence &
+The second question referred to the preceding answer and returned a new source-linked answer from the selected paper &
+Pass \\
+\MnemeRowRule
 Evidence inspection &
 Open an answer source &
 Show the source location and paper action &
@@ -806,6 +1019,12 @@ Display a briefing under the updated topics &
 The briefing showed the updated topics and newly ranked catalogue papers &
 Pass \\
 \MnemeRowRule
+Weekly notification &
+Refresh a weekly briefing above the 0.75 threshold and tap its alert &
+Publish once and open the exact notified digest &
+A 10-paper briefing with maximum relevance 0.86 produced one alert that opened that briefing &
+Pass \\
+\MnemeRowRule
 Offline recovery &
 Reopen the briefing while the API is unavailable &
 Show retained content and identify its origin &
@@ -815,7 +1034,7 @@ Pass \\
 Live recovery &
 Restore the API after offline use &
 Refresh the same workflow from the backend &
-The briefing returned to a live-backend state &
+The briefing returned to the online state &
 Pass \\
 \MnemeRowRule
 Event synchronization &
@@ -830,17 +1049,22 @@ Pass \\
 
 The table follows the product path shown in
 Figures~\ref{fig:android-seed-flow}--\ref{fig:android-recovery-flow}. The
-onboarding, reading, question-answering, and graph rows were exercised in the
-end-to-end device path. Controlled connected-device trials cover the recovery
-rows; the interest-editor device test and API loop cover preference editing;
-and the ten-batch protocol covers event synchronization. For the
-literature-representation features, the decisive backend check is revision
-isolation: an API test asserts that question answering scoped to one paper
-revision cannot retrieve chunks belonging to another. Idempotent
-re-preparation is covered by deterministic chunking and content-hash tests.
+onboarding, reading, retention, sharing, question-answering, graph, and weekly
+notification rows were exercised through the integrated Android product or the
+32-test connected-device regression. Controlled connected-device trials cover
+the recovery rows; the interest-editor device test and API
+loop cover preference editing; and the ten-batch protocol covers event
+synchronization. Backend tests establish revision isolation for question
+answering, deterministic document re-preparation, and evidence-backed graph
+preparation with cached, Semantic Scholar, OpenAlex, bibliography, and empty
+outcomes.
 
-For the assistance features, acceptance rests on refusal and verification behavior.
-Tests cover refusal below the evidence threshold and through the model-side insufficient-evidence marker, citation-marker validation against the evidence list, and the source-match labeling of answers.
+For the assistance features, tests cover refusal below the evidence threshold
+and through the model-side insufficient-evidence marker, citation-marker
+validation against the evidence list, and the source-match labeling of answers.
+Conversation tests also cover bounded history, same-user and same-paper scope,
+conversation-identity reuse, and the rule that prior messages provide context
+without becoming citable evidence.
 The cost boundary is verified on the public question route: integration tests assert that exhaustion of the daily budget surfaces as the specified rate-limit response for both the completion and the embedding paths.
 The evaluation harness carries its own contract tests for fixture pinning, readiness checking with explicit skip reasons, configuration snapshotting, and its refusal to treat an empty evaluation as a successful one.
 
@@ -859,19 +1083,21 @@ upload on the next explicit request, and idempotent replay for the tested
 three-event batches.
 Asynchronous job visibility was verified by the three-stage paper-preparation polling flow, which completed in 10 of 10 trials.
 
-An end-to-end acceptance test connected the Android client to the running
-backend and used arXiv:1706.03762 as the initial paper. The backend returned
-five candidates and the client displayed them as live content. The same briefing
-was restored from the local cache, an opened paper displayed its stored
-summary, and a free-form question returned an answer with four source links.
-The source action and the paper's arXiv action both opened successfully. The
-paper also produced a six-node, five-edge citation graph, from which a selected
-neighbour opened through the standard paper-detail route.
+The integrated product session used arXiv:1706.03762 as the initial paper
+and displayed a five-paper briefing. From that briefing, arXiv:1703.03906 opened
+with its stored structured summary and source actions. The paper was saved and
+reopened from the Saved collection, and its title and public arXiv URL appeared
+in Android's share chooser. Two questions remained in one paper-scoped
+conversation, and both answers exposed paper sources. The selected paper's
+persisted neighborhood rendered 50 papers and 53 directed citations; applying
+the References filter retained the center and its outgoing reference relations.
+The standard weekly policy then generated a ten-paper briefing with maximum
+relevance 0.86, published one notification, and opened that exact briefing when
+the alert was tapped.
 
-The corresponding user-facing states are shown in
-Figures~\ref{fig:android-reading-graph} and~\ref{fig:android-qa-flow}. They show
-the selected graph node, source-linked answer, and paper actions used in the
-test.
+The corresponding user-facing states appear in
+Figures~\ref{fig:android-save-share}, \ref{fig:android-qa-follow-up},
+\ref{fig:android-graph-filtering}, and~\ref{fig:android-weekly-reentry}.
 
 The same seed-to-graph path was exercised with
 arXiv:\nolinkurl{2010.11929} and arXiv:\nolinkurl{2106.09685}. Each seed
@@ -1355,5 +1581,5 @@ All dollar figures in Table~\ref{tab:unit-economics} are estimates derived from 
 Measured spend at scale remains available from the per-completion cost telemetry.
 
 The results establish the measured behavior of the implemented system across client recovery, graph interaction, preference correction, event synchronization, grounded assistance, and provider routing.
-Device measurements use one Android version, device profile, and host; controlled state timings exclude network and frame latency. The behavior-model and explicit-correction evaluations use designed traces and balanced synthetic candidates, while the graded answer-quality evaluation reports one run on each of two provider routes over a fifteen-case corpus. These experiments provide reproducible evidence for the principal mechanisms and identify the areas that require broader device, user, and corpus validation.
+Resource measurements use one Android version and one emulator host; controlled state timings exclude network and frame latency. The behavior-model and explicit-correction evaluations use designed traces and balanced synthetic candidates, while the graded answer-quality evaluation reports one run on each of two provider routes over a fifteen-case corpus. These experiments provide reproducible evidence for the principal mechanisms and identify the areas that require broader device, user, and corpus validation.
 Chapter~5 discusses the corresponding outlook items.

@@ -12,14 +12,14 @@
 \definecolor{MnemeGray}{HTML}{EFF2F5}
 \definecolor{MnemeInk}{HTML}{252A31}
 
-Chapter~2 established that researchers do not experience literature work as a sequence of isolated searches. New papers enter an existing reading practice: the reader decides whether a paper deserves attention, reconstructs its argument, checks the supporting text, relates it to earlier work, and gradually revises a personal sense of relevance. Mneme was designed around this recurring activity. This chapter explains how the customer evidence was translated into a story map, feature boundaries, a mobile--service architecture, a public interface, and an initial interaction design. It then reports the formative prototype study and the changes that followed from the observed problems.
+Chapter~2 established that researchers do not experience literature work as a sequence of isolated searches. New papers enter an existing reading practice: the reader decides whether a paper deserves attention, reconstructs its argument, checks the supporting text, relates it to earlier work, and gradually revises a personal sense of relevance. MNEME was designed around this recurring activity. This chapter explains how the customer evidence was translated into a story map, feature boundaries, a mobile--service architecture, a public interface, and an initial interaction design. It then reports the formative prototype study and the changes that followed from the observed problems.
 
 Three design concerns recur throughout the chapter. First, a paper and the evidence derived from it must remain identifiable even when a later revision appears. Second, generated material and personalized ranking must reveal enough of their basis to support inspection or correction. Third, useful content should remain distinguishable from cached, incomplete, or failed content when network and processing conditions change. These concerns shape the design without prescribing a particular parser, ranking formula, queue, or model. The corresponding implementation methods and their evaluation are presented in Chapter~4.
 
 \section{Storymap and Features}
 \label{sec:storymap-features}
 
-The interview and affinity-map findings described in Chapter~2 point to needs both before and after a paper is selected. Participants used titles, abstracts, authors, venues, figures, and code availability to decide what to open, but they also described difficulty recovering useful papers, checking generated explanations, and maintaining awareness of related work. Treating these needs as separate screens would reproduce the fragmentation that the application is intended to reduce. The story map organizes Mneme as one reading loop with five connected stages, shown in Figure~\ref{fig:storymap}.
+The interview and affinity-map findings described in Chapter~2 point to needs both before and after a paper is selected. Participants used titles, abstracts, authors, venues, figures, and code availability to decide what to open, but they also described difficulty recovering useful papers, checking generated explanations, and maintaining awareness of related work. Treating these needs as separate screens would reproduce the fragmentation that the application is intended to reduce. The story map organizes MNEME as one reading loop with five connected stages, shown in Figure~\ref{fig:storymap}.
 
 \begin{figure}[htbp]
   \centering
@@ -28,19 +28,19 @@ The interview and affinity-map findings described in Chapter~2 point to needs bo
   \label{fig:storymap}
 \end{figure}
 
-The first stage, receiving new papers, is mainly invisible to the reader but determines what every later screen can claim. Mneme observes a scholarly record, associates it with a stable paper identity and a specific source revision, and prepares the available text. The design does not require every paper to yield a complete representation. When full text cannot be prepared reliably, metadata and an abstract can still support discovery, provided that the reduced evidence level remains visible. This choice favors continuity over silent substitution: a partial paper remains useful, but it is not presented as if all sections had been processed.
+The first stage, receiving new papers, is mainly invisible to the reader but determines what every later screen can claim. MNEME observes a scholarly record, associates it with a stable paper identity and a specific source revision, and prepares the available text. The design does not require every paper to yield a complete representation. When full text cannot be prepared reliably, metadata and an abstract can still support discovery, provided that the reduced evidence level remains visible. This choice favors continuity over silent substitution: a partial paper remains useful, but it is not presented as if all sections had been processed.
 
-The second stage establishes a starting account of the reader's interests. Onboarding asks for a small set of topics and a seed paper, limiting initial effort while giving the first briefing a concrete basis. Later interaction can supply additional evidence, but inferred behavior remains distinct from topics that the reader entered deliberately. The distinction matters because a paper open, a question, and a skipped item can have several explanations. Mneme treats adaptation as revisable assistance rather than a declaration of the user's intent. The interest view provides a direct correction path, and recommendation reasons expose the most relevant basis for an item.
+The second stage establishes a starting account of the reader's interests. Onboarding asks for a small set of topics and a seed paper, limiting initial effort while giving the first briefing a concrete basis. Later interaction can supply additional evidence, but inferred behavior remains distinct from topics that the reader entered deliberately. The distinction matters because a paper open, a question, and a skipped item can have several explanations. MNEME treats adaptation as revisable assistance rather than a declaration of the user's intent. The interest view provides a direct correction path, and recommendation reasons expose the most relevant basis for an item.
 
 The third stage turns a large candidate stream into a bounded research briefing. A briefing is not designed as an endless feed. It presents a compact ranked set with paper identity, a short account, a relevance indication, and a reason that can be examined during triage. The default weekly rhythm supports periodic orientation, while an explicit refresh accommodates an immediate need. Each briefing is treated as a stable snapshot so that a restored mobile view still represents the same recommendation decision; later preference changes affect a later briefing instead of rewriting an earlier one.
 
-The fourth stage supports close reading through structured paper understanding and paper-scoped question answering. A structured view separates an overview from claims, method, and limitations so that the reader can move quickly between different reading purposes. Question answering narrows retrieval to the selected paper and associates the response with the supplied excerpts. Retrieval-augmented generation combines generation with an external evidence store~\cite{lewis2020rag}; in Mneme, restricting that store to the selected source revision makes the evidence set small enough to inspect. When the available excerpts do not support an answer, the normal result is an explicit insufficient-evidence state rather than a fluent replacement.
+The fourth stage supports close reading through structured paper understanding and paper-scoped question answering. A structured view separates an overview from claims, method, and limitations so that the reader can move quickly between different reading purposes. Question answering narrows retrieval to the selected paper and associates the response with the supplied excerpts. Retrieval-augmented generation combines generation with an external evidence store~\cite{lewis2020rag}; in MNEME, restricting that store to the selected source revision makes the evidence set small enough to inspect. When the available excerpts do not support an answer, the normal result is an explicit insufficient-evidence state rather than a fluent replacement.
 
-The fifth stage places one paper in a bounded citation neighborhood. The graph is intended to answer a practical question---which related paper should the reader inspect next?---rather than to reproduce a complete scholarly network on a phone. A selected node reveals its relationship to the central paper and provides a direct route to the ordinary paper view. Limiting the neighborhood keeps the display legible and allows graph exploration to rejoin the reading loop instead of becoming a disconnected visualization.
+The fifth stage places one paper in a bounded citation neighborhood. The graph is intended to answer a practical question---which related paper should the reader inspect next?---rather than to reproduce a complete scholarly network on a phone. A selected node reveals its relationship to the central paper and provides a direct route to the ordinary paper view. Relation and subject filters reduce the visible neighborhood without changing the underlying citation direction, and a selected paper can become the center of the next view. Limiting the neighborhood keeps the display legible and allows graph exploration to rejoin the reading loop instead of becoming a disconnected visualization.
 
 These stages form a cycle rather than a funnel. Preparation makes a paper readable; briefing and search determine which paper receives attention; reading and question asking create new evidence about the reader's interests; graph exploration reveals another candidate; and the next briefing reflects the accumulated, bounded evidence. Stable paper identity connects the cycle. Visible evidence and origin states ensure that a temporary failure or a partial representation changes what the interface says, not which paper the reader believes is being examined.
 
-The core feature set follows directly from this cycle. Mneme requires paper preparation, interest-aware briefings, structured paper views, source-linked questions, and bounded citation exploration because removing any one of them breaks a transition in the intended activity. Search, preference editing, local restoration, and explicit processing states support those transitions. More speculative modes, such as concept and author graphs, remain useful design explorations but are not necessary to establish the principal loop.
+The core feature set follows directly from this cycle. MNEME requires paper preparation, interest-aware briefings, structured paper views, source-linked questions, and bounded citation exploration because removing any one of them breaks a transition in the intended activity. Search, preference editing, local restoration, and explicit processing states support those transitions. Saving gives a paper a durable place in the reader's local collection, sharing exports its public scholarly identity, and a weekly notification returns to the exact briefing that triggered it. These controls extend the same reading loop across sessions and applications. More speculative modes, such as concept and author graphs, remain useful design explorations but are not necessary to establish the principal loop.
 
 \section{Acceptance Criteria for Features}
 \label{sec:acceptance-criteria}
@@ -64,7 +64,9 @@ The design criteria in Table~\ref{tab:acceptance-criteria} describe outcomes tha
     \MnemeRowRule
     Paper question answering & A reader asks a question about the selected paper. & The answer remains scoped to that paper, exposes its cited excerpts, and uses an insufficient-evidence outcome when support is inadequate. \\
     \MnemeRowRule
-    Citation exploration & A reader selects a node in the paper's graph neighborhood. & Selection is visually persistent, relationship context is stated, and the selected paper can be opened without losing the graph context. \\
+    Citation exploration & A reader opens a paper's graph and selects a related paper. & The view shows a bounded neighborhood derived from citation evidence, or a clear empty state when no relation is available. Selection remains visible, relationship context is stated, and the selected paper can be opened without losing the graph context. \\
+    \MnemeRowRule
+    Retention and re-entry & A reader saves or shares a paper, or opens a weekly alert. & The saved paper remains available, the share contains its public identity, and the alert opens its corresponding briefing. \\
     \MnemeRowRule
     Continuity and correction & A refresh fails or a recommendation appears irrelevant. & The interface identifies cached or failed content, preserves the last valid readable state where appropriate, and offers a direct route to retry or edit explicit interests. \\
     \bottomrule
@@ -81,7 +83,7 @@ The criteria also separate observable software behavior from empirical quality. 
 
 \subsection{System Boundaries and End-to-End Flow}
 
-Mneme separates the latency-sensitive mobile experience from document preparation and model inference. Figure~\ref{fig:system-architecture} shows four regions. The Android application owns navigation, presentation, local continuity, and capture of supported interactions. The application service owns the public contract and coordinates domain operations. Durable paper, user, graph, and vector state resides in PostgreSQL with pgvector, while replaceable execution and cache state is handled separately. Scholarly sources and model providers remain external dependencies whose output must cross a validation boundary before it becomes part of the study system.
+MNEME separates the latency-sensitive mobile experience from document preparation and model inference. Figure~\ref{fig:system-architecture} shows four regions. The Android application owns navigation, presentation, local continuity, and capture of supported interactions. The application service owns the public contract and coordinates domain operations. Durable paper, user, graph, and vector state resides in PostgreSQL with pgvector, while replaceable execution and cache state is handled separately. Scholarly sources and model providers remain external dependencies whose output must cross a validation boundary before it becomes part of the study system.
 
 \begin{figure}[htbp]
   \centering
@@ -119,7 +121,7 @@ Figure~\ref{fig:document-dag} presents document preparation at design level. Met
 
 The principal design decision is that readiness is a property of the required artifact, not of the request that initiated its preparation. A paper may be ready for metadata display before it is ready for structured reading, and it may be ready for structured reading before evidence embeddings exist for question answering. The service reports the available state without implying that all downstream work succeeded. This model also supports safe reuse: an artifact can be reused only when its paper revision and the method identity needed to interpret it still match the requested operation.
 
-Evidence-grounded question answering uses the same lineage. The reader selects a paper, the service retrieves candidate excerpts only from its selected revision, and the generator receives a bounded evidence set. The returned markers are checked against that set before the interface presents their source records. This design supports local inspection, but it does not treat marker validity as proof that an answer is complete or scientifically true. Retrieved context can coexist with unsupported generated statements~\cite{niu2024ragtruth}, so answer behavior and source support are evaluated separately in Chapter~4.
+Evidence-grounded question answering uses the same lineage. The reader selects a paper, the service retrieves candidate excerpts only from its selected revision, and the generator receives a bounded evidence set. A conversation identity retains a short history for follow-up questions while preserving the same user and paper scope. The history helps interpret the new question; the current paper excerpts remain the only citable evidence. Returned markers are checked against that set before the interface presents their source records. This design supports local inspection, but it does not treat marker validity as proof that an answer is complete or scientifically true. Retrieved context can coexist with unsupported generated statements~\cite{niu2024ragtruth}, so answer behavior and source support are evaluated separately in Chapter~4.
 
 \subsection{Interest Memory, Recommendation, and Citation Graph}
 
@@ -127,7 +129,7 @@ Interest memory combines explicit and behavioral evidence without collapsing the
 
 Recommendation composes the available interest signals with paper recency and records a concise reason derived from the components that actually participated. Missing evidence does not receive an invented neutral value; the remaining components determine the result within the declared design. An immutable briefing then preserves the ranked papers and reasons shown at that time. This distinction between editable state and historical output is important for correction: changing a topic should alter the next recommendation decision without revising what the application previously displayed.
 
-The citation graph is separate from the interest model even though both can reveal a next paper. Citation observations form directed relationships between papers. Some provider identities may not yet correspond to local paper records, so the design retains unresolved observations without exposing them as fabricated nodes. A public query selects a bounded neighborhood around the current paper and may enrich its ordering or grouping. If enrichment is unavailable, a deterministic citation-only view remains possible and is identified as such. Spatial layout is a client concern; graph construction, identity resolution, and bounded selection remain service concerns.
+The citation graph is separate from the interest model even though both can reveal a next paper. Citation observations form directed relationships between papers. Some provider identities may not yet correspond to local paper records, so the design retains unresolved observations without exposing them as fabricated nodes. When a local neighborhood is absent, graph preparation may acquire evidence from scholarly metadata providers or explicit references parsed from the paper; only resolved paper identities become public nodes and edges. A public query then selects a bounded neighborhood around the current paper and may enrich its ordering or grouping. If enrichment is unavailable, a deterministic citation-only view remains possible and is identified as such. Spatial layout and filtering are client concerns; evidence acquisition, identity resolution, and bounded selection remain service concerns.
 
 These two discovery paths serve different intentions. The briefing answers which papers appear relevant to the reader's evolving interests. The graph answers how the selected paper is connected to locally known literature. Keeping the paths distinct makes their explanations more faithful and prevents visual proximity from being interpreted as a personalized score. Their detailed aggregation, ranking, and graph-selection methods belong to Back-end Development in Chapter~4.
 
@@ -158,13 +160,13 @@ The public API is the contract between the mobile experience and the service arc
     \MnemeRowRule
     Summaries and jobs & Read a prepared account or monitor accepted work. & Distinguishes a ready resource from a durable processing state and a safe terminal error. \\
     \MnemeRowRule
-    Questions and conversations & Ask within the selected paper and inspect evidence. & Preserves paper scope, ordered messages, source records, and an explicit source-support state. \\
+    Questions and conversations & Ask and follow up within the selected paper. & Preserves user and paper scope, bounded ordered messages, source records, and an explicit source-support state. \\
     \MnemeRowRule
     Preferences and briefings & Correct interests and obtain a ranked snapshot. & Keeps editable preference state separate from an immutable recommendation response. \\
     \MnemeRowRule
     Events & Deliver supported interactions after uncertain connectivity. & Accepts stable event identities and distinguishes newly accepted observations from duplicates. \\
     \MnemeRowRule
-    Graphs & Explore a bounded neighborhood around one paper. & Returns valid paper nodes and directed edges with bounds and a disclosed construction status. \\
+    Graphs & Prepare and explore a bounded neighborhood around one paper. & Returns valid paper nodes and evidence-backed directed edges with bounds and a disclosed construction status. \\
     \bottomrule
   \end{tabular}
   \normalsize
@@ -228,12 +230,14 @@ content~\cite{head2021scholarphi}.
 
 The question screen inherits the selected paper, preserving its scope without
 requiring the reader to enter it again. Answer text and cited excerpts form one
-inspection unit. An insufficient-evidence response occupies the ordinary
-answer region so that it remains distinct from a network error.
+inspection unit. After an answer, the same composer accepts a follow-up and
+keeps both turns in the paper-scoped conversation. An insufficient-evidence
+response occupies the ordinary answer region so that it remains distinct from
+a network error.
 Figure~\ref{fig:prototype-reading} shows the initial prototype states used
 during the moderated sessions. The images use controlled fixture content to
-establish the tested interaction design. Chapter~4 presents the final Android
-implementation.
+establish the tested interaction design. Chapter~4 presents the implemented
+Android application.
 
 Figure~\ref{fig:ui-flow-detail} enlarges the two main parts of the original
 flow. The first part moves from welcome and topic selection through the seed
@@ -259,7 +263,7 @@ the reader returns to the briefing.
   \label{fig:ui-flow-detail}
 \end{figure}
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
   \begin{minipage}[t]{0.32\textwidth}
     \centering
@@ -282,9 +286,10 @@ the reader returns to the briefing.
 
 The graph posed a different interaction problem. Spatial proximity alone does not tell a first-time reader which marks are selectable or what selection will do. Visualization interaction taxonomies distinguish selection from exploration~\cite{yi2007interaction}, while task-oriented design asks why the reader acts, what object is targeted, and how the action is performed~\cite{brehmer2013typology}. The prototype tested whether participants could select a related paper and continue to its paper view. Figure~\ref{fig:prototype-graph} shows the tested graph state. Its concept and author tabs explored a broader visual vocabulary than the paper-only citation graph defined by the public contract.
 
-\begin{figure}[htbp]
+\clearpage
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.56\textwidth]{prototype_graph.png}
+  \includegraphics[width=0.40\textwidth]{prototype_graph.png}
   \caption{Initial graph prototype with controlled fixture nodes. Concept and author views were exploratory interface states, whereas the public graph design is limited to papers and citation relations.}
   \label{fig:prototype-graph}
 \end{figure}
@@ -345,9 +350,9 @@ prompts.
 
 Figure~\ref{fig:usability-results} reports the recorded completion counts. All five participants completed briefing triage (T1), source inspection (T2), and cited question inspection (T3). Two completed the graph transition (T4), and four saved a preference change (T5). In total, 21 of 25 participant--task attempts met their success criterion, a descriptive proportion of 84\%. The task-level distribution is more informative than the aggregate because it identifies where the initial interaction design required revision.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{figures/chapter3_course_usability_completion.png}
+  \includegraphics[width=0.88\textwidth]{figures/chapter3_course_usability_completion.png}
   \caption{Observed task completion in the formative prototype study
   (\(n=5\)). The graph task produced the largest completion drop.}
   \label{fig:usability-results}
@@ -357,9 +362,9 @@ The 15 completions across T1--T3 indicate that the prompted reading path was dis
 
 Figure~\ref{fig:usability-findings} summarizes the qualitative observations that informed this revision, including the value participants placed on visible evidence and the uncertainty they encountered around verification and graph actions.
 
-\begin{figure}[htbp]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{figures/chapter3_course_usability_findings.png}
+  \includegraphics[width=0.88\textwidth]{figures/chapter3_course_usability_findings.png}
   \caption{Qualitative observations from the formative sessions. Visible
   evidence supported confidence, while verification and graph actions required
   stronger cues.}

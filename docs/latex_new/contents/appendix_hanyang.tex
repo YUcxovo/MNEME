@@ -86,6 +86,28 @@ Validation, database preparation, and artifact collection occur outside the
 timing interval. The design yields ten values for each stage, summarized by
 success count, median, minimum, maximum, and range.
 
+\subsection{Integrated MVP Feature Protocol}
+
+The integrated functional-acceptance session was recorded on 2026-08-10 with the
+Android client connected to local FastAPI, PostgreSQL, Redis, and background
+processing services through an Android~14/API~34 emulator. The installed client
+obtained its displayed content from these services. The client and backend began
+with no seed, recorded interactions, Saved items, or pending notification state.
+
+The session submitted arXiv:1706.03762 and waited for the five-paper briefing.
+It then opened arXiv:1703.03906, inspected its structured summary and source
+action, saved it, reopened it from the Saved destination, and invoked the Android
+share chooser. The shared text was checked for the selected title and public
+arXiv URL. Two questions were submitted in sequence, with the second referring
+to the recommendations in the first answer. The citation view was opened for
+the same paper, and the All and References states were recorded.
+
+After the reading actions, the weekly recommender generated a new briefing from
+the current seed, interests, and behavior. The Android synchronization path
+cached the returned digest and applied the configured 0.75 threshold. The
+notification was opened from the system shade, and the displayed digest identity
+and paper count were checked against the generated weekly briefing.
+
 \section{Metric Definitions}
 
 \begin{longtable}{P{3.7cm}P{10.4cm}}
@@ -203,6 +225,16 @@ The retained evaluation material contains raw timing rows, native
 Macrobenchmark output, graph test output, environment records, non-secret
 configuration, machine-readable summaries, and figures generated from the
 validated observations.
+
+The integrated feature session completed every step in its protocol. The seed
+produced five briefing papers. The Saved destination contained the selected
+paper, the share chooser contained its title and public arXiv URL, and the
+second question returned a source-linked answer within the same paper
+conversation. The graph contained 50 papers and 53 directed citations before
+the References filter was applied. The weekly briefing contained ten papers and
+had a maximum relevance of 0.86; it exceeded the 0.75 threshold, produced
+one Android notification, and opened the corresponding briefing. The retained
+screens show each of these states.
 
 All three seed initializations satisfied the five-paper success condition.
 The elapsed times were 28.46~s for arXiv:1706.03762, 41.73~s for

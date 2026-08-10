@@ -52,16 +52,23 @@ The complete device path then produced a five-paper briefing, opened paper detai
 Two further arXiv seeds completed the seed-to-graph path, giving three fixed
 seeds with a completed briefing and multi-node graph.
 
+The final MVP acceptance session extended the same path through the ordinary
+Android interface. The selected paper was saved, reopened, and shared; two
+source-linked question turns remained in one paper conversation; a 50-paper
+graph displayed 53 directed citations and responded to the References filter;
+and one weekly notification opened the corresponding ten-paper briefing. All
+32 tests in the expanded connected-device regression suite passed.
+
 The mobile measurements also identify where time is spent.
 Across the four Android~14 resource conditions, the cached cold-launch median
 ranged from 0.84 to 1.47~s, while foreground recovery ranged from 66.68 to
 93.96~ms. Four virtual cores were associated with lower startup and recovery
 medians in both counterbalanced blocks. Additional RAM was associated with
 lower cached cold-launch medians, while its foreground-recovery direction was
-mixed. A graph displayed again in the same WebView had a lower session median than
-its first display in all sixteen matched resource-by-node comparisons. The graph
-measurements rose from one to twelve nodes and then followed no monotonic
-pattern through 25 and 50 nodes. These results describe the controlled
+mixed. A graph displayed again in the same WebView had a lower session median
+than its first display in all sixteen matched resource-by-node comparisons.
+The graph measurements rose from one to twelve nodes and then followed no
+monotonic pattern through 25 and 50 nodes. These results describe the controlled
 emulator sessions on one host.
 
 The formative prototype study complements the software measurements.
@@ -78,7 +85,7 @@ The evidence bears differently on the four contributions.
 The revision-aware data and job model makes paper-derived artifacts attributable to a defined source state.
 The assistance pipeline gives retrieved evidence, refusal, and source matching explicit interfaces and failure outcomes.
 The behavioral model makes event semantics, confidence, and recommendation reasons replayable and inspectable.
-The Android client carries these properties through cached state, asynchronous polling, recoverable event delivery, and bounded graph interaction.
+The Android client carries these properties through cached state, asynchronous polling, recoverable event delivery, and bounded graph interaction. The completed MVP extends the same flow with paper retention and sharing, paper-scoped follow-up questions, weekly re-entry, and graph filtering.
 The evidence comes from complementary forms of testing rather than one aggregate score: backend regression tests establish software contracts, controlled traces isolate mechanisms, live question-answering cases exercise the provider boundary, and Android measurements cover the client state machine and integration path.
 Recorded outcomes are retained with the success predicates and measurement
 boundaries needed to interpret them.
@@ -87,7 +94,7 @@ Several features of the evaluation bound the conclusions.
 The document-processing evaluation does not cover a stratified corpus of scientific layouts and revisions.
 The question set contains fifteen manually curated cases, and its source-match metric is lexical.
 The behavior scenarios are designed tests with hand-specified relevance judgments.
-The client measurements use one Android version, device profile, and emulator host, and the usability study contains five participants.
+The resource measurements use one Android version and one emulator host, and the usability study contains five participants.
 Longitudinal recommendation benefit, representative answer quality, physical-device variability, and research-productivity effects define the next stages of evaluation.
 
 \section{Main Conclusions}
@@ -101,7 +108,10 @@ The fifteen-case question evaluation produced cited, source-matched answers for 
 The controlled behavior evaluation confirmed the intended effects of exposure gating, negative feedback, per-paper saturation, and duplicate-safe replay; reciprocal rank improved while aggregate nDCG remained close to the recency baseline.
 The Android experiments demonstrated cached briefing restoration, asynchronous
 polling, file-backed event retention and duplicate-safe upload, multi-node graph
-interaction, and five-paper briefings for all three measured seeds.
+interaction, and five-paper briefings for all three measured seeds. The final
+acceptance path additionally covered Saved papers, public sharing, source-linked
+follow-up questions, filtered citation exploration, and weekly-notification
+re-entry.
 
 The evidence supports a system contribution with bounded empirical results.
 General claims about research productivity, long-term recommendation quality, and scientific answer correctness require broader longitudinal and human evaluation.

@@ -177,4 +177,11 @@
 \input{contents/digest}
 }
 
+% 学校提供的《毕业设计（论文）中人工智能工具使用说明》（终稿附件）。
+% 大摘要由模板在文档结束钩子中输出，因此附件也在此登记并保持后置顺序。
+\AtEndDocument{%
+  \clearpage
+  \input{contents/ai_statement}%
+}
+
 \end{document}

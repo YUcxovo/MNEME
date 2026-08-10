@@ -31,8 +31,14 @@
 
 以下任一项未通过，论文不能提交。
 
+- [ ] 学院中文名为“浦江国际学院（原密西根学院）”，英文名为“Global College (Formerly UM-SJTU Joint Institute)”。
+- [ ] 中英文关键词均不超过 5 个，各自总长度不超过 120 个字符，并以英文分号“;”分隔。
+- [ ] 原创性声明及使用授权书由作者和指导教师按学校要求手写签名，并以清晰扫描页替换模板生成页。
+- [ ] 《毕业设计（论文）中人工智能工具使用说明》由 `contents/ai_statement.tex` 随论文统一编译；承诺人位置在编辑稿中留空，最终上传版本必须包含学校要求的完整签字。
+- [ ] 参考文献逐条符合学校著录规范：普通期刊为 `[J]`，会议为 `[C]` 且含出版地，报告含出版地，电子资源为 `[EB/OL]` 或相应在线类型且含完整引用日期和引用路径。
 - [ ] 官方模板已有的 chapter、section 和 subsection 名称、层级与顺序，以及封面、摘要、目录、附录等必要结构均不被删改、合并、拆分或重排；模板中的示例或引导占位文字由正式论文内容替换，并只在原有结构内部按需增加少量、实质性的下级小标题。
-- [ ] 论文标题严格使用 “MNEME: A Mobile-Native AI Research Agent for Continuous Literature Understanding”。
+- [ ] 论文标题严格使用 “MNEME: A Mobile-Native AI Research Agent for Continuous Literature Understanding”，与论文系统、飞书表格、开题报告和中期检查完全一致，且不超过 240 个字符。
+- [ ] 论文系统中的研究方向不超过 2 个，使用中文填写，每项不超过 15 个汉字，并以英文分号“;”分隔。
 - [ ] 主体论文使用英文，中文仅出现在模板要求的中文或双语位置。
 - [ ] Background、Problem Statement、Existing Solutions、Proposed Solution 的顺序正确。
 - [ ] Design Specification、App Design、Development and Testing、Conclusions 的内容放置正确。
