@@ -3,7 +3,7 @@
 import asyncio
 import re
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 from types import TracebackType
@@ -16,7 +16,40 @@ from mneme.services.arxiv.parser import parse_arxiv_feed
 from mneme.services.arxiv.types import ArxivFeed
 
 CATEGORY_PATTERN = re.compile(r"^[a-z][a-z0-9-]*(?:\.[A-Za-z0-9-]+)?$")
+ARXIV_ID_PATTERN = re.compile(r"^(?:\d{4}\.\d{4,5}|[A-Za-z0-9._-]+/\d{7})(?:v[1-9]\d*)?$")
 RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+TOPIC_SEARCH_MAX_TERMS = 20
+
+
+def _topic_search_clause(topic: str) -> str:
+    """Return one field-scoped arXiv clause without exposing query syntax."""
+    candidate = " ".join(topic.strip().split())
+    if not candidate:
+        raise ValueError("arXiv topics must not be empty")
+    if len(candidate) > 100:
+        raise ValueError("arXiv topics must not exceed 100 characters")
+    # Dotted values are recognizable modern arXiv category identifiers. Plain
+    # words such as ``hci`` remain natural-language searches rather than being
+    # mistaken for legacy category names.
+    if "." in candidate and CATEGORY_PATTERN.fullmatch(candidate) is not None:
+        archive, subject = candidate.split(".", 1)
+        canonical = f"{archive}.{subject.upper()}"
+        if canonical != candidate:
+            return f"(cat:{candidate} OR cat:{canonical})"
+        return f"cat:{candidate}"
+    escaped = candidate.replace("\\", "\\\\").replace('"', '\\"')
+    return f'all:"{escaped}"'
+
+
+def build_topic_search_query(topics: Sequence[str]) -> str:
+    """Build a bounded OR query from categories and safely quoted phrases."""
+    normalized = tuple(dict.fromkeys(item.strip() for item in topics if item.strip()))
+    if not normalized:
+        raise ValueError("At least one arXiv topic is required")
+    if len(normalized) > TOPIC_SEARCH_MAX_TERMS:
+        raise ValueError("arXiv topic count exceeds the bounded query size")
+    clauses = tuple(_topic_search_clause(topic) for topic in normalized)
+    return clauses[0] if len(clauses) == 1 else f"({' OR '.join(clauses)})"
 
 
 class ArxivClientError(RuntimeError):
@@ -143,6 +176,58 @@ class ArxivClient:
                 "max_results": max_results,
                 "sortBy": "submittedDate",
                 "sortOrder": "descending",
+            }
+        )
+        if response.status_code != 200:
+            raise ArxivHTTPError(response.status_code)
+        return parse_arxiv_feed(response.content)
+
+    async def fetch_by_topics(
+        self,
+        topics: Sequence[str],
+        *,
+        start: int = 0,
+        max_results: int = 20,
+    ) -> ArxivFeed:
+        """Fetch newest papers for a bounded set of categories or topic phrases."""
+        search_query = build_topic_search_query(topics)
+        if start < 0:
+            raise ValueError("start must be non-negative")
+        if not 1 <= max_results <= self._settings.arxiv_max_results:
+            raise ValueError("max_results exceeds the configured page size")
+        response = await self._request_with_retries(
+            {
+                "search_query": search_query,
+                "start": start,
+                "max_results": max_results,
+                "sortBy": "submittedDate",
+                "sortOrder": "descending",
+            }
+        )
+        if response.status_code != 200:
+            raise ArxivHTTPError(response.status_code)
+        return parse_arxiv_feed(response.content)
+
+    async def fetch_by_id(self, arxiv_id: str) -> ArxivFeed:
+        """Fetch the latest metadata for one validated arXiv identifier."""
+        return await self.fetch_by_ids([arxiv_id])
+
+    async def fetch_by_ids(self, arxiv_ids: Sequence[str]) -> ArxivFeed:
+        """Fetch latest metadata for a bounded collection of arXiv identifiers."""
+        normalized_ids = tuple(dict.fromkeys(item.strip() for item in arxiv_ids))
+        if not normalized_ids:
+            raise ValueError("At least one arXiv identifier is required")
+        if len(normalized_ids) > self._settings.arxiv_max_results:
+            raise ValueError("arXiv identifier count exceeds the configured page size")
+        if any(
+            len(arxiv_id) > 64 or ARXIV_ID_PATTERN.fullmatch(arxiv_id) is None
+            for arxiv_id in normalized_ids
+        ):
+            raise ValueError("Invalid arXiv identifier")
+        response = await self._request_with_retries(
+            {
+                "id_list": ",".join(normalized_ids),
+                "max_results": len(normalized_ids),
             }
         )
         if response.status_code != 200:

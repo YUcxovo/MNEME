@@ -35,8 +35,8 @@ from mneme.api.routes.qa import router as qa_router
 from mneme.core.config import Settings
 from mneme.db.dependencies import get_session
 from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
-from mneme.models.qa import QaConversation, QaMessage
-from mneme.repositories.qa import ConversationMismatchError
+from mneme.models.qa import QaConversation, QaMessage, QaRole
+from mneme.repositories.qa import QA_HISTORY_MAX_MESSAGES, ConversationMismatchError
 
 USER_ID = UUID("00000000-0000-0000-0000-000000000111")
 PAPER_ID = UUID("00000000-0000-0000-0000-000000000222")
@@ -113,10 +113,23 @@ class FakeArtifactRepository:
         self.queries.append((paper_id, paper_version_id, limit))
         return self.rows[:limit]
 
+    async def get_context_anchor_chunks(
+        self,
+        *,
+        paper_id: UUID,
+        paper_version_id: UUID,
+        query_embedding: tuple[float, ...],
+        limit: int,
+    ) -> list[tuple[FakeChunkRow, float]]:
+        del paper_id, paper_version_id, query_embedding
+        return self.rows[:limit]
+
 
 class FakeQaRepository:
-    def __init__(self, *, mismatch: bool = False) -> None:
+    def __init__(self, *, mismatch: bool = False, history: list[QaMessage] | None = None) -> None:
         self.mismatch = mismatch
+        self.history = history or []
+        self.history_requests: list[tuple[UUID, UUID, UUID, int]] = []
         self.exchanges: list[tuple[QaConversation, str, QaMessage]] = []
 
     async def resolve_conversation(
@@ -125,6 +138,12 @@ class FakeQaRepository:
         if self.mismatch:
             raise ConversationMismatchError("mismatch")
         return QaConversation(id=CONVERSATION_ID, user_id=user_id, paper_id=paper_id)
+
+    async def get_recent_messages(
+        self, *, conversation_id: UUID, user_id: UUID, paper_id: UUID, limit: int
+    ) -> list[QaMessage]:
+        self.history_requests.append((conversation_id, user_id, paper_id, limit))
+        return self.history[-limit:]
 
     async def append_exchange(
         self, *, conversation: QaConversation, question: str, answer: QaMessage
@@ -141,7 +160,7 @@ class FakeSession:
         self.commits += 1
 
 
-def _llm_service(provider: FakeLLMProvider) -> LLMService:
+def _llm_service(provider: FakeLLMProvider, *, daily_cap_usd: Decimal = Decimal("5")) -> LLMService:
     redis = cast(Redis, FakeRedis())
     return LLMService(
         router=ModelRouter({AITask.SUMMARIZE: "claude-haiku-4-5", AITask.QA: "claude-haiku-4-5"}),
@@ -149,14 +168,18 @@ def _llm_service(provider: FakeLLMProvider) -> LLMService:
         cache=LLMCache(
             redis, enabled=True, ttl_seconds={AITask.SUMMARIZE: 604800, AITask.QA: 86400}
         ),
-        budget=BudgetGuard(redis, daily_cap_usd=Decimal("5")),
+        budget=BudgetGuard(redis, daily_cap_usd=daily_cap_usd),
     )
 
 
-def _embedding_service() -> EmbeddingService:
+def _embedding_service(
+    *,
+    daily_cap_usd: Decimal = Decimal("5"),
+    provider: FakeEmbeddingProvider | None = None,
+) -> EmbeddingService:
     return EmbeddingService(
-        provider=FakeEmbeddingProvider(),
-        budget=BudgetGuard(cast(Redis, FakeRedis()), daily_cap_usd=Decimal("5")),
+        provider=provider or FakeEmbeddingProvider(),
+        budget=BudgetGuard(cast(Redis, FakeRedis()), daily_cap_usd=daily_cap_usd),
         model="text-embedding-3-small",
         batch_size=8,
     )
@@ -168,6 +191,9 @@ def _application(
     artifacts: FakeArtifactRepository,
     qa_repository: FakeQaRepository,
     provider: FakeLLMProvider,
+    embedding_provider: FakeEmbeddingProvider | None = None,
+    llm_cap_usd: Decimal = Decimal("5"),
+    embedding_cap_usd: Decimal = Decimal("5"),
 ) -> FastAPI:
     async def principal_override() -> Principal:
         return Principal(user_id=USER_ID)
@@ -193,8 +219,11 @@ def _application(
     async def session_override() -> FakeSession:
         return FakeSession()
 
-    llm = _llm_service(provider)
-    embedder = _embedding_service()
+    llm = _llm_service(provider, daily_cap_usd=llm_cap_usd)
+    embedder = _embedding_service(
+        daily_cap_usd=embedding_cap_usd,
+        provider=embedding_provider,
+    )
     settings = Settings(environment="testing")
 
     application = FastAPI()
@@ -253,6 +282,62 @@ def test_grounded_answer_matches_frozen_contract() -> None:
 @pytest.mark.base
 @pytest.mark.api
 @pytest.mark.rag
+def test_follow_up_uses_only_bounded_history_from_the_active_user_and_paper() -> None:
+    history = [
+        QaMessage(
+            conversation_id=CONVERSATION_ID,
+            sequence_number=index,
+            role=QaRole.USER if index % 2 == 0 else QaRole.ASSISTANT,
+            content=f"turn-{index}",
+        )
+        for index in range(QA_HISTORY_MAX_MESSAGES + 4)
+    ]
+    qa_repository = FakeQaRepository(history=history)
+    provider = FakeLLMProvider(default_response="Multi-head attention replaces recurrence [1].")
+    embedding_provider = FakeEmbeddingProvider()
+    application = _application(
+        catalog=FakePaperCatalogRepository(_paper()),
+        artifacts=FakeArtifactRepository([(FakeChunkRow(), 0.9)]),
+        qa_repository=qa_repository,
+        provider=provider,
+        embedding_provider=embedding_provider,
+    )
+
+    response = asyncio.run(
+        _post(
+            application,
+            {
+                "question": "Why is it useful?",
+                "paper_id": str(PAPER_ID),
+                "conversation_id": str(CONVERSATION_ID),
+            },
+        )
+    )
+
+    assert response.status_code == 200
+    assert qa_repository.history_requests == [
+        (CONVERSATION_ID, USER_ID, PAPER_ID, QA_HISTORY_MAX_MESSAGES)
+    ]
+    request = provider.calls[0][1]
+    assert [message.content for message in request.messages[:-1]] == [
+        f"turn-{index}" for index in range(4, 12)
+    ]
+    assert request.messages[-1].role == "user"
+    assert "Question: Why is it useful?" in request.messages[-1].content
+    assert "The transformer uses multi-head attention instead of recurrence" in (
+        request.messages[-1].content
+    )
+    assert "turn-3" not in "\n".join(message.content for message in request.messages)
+    retrieval_query = embedding_provider.calls[0][1][0]
+    assert "Previous user: turn-4" in retrieval_query
+    assert "Previous assistant: turn-11" in retrieval_query
+    assert "Current question: Why is it useful?" in retrieval_query
+    assert "turn-3" not in retrieval_query
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.rag
 def test_paper_without_chunks_returns_stable_refusal() -> None:
     application = _application(
         catalog=FakePaperCatalogRepository(_paper()),
@@ -304,11 +389,14 @@ def test_paper_without_observed_revision_returns_conflict() -> None:
 @pytest.mark.base
 @pytest.mark.api
 def test_mismatched_conversation_returns_not_found() -> None:
+    qa_repository = FakeQaRepository(mismatch=True)
+    artifacts = FakeArtifactRepository([])
+    provider = FakeLLMProvider()
     application = _application(
         catalog=FakePaperCatalogRepository(_paper()),
-        artifacts=FakeArtifactRepository([]),
-        qa_repository=FakeQaRepository(mismatch=True),
-        provider=FakeLLMProvider(),
+        artifacts=artifacts,
+        qa_repository=qa_repository,
+        provider=provider,
     )
 
     response = asyncio.run(
@@ -324,6 +412,9 @@ def test_mismatched_conversation_returns_not_found() -> None:
 
     assert response.status_code == 404
     assert response.json()["code"] == "conversation_not_found"
+    assert qa_repository.history_requests == []
+    assert artifacts.queries == []
+    assert provider.calls == []
 
 
 @pytest.mark.base
@@ -342,6 +433,44 @@ def test_provider_failure_maps_to_stable_ai_error() -> None:
 
     assert response.status_code == 503
     assert response.json()["code"] == "ai_provider_error"
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_exhausted_llm_budget_returns_stable_429() -> None:
+    application = _application(
+        catalog=FakePaperCatalogRepository(_paper()),
+        artifacts=FakeArtifactRepository([(FakeChunkRow(), 0.9)]),
+        qa_repository=FakeQaRepository(),
+        provider=FakeLLMProvider(),
+        llm_cap_usd=Decimal("0"),
+    )
+
+    response = asyncio.run(
+        _post(application, {"question": "What replaces recurrence?", "paper_id": str(PAPER_ID)})
+    )
+
+    assert response.status_code == 429
+    assert response.json()["code"] == "ai_budget_exhausted"
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_exhausted_embedding_budget_returns_stable_429() -> None:
+    application = _application(
+        catalog=FakePaperCatalogRepository(_paper()),
+        artifacts=FakeArtifactRepository([(FakeChunkRow(), 0.9)]),
+        qa_repository=FakeQaRepository(),
+        provider=FakeLLMProvider(),
+        embedding_cap_usd=Decimal("0"),
+    )
+
+    response = asyncio.run(
+        _post(application, {"question": "What replaces recurrence?", "paper_id": str(PAPER_ID)})
+    )
+
+    assert response.status_code == 429
+    assert response.json()["code"] == "ai_budget_exhausted"
 
 
 @pytest.mark.base

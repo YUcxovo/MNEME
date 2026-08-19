@@ -18,6 +18,13 @@ class Environment(StrEnum):
     PRODUCTION = "production"
 
 
+class EmbeddingBackend(StrEnum):
+    """Supported embedding backends."""
+
+    OPENAI = "openai"
+    FASTEMBED = "fastembed"
+
+
 class Settings(BaseSettings):
     """Validated settings loaded from environment variables or a local .env file."""
 
@@ -34,7 +41,12 @@ class Settings(BaseSettings):
     environment: Environment = Environment.DEVELOPMENT
     debug: bool = False
     log_level: str = "INFO"
+    readiness_timeout_seconds: float = Field(default=2.0, gt=0, le=30)
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/mneme"
+    database_pool_size: int = Field(default=5, ge=1, le=50)
+    database_max_overflow: int = Field(default=5, ge=0, le=50)
+    database_pool_timeout_seconds: float = Field(default=30.0, gt=0, le=300)
+    database_pool_recycle_seconds: int = Field(default=1800, ge=1, le=86400)
     redis_url: RedisDsn = RedisDsn("redis://localhost:6379/0")
     redis_max_connections: int = Field(default=10, ge=1)
     redis_socket_timeout_seconds: float = Field(default=5.0, gt=0)
@@ -51,6 +63,18 @@ class Settings(BaseSettings):
     arxiv_max_results: int = Field(default=100, ge=1, le=2000)
     arxiv_daily_categories: str = "cs.AI,cs.LG"
     arxiv_daily_max_results: int = Field(default=20, ge=1, le=2000)
+    semantic_scholar_api_url: HttpUrl = HttpUrl("https://api.semanticscholar.org/graph/v1")
+    semantic_scholar_api_key: SecretStr | None = None
+    semantic_scholar_request_interval_seconds: float = Field(default=1.0, ge=0)
+    semantic_scholar_timeout_seconds: float = Field(default=30.0, gt=0)
+    semantic_scholar_max_attempts: int = Field(default=3, ge=1, le=10)
+    semantic_scholar_batch_size: int = Field(default=100, ge=1, le=500)
+    semantic_scholar_page_size: int = Field(default=100, ge=1, le=1000)
+    semantic_scholar_max_neighbors: int = Field(default=1000, ge=1, le=9999)
+    openalex_api_url: HttpUrl = HttpUrl("https://api.openalex.org")
+    openalex_api_key: SecretStr | None = None
+    openalex_timeout_seconds: float = Field(default=30.0, gt=0)
+    openalex_max_attempts: int = Field(default=3, ge=1, le=10)
     paper_storage_dir: Path = Path(".data/papers")
     pdf_max_bytes: int = Field(default=50 * 1024 * 1024, ge=1024)
     pdf_download_timeout_seconds: float = Field(default=60.0, gt=0)
@@ -59,6 +83,8 @@ class Settings(BaseSettings):
     demo_token_sha256: SecretStr | None = None
     demo_user_id: UUID | None = None
     anthropic_api_key: SecretStr | None = None
+    deepseek_api_key: SecretStr | None = None
+    deepseek_thinking_enabled: bool = False
     openai_api_key: SecretStr | None = None
     llm_timeout_seconds: float = Field(default=60.0, gt=0)
     llm_summary_model: str = "claude-opus-4-8"
@@ -69,7 +95,9 @@ class Settings(BaseSettings):
     ai_qa_cache_ttl_seconds: int = Field(default=24 * 3600, ge=1)
     ai_summary_max_input_chars: int = Field(default=60_000, ge=1000)
     ai_summary_max_output_tokens: int = Field(default=1024, ge=64)
+    ai_embedding_backend: EmbeddingBackend = EmbeddingBackend.OPENAI
     ai_embedding_model: str = "text-embedding-3-small"
+    ai_local_embedding_model: str = "BAAI/bge-small-en-v1.5"
     ai_embedding_batch_size: int = Field(default=64, ge=1, le=2048)
     ai_chunk_max_tokens: int = Field(default=450, ge=50)
     ai_chunk_overlap_tokens: int = Field(default=60, ge=0)

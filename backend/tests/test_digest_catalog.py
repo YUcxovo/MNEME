@@ -148,6 +148,23 @@ def test_digest_query_applies_timestamp_and_id_cursor() -> None:
 
 
 @pytest.mark.base
+@pytest.mark.db
+def test_digest_user_lock_serializes_preference_snapshots() -> None:
+    session = Mock(spec=AsyncSession)
+    session.scalar = AsyncMock(return_value=USER_ID)
+    repository = DigestRepository(cast(AsyncSession, session))
+
+    asyncio.run(repository.lock_user(USER_ID))
+
+    await_args = session.scalar.await_args
+    assert await_args is not None
+    statement = await_args.args[0]
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+    assert "FROM users" in sql
+    assert "FOR UPDATE" in sql
+
+
+@pytest.mark.base
 @pytest.mark.rag
 def test_candidate_query_requires_current_summary_and_usable_status() -> None:
     now = datetime(2026, 7, 21, tzinfo=UTC)
@@ -184,6 +201,34 @@ def test_candidate_query_requires_current_summary_and_usable_status() -> None:
 
 @pytest.mark.base
 @pytest.mark.rag
+def test_ready_candidate_query_keeps_summary_requirements_without_age_window() -> None:
+    now = datetime(2026, 7, 21, tzinfo=UTC)
+    scalar_result = Mock()
+    scalar_result.all.return_value = []
+    session = Mock(spec=AsyncSession)
+    session.scalars = AsyncMock(return_value=scalar_result)
+    repository = DigestRepository(cast(AsyncSession, session))
+
+    papers = asyncio.run(repository.list_ready_candidates(before=now, limit=200))
+
+    assert papers == []
+    await_args = session.scalars.await_args
+    assert await_args is not None
+    statement = await_args.args[0]
+    sql = str(
+        statement.compile(
+            dialect=postgresql.dialect(),
+            compile_kwargs={"literal_binds": True},
+        )
+    )
+    assert "papers.processing_status IN ('ready', 'partial')" in sql
+    assert "EXISTS (SELECT paper_summaries.id" in sql
+    assert f"papers.published_at < '{now}'" in sql
+    assert "papers.published_at >=" not in sql
+
+
+@pytest.mark.base
+@pytest.mark.rag
 def test_embedding_mean_is_limited_to_each_papers_latest_revision() -> None:
     paper_id = uuid4()
     rows = Mock()
@@ -192,7 +237,12 @@ def test_embedding_mean_is_limited_to_each_papers_latest_revision() -> None:
     session.execute = AsyncMock(return_value=rows)
     repository = DigestRepository(cast(AsyncSession, session))
 
-    embeddings = asyncio.run(repository.mean_chunk_embeddings([paper_id]))
+    embeddings = asyncio.run(
+        repository.mean_chunk_embeddings(
+            [paper_id],
+            embedding_model="embedding-test-v1",
+        )
+    )
 
     assert embeddings == {}
     await_args = session.execute.await_args
@@ -203,3 +253,32 @@ def test_embedding_mean_is_limited_to_each_papers_latest_revision() -> None:
     assert "JOIN paper_versions ON paper_versions.id = paper_chunks.paper_version_id" in sql
     assert "max(paper_versions.version_number)" in sql
     assert "anon_1.version_number = paper_versions.version_number" in sql
+    assert "paper_chunks.embedding_model =" in sql
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_fresh_digest_query_rejects_snapshots_older_than_preferences() -> None:
+    session = Mock(spec=AsyncSession)
+    session.scalar = AsyncMock(return_value=None)
+    repository = DigestRepository(cast(AsyncSession, session))
+
+    result = asyncio.run(
+        repository.get_fresh_recommended_digest(
+            user_id=uuid4(),
+            max_age=timedelta(hours=24),
+            expected_generator_version="recommender-v2",
+        )
+    )
+
+    assert result is None
+    await_args = session.scalar.await_args
+    assert await_args is not None
+    statement = await_args.args[0]
+    sql = str(statement.compile(dialect=postgresql.dialect()))
+    assert "LEFT OUTER JOIN user_preferences" in sql
+    assert "digests.generator_version =" in sql
+    assert "digests.preference_model_version = user_preferences.model_version" in sql
+    assert "digests.preference_model_version =" in sql
+    assert "digests.generated_at >= user_preferences.updated_at" in sql
+    assert "recommender-v2" in statement.compile(dialect=postgresql.dialect()).params.values()

@@ -5,8 +5,7 @@ from typing import Any, ClassVar
 import structlog
 from arq import cron
 
-from mneme.ai.budget import BudgetGuard
-from mneme.ai.embeddings import EmbeddingService, OpenAIEmbeddingProvider
+from mneme.ai.embeddings import build_embedding_service
 from mneme.ai.service import build_llm_service
 from mneme.ai.summarization import SummarizationService
 from mneme.core.config import Settings, get_settings
@@ -34,7 +33,7 @@ async def on_startup(context: dict[str, Any]) -> None:
     settings = get_settings()
     configure_logging(settings)
     context["settings"] = settings
-    context["database"] = Database(settings.database_url, echo=settings.debug)
+    context["database"] = Database.from_settings(settings)
     context["document_storage"] = DocumentStorage(settings.paper_storage_dir)
     context["pdf_downloader"] = PdfDownloader(
         user_agent=settings.arxiv_user_agent,
@@ -52,18 +51,7 @@ async def on_startup(context: dict[str, Any]) -> None:
         max_input_chars=settings.ai_summary_max_input_chars,
         max_output_tokens=settings.ai_summary_max_output_tokens,
     )
-    if settings.openai_api_key is not None:
-        context["embedder"] = EmbeddingService(
-            provider=OpenAIEmbeddingProvider(
-                api_key=settings.openai_api_key.get_secret_value(),
-                timeout_seconds=settings.llm_timeout_seconds,
-            ),
-            budget=BudgetGuard(redis_client, daily_cap_usd=settings.ai_daily_budget_usd),
-            model=settings.ai_embedding_model,
-            batch_size=settings.ai_embedding_batch_size,
-        )
-    else:
-        context["embedder"] = None
+    context["embedder"] = build_embedding_service(settings, redis_client)
     logger.info("worker_started", queue=settings.arq_queue_name)
 
 

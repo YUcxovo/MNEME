@@ -28,7 +28,7 @@ class DigestBundle:
     papers_by_id: dict[UUID, Paper]
 
 
-GENERATOR_VERSION = "recommender-v1"
+GENERATOR_VERSION = "recommender-v2"
 
 # Bound the scoring pool: enough recent papers to rank meaningfully without
 # unbounded scans at demo scale.
@@ -57,8 +57,11 @@ class RecommendedDigestService:
         and embeddings, so serving the fresh snapshot instead of rescoring
         keeps the endpoint cheap and reproducible.
         """
+        await self._repository.lock_user(user_id)
         fresh = await self._repository.get_fresh_recommended_digest(
-            user_id=user_id, max_age=_FRESHNESS
+            user_id=user_id,
+            max_age=_FRESHNESS,
+            expected_generator_version=GENERATOR_VERSION,
         )
         if fresh is not None:
             fresh_entries = list(fresh.entries)
@@ -68,7 +71,7 @@ class RecommendedDigestService:
                 papers_by_id={entry.paper_id: entry.paper for entry in fresh_entries},
             )
 
-        return await self.generate(
+        return await self._generate_locked(
             user_id,
             digest_type=DigestType.MANUAL,
             as_of=utc_now(),
@@ -80,10 +83,28 @@ class RecommendedDigestService:
         *,
         digest_type: DigestType,
         as_of: datetime,
+        include_paper_ids: tuple[UUID, ...] = (),
     ) -> DigestBundle:
         """Persist a deterministic digest snapshot for one cutoff instant."""
         if as_of.tzinfo is None:
             raise ValueError("Digest generation cutoff must be timezone-aware.")
+        await self._repository.lock_user(user_id)
+        return await self._generate_locked(
+            user_id,
+            digest_type=digest_type,
+            as_of=as_of,
+            include_paper_ids=include_paper_ids,
+        )
+
+    async def _generate_locked(
+        self,
+        user_id: UUID,
+        *,
+        digest_type: DigestType,
+        as_of: datetime,
+        include_paper_ids: tuple[UUID, ...] = (),
+    ) -> DigestBundle:
+        """Generate while holding the same user lock as event ingestion."""
         preference_row = await self._repository.get_preferences(user_id)
         preferences = PreferenceView(
             explicit_topics=tuple(preference_row.explicit_topics)
@@ -92,6 +113,12 @@ class RecommendedDigestService:
             behavior_embedding=tuple(preference_row.behavior_embedding)
             if preference_row is not None and preference_row.behavior_embedding is not None
             else None,
+            negative_behavior_embedding=tuple(preference_row.negative_behavior_embedding)
+            if preference_row is not None and preference_row.negative_behavior_embedding is not None
+            else None,
+            behavior_confidence=float(preference_row.behavior_confidence or 0.0)
+            if preference_row is not None
+            else 0.0,
             model_version=preference_row.model_version if preference_row is not None else 1,
         )
 
@@ -100,11 +127,43 @@ class RecommendedDigestService:
             limit=_CANDIDATE_POOL_LIMIT,
             before=as_of,
         )
-        embeddings = await self._repository.mean_chunk_embeddings([paper.id for paper in papers])
+        if include_paper_ids:
+            acquired = await self._repository.list_candidates_by_ids(
+                include_paper_ids,
+                before=as_of,
+            )
+            acquired_ids = {paper.id for paper in acquired}
+            papers = (acquired + [paper for paper in papers if paper.id not in acquired_ids])[
+                :_CANDIDATE_POOL_LIMIT
+            ]
+        if digest_type is DigestType.MANUAL and not papers:
+            papers = await self._repository.list_ready_candidates(
+                limit=_CANDIDATE_POOL_LIMIT,
+                before=as_of,
+            )
+            logger.info(
+                "recommended_digest_using_ready_catalog",
+                user_id=str(user_id),
+                candidates=len(papers),
+            )
+        embeddings = (
+            await self._repository.mean_chunk_embeddings(
+                [paper.id for paper in papers],
+                embedding_model=preference_row.behavior_embedding_model,
+            )
+            if preference_row is not None
+            and (
+                preference_row.behavior_embedding is not None
+                or preference_row.negative_behavior_embedding is not None
+            )
+            and preference_row.behavior_embedding_model is not None
+            else {}
+        )
         candidates = [
             PaperCandidate(
                 paper_id=paper.id,
                 title=paper.title,
+                abstract=paper.abstract,
                 categories=tuple(paper.categories),
                 published_at=paper.published_at,
                 embedding=embeddings.get(paper.id),

@@ -38,6 +38,7 @@ import com.mneme.app.ui.theme.MnemeTheme
 @Composable
 fun PaperCard(
     paper: PaperUiModel,
+    supportingTextLabel: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -58,7 +59,10 @@ fun PaperCard(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             PaperCardHeader(paper = paper)
-            PaperSummary(summary = paper.summary)
+            SupportingText(
+                label = supportingTextLabel,
+                text = paper.summary,
+            )
             PaperCardActions(onOpen = onClick)
         }
     }
@@ -66,21 +70,11 @@ fun PaperCard(
 
 @Composable
 private fun PaperCardHeader(paper: PaperUiModel) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = paper.category,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.secondary,
-        )
-        Text(
-            text = stringResource(R.string.paper_card_source_linked),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.primary,
-        )
-    }
+    Text(
+        text = paper.category,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.secondary,
+    )
     Text(text = paper.title, style = MaterialTheme.typography.titleLarge)
     Text(
         text = paper.authors,
@@ -90,7 +84,10 @@ private fun PaperCardHeader(paper: PaperUiModel) {
 }
 
 @Composable
-private fun PaperSummary(summary: String) {
+private fun SupportingText(
+    label: String,
+    text: String,
+) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = MaterialTheme.shapes.small,
@@ -103,34 +100,30 @@ private fun PaperSummary(summary: String) {
                         .height(72.dp)
                         .background(MaterialTheme.colorScheme.primary),
             )
-            Text(
-                text = summary,
+            Column(
                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    text = text,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun PaperCardActions(onOpen: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        Surface(
-            color = MaterialTheme.colorScheme.surface,
-            shape = MaterialTheme.shapes.extraLarge,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
-        ) {
-            Text(
-                text = stringResource(R.string.paper_card_inspectable),
-                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        Spacer(modifier = Modifier.weight(1f))
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
         Button(
             onClick = onOpen,
             colors =
@@ -163,6 +156,7 @@ private fun PaperCardPreview() {
                     category = "cs.HC",
                     summary = "A short preview of the paper summary appears here.",
                 ),
+            supportingTextLabel = stringResource(R.string.briefing_recommendation_reason),
             onClick = {},
             modifier = Modifier.padding(16.dp),
         )

@@ -1,13 +1,14 @@
 """Shared dependencies for AI endpoints."""
 
-from typing import Annotated, Protocol
+import asyncio
+from typing import Annotated, Protocol, cast
 
 from arq import create_pool
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from mneme.ai.budget import BudgetExceededError, BudgetGuard
-from mneme.ai.embeddings import EmbeddingService, OpenAIEmbeddingProvider
+from mneme.ai.budget import BudgetExceededError
+from mneme.ai.embeddings import EmbeddingService, build_embedding_service
 from mneme.ai.service import LLMService, build_llm_service
 from mneme.ai.types import AIError, LLMProviderError, ProviderNotConfiguredError
 from mneme.api.errors import ApiError
@@ -28,6 +29,38 @@ class TaskQueue(Protocol):
         ...
 
 
+class ApplicationTaskQueue:
+    """Resolve the application ARQ pool only when work must be dispatched."""
+
+    def __init__(self, request: Request) -> None:
+        self._request = request
+
+    async def enqueue_job(
+        self,
+        function: str,
+        *args: object,
+        **kwargs: object,
+    ) -> object:
+        """Create or reuse the shared pool, then enqueue one job."""
+        state = self._request.app.state
+        pool = getattr(state, "arq_pool", None)
+        if pool is None:
+            lock = getattr(state, "arq_pool_lock", None)
+            if lock is None:
+                lock = asyncio.Lock()
+                state.arq_pool_lock = lock
+            async with lock:
+                pool = getattr(state, "arq_pool", None)
+                if pool is None:
+                    settings: Settings = state.settings
+                    pool = await create_pool(
+                        create_arq_redis_settings(settings),
+                        default_queue_name=settings.arq_queue_name,
+                    )
+                    state.arq_pool = pool
+        return await cast(TaskQueue, pool).enqueue_job(function, *args, **kwargs)
+
+
 def get_llm_service(request: Request) -> LLMService:
     """Return the lazily constructed application-scoped LLM service."""
     service: LLMService | None = getattr(request.app.state, "llm_service", None)
@@ -42,36 +75,20 @@ def get_embedding_service(request: Request) -> EmbeddingService:
     service: EmbeddingService | None = getattr(request.app.state, "embedding_service", None)
     if service is None:
         settings: Settings = request.app.state.settings
-        if settings.openai_api_key is None:
+        service = build_embedding_service(settings, request.app.state.redis)
+        if service is None:
             raise ApiError(
                 503,
                 "ai_provider_unconfigured",
                 "No embedding provider is configured.",
             )
-        service = EmbeddingService(
-            provider=OpenAIEmbeddingProvider(
-                api_key=settings.openai_api_key.get_secret_value(),
-                timeout_seconds=settings.llm_timeout_seconds,
-            ),
-            budget=BudgetGuard(request.app.state.redis, daily_cap_usd=settings.ai_daily_budget_usd),
-            model=settings.ai_embedding_model,
-            batch_size=settings.ai_embedding_batch_size,
-        )
         request.app.state.embedding_service = service
     return service
 
 
 async def get_task_queue(request: Request) -> TaskQueue:
-    """Return the lazily created application-scoped ARQ enqueue pool."""
-    pool = getattr(request.app.state, "arq_pool", None)
-    if pool is None:
-        settings: Settings = request.app.state.settings
-        pool = await create_pool(
-            create_arq_redis_settings(settings),
-            default_queue_name=settings.arq_queue_name,
-        )
-        request.app.state.arq_pool = pool
-    return pool
+    """Return a request-bound queue that connects only when enqueueing work."""
+    return ApplicationTaskQueue(request)
 
 
 async def get_artifact_repository(

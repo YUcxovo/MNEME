@@ -94,13 +94,21 @@ def download_idempotency_key(
     )
 
 
-def parse_idempotency_key(*, paper_id: UUID, paper_version_id: UUID, source_checksum: str) -> str:
-    """Return the source-artifact identity for parsing one revision."""
+def parse_idempotency_key(
+    *,
+    paper_id: UUID,
+    paper_version_id: UUID,
+    source_checksum: str,
+    parser_version: str,
+) -> str:
+    """Return the source-artifact and parser identity for one parse run."""
     _validate_checksum(source_checksum)
+    if not parser_version:
+        raise ValueError("Parser version must not be empty.")
     return build_job_idempotency_key(
         stage=PipelineStage.PARSE_PDF,
         scope={"paper_id": paper_id, "paper_version_id": paper_version_id},
-        inputs={"source_checksum": source_checksum},
+        inputs={"source_checksum": source_checksum, "parser_version": parser_version},
     )
 
 

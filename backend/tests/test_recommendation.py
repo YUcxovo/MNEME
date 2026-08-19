@@ -6,6 +6,7 @@ from uuid import uuid4
 import pytest
 
 from mneme.ai.recommendation import (
+    BehaviorScoringConfig,
     PaperCandidate,
     PreferenceView,
     cosine_similarity,
@@ -53,6 +54,45 @@ def test_topic_match_covers_title_and_categories() -> None:
 
 
 @pytest.mark.base
+def test_topic_match_covers_abstract_without_topic_specific_aliases() -> None:
+    candidate = _candidate(title="A study of interactive systems")
+    candidate = candidate.model_copy(
+        update={"abstract": "We evaluate an HCI technique with working programmers."}
+    )
+
+    strength, matched = topic_match(("hci",), candidate)
+
+    assert strength == 1
+    assert matched == ("hci",)
+
+
+@pytest.mark.base
+def test_changed_interest_can_change_top_paper_via_abstract_match() -> None:
+    language_model = _candidate(title="LLM inference systems", age_days=1)
+    interaction = _candidate(title="Interfaces for collaborative programming", age_days=1)
+    interaction = interaction.model_copy(
+        update={"abstract": "A controlled HCI evaluation with software teams."}
+    )
+    candidates = [language_model, interaction]
+
+    before = rank_candidates(
+        candidates,
+        PreferenceView(explicit_topics=("llm",)),
+        now=NOW,
+        limit=1,
+    )
+    after = rank_candidates(
+        candidates,
+        PreferenceView(explicit_topics=("hci",)),
+        now=NOW,
+        limit=1,
+    )
+
+    assert before[0].paper_id == language_model.paper_id
+    assert after[0].paper_id == interaction.paper_id
+
+
+@pytest.mark.base
 def test_recency_decays_with_a_one_week_half_life() -> None:
     fresh = recency_score(NOW, now=NOW)
     week_old = recency_score(NOW - timedelta(days=7), now=NOW)
@@ -86,6 +126,81 @@ def test_behavior_similarity_lifts_the_score() -> None:
 
     assert with_behavior.score >= without_behavior.score
     assert any("engaged" in reason for reason in with_behavior.reasons)
+
+
+@pytest.mark.base
+def test_v1_scoring_ignores_v2_state_and_preserves_the_frozen_baseline() -> None:
+    candidate = _candidate(embedding=(1.0, 0.0))
+    baseline = PreferenceView(behavior_embedding=(1.0, 0.0), model_version=1)
+    migrated = PreferenceView(
+        behavior_embedding=(1.0, 0.0),
+        negative_behavior_embedding=(1.0, 0.0),
+        behavior_confidence=0.0,
+        model_version=1,
+    )
+
+    assert score_paper(candidate, baseline, now=NOW) == score_paper(candidate, migrated, now=NOW)
+
+
+@pytest.mark.base
+def test_v2_zero_confidence_falls_back_to_cold_start_scoring() -> None:
+    candidate = _candidate(embedding=(1.0, 0.0))
+    cold_start = score_paper(candidate, PreferenceView(), now=NOW)
+    uncertain = score_paper(
+        candidate,
+        PreferenceView(
+            behavior_embedding=(1.0, 0.0),
+            behavior_confidence=0.0,
+            model_version=2,
+        ),
+        now=NOW,
+    )
+
+    assert uncertain == cold_start
+    assert not any("reading pattern" in reason for reason in uncertain.reasons)
+
+
+@pytest.mark.base
+def test_v2_contrastive_channels_reward_positive_and_suppress_negative_matches() -> None:
+    preferences = PreferenceView(
+        behavior_embedding=(1.0, 0.0),
+        negative_behavior_embedding=(0.0, 1.0),
+        behavior_confidence=1.0,
+        model_version=2,
+    )
+    positive = score_paper(_candidate(embedding=(1.0, 0.0)), preferences, now=NOW)
+    negative = score_paper(_candidate(embedding=(0.0, 1.0)), preferences, now=NOW)
+
+    assert positive.score > negative.score
+    assert any("reading pattern" in reason for reason in positive.reasons)
+    assert not any("reading pattern" in reason for reason in negative.reasons)
+
+
+@pytest.mark.base
+def test_v2_confidence_and_negative_channel_are_explicit_scoring_mechanisms() -> None:
+    candidate = _candidate(age_days=7, embedding=(1.0, 0.0))
+    low_confidence = PreferenceView(
+        behavior_embedding=(1.0, 0.0), behavior_confidence=0.1, model_version=2
+    )
+    high_confidence = low_confidence.model_copy(update={"behavior_confidence": 1.0})
+    negative_only = PreferenceView(
+        negative_behavior_embedding=(1.0, 0.0),
+        behavior_confidence=1.0,
+        model_version=2,
+    )
+
+    assert (
+        score_paper(candidate, high_confidence, now=NOW).score
+        > score_paper(candidate, low_confidence, now=NOW).score
+    )
+    full = score_paper(candidate, negative_only, now=NOW)
+    ablated = score_paper(
+        candidate,
+        negative_only,
+        now=NOW,
+        behavior_config=BehaviorScoringConfig(use_negative_channel=False),
+    )
+    assert full.score < ablated.score
 
 
 @pytest.mark.base

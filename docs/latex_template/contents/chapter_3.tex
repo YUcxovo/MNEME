@@ -1,0 +1,212 @@
+﻿% !TEX root = ../main.tex
+
+\chapter{App Design}
+
+\section{System Context and Trust Boundaries}
+
+The planned architecture contains three logical layers.
+The mobile client manages the reading interface, local state, background synchronization, notifications, and graph rendering.
+Application services ingest papers, schedule processing, answer client requests, update interest state, assemble digests, and orchestrate model calls.
+Data and model services store structured metadata, vector representations, events, and cached outputs and connect to external scholarly and model providers.
+
+\begin{figure}[htbp]
+\centering
+\fbox{\parbox{0.88\textwidth}{
+\textbf{FIGURE PLACEHOLDER --- Evidence-first mobile literature loop.}\\
+The final vector figure will show: scholarly source $\rightarrow$ revision-aware ingestion $\rightarrow$ versioned sections/chunks $\rightarrow$ evidence-bounded answer and digest $\rightarrow$ mobile verification/correction actions $\rightarrow$ bounded interest update. Trust boundaries will separate the mobile client, application services, data stores, and external providers.
+}}
+\caption{Planned evidence-first loop. The figure describes the system design; it does not assert that every component has been implemented.}
+\label{fig:loop}
+\end{figure}
+
+Figure~\ref{fig:loop} summarizes the intended evidence-first loop and the boundaries across which provenance and failure state must remain visible.
+The most important architecture property is not the selected framework.
+It is the preservation of identifiers, configuration, and failure state across layer boundaries.
+A client should never receive an answer citation without the paper revision and evidence locator required to resolve it.
+An interest update should never occur without an event identifier and a declared signal type.
+A background task should never silently replace a derived artifact while leaving dependent outputs marked current.
+
+\section{C1: Revision-Aware Ingestion and Representation}
+
+\subsection{Identity Model}
+
+MNEME distinguishes a logical paper identifier \(p\) from a revision identifier \(r\).
+The logical identifier groups versions of one scholarly work; the revision identifier selects an immutable content state.
+A derived artifact \(a\) is defined by
+\[
+  a = f(p,r,\theta,h),
+\]
+where \(f\) is a transformation, \(\theta\) is its configuration, and \(h\) is the source-content hash.
+Two artifacts are interchangeable only if the system can justify equality of the relevant inputs.
+
+For arXiv material, the external identifier and version suffix can seed this model, but the design should not depend on one provider.
+The stored record therefore includes provider, external identifier, logical identifier, revision label, source URL, fetch timestamp, content hash, and parent revision when known.
+The PDF and extracted text are associated with the revision, not only with the logical paper.
+
+\subsection{Parsing and Degraded Modes}
+
+The planned parser first extracts text and layout cues, then identifies section boundaries and figure or table captions.
+Scientific PDFs vary in columns, typography, embedded text quality, and reading order.
+The parser therefore records a quality label:
+\begin{itemize}
+  \item \texttt{full}: required sections and reading order pass validation;
+  \item \texttt{partial}: useful content is available, but one or more structural checks fail;
+  \item \texttt{abstract\_only}: full-text processing cannot be trusted and the system falls back to authoritative metadata.
+\end{itemize}
+The label must influence later behavior.
+For example, a paper in \texttt{abstract\_only} state must not produce page- or section-level claims as if full text were available.
+
+\subsection{Section-Aware Chunks and Lineage}
+
+Chunks remain within a section whenever possible.
+A chunk record contains the logical and revision identifiers, section identifier and title, local index, token range, preceding and following context references, content hash, and embedding configuration.
+Large sections may be split recursively with bounded overlap.
+The design choice is not assumed superior to every alternative.
+Recent RAG studies show that chunking choices interact with retrieval quality, noise, and global context~\cite{zhao2024longrag,wang2024bestpractices}.
+E2 must therefore compare section-aware chunks with fixed-size and context-expanded baselines.
+
+When a new revision arrives, the system compares source hashes and derived dependencies.
+Changed artifacts become stale; unchanged artifacts may be reused only if the transformation contract permits it.
+Answers and summaries that depend on stale chunks must not remain labeled current.
+E1 tests this invariant explicitly.
+
+\section{C2: Evidence-Bounded Assistance}
+
+\subsection{Retrieval Scope and Trace}
+
+Each question has a declared scope: one revision, a selected set of papers, or a user library snapshot.
+The retrieval trace stores the query, embedding model, candidate filters, ranking configuration, retrieved chunk identifiers, scores, and context expansion.
+This trace is necessary because the same generated answer may be interpreted differently when produced from a single paper versus a broad library.
+
+Long context is not treated as an automatic substitute for retrieval.
+Evidence position can affect model use~\cite{liu2024lost}, and retrieval may add irrelevant context.
+The planned pipeline therefore evaluates both recall of relevant evidence and resistance to distractors.
+
+\subsection{Claim and Evidence Objects}
+
+The generator returns a structured answer consisting of claims:
+\[
+  A = \{c_1,c_2,\ldots,c_n\}.
+\]
+Each claim \(c_i\) contains claim text, one or more evidence references, an answerability state, and verification results.
+An evidence reference contains the logical paper and revision identifiers, section and chunk identifiers, a character or sentence span, and the retrieved text hash.
+
+This representation separates four questions:
+\begin{enumerate}
+  \item \textbf{Identifier validity}: does the cited paper revision exist in the retrieval trace?
+  \item \textbf{Evidence availability}: can the cited source span be resolved?
+  \item \textbf{Consistency}: does the evidence support, contradict, or fail to determine the claim?
+  \item \textbf{Coverage}: do the cited spans support all material parts of the answer?
+\end{enumerate}
+ALCE motivates explicit citation-quality dimensions~\cite{gao2023alce}, while fine-grained attribution work shows why a document identifier alone is insufficient~\cite{huang2024grounded}.
+RAGTruth further demonstrates that RAG outputs can contain unsupported or contradictory content despite retrieved context~\cite{niu2024ragtruth}.
+
+\subsection{Generation and Verification}
+
+The planned generation prompt provides retrieved chunks with immutable metadata and requires structured output.
+Post-generation checks reject identifiers that were not retrieved and unresolved spans.
+Consistency and coverage checks may combine deterministic validation, natural-language inference, and human review.
+No automatic judge is treated as ground truth.
+RAGAS and ARES illustrate component-level evaluation and the value of human calibration~\cite{es2024ragas,saadfalcon2024ares}.
+
+If no retrieved evidence supports an answer, the correct behavior is abstention or a scoped clarification request.
+The interface should distinguish ``no evidence found'' from provider failure and from a failed consistency check.
+This distinction prevents the absence of an answer from being presented as a confident negative claim.
+
+\subsection{Multi-Turn Boundaries}
+
+A follow-up question may depend on prior entities or scope, but conversation history must not silently widen the evidence set.
+MNEME retains a bounded number of turns and records the retrieval query derived from each turn.
+Scope changes are visible.
+E2 treats first-turn, follow-up, non-standalone, and unanswerable questions as separate strata, following the need for dedicated multi-turn RAG evaluation~\cite{katsis2025mtrag}.
+
+\section{C3: Adaptive and Inspectable Interest Memory}
+
+\subsection{Event Semantics}
+
+The planned event vocabulary includes explicit topic edits and paper saves as well as implicit opens, reading duration, skips after exposure, shares, and questions.
+Each event contains an event identifier, user identifier, paper and revision identifiers when applicable, event type, timestamp, context, and client-generated deduplication key.
+The event model records observation, not intent.
+For example, a long open duration may indicate careful reading, interruption, or abandonment.
+Its weight must therefore be bounded and tested.
+
+\subsection{Multi-Timescale State}
+
+Let \(e_t\) be the embedding associated with an eligible event and \(w_t\) its declared signal weight.
+A baseline short-term state can be represented by
+\[
+  s_t = \operatorname{norm}\left(\alpha_s s_{t-1} + (1-\alpha_s)w_t e_t\right),
+\]
+while a long-term state uses a slower update,
+\[
+  \ell_t = \operatorname{norm}\left(\alpha_\ell \ell_{t-1} + (1-\alpha_\ell)w_t e_t\right),
+  \qquad \alpha_\ell > \alpha_s.
+\]
+The recommendation state may combine explicit preferences \(x_t\), short-term state, and long-term state:
+\[
+  u_t = \operatorname{norm}\left(\beta_x x_t + \beta_s s_t + \beta_\ell \ell_t\right).
+\]
+These equations specify a baseline to be frozen before E3.
+The coefficients are not claimed optimal.
+They must be documented, ablated, and tested against static and recent-only alternatives.
+
+\subsection{Negative and Missing Feedback}
+
+A skip is eligible as negative evidence only after the system establishes exposure.
+Silence outside an exposure window is missing data, not a negative preference.
+Unpaired-feedback research highlights the difficulty of interpreting engagement and silent disengagement over long horizons~\cite{zhang2025unpaired}.
+MNEME therefore stores event provenance and caps the influence of any single implicit event.
+Explicit removal of a topic overrides inferred positive evidence until the user changes that decision or an explicit policy expires.
+
+\subsection{Recommendation Score and Reason}
+
+A candidate score can combine semantic match, freshness, followed-author or citation relations, diversity, and delivery constraints:
+\[
+  S(p,u_t)=\lambda_m M(p,u_t)+\lambda_f F(p)+\lambda_a A(p)
+            +\lambda_d D(p,\mathcal{L})-\lambda_n N(p),
+\]
+where \(M\) is the match to the interest state, \(F\) is freshness, \(A\) is an explicit author or relation boost, \(D\) rewards diversity relative to the current list \(\mathcal{L}\), and \(N\) represents notification or repetition penalties.
+Every term must be defined and exposed to E3 ablation.
+
+The displayed recommendation reason is derived from inspectable contributors, such as an explicit topic, a saved paper, or an author watchlist.
+It is not a free-form post-hoc explanation of an opaque score.
+Editable natural-language profiles demonstrate one route to scrutable preference representations~\cite{ramos2024scrutable}; MNEME adopts the more general requirement that visible reasons and editable state must remain consistent.
+
+\section{C4: Bounded Mobile Integration}
+
+\subsection{Local State and Synchronization}
+
+The planned Android client keeps digest snapshots, paper metadata, reading state, pending events, and user preferences in local storage.
+Background work uploads events and checks for new digests subject to operating-system constraints.
+Every synchronization operation is idempotent.
+Conflicts are resolved by explicit version and timestamp policies rather than last-write-wins without inspection.
+
+\subsection{Notifications}
+
+Notifications are delivery mechanisms, not evidence that a recommendation is useful.
+The design supports scheduled digests, bounded high-relevance alerts, deduplication, daily caps, and user-configurable preferences.
+The notification contains enough context to explain why it was sent and deep-links to the corresponding digest or paper snapshot.
+E4 must measure delivery reliability and task consequences rather than assuming that more timely delivery is beneficial.
+
+\subsection{Graph Boundary}
+
+The planned graph is rendered in a WebView with a Kotlin--JavaScript bridge.
+Graph data are supplied as versioned nodes and edges; interaction callbacks identify the selected node and requested action.
+The bridge is a trust boundary because injected data, event routing, and gesture conflicts can fail independently.
+The UI must display selected state and a stable primary action.
+The formative presentation's graph finding motivates these requirements but does not prove the redesign succeeds.
+
+\subsection{Visible Failure and Degraded Operation}
+
+The client distinguishes unavailable content, stale content, provider failure, unsupported answer, and synchronization delay.
+Cached content carries its last-updated revision and time.
+An offline reader can inspect already downloaded evidence, but the system must not imply that a new question has been verified when the required service is unavailable.
+
+\section{Cross-Cutting Safety and Reproducibility}
+
+The system logs model and prompt versions, retrieval configuration, data revision, and verification policy for each generated output.
+Logs exclude unnecessary paper content and behavioral details.
+Users can inspect and delete their event history.
+Daily budget limits constrain model calls, and content/configuration hashes permit safe caching.
+These controls are part of the design; their implementation and effectiveness remain to be verified against a source revision and E1--E4 artifacts.
+

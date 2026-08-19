@@ -12,10 +12,13 @@ from mneme.graph.algorithms import (
     select_subgraph,
     weight_citation_edges,
 )
+from mneme.graph.contracts import GraphRepository, GraphSnapshot
 
 __all__ = [
     "GraphEdge",
     "GraphNode",
+    "GraphRepository",
+    "GraphSnapshot",
     "GraphView",
     "build_graph_view",
     "extract_keywords",

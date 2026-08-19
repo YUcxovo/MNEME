@@ -129,6 +129,24 @@ class ArtifactRepository:
         )
         return list((await self._session.scalars(statement)).all())
 
+    async def list_chunks_for_version(self, *, paper_version_id: UUID) -> list[PaperChunk]:
+        """Return all stored chunks for one exact revision in chunk order."""
+        statement = (
+            select(PaperChunk)
+            .where(PaperChunk.paper_version_id == paper_version_id)
+            .order_by(PaperChunk.chunk_index)
+        )
+        return list((await self._session.scalars(statement)).all())
+
+    async def list_summaries_for_version(self, *, paper_version_id: UUID) -> list[PaperSummary]:
+        """Return all stored summaries for one exact revision, oldest first."""
+        statement = (
+            select(PaperSummary)
+            .where(PaperSummary.paper_version_id == paper_version_id)
+            .order_by(PaperSummary.created_at)
+        )
+        return list((await self._session.scalars(statement)).all())
+
     async def set_chunk_embeddings(self, updates: list[ChunkEmbeddingUpdate]) -> None:
         """Attach vectors to previously stored chunks."""
         for item in updates:
@@ -211,6 +229,31 @@ class ArtifactRepository:
                 PaperChunk.embedding.is_not(None),
             )
             .order_by(distance)
+            .limit(limit)
+        )
+        rows = (await self._session.execute(statement)).all()
+        return [(row[0], max(0.0, 1.0 - float(row[1]))) for row in rows]
+
+    async def get_context_anchor_chunks(
+        self,
+        *,
+        paper_id: UUID,
+        paper_version_id: UUID,
+        query_embedding: tuple[float, ...],
+        limit: int,
+    ) -> list[tuple[PaperChunk, float]]:
+        """Return the first embedded chunks as stable document-overview anchors."""
+        if limit < 1:
+            return []
+        distance = PaperChunk.embedding.cosine_distance(list(query_embedding))
+        statement = (
+            select(PaperChunk, distance.label("distance"))
+            .where(
+                PaperChunk.paper_id == paper_id,
+                PaperChunk.paper_version_id == paper_version_id,
+                PaperChunk.embedding.is_not(None),
+            )
+            .order_by(PaperChunk.chunk_index)
             .limit(limit)
         )
         rows = (await self._session.execute(statement)).all()

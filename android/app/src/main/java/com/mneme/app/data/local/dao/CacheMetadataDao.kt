@@ -11,6 +11,9 @@ interface CacheMetadataDao {
     @Query("SELECT * FROM cache_metadata WHERE id = :id")
     fun observe(id: String = CacheMetadataEntity.SINGLETON_ID): Flow<CacheMetadataEntity?>
 
+    @Query("SELECT * FROM cache_metadata WHERE id = :id")
+    suspend fun get(id: String = CacheMetadataEntity.SINGLETON_ID): CacheMetadataEntity?
+
     @Upsert
     suspend fun upsert(metadata: CacheMetadataEntity)
 }

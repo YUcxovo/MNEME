@@ -72,6 +72,18 @@ def test_chunking_is_deterministic() -> None:
 
 @pytest.mark.base
 @pytest.mark.pipeline
+def test_chunking_sanitizes_legacy_parsed_text_before_persistence() -> None:
+    sections = [_section("Alpha\x00beta. Gamma\x1fdelta.", title="Methods\x00")]
+
+    drafts = chunk_sections(sections, max_tokens=100, overlap_tokens=10)
+
+    assert drafts[0].section_title == "Methods"
+    assert drafts[0].content == "Alpha beta. Gamma delta."
+    assert "\x00" not in drafts[0].content
+
+
+@pytest.mark.base
+@pytest.mark.pipeline
 def test_single_sentence_longer_than_limit_is_kept_whole() -> None:
     long_sentence = "word " * 300
     sections = [_section(long_sentence.strip() + ".")]

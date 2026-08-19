@@ -6,16 +6,19 @@ directly with fakes. Stages are safe to retry: re-running with unchanged
 input reuses stored artifacts instead of spending tokens again.
 """
 
+from collections.abc import Sequence
+from typing import cast
 from uuid import UUID
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.ai.chunking import ParsedSection, chunk_sections
+from mneme.ai.claim_provenance import ChunkSource, match_claims, provenance_status
 from mneme.ai.embeddings import EmbeddingService
 from mneme.ai.prompts import SUMMARY_PROMPT_VERSION
-from mneme.ai.summarization import SummarizationService, summary_input_hash
-from mneme.models.artifact import PaperSummary
+from mneme.ai.summarization import StructuredSummary, SummarizationService, summary_input_hash
+from mneme.models.artifact import PaperSummary, SourceMatchStatus
 from mneme.models.paper import Paper, PaperVersion, ProcessingStatus
 from mneme.repositories.artifacts import ArtifactRepository, ChunkEmbeddingUpdate
 
@@ -39,6 +42,45 @@ async def _require_paper_version(
             f"Paper version {paper_version_id} does not belong to paper {paper_id}."
         )
     return paper, version
+
+
+def _attach_claim_provenance(
+    summary: PaperSummary, chunks: Sequence[ChunkSource], *, chunks_replaced: bool = False
+) -> bool:
+    """Match a stored summary's key claims to one revision's chunks.
+
+    Deterministic and safe to rerun: identical inputs produce identical
+    provenance. Summaries without key claims stay ``not_checked``. Returns
+    whether the stored row changed.
+
+    An empty ``chunks`` sequence means two different things: before the chunk
+    stage has ever run, provenance simply cannot be computed yet, so the
+    summary is left untouched; after a replacement (``chunks_replaced=True``)
+    the old chunk identities are gone, so claims are re-matched against the
+    empty set and become explicitly unmatched instead of exposing stale
+    sources.
+    """
+    if not chunks and not chunks_replaced:
+        return False
+    content = StructuredSummary.model_validate(summary.content)
+    if not content.key_claims:
+        return False
+    claims = match_claims(content.key_claims, chunks)
+    status = provenance_status(claims)
+    updated = content.model_copy(update={"claims": claims}).model_dump(mode="json")
+    if summary.content == updated and summary.source_match_status is status:
+        return False
+    summary.content = updated
+    summary.source_match_status = status
+    logger.info(
+        "summary_claim_provenance_attached",
+        paper_id=str(summary.paper_id),
+        paper_version_id=str(summary.paper_version_id),
+        claims=len(claims),
+        matched=sum(1 for claim in claims if claim.matched),
+        source_match_status=status.value,
+    )
+    return True
 
 
 async def summarize_paper_stage(
@@ -68,6 +110,9 @@ async def summarize_paper_stage(
         prompt_version=SUMMARY_PROMPT_VERSION,
     )
     if existing is not None:
+        if existing.source_match_status is SourceMatchStatus.NOT_CHECKED:
+            stored_chunks = await artifacts.list_chunks_for_version(paper_version_id=version.id)
+            _attach_claim_provenance(existing, cast("Sequence[ChunkSource]", stored_chunks))
         logger.info("summary_already_stored", paper_id=str(paper_id), input_hash=input_hash)
         return existing
 
@@ -88,6 +133,8 @@ async def summarize_paper_stage(
         latency_ms=result.completion.latency_ms,
     )
     stored = await artifacts.add_summary(generation)
+    stored_chunks = await artifacts.list_chunks_for_version(paper_version_id=version.id)
+    _attach_claim_provenance(stored, cast("Sequence[ChunkSource]", stored_chunks))
     if paper.processing_status in (ProcessingStatus.METADATA_ONLY, ProcessingStatus.QUEUED):
         paper.processing_status = ProcessingStatus.PARTIAL
     logger.info(
@@ -123,6 +170,13 @@ async def chunk_paper_stage(
     stored = await artifacts.replace_chunks(
         paper_id=paper_id, paper_version_id=version.id, drafts=drafts
     )
+    # Replacing chunks invalidates any chunk identities recorded earlier, so
+    # claim provenance is recomputed for every summary of this exact revision,
+    # including against an empty replacement (stale sources must not survive).
+    for summary in await artifacts.list_summaries_for_version(paper_version_id=version.id):
+        _attach_claim_provenance(
+            summary, cast("Sequence[ChunkSource]", stored), chunks_replaced=True
+        )
     logger.info("chunks_stored", paper_id=str(paper_id), chunks=len(stored))
     return len(stored)
 

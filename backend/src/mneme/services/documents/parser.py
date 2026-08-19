@@ -15,7 +15,7 @@ from mneme.services.documents.parser_layout import (
 )
 from mneme.services.documents.types import ParsedDocument, ParsedSection
 
-PARSER_VERSION = "pymupdf-pdfplumber-v1"
+PARSER_VERSION = "pymupdf-pdfplumber-v3"
 
 
 class PdfParseError(RuntimeError):

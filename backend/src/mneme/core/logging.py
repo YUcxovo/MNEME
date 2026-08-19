@@ -27,6 +27,11 @@ def configure_logging(settings: Settings) -> None:
         level=settings.log_level.upper(),
         force=True,
     )
+    # httpx logs complete request URLs at INFO and httpcore exposes them at
+    # DEBUG.  Query strings can contain provider credentials or user-entered
+    # interests, so application logs must not inherit those verbose levels.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("httpcore").setLevel(logging.WARNING)
     structlog.configure(
         processors=[*shared_processors, renderer],
         wrapper_class=structlog.make_filtering_bound_logger(

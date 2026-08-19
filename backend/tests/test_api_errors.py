@@ -2,13 +2,16 @@
 
 import asyncio
 from typing import Annotated
+from unittest.mock import MagicMock
 from uuid import UUID
 
 import pytest
 from fastapi import FastAPI, Query, Request, status
 from httpx import ASGITransport, AsyncClient, Response
+from redis.exceptions import RedisError
 from sqlalchemy.exc import SQLAlchemyError
 
+from mneme.api import errors as api_errors
 from mneme.api.errors import ApiError, ErrorResponse
 from mneme.core.config import Environment, Settings
 from mneme.main import create_app
@@ -42,6 +45,10 @@ def create_error_test_app(*, debug: bool = False) -> FastAPI:
     @application.get("/database-error")
     async def database_error() -> None:
         raise SQLAlchemyError("sensitive connection diagnostics")
+
+    @application.get("/redis-error")
+    async def redis_error() -> None:
+        raise RedisError("sensitive Redis address")
 
     return application
 
@@ -184,6 +191,46 @@ def test_database_error_is_service_unavailable_without_diagnostics() -> None:
         "request_id": "database-1",
     }
     assert "sensitive connection diagnostics" not in response.text
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_redis_error_is_service_unavailable_without_diagnostics() -> None:
+    response = asyncio.run(
+        request_test_route(
+            "/redis-error",
+            headers={"X-Request-ID": "redis-1"},
+        )
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "code": "service_unavailable",
+        "message": "A required service is temporarily unavailable.",
+        "request_id": "redis-1",
+    }
+    assert "sensitive Redis address" not in response.text
+
+
+@pytest.mark.base
+@pytest.mark.api
+def test_internal_diagnostics_are_not_written_to_structured_logs(monkeypatch) -> None:
+    log_error = MagicMock()
+    monkeypatch.setattr(api_errors.logger, "error", log_error)
+    request = Request({"type": "http", "method": "GET", "path": "/test", "headers": []})
+    request.state.request_id = "safe-log-1"
+
+    asyncio.run(api_errors.handle_unexpected_error(request, RuntimeError("sensitive value")))
+    asyncio.run(api_errors.handle_database_error(request, SQLAlchemyError("secret DSN")))
+    asyncio.run(api_errors.handle_redis_error(request, RedisError("secret Redis URL")))
+
+    rendered_calls = repr(log_error.call_args_list)
+    assert "sensitive value" not in rendered_calls
+    assert "secret DSN" not in rendered_calls
+    assert "secret Redis URL" not in rendered_calls
+    assert "RuntimeError" in rendered_calls
+    assert "SQLAlchemyError" in rendered_calls
+    assert "RedisError" in rendered_calls
 
 
 @pytest.mark.base

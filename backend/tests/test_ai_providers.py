@@ -9,7 +9,7 @@ import httpx
 import openai
 import pytest
 
-from mneme.ai.providers import AnthropicProvider, OpenAIProvider
+from mneme.ai.providers import AnthropicProvider, DeepSeekProvider, OpenAIProvider
 from mneme.ai.types import AITask, ChatMessage, CompletionRequest, LLMProviderError
 
 REQUEST = CompletionRequest(
@@ -46,6 +46,12 @@ def _openai_provider(outcome: object) -> tuple[OpenAIProvider, _StubMessages]:
     chat = _StubChat(outcome)
     client = cast(openai.AsyncOpenAI, SimpleNamespace(chat=chat))
     return OpenAIProvider(api_key="test", timeout_seconds=1, client=client), chat.completions
+
+
+def _deepseek_provider(outcome: object) -> tuple[DeepSeekProvider, _StubMessages]:
+    chat = _StubChat(outcome)
+    client = cast(openai.AsyncOpenAI, SimpleNamespace(chat=chat))
+    return DeepSeekProvider(api_key="test", timeout_seconds=1, client=client), chat.completions
 
 
 def _http_error_parts(status_code: int) -> tuple[httpx.Response, str]:
@@ -141,3 +147,33 @@ def test_openai_server_error_is_retryable() -> None:
     with pytest.raises(LLMProviderError) as excinfo:
         asyncio.run(provider.complete(model="gpt-4o", request=REQUEST))
     assert excinfo.value.retryable is True
+
+
+@pytest.mark.base
+def test_deepseek_response_is_normalized_with_non_thinking_default() -> None:
+    response = SimpleNamespace(
+        choices=[SimpleNamespace(message=SimpleNamespace(content="A concise answer."))],
+        model="deepseek-v4-flash",
+        usage=SimpleNamespace(prompt_tokens=18, completion_tokens=4),
+    )
+    provider, stub = _deepseek_provider(response)
+
+    result = asyncio.run(provider.complete(model="deepseek-v4-flash", request=REQUEST))
+
+    assert result.text == "A concise answer."
+    assert result.usage.input_tokens == 18
+    assert stub.kwargs is not None
+    assert stub.kwargs["max_tokens"] == REQUEST.max_output_tokens
+    assert stub.kwargs["extra_body"] == {"thinking": {"type": "disabled"}}
+
+
+@pytest.mark.base
+def test_deepseek_client_error_is_not_retryable() -> None:
+    response, message = _http_error_parts(401)
+    provider, _ = _deepseek_provider(
+        openai.AuthenticationError(message, response=response, body=None)
+    )
+
+    with pytest.raises(LLMProviderError) as excinfo:
+        asyncio.run(provider.complete(model="deepseek-v4-flash", request=REQUEST))
+    assert excinfo.value.retryable is False

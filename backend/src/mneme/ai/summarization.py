@@ -7,6 +7,7 @@ import re
 import structlog
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
+from mneme.ai.claim_provenance import SummaryClaim
 from mneme.ai.prompts import SUMMARY_PROMPT_VERSION, build_summary_request
 from mneme.ai.service import LLMService
 from mneme.ai.types import AIError, CompletionResult
@@ -23,7 +24,14 @@ class SummaryParseError(AIError):
 
 
 class StructuredSummary(BaseModel):
-    """Validated summary content persisted as ``paper_summaries.content``."""
+    """Validated summary content persisted as ``paper_summaries.content``.
+
+    ``claims`` is never produced by the model: response parsing accepts only
+    the plain-string ``key_claims``, and provenance is attached afterwards by
+    deterministic matching against the summarized revision's stored chunks
+    (see ``mneme.ai.claim_provenance``). Rows stored before provenance
+    existed validate with ``claims=()``.
+    """
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -31,6 +39,7 @@ class StructuredSummary(BaseModel):
     key_claims: tuple[str, ...] = ()
     methodology: str | None = None
     limitations: str | None = None
+    claims: tuple[SummaryClaim, ...] = ()
 
 
 class SummaryGeneration(BaseModel):
@@ -65,6 +74,11 @@ def parse_summary_response(text: str) -> StructuredSummary:
         payload = json.loads(stripped[start : end + 1])
     except json.JSONDecodeError as error:
         raise SummaryParseError(f"Response is not valid JSON: {error}") from error
+    if isinstance(payload, dict) and "claims" in payload:
+        # Provenance is attached only by deterministic chunk matching; a model
+        # response may never supply its own source references.
+        logger.warning("summary_response_claims_discarded")
+        payload = {key: value for key, value in payload.items() if key != "claims"}
     try:
         return StructuredSummary.model_validate(payload)
     except ValidationError as error:

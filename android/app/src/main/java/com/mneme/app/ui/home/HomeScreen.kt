@@ -28,7 +28,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
-import com.mneme.app.ui.component.ControlledDemoNotice
+import com.mneme.app.ui.component.ContentSourceNotice
 import com.mneme.app.ui.component.DigestCard
 import com.mneme.app.ui.component.ErrorState
 import com.mneme.app.ui.component.FilterChip
@@ -106,20 +106,21 @@ private fun LazyListScope.briefingItems(
 ) {
     item { BriefingHeader(paperCount = briefing.papers.size) }
     item {
-        ControlledDemoNotice(
+        ContentSourceNotice(
             disclosure = briefing.disclosure,
-            testTag = "controlled-demo-notice",
+            testTag = "content-source-notice",
         )
     }
     item { DigestCard(digest = briefing.digest) }
     item {
-        MnemeSectionLabel(text = stringResource(R.string.briefing_seeded_interests))
+        MnemeSectionLabel(text = stringResource(R.string.briefing_interests))
     }
     item { InterestChips(interests = briefing.interests) }
     item { RecommendedHeader(paperCount = briefing.papers.size) }
     items(items = briefing.papers, key = PaperUiModel::id) { paper ->
         PaperCard(
             paper = paper,
+            supportingTextLabel = stringResource(R.string.briefing_recommendation_reason),
             onClick = { onPaperClick(paper.id) },
         )
     }
@@ -169,7 +170,12 @@ private fun RecommendedHeader(paperCount: Int) {
     ) {
         MnemeSectionLabel(text = stringResource(R.string.briefing_recommended_paper))
         Text(
-            text = stringResource(R.string.briefing_paper_count, paperCount),
+            text =
+                pluralStringResource(
+                    R.plurals.briefing_paper_count,
+                    paperCount,
+                    paperCount,
+                ),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary,
         )

@@ -1,0 +1,196 @@
+"""Failure-contract tests for seed onboarding orchestration."""
+
+import asyncio
+from types import SimpleNamespace
+from typing import ClassVar
+from unittest.mock import AsyncMock, MagicMock
+from uuid import UUID, uuid4
+
+import pytest
+from fastapi import status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from mneme.api.dependencies.auth import Principal
+from mneme.api.errors import ApiError
+from mneme.api.routes import onboarding, onboarding_support
+from mneme.api.schemas.onboarding import SeedInitializationRequest
+from mneme.core.config import Settings
+from mneme.models.job import JobStatus
+from mneme.models.paper import ProcessingStatus
+from mneme.services.arxiv.ingestion import ArxivObservedRevision
+
+
+class FailingQueue:
+    """ARQ-compatible queue that rejects one dispatch."""
+
+    async def enqueue_job(self, *_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("sensitive broker diagnostics")
+
+
+class InternallyFailingArxivClient:
+    """Client fake that raises an unrelated implementation ValueError."""
+
+    def __init__(self, _settings: Settings) -> None:
+        pass
+
+    async def __aenter__(self) -> "InternallyFailingArxivClient":
+        return self
+
+    async def __aexit__(self, *_args: object) -> None:
+        return None
+
+    async def fetch_by_id(self, _arxiv_id: str) -> None:
+        raise ValueError("sensitive internal state")
+
+
+class FakeJobRepository:
+    """Record durable dispatch recovery without using PostgreSQL."""
+
+    released: ClassVar[list[object]] = []
+
+    def __init__(self, _session: AsyncSession) -> None:
+        self.job_id = uuid4()
+
+    async def get_or_create(self, **_kwargs: object) -> tuple[SimpleNamespace, bool]:
+        return SimpleNamespace(id=self.job_id, status=JobStatus.QUEUED), True
+
+    async def claim_failed_for_retry(self, _job_id: object) -> bool:
+        return False
+
+    async def claim_for_dispatch(self, _job_id: object) -> int:
+        return 1
+
+    async def release_dispatch(self, job_id: object) -> None:
+        self.released.append(job_id)
+
+
+def _revision(paper_id: UUID | None = None) -> ArxivObservedRevision:
+    return ArxivObservedRevision(
+        paper_id=paper_id or uuid4(),
+        paper_version_id=uuid4(),
+        arxiv_id="2607.01234",
+        version_number=1,
+        version_created=True,
+    )
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_seed_queue_failure_releases_lease_and_hides_diagnostics(monkeypatch) -> None:
+    revision = _revision()
+    paper = SimpleNamespace(processing_status=ProcessingStatus.METADATA_ONLY)
+    session = AsyncMock(spec=AsyncSession)
+    session.get.return_value = paper
+    FakeJobRepository.released = []
+    monkeypatch.setattr(onboarding_support, "PipelineJobRepository", FakeJobRepository)
+
+    with pytest.raises(ApiError) as raised:
+        asyncio.run(
+            onboarding_support.enqueue_seed_downloads(
+                session,
+                FailingQueue(),
+                (revision,),
+            )
+        )
+
+    assert raised.value.status_code == status.HTTP_503_SERVICE_UNAVAILABLE
+    assert raised.value.code == "queue_unavailable"
+    assert "sensitive" not in raised.value.message
+    assert len(FakeJobRepository.released) == 1
+    assert paper.processing_status is ProcessingStatus.QUEUED
+    assert session.commit.await_count == 3
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_failed_seed_pipeline_returns_stable_public_error() -> None:
+    paper_id = uuid4()
+    rows = MagicMock()
+    rows.all.return_value = [(paper_id, ProcessingStatus.FAILED)]
+    session = AsyncMock(spec=AsyncSession)
+    session.execute.return_value = rows
+
+    with pytest.raises(ApiError) as raised:
+        asyncio.run(onboarding_support.wait_for_seed_papers(session, (paper_id,)))
+
+    assert raised.value.status_code == status.HTTP_502_BAD_GATEWAY
+    assert raised.value.code == "seed_initialization_failed"
+    assert raised.value.details is None
+    session.rollback.assert_awaited_once()
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_failed_revision_job_is_detected_before_paper_status_times_out() -> None:
+    paper_id = uuid4()
+    paper_version_id = uuid4()
+    rows = MagicMock()
+    rows.all.return_value = [(paper_id, ProcessingStatus.PROCESSING)]
+    session = AsyncMock(spec=AsyncSession)
+    session.execute.return_value = rows
+    session.scalar.return_value = uuid4()
+
+    with pytest.raises(ApiError) as raised:
+        asyncio.run(
+            onboarding_support.wait_for_seed_papers(
+                session,
+                (paper_id,),
+                paper_version_ids=(paper_version_id,),
+            )
+        )
+
+    assert raised.value.status_code == status.HTTP_502_BAD_GATEWAY
+    assert raised.value.code == "seed_initialization_failed"
+    session.scalar.assert_awaited_once()
+    session.rollback.assert_awaited_once()
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_interest_refresh_keeps_usable_papers_after_another_pdf_fails() -> None:
+    ready_paper_id = uuid4()
+    failed_paper_id = uuid4()
+    ready_revision = _revision(ready_paper_id)
+    failed_revision = _revision(failed_paper_id)
+    rows = MagicMock()
+    rows.all.return_value = [
+        (ready_paper_id, ProcessingStatus.READY),
+        (failed_paper_id, ProcessingStatus.PROCESSING),
+    ]
+    failed_versions = MagicMock()
+    failed_versions.all.return_value = [failed_revision.paper_version_id]
+    session = AsyncMock(spec=AsyncSession)
+    session.execute.return_value = rows
+    session.scalars.return_value = failed_versions
+
+    usable = asyncio.run(
+        onboarding_support.wait_for_refresh_papers(
+            session,
+            (ready_revision, failed_revision),
+        )
+    )
+
+    assert usable == (ready_paper_id,)
+    session.rollback.assert_awaited_once()
+
+
+@pytest.mark.base
+@pytest.mark.api
+@pytest.mark.pipeline
+def test_internal_value_error_is_not_misclassified_as_invalid_input(monkeypatch) -> None:
+    monkeypatch.setattr(onboarding, "ArxivClient", InternallyFailingArxivClient)
+
+    with pytest.raises(ValueError, match="sensitive internal state"):
+        asyncio.run(
+            onboarding.initialize_from_seed(
+                SeedInitializationRequest(arxiv_reference="2607.01234"),
+                Principal(user_id=uuid4()),
+                FailingQueue(),
+                Settings(_env_file=None),
+                AsyncMock(spec=AsyncSession),
+            )
+        )

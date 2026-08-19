@@ -1,0 +1,145 @@
+{
+  "schema_version": "behavior-controlled-fixture-v1",
+  "fixture_version": "behavior-controlled-v1",
+  "controlled_synthetic": true,
+  "reference_time_utc": "2026-07-27T12:00:00Z",
+  "embedding_dimensions": 4,
+  "evaluation": {
+    "metric_k": 5,
+    "bootstrap_seed": 20260727,
+    "bootstrap_replicates": 10000,
+    "confidence_interval": 0.95,
+    "round_digits": 6
+  },
+  "papers": [
+    {"paper_id": "00000000-0000-0000-0000-000000000101", "title": "History attention foundations", "categories": ["cs.AI"], "published_at": "2026-06-01T12:00:00Z", "embedding": [1.0, 0.0, 0.0, 0.0], "candidate": false},
+    {"paper_id": "00000000-0000-0000-0000-000000000102", "title": "History attention optimization", "categories": ["cs.AI"], "published_at": "2026-06-02T12:00:00Z", "embedding": [0.95, 0.05, 0.0, 0.0], "candidate": false},
+    {"paper_id": "00000000-0000-0000-0000-000000000103", "title": "History neural retrieval", "categories": ["cs.IR"], "published_at": "2026-06-03T12:00:00Z", "embedding": [0.0, 1.0, 0.0, 0.0], "candidate": false},
+    {"paper_id": "00000000-0000-0000-0000-000000000104", "title": "History dense retrieval", "categories": ["cs.IR"], "published_at": "2026-06-04T12:00:00Z", "embedding": [0.05, 0.95, 0.0, 0.0], "candidate": false},
+    {"paper_id": "00000000-0000-0000-0000-000000000105", "title": "History visual distractor", "categories": ["cs.CV"], "published_at": "2026-06-05T12:00:00Z", "embedding": [0.0, 0.0, 1.0, 0.0], "candidate": false},
+    {"paper_id": "00000000-0000-0000-0000-000000000106", "title": "History representation unavailable", "categories": ["cs.AI"], "published_at": "2026-06-06T12:00:00Z", "embedding": null, "candidate": false},
+    {"paper_id": "00000000-0000-0000-0000-000000000201", "title": "Attention mechanisms for research agents", "categories": ["cs.AI"], "published_at": "2026-07-26T12:00:00Z", "embedding": [0.98, 0.02, 0.0, 0.0], "candidate": true},
+    {"paper_id": "00000000-0000-0000-0000-000000000202", "title": "Efficient attention for long papers", "categories": ["cs.AI"], "published_at": "2026-07-26T12:00:00Z", "embedding": [0.9, 0.1, 0.0, 0.0], "candidate": true},
+    {"paper_id": "00000000-0000-0000-0000-000000000203", "title": "Neural retrieval for literature search", "categories": ["cs.IR"], "published_at": "2026-07-26T12:00:00Z", "embedding": [0.02, 0.98, 0.0, 0.0], "candidate": true},
+    {"paper_id": "00000000-0000-0000-0000-000000000204", "title": "Dense retrieval under distribution shift", "categories": ["cs.IR"], "published_at": "2026-07-26T12:00:00Z", "embedding": [0.1, 0.9, 0.0, 0.0], "candidate": true},
+    {"paper_id": "00000000-0000-0000-0000-000000000205", "title": "Unrelated visual benchmark", "categories": ["cs.CV"], "published_at": "2026-07-26T12:00:00Z", "embedding": [0.0, 0.0, 0.95, 0.05], "candidate": true},
+    {"paper_id": "00000000-0000-0000-0000-000000000206", "title": "Robotic control survey", "categories": ["cs.RO"], "published_at": "2026-07-26T12:00:00Z", "embedding": [0.0, 0.0, 0.0, 1.0], "candidate": true}
+  ],
+  "scenarios": [
+    {
+      "scenario_id": "cold-start-01", "family": "cold_start", "phase": "single", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [], "judgments": [], "target_paper_id": null
+    },
+    {
+      "scenario_id": "stable-positive-01", "family": "stable_positive", "phase": "single", "explicit_topics": ["attention"],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [
+        {"event_id": "10000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-24T12:00:00Z", "duration_ms": null},
+        {"event_id": "10000000-0000-0000-0000-000000000002", "event_type": "paper_opened", "paper_id": "00000000-0000-0000-0000-000000000102", "occurred_at": "2026-07-25T12:00:00Z", "duration_ms": 180000}
+      ],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000201", "grade": 3}, {"paper_id": "00000000-0000-0000-0000-000000000202", "grade": 2}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000201"
+    },
+    {
+      "scenario_id": "interest-shift-01-before", "family": "recent_interest_shift", "pair_id": "interest-shift-01", "phase": "before", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [{"event_id": "20000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-06-17T12:00:00Z", "duration_ms": null}],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000203", "grade": 3}, {"paper_id": "00000000-0000-0000-0000-000000000204", "grade": 2}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000203"
+    },
+    {
+      "scenario_id": "interest-shift-01-after", "family": "recent_interest_shift", "pair_id": "interest-shift-01", "phase": "after", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [
+        {"event_id": "20000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-06-17T12:00:00Z", "duration_ms": null},
+        {"event_id": "20000000-0000-0000-0000-000000000002", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-26T12:00:00Z", "duration_ms": null},
+        {"event_id": "20000000-0000-0000-0000-000000000003", "event_type": "question_asked", "paper_id": "00000000-0000-0000-0000-000000000104", "occurred_at": "2026-07-27T08:00:00Z", "duration_ms": null}
+      ],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000203", "grade": 3}, {"paper_id": "00000000-0000-0000-0000-000000000204", "grade": 2}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000203"
+    },
+    {
+      "scenario_id": "exposed-negative-01-before", "family": "exposed_negative", "pair_id": "exposed-negative-01", "phase": "before", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [
+        {"event_id": "30000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-25T12:00:00Z", "duration_ms": null},
+        {"event_id": "30000000-0000-0000-0000-000000000002", "event_type": "paper_impression", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-26T12:00:00Z", "duration_ms": null}
+      ],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000201", "grade": 3}, {"paper_id": "00000000-0000-0000-0000-000000000202", "grade": 2}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000203"
+    },
+    {
+      "scenario_id": "exposed-negative-01-after", "family": "exposed_negative", "pair_id": "exposed-negative-01", "phase": "after", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [
+        {"event_id": "30000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-25T12:00:00Z", "duration_ms": null},
+        {"event_id": "30000000-0000-0000-0000-000000000002", "event_type": "paper_impression", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-26T12:00:00Z", "duration_ms": null},
+        {"event_id": "30000000-0000-0000-0000-000000000003", "event_type": "paper_skipped", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-27T08:00:00Z", "duration_ms": null}
+      ],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000201", "grade": 3}, {"paper_id": "00000000-0000-0000-0000-000000000202", "grade": 2}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000203"
+    },
+    {
+      "scenario_id": "unexposed-skip-01", "family": "unexposed_skip", "phase": "single", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [
+        {"event_id": "40000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-25T12:00:00Z", "duration_ms": null},
+        {"event_id": "40000000-0000-0000-0000-000000000002", "event_type": "paper_skipped", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-26T12:00:00Z", "duration_ms": null}
+      ],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000201", "grade": 3}, {"paper_id": "00000000-0000-0000-0000-000000000202", "grade": 2}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000203"
+    },
+    {
+      "scenario_id": "repeated-paper-01", "family": "repeated_same_paper", "phase": "single", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [
+        {"event_id": "50000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-24T12:00:00Z", "duration_ms": null},
+        {"event_id": "50000000-0000-0000-0000-000000000002", "event_type": "paper_opened", "paper_id": "00000000-0000-0000-0000-000000000102", "occurred_at": "2026-07-24T13:00:00Z", "duration_ms": 60000},
+        {"event_id": "50000000-0000-0000-0000-000000000003", "event_type": "paper_opened", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-25T01:00:00Z", "duration_ms": 30000},
+        {"event_id": "50000000-0000-0000-0000-000000000004", "event_type": "paper_opened", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-25T02:00:00Z", "duration_ms": 30000},
+        {"event_id": "50000000-0000-0000-0000-000000000005", "event_type": "paper_opened", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-25T03:00:00Z", "duration_ms": 30000},
+        {"event_id": "50000000-0000-0000-0000-000000000006", "event_type": "paper_opened", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-25T04:00:00Z", "duration_ms": 30000},
+        {"event_id": "50000000-0000-0000-0000-000000000007", "event_type": "paper_opened", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-25T05:00:00Z", "duration_ms": 30000},
+        {"event_id": "50000000-0000-0000-0000-000000000008", "event_type": "paper_opened", "paper_id": "00000000-0000-0000-0000-000000000103", "occurred_at": "2026-07-25T06:00:00Z", "duration_ms": 30000}
+      ],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000201", "grade": 3}, {"paper_id": "00000000-0000-0000-0000-000000000202", "grade": 2}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000201"
+    },
+    {
+      "scenario_id": "contradictory-01", "family": "contradictory_feedback", "phase": "single", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [
+        {"event_id": "60000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-24T12:00:00Z", "duration_ms": null},
+        {"event_id": "60000000-0000-0000-0000-000000000002", "event_type": "paper_impression", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-25T12:00:00Z", "duration_ms": null},
+        {"event_id": "60000000-0000-0000-0000-000000000003", "event_type": "paper_skipped", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-26T12:00:00Z", "duration_ms": null}
+      ],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000201", "grade": 2}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000201"
+    },
+    {
+      "scenario_id": "missing-embedding-01", "family": "missing_embedding", "phase": "single", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [
+        {"event_id": "70000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-24T12:00:00Z", "duration_ms": null},
+        {"event_id": "70000000-0000-0000-0000-000000000002", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000106", "occurred_at": "2026-07-25T12:00:00Z", "duration_ms": null}
+      ],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000201", "grade": 3}, {"paper_id": "00000000-0000-0000-0000-000000000202", "grade": 2}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000201"
+    },
+    {
+      "scenario_id": "duplicate-replay-01-original", "family": "duplicate_replay", "pair_id": "duplicate-replay-01", "phase": "before", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [{"event_id": "80000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-25T12:00:00Z", "duration_ms": null}],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000201", "grade": 3}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000201"
+    },
+    {
+      "scenario_id": "duplicate-replay-01-replay", "family": "duplicate_replay", "pair_id": "duplicate-replay-01", "phase": "replay", "explicit_topics": [],
+      "candidate_ids": ["00000000-0000-0000-0000-000000000201", "00000000-0000-0000-0000-000000000202", "00000000-0000-0000-0000-000000000203", "00000000-0000-0000-0000-000000000204", "00000000-0000-0000-0000-000000000205", "00000000-0000-0000-0000-000000000206"],
+      "events": [{"event_id": "80000000-0000-0000-0000-000000000001", "event_type": "paper_saved", "paper_id": "00000000-0000-0000-0000-000000000101", "occurred_at": "2026-07-25T12:00:00Z", "duration_ms": null}],
+      "judgments": [{"paper_id": "00000000-0000-0000-0000-000000000201", "grade": 3}],
+      "target_paper_id": "00000000-0000-0000-0000-000000000201"
+    }
+  ]
+}

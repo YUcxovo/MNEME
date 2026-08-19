@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<testsuite name="com.mneme.app.data.behavior.BehavioralEventDeviceIntegrationTest" tests="30" failures="0" errors="0" skipped="1" time="152.928" timestamp="2026-07-26T11:06:26" hostname="localhost">
+  <properties>
+    <property name="device" value="Mneme_API_34(AVD) - 14" />
+    <property name="flavor" value="" />
+    <property name="project" value=":app" />
+  </properties>
+  <testcase name="visibleActions_crossRoomRetrofitAndHttpBoundaries" classname="com.mneme.app.data.behavior.BehavioralEventDeviceIntegrationTest" time="2.534" />
+  <testcase name="migrate3To4_createsValidatedBehavioralEventQueue" classname="com.mneme.app.data.local.MnemeDatabaseMigrationTest" time="0.053" />
+  <testcase name="behavioralEventRepository_recordsAndTracksRetryState" classname="com.mneme.app.data.local.MnemeDatabaseTest" time="0.027" />
+  <testcase name="cacheDaos_retainRecentAndOpenedContent" classname="com.mneme.app.data.local.MnemeDatabaseTest" time="0.027" />
+  <testcase name="skeletalCache_roundTripsExactDigestOrderReasonsAndPreferences" classname="com.mneme.app.data.local.MnemeDatabaseTest" time="0.027" />
+  <testcase name="paperDao_upsertAndObserve_returnsNewestFirst" classname="com.mneme.app.data.local.MnemeDatabaseTest" time="0.026" />
+  <testcase name="behavioralEventRepository_requeuesOnlyStaleInFlightEvents" classname="com.mneme.app.data.local.MnemeDatabaseTest" time="0.001" />
+  <testcase name="behavioralEventRepository_rejectsPayloadsOutsideTheFrozenContract" classname="com.mneme.app.data.local.MnemeDatabaseTest" time="0.001" />
+  <testcase name="recordQueueFailureRetryAndDuplicateLatency" classname="com.mneme.app.evaluation.E4EventSyncMeasurementTest" time="4.354" />
+  <testcase name="recordPersistedQueueThroughLiveBackendAndClientReadback" classname="com.mneme.app.evaluation.E4LiveBackendClosedLoopTest" time="0.085">
+    <skipped />
+  </testcase>
+  <testcase name="recordControlledStateResolutionAndPollingLatency" classname="com.mneme.app.evaluation.E4StateMeasurementTest" time="33.151" />
+  <testcase name="s4_threePreparationPolls_keepPaperIdentityUntilReady" classname="com.mneme.app.ui.E4StateMatrixTest" time="4.654" />
+  <testcase name="s5_invalidStoredBriefing_showsContractErrorWithoutFixtureSubstitution" classname="com.mneme.app.ui.E4StateMatrixTest" time="0.914" />
+  <testcase name="s1_emptyStorageAndValidSeed_reachesLiveFivePaperBriefing" classname="com.mneme.app.ui.E4StateMatrixTest" time="1.393" />
+  <testcase name="s3_cachedStartupAndServerFailure_retainsDataAndFailureDisclosure" classname="com.mneme.app.ui.E4StateMatrixTest" time="0.86" />
+  <testcase name="s2_cachedStartupAndUnavailableNetwork_keepsCachedContentVisible" classname="com.mneme.app.ui.E4StateMatrixTest" time="0.761" />
+  <testcase name="topLevelNavigation_updatesSelectedDestination" classname="com.mneme.app.ui.MnemeAppFlowTest" time="1.447" />
+  <testcase name="viewModelBackedApp_forwardsOnlyExistingInteractionsToEventTracker" classname="com.mneme.app.ui.MnemeAppFlowTest" time="1.859" />
+  <testcase name="skeletalFlow_reachesAnswerAndVisibleSource" classname="com.mneme.app.ui.MnemeAppFlowTest" time="2.351" />
+  <testcase name="graphFlow_opensSelectedPaperAndRestoresSelectionOnBack" classname="com.mneme.app.ui.MnemeAppFlowTest" time="3.429" />
+  <testcase name="viewModelBackedApp_loadsRepositoryAndAccurateSourceStatus" classname="com.mneme.app.ui.MnemeAppFlowTest" time="1.439" />
+  <testcase name="recordReadyFallbackAndEmptyStateDisclosureReliability" classname="com.mneme.app.ui.graph.E4GraphMeasurementTest" time="14.706" />
+  <testcase name="recordBoundedRendererAndSelectionLatency" classname="com.mneme.app.ui.graph.E4GraphMeasurementTest" time="70.179" />
+  <testcase name="localD3Renderer_handlesBoundedFiftyNodeGraph" classname="com.mneme.app.ui.graph.GraphScreenTest" time="1.391" />
+  <testcase name="localD3Renderer_loadsAndBridgeSelectsKnownNode" classname="com.mneme.app.ui.graph.GraphScreenTest" time="1.038" />
+  <testcase name="fallbackGraph_disclosesOriginAndOpensSelectedPaper" classname="com.mneme.app.ui.graph.GraphScreenTest" time="1.72" />
+  <testcase name="readyGraph_reportsRankedAndClusteredStatus" classname="com.mneme.app.ui.graph.GraphScreenTest" time="1.189" />
+  <testcase name="emptyGraph_hasTruthfulStateAndRetry" classname="com.mneme.app.ui.graph.GraphScreenTest" time="0.534" />
+  <testcase name="graphDestination_movesFromLoadingToErrorAndRetries" classname="com.mneme.app.ui.graph.GraphScreenTest" time="0.535" />
+  <testcase name="content_showsControlledBriefingAndPaper" classname="com.mneme.app.ui.home.HomeScreenTest" time="0.407" />
+</testsuite>

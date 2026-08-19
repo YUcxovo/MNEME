@@ -1,5 +1,6 @@
 """Static per-model pricing used for cost estimation and budget accounting."""
 
+import re
 from decimal import Decimal
 
 import structlog
@@ -47,6 +48,15 @@ MODEL_PRICING: dict[str, ModelPricing] = {
     "gpt-4.1-mini": ModelPricing(
         input_usd_per_mtok=Decimal("0.40"), output_usd_per_mtok=Decimal("1.60")
     ),
+    "deepseek-v4-flash": ModelPricing(
+        input_usd_per_mtok=Decimal("0.14"), output_usd_per_mtok=Decimal("0.28")
+    ),
+    "deepseek-v4-pro": ModelPricing(
+        input_usd_per_mtok=Decimal("0.435"), output_usd_per_mtok=Decimal("0.87")
+    ),
+    "BAAI/bge-small-en-v1.5+fastembed-pad1536-v1": ModelPricing(
+        input_usd_per_mtok=Decimal("0"), output_usd_per_mtok=Decimal("0")
+    ),
     "text-embedding-3-small": ModelPricing(
         input_usd_per_mtok=Decimal("0.02"), output_usd_per_mtok=Decimal("0")
     ),
@@ -61,10 +71,18 @@ _FALLBACK_PRICING = ModelPricing(
     input_usd_per_mtok=Decimal("5.00"), output_usd_per_mtok=Decimal("25.00")
 )
 
+# Providers may resolve a requested model to a dated release id, in either the
+# Anthropic form ("claude-haiku-4-5" -> "claude-haiku-4-5-20251001") or the
+# OpenAI form ("gpt-4o" -> "gpt-4o-2024-08-06"); price such ids by their base
+# entry instead of the never-undercount fallback.
+_RELEASE_SUFFIX = re.compile(r"-(?:\d{8}|\d{4}-\d{2}-\d{2})$")
+
 
 def estimate_cost(model: str, usage: TokenUsage) -> Decimal:
     """Return the estimated USD cost of one completion."""
     pricing = MODEL_PRICING.get(model)
+    if pricing is None:
+        pricing = MODEL_PRICING.get(_RELEASE_SUFFIX.sub("", model))
     if pricing is None:
         logger.warning("unknown_model_pricing", model=model)
         pricing = _FALLBACK_PRICING

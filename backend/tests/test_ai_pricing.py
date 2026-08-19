@@ -29,3 +29,43 @@ def test_unknown_model_falls_back_to_conservative_pricing() -> None:
     cost = estimate_cost("mystery-model", usage)
 
     assert cost == Decimal("30.00")
+
+
+@pytest.mark.base
+def test_deepseek_flash_uses_cache_miss_price_conservatively() -> None:
+    usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
+
+    assert estimate_cost("deepseek-v4-flash", usage) == Decimal("0.42")
+
+
+@pytest.mark.base
+def test_local_fastembed_model_has_no_external_cost() -> None:
+    usage = TokenUsage(input_tokens=1_000_000, output_tokens=0)
+
+    assert estimate_cost("BAAI/bge-small-en-v1.5+fastembed-pad1536-v1", usage) == 0
+
+
+@pytest.mark.base
+def test_dated_release_id_prices_by_its_base_model() -> None:
+    usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
+
+    cost = estimate_cost("claude-haiku-4-5-20251001", usage)
+
+    assert cost == Decimal("6.00")
+
+
+@pytest.mark.base
+def test_hyphenated_dated_release_id_prices_by_its_base_model() -> None:
+    usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
+
+    cost = estimate_cost("gpt-4o-2024-08-06", usage)
+
+    assert cost == Decimal("12.50")
+
+
+@pytest.mark.base
+def test_dated_suffix_on_unknown_base_still_falls_back() -> None:
+    usage = TokenUsage(input_tokens=1_000_000, output_tokens=1_000_000)
+
+    assert estimate_cost("mystery-model-20260101", usage) == Decimal("30.00")
+    assert estimate_cost("mystery-model-2026-01-01", usage) == Decimal("30.00")

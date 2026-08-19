@@ -18,13 +18,23 @@ def test_user_tables_are_registered() -> None:
 def test_behavior_embedding_contract() -> None:
     table = Base.metadata.tables["user_preferences"]
     vector_type = table.c.behavior_embedding.type
+    negative_vector_type = table.c.negative_behavior_embedding.type
 
     assert isinstance(vector_type, Vector)
     assert vector_type.dim == EMBEDDING_DIMENSIONS
+    assert isinstance(negative_vector_type, Vector)
+    assert negative_vector_type.dim == EMBEDDING_DIMENSIONS
     assert table.c.behavior_embedding.nullable
+    assert table.c.negative_behavior_embedding.nullable
     assert table.c.behavior_embedding_model.nullable
+    assert not table.c.behavior_confidence.nullable
+    assert not table.c.behavior_evidence.nullable
     assert any(
         constraint.name == "ck_user_preferences_behavior_embedding_has_model"
+        for constraint in table.constraints
+    )
+    assert any(
+        constraint.name == "ck_user_preferences_behavior_confidence_range"
         for constraint in table.constraints
     )
 

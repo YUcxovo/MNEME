@@ -11,6 +11,9 @@ interface UserPrefsDao {
     @Query("SELECT * FROM user_preferences WHERE user_id = :userId")
     fun observe(userId: String): Flow<UserPrefsEntity?>
 
+    @Query("SELECT * FROM user_preferences WHERE user_id = :userId")
+    suspend fun get(userId: String): UserPrefsEntity?
+
     @Upsert
     suspend fun upsert(preferences: UserPrefsEntity)
 

@@ -22,7 +22,7 @@ def create_lifespan(settings: Settings, database: Database, redis_client: Redis)
     """Build an application lifespan bound to validated settings."""
 
     @asynccontextmanager
-    async def lifespan(_: FastAPI) -> AsyncGenerator[None]:
+    async def lifespan(application: FastAPI) -> AsyncGenerator[None]:
         logger.info(
             "application_started",
             environment=settings.environment.value,
@@ -32,9 +32,14 @@ def create_lifespan(settings: Settings, database: Database, redis_client: Redis)
             yield
         finally:
             try:
-                await redis_client.aclose()
+                arq_pool = getattr(application.state, "arq_pool", None)
+                if arq_pool is not None:
+                    await arq_pool.aclose()
             finally:
-                await database.dispose()
+                try:
+                    await redis_client.aclose()
+                finally:
+                    await database.dispose()
             logger.info("application_stopped")
 
     return lifespan
@@ -44,10 +49,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     """Create and configure the Mneme FastAPI application."""
     resolved_settings = settings or get_settings()
     configure_logging(resolved_settings)
-    database = Database(
-        resolved_settings.database_url,
-        echo=resolved_settings.debug,
-    )
+    database = Database.from_settings(resolved_settings)
     redis_client = create_redis_client(resolved_settings)
     application = FastAPI(
         title=resolved_settings.app_name,

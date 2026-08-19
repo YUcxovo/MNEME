@@ -10,11 +10,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
-import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.AccountTree
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -33,16 +34,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mneme.app.R
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
-import com.mneme.app.ui.component.ControlledDemoNotice
+import com.mneme.app.ui.EventRecordingStatus
+import com.mneme.app.ui.component.ContentSourceNotice
 import com.mneme.app.ui.component.MnemeSectionLabel
+import com.mneme.app.ui.component.SourceMatchStatusPill
 import com.mneme.app.ui.model.PaperDetailUiModel
 import com.mneme.app.ui.theme.MnemeTheme
 
 @Composable
 fun PaperDetailScreen(
     paper: PaperDetailUiModel,
-    onAskQuestion: () -> Unit,
-    onOpenSource: (String) -> Unit,
+    actions: PaperDetailActions,
+    saveStatus: EventRecordingStatus,
+    shareStatus: EventRecordingStatus,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -54,10 +58,13 @@ fun PaperDetailScreen(
             PaperHeader(paper = paper)
         }
         item {
-            ControlledDemoNotice(disclosure = paper.disclosure)
+            ContentSourceNotice(disclosure = paper.disclosure)
         }
         item {
-            PaperSummaryCard(paper = paper)
+            PaperSummaryCard(
+                paper = paper,
+                onOpenPaper = { actions.openSource(paper.source.url) },
+            )
         }
         item {
             Row(
@@ -65,38 +72,151 @@ fun PaperDetailScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 MnemeSectionLabel(text = stringResource(R.string.paper_source_trace))
-                VerifiedPill()
+                SourceMatchStatusPill(status = paper.sourceMatchStatus)
             }
         }
         item {
             SourceCard(
                 label = paper.source.label,
                 location = paper.source.location,
-                onOpenSource = { onOpenSource(paper.source.url) },
+                onOpenSource = { actions.openSource(paper.source.url) },
             )
         }
         item {
+            PaperActions(
+                actions = actions,
+                saveStatus = saveStatus,
+                shareStatus = shareStatus,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PaperActions(
+    actions: PaperDetailActions,
+    saveStatus: EventRecordingStatus,
+    shareStatus: EventRecordingStatus,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        PaperEngagementActions(
+            onSavePaper = actions.savePaper,
+            onSharePaper = actions.sharePaper,
+            saveStatus = saveStatus,
+            shareStatus = shareStatus,
+        )
+        OutlinedButton(
+            onClick = actions.exploreGraph,
+            modifier = Modifier.fillMaxWidth().testTag("explore-graph-action"),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+            shape = MaterialTheme.shapes.small,
+        ) {
+            Icon(
+                imageVector = Icons.Default.AccountTree,
+                contentDescription = null,
+            )
+            Text(
+                text = stringResource(R.string.action_explore_graph),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        Button(
+            onClick = actions.askQuestion,
+            modifier = Modifier.fillMaxWidth().testTag("ask-question-action"),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            shape = MaterialTheme.shapes.small,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                contentDescription = null,
+            )
+            Text(
+                text = stringResource(R.string.action_ask_question),
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PaperEngagementActions(
+    onSavePaper: () -> Unit,
+    onSharePaper: () -> Unit,
+    saveStatus: EventRecordingStatus,
+    shareStatus: EventRecordingStatus,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             Button(
-                onClick = onAskQuestion,
-                modifier = Modifier.fillMaxWidth().testTag("ask-question-action"),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
+                onClick = onSavePaper,
+                enabled =
+                    saveStatus != EventRecordingStatus.CHECKING &&
+                        saveStatus != EventRecordingStatus.RECORDING &&
+                        saveStatus != EventRecordingStatus.RECORDED,
+                modifier = Modifier.weight(1f).testTag("save-paper-action"),
                 shape = MaterialTheme.shapes.small,
             ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.MenuBook,
-                    contentDescription = null,
-                )
+                Icon(imageVector = Icons.Default.Bookmark, contentDescription = null)
                 Text(
-                    text = stringResource(R.string.action_ask_seeded_question),
+                    text = stringResource(saveStatus.saveLabel()),
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+            OutlinedButton(
+                onClick = onSharePaper,
+                enabled = shareStatus != EventRecordingStatus.RECORDING,
+                modifier = Modifier.weight(1f).testTag("share-paper-action"),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                shape = MaterialTheme.shapes.small,
+            ) {
+                Icon(imageVector = Icons.Default.Share, contentDescription = null)
+                Text(
+                    text = stringResource(R.string.action_share_paper),
                     modifier = Modifier.padding(start = 8.dp),
                 )
             }
         }
+        saveStatus.feedbackRes()?.let { feedback ->
+            EngagementFeedback(
+                text = stringResource(feedback),
+                testTag = "save-paper-feedback",
+                isFailure = saveStatus.feedbackIsFailure(),
+            )
+        }
+        shareStatus.feedbackRes(isShare = true)?.let { feedback ->
+            EngagementFeedback(
+                text = stringResource(feedback),
+                testTag = "share-paper-feedback",
+                isFailure = shareStatus.feedbackIsFailure(isShare = true),
+            )
+        }
     }
+}
+
+@Composable
+private fun EngagementFeedback(
+    text: String,
+    testTag: String,
+    isFailure: Boolean,
+) {
+    Text(
+        text = text,
+        modifier = Modifier.testTag(testTag),
+        style = MaterialTheme.typography.bodySmall,
+        color =
+            if (isFailure) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+    )
 }
 
 @Composable
@@ -126,6 +246,7 @@ private fun PaperHeader(paper: PaperDetailUiModel) {
 @Composable
 private fun PaperSummaryCard(
     paper: PaperDetailUiModel,
+    onOpenPaper: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -150,32 +271,29 @@ private fun PaperSummaryCard(
                 body = paper.paper.summary,
                 testTag = "basic-summary",
             )
-            SummaryDivider()
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = stringResource(R.string.paper_key_claims),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+            if (paper.summaryClaims.isNotEmpty()) {
+                SummaryDivider()
+                SummaryClaimList(
+                    paperId = paper.paper.id,
+                    claims = paper.summaryClaims,
+                    onOpenPaper = onOpenPaper,
                 )
-                paper.keyClaims.forEach { claim ->
-                    Text(
-                        text = "\u2022  $claim",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
             }
-            SummaryDivider()
-            PaperSection(
-                title = stringResource(R.string.paper_methodology),
-                body = paper.methodology,
-            )
-            SummaryDivider()
-            PaperSection(
-                title = stringResource(R.string.paper_limitation),
-                body = paper.limitation,
-                muted = true,
-            )
+            paper.methodology?.takeIf(String::isNotBlank)?.let { methodology ->
+                SummaryDivider()
+                PaperSection(
+                    title = stringResource(R.string.paper_methodology),
+                    body = methodology,
+                )
+            }
+            paper.limitation?.takeIf(String::isNotBlank)?.let { limitation ->
+                SummaryDivider()
+                PaperSection(
+                    title = stringResource(R.string.paper_limitation),
+                    body = limitation,
+                    muted = true,
+                )
+            }
         }
     }
 }
@@ -213,31 +331,6 @@ private fun PaperSection(
                     MaterialTheme.colorScheme.onSurface
                 },
         )
-    }
-}
-
-@Composable
-private fun VerifiedPill(modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        color = MaterialTheme.colorScheme.tertiary,
-        contentColor = MaterialTheme.colorScheme.onTertiary,
-        shape = MaterialTheme.shapes.extraLarge,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-            horizontalArrangement = Arrangement.spacedBy(5.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-            )
-            Text(
-                text = stringResource(R.string.paper_source_verified),
-                style = MaterialTheme.typography.labelMedium,
-            )
-        }
     }
 }
 
@@ -289,8 +382,16 @@ private fun PaperDetailScreenPreview() {
         SeededSkeletalContentRepository.paper(SeededSkeletalContentRepository.PAPER_ID)?.let {
             PaperDetailScreen(
                 paper = it,
-                onAskQuestion = {},
-                onOpenSource = {},
+                actions =
+                    PaperDetailActions(
+                        askQuestion = {},
+                        exploreGraph = {},
+                        savePaper = {},
+                        sharePaper = {},
+                        openSource = {},
+                    ),
+                saveStatus = EventRecordingStatus.IDLE,
+                shareStatus = EventRecordingStatus.IDLE,
             )
         }
     }

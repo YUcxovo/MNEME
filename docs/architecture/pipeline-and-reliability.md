@@ -33,7 +33,7 @@ Document artifacts use deterministic UUID-only paths:
 
 Writes use a temporary file, `fsync`, and atomic replacement. `paper_versions` records download SHA-256/size/time and parse SHA-256/parser-version/quality/time. The parsed JSON carries a schema version, exact paper/revision IDs, source checksum, page count, ordered sections, page ranges, quality tier, fallback reason, and UTC timestamp.
 
-The downloader accepts only bounded PDF responses with a valid signature and retries transient transport, `429`, and `5xx` failures. The parser combines PyMuPDF text extraction with pdfplumber layout hints. Its quality tiers are:
+The downloader accepts only bounded PDF responses with a valid signature and retries transient transport, `429`, and `5xx` failures. The parser combines PyMuPDF text blocks with pdfplumber layout hints. It reconstructs block text from positioned words, orders two-column pages by logical column flow, retains block boundaries, removes database-unsafe control characters, and detects numbered, Roman-numeral, and lettered section headings. Chunking repeats the control-character check so sidecars produced by an older parser remain safe to persist. Its quality tiers are:
 
 - `structured`: useful extracted text with credible section structure.
 - `text_only`: useful text with degraded or incomplete structure.
@@ -47,7 +47,7 @@ Every `pipeline_jobs.idempotency_key` is a SHA-256 of canonical JSON containing 
 
 - metadata: arXiv category and UTC run date;
 - download: paper/revision IDs plus arXiv ID and revision number;
-- parse: paper/revision IDs plus source PDF checksum;
+- parse: paper/revision IDs plus source PDF checksum and parser version;
 - summarize and chunk: paper/revision IDs plus parsed checksum and parser version;
 - embed: the parsed-artifact identity plus embedding model;
 - weekly digest: user ID, UTC Monday, and generator version.
@@ -55,6 +55,17 @@ Every `pipeline_jobs.idempotency_key` is a SHA-256 of canonical JSON containing 
 The database uniqueness constraint makes concurrent `get_or_create` calls converge on one durable job. An existing key is rejected if its stage, paper/revision scope, or pipeline version conflicts with the request.
 
 Public states are `queued`, `running`, `succeeded`, and `failed`. Attempts, safe error code, internal last error, dispatch/start/finish timestamps, and pipeline version are persisted. The public API returns the safe code and timestamps but never `last_error`.
+
+The Android behavioral-event queue also treats its UUID as a durable idempotency boundary.
+Ordinary interactions receive a UUID when they enter Room. An external paper link receives
+one UUID when Android accepts the intent, carries it through saved Activity and navigation
+state, and awaits the Room insertion before acknowledging the open. Replaying that identity
+uses insert-if-absent semantics and verifies that an existing row has the same event type,
+paper identity, and duration. A cancelled acknowledgement or transient local write failure
+therefore retries the same identity without creating a second `paper_opened` event. Controlled
+fixture builds persist interactions in a separate fixture database and do not schedule an
+upload. A later credential-enabled build uses only the live database, so controlled paper
+identifiers cannot enter or block the production event queue.
 
 ## Dispatch and Recovery
 
@@ -71,6 +82,17 @@ Collection identities are deliberately hashed and do not contain reconstructable
 `python -m mneme.tasks.assemble_weekly` schedules one Research Briefing for the configured demo user and current UTC Monday. `--week-start` accepts an explicit Monday. The candidate query considers the configured recent window before the exclusive next-Monday cutoff, includes only the latest `ready` or `partial` revision with a current summary, and averages current-revision embeddings for scoring. An empty candidate set is a successful immutable digest.
 
 Both commands emit sorted JSON and return nonzero on validation, database, or queue failure. Run the daily command once per day and run the weekly command once per day as an idempotent recovery policy, even though only one weekly identity is created.
+
+Seed onboarding adds one bounded synchronous preparation path for the first reading
+session. It resolves five arXiv citation neighbors for the supplied seed, persists the real
+provider edges, and dispatches the seed plus those five papers through the existing
+revision-scoped jobs. The endpoint waits for usable terminal paper states before returning
+the five-entry briefing. arXiv metadata is requested in bounded groups, and a failed group is
+retried as serialized single-paper requests without discarding the already discovered
+citation identities. Exhausted metadata recovery returns a retryable upstream error rather
+than a successful briefing without the prepared graph. Semantic Scholar unavailability or
+an insufficient citation neighborhood selects the existing same-category fallback; it does
+not create inferred citation edges.
 
 ## Failure Semantics
 
@@ -93,8 +115,8 @@ The MVP UI says "Sources matched", never "Verified answer". If evidence is insuf
 
 - M1: freeze metric definitions and evaluation fixture format.
 - M2: create 5 manually checked QA cases while validating parsing/chunking.
-- M3: expand to 10-20 cases and run retrieval/citation regression tests.
-- M4: report final results and tune prompts/parameters.
+- M3: keep the existing seed fixtures as deterministic retrieval/citation regressions while completing the server-side integration path.
+- M4: expand to 10-20 manually checked cases, report final results, and tune prompts/parameters.
 
 Required metrics are parse success rate, retrieval recall@k, citation source-match rate, human answer-helpfulness score, digest relevance score, latency, and per-paper cost. The deterministic end-to-end test proves orchestration and persistence without making external arXiv, Redis-worker, or model calls; it is not a substitute for the manual quality evaluation.
 
@@ -110,4 +132,8 @@ Demo mode is explicit configuration, not hidden endpoint behavior. It uses pre-s
 
 ## Observability
 
-No custom monitoring dashboard is in MVP scope. Use structured logs, persisted job status, `GET /jobs/{job_id}`, health endpoints, CLI JSON, and SQL reports for fetch volume, parse quality, dispatch attempts, ARQ failures, LLM usage/cost, and digest generation. Production alerts cover service uptime, disk/memory, document-storage capacity, and daily ingestion failure.
+No custom monitoring dashboard is in MVP scope. `GET /health` reports process liveness without touching infrastructure, while `GET /health/ready` concurrently checks PostgreSQL and Redis under a bounded timeout. Use these probes with structured logs, persisted job status, `GET /jobs/{job_id}`, CLI JSON, and SQL reports for fetch volume, parse quality, dispatch attempts, durable worker failures, LLM usage/cost, and digest generation. Redis enqueue rejection is visible in structured logs and as currently undispatched work; it is not persisted as a historical ARQ-failure counter. Production alerts cover service uptime, disk/memory, document-storage capacity, and daily ingestion failure.
+
+`python -m mneme.cli.report_platform` is the stable SQL-backed operational report. Its `platform-operations-v1` schema pre-fills every job stage/status, paper status/parse-quality, and digest-type bucket so monitoring consumers do not infer missing categories from absent keys. Job creation uses `created_at`, durable failures use `finished_at`, papers use `created_at`, and digests use `generated_at`; recent failures are bounded and omit raw error text and idempotency keys.
+
+Every backend process uses the same explicit SQLAlchemy pool size, overflow, checkout timeout, recycle interval, and pre-ping policy. The configured `pool_size + max_overflow` is a per-process ceiling rather than a deployment-wide limit; operators must budget PostgreSQL connections across API and worker process counts.

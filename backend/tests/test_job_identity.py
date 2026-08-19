@@ -104,7 +104,10 @@ def test_named_revision_stage_keys_include_their_artifact_inputs() -> None:
         version_number=2,
     )
     parse = parse_idempotency_key(
-        paper_id=PAPER_ID, paper_version_id=VERSION_ID, source_checksum="a" * 64
+        paper_id=PAPER_ID,
+        paper_version_id=VERSION_ID,
+        source_checksum="a" * 64,
+        parser_version="parser-v1",
     )
     summary = summarize_idempotency_key(
         paper_id=PAPER_ID,
@@ -153,6 +156,11 @@ def test_weekly_digest_key_is_scoped_by_user_period_and_generator() -> None:
         week_start=monday,
         generator_version="recommender-v1",
     )
+    assert original != weekly_digest_idempotency_key(
+        user_id=PAPER_ID,
+        week_start=monday,
+        generator_version="recommender-v2",
+    )
     with pytest.raises(ValueError, match="Monday"):
         weekly_digest_idempotency_key(
             user_id=PAPER_ID,
@@ -168,7 +176,25 @@ def test_named_artifact_keys_reject_invalid_checksums(checksum: str) -> None:
             paper_id=PAPER_ID,
             paper_version_id=VERSION_ID,
             source_checksum=checksum,
+            parser_version="parser-v1",
         )
+
+
+def test_parse_identity_changes_with_parser_version() -> None:
+    first = parse_idempotency_key(
+        paper_id=PAPER_ID,
+        paper_version_id=VERSION_ID,
+        source_checksum="a" * 64,
+        parser_version="parser-v1",
+    )
+    upgraded = parse_idempotency_key(
+        paper_id=PAPER_ID,
+        paper_version_id=VERSION_ID,
+        source_checksum="a" * 64,
+        parser_version="parser-v2",
+    )
+
+    assert first != upgraded
 
 
 @pytest.mark.parametrize(

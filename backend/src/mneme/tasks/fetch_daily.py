@@ -74,7 +74,7 @@ async def run(
         max_results=resolved_max_results,
     )
 
-    database = Database(resolved_settings.database_url, echo=resolved_settings.debug)
+    database = Database.from_settings(resolved_settings)
     queue = None
     try:
         queue = await create_pool(

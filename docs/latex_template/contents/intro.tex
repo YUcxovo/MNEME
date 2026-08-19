@@ -1,0 +1,118 @@
+﻿% !TEX root = ../main.tex
+
+\chapter{Introduction}
+
+\section{Continuous Literature Work}
+
+Researchers rarely encounter a paper only once.
+A paper may first appear in a recommendation feed, later receive a revised preprint, become relevant to a new project, and finally serve as evidence in a technical decision.
+During this process, the reader must preserve at least three kinds of continuity.
+First, document continuity identifies which paper and revision supplied a statement.
+Second, evidential continuity connects a generated explanation to the text that supports it.
+Third, interest continuity records why a paper was selected and how later behavior should---or should not---change the system's view of the user's research interests.
+
+Retrieval-augmented generation (RAG) provides a useful foundation because it couples a generator to retrieved non-parametric memory~\cite{lewis2020rag}.
+Nevertheless, retrieval does not by itself prove that an answer is supported by the retrieved text.
+Citation-oriented evaluation therefore distinguishes answer quality from citation correctness and completeness~\cite{gao2023alce}.
+The distinction becomes more important for long scientific documents: language models can use evidence unevenly depending on where it appears in a long context~\cite{liu2024lost}, and chunk-based retrieval can trade global document structure for local factual detail~\cite{zhao2024longrag}.
+
+Personalization introduces a second source of uncertainty.
+Opening, saving, skipping, or questioning a paper can be useful feedback, but no single event is a complete statement of research intent.
+Recent work on long-term recommendation describes silent engagement and disengagement as unpaired and potentially ambiguous signals~\cite{zhang2025unpaired}.
+Other work shows that editable natural-language user profiles can make recommendations more scrutable~\cite{ramos2024scrutable}.
+For MNEME, these observations imply that adaptive interest memory must be inspectable and correctable rather than represented as an invisible, authoritative embedding.
+
+The central thesis is consequently narrower than the title's term ``research agent'' may suggest.
+MNEME is not claimed to conduct autonomous science.
+It is designed as a mobile literature loop whose actions are bounded by versioned paper evidence, declared behavioral signals, and visible user controls.
+This framing turns a feature-rich application plan into a falsifiable research program.
+
+\section{From Capabilities to Technical Challenges}
+
+The project materials describe five product stages: reading, remembering, planning, engaging, and connecting.
+Those stages communicate the user journey, but they do not identify the conditions under which the journey is technically trustworthy.
+This thesis reformulates the product stages as four technical challenges.
+
+\subsection{TC1: Revision-Correct Paper Representation}
+
+A paper identifier is not sufficient when the underlying document can change.
+If a new revision is fetched while summaries, chunks, embeddings, or citations remain tied to an older revision, the interface may display internally inconsistent evidence.
+TC1 therefore requires a lineage from logical paper identity to revision identity and from each revision to every derived artifact.
+Updates must either preserve a justified artifact or invalidate and regenerate it.
+
+\subsection{TC2: Evidence-Bounded Assistance}
+
+A generated answer can contain a valid paper identifier and still lack support for one or more claims.
+Scientific claim verification research makes the evidence unit explicit by pairing atomic claims with rationale spans~\cite{wadden2020scifact}.
+Fine-grained attribution work likewise argues that document-level identifiers make it difficult for users to locate exact support~\cite{huang2024grounded}.
+TC2 therefore separates four checks: identifier validity, evidence availability, claim--evidence consistency, and evidence coverage.
+
+\subsection{TC3: Adaptive and Inspectable Interest Memory}
+
+Research interests have multiple time scales.
+A paper opened during a short course assignment may not represent a stable research direction, whereas repeated saving, questioning, and explicit topic editing may provide stronger evidence.
+TC3 must combine explicit and implicit signals while preserving their different meanings.
+The system must also expose why an interest changed and permit correction or deletion.
+
+\subsection{TC4: Bounded Mobile Integration}
+
+Mobile integration creates constraints that are not visible in a server-only benchmark.
+Network access may be intermittent, background execution is restricted, notifications can interrupt the user, and a small screen can hide evidence behind navigation.
+TC4 asks whether TC1--TC3 can be presented as a coherent workflow while making latency, failure, privacy, and uncertainty visible.
+
+\section{Research Questions}
+
+The challenges lead to four research questions:
+
+\begin{description}[leftmargin=2.3cm,style=nextline]
+  \item[RQ1] How can a mobile-oriented literature system preserve revision-correct paper identity and section-level provenance during ingestion?
+  \item[RQ2] How can retrieval and generation be constrained so that scientific answers remain inspectable against retrieved paper evidence?
+  \item[RQ3] How can explicit interests and bounded implicit behavior update a user model without hiding or overstating what the system has learned?
+  \item[RQ4] Can these mechanisms be integrated into a usable mobile research loop within stated latency, reliability, and privacy boundaries?
+\end{description}
+
+RQ2 and RQ3 are the primary questions.
+RQ1 supplies the evidence substrate on which RQ2 depends, while RQ4 tests whether the three mechanisms survive end-to-end integration.
+
+\section{Contributions and Evaluation Contract}
+
+Table~\ref{tab:traceability} states the paper's controlling traceability contract.
+At this draft checkpoint, the word ``contribution'' refers to a specified mechanism and evaluation obligation.
+It does not imply that the corresponding effectiveness result has already been measured.
+
+\begin{table}[htbp]
+\centering
+\caption{Traceability from technical challenge to research question, contribution, and evaluation. The status column reflects the evidence supplied for this draft.}
+\label{tab:traceability}
+\begin{tabular}{P{1.0cm}P{1.0cm}P{4.9cm}P{4.0cm}P{2.4cm}}
+\toprule
+TC & RQ & Contribution & Evaluation & Current status \\
+\midrule
+TC1 & RQ1 & C1: revision-aware identity, lineage, and derived-artifact invalidation & E1: identity, update, parsing, and provenance fixtures & \planned \\
+TC2 & RQ2 & C2: section-aware retrieval and claim-level source verification & E2: retrieval, answer, citation, abstention, and failure analysis & \pending \\
+TC3 & RQ3 & C3: explicit-plus-implicit multi-timescale interest memory with correction & E3: temporal recommendation, ablation, diversity, and correction tests & \pending \\
+TC4 & RQ4 & C4: mobile integration with visible evidence, failure, and control & E4: device/system measurements and task-level usability study & \observed{}; \limited \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The first contribution is a provenance contract: each derived artifact is associated with a logical paper, a specific revision, a transformation configuration, and a content hash.
+The second contribution is an evidence-bounded assistance contract: answers are decomposed into claims, claims point to source spans, and verification distinguishes different failure types.
+The third contribution is a bounded adaptation contract: behavioral events have declared semantics and weights, multiple time scales remain separable, and users can inspect or correct the resulting state.
+The fourth contribution is an integration and evaluation framework that connects these mechanisms to a mobile research workflow.
+
+\section{Scope and Claim Boundary}
+
+The available materials include a controlling thesis outline, acceptance criteria, an architecture design, a story map, an interactive HTML prototype, user-interface and user-experience (UI/UX) mockups, and a final usability presentation.
+They do not include a product source repository, an immutable source revision, E1--E3 result artifacts, or participant-level E4 records.
+Accordingly, Chapters 2 and 3 describe the design and prototype using \planned{} or \observed{} language.
+Chapter 4 specifies complete evaluations and reports only the limited observations supported by the presentation.
+Chapter 5 does not claim that the pending experiments succeeded.
+
+\section{Thesis Structure}
+
+Chapter 2 translates the four challenges into functional, non-functional, ethical, and interaction requirements.
+Chapter 3 defines the four design contributions and their cross-cutting invariants.
+Chapter 4 separates evidence status from evaluation design and specifies E1--E4.
+Chapter 5 answers each research question at the strength permitted by the current evidence.
+

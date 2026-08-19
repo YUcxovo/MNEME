@@ -1,0 +1,258 @@
+{
+  "environment": {
+    "android_release": "14",
+    "android_sdk": 34,
+    "available_processors": 4,
+    "build_fingerprint": "google/sdk_gphone64_x86_64/emu64xa:14/UE1A.230829.050/12077443:userdebug/dev-keys",
+    "device_manufacturer": "Google",
+    "device_model": "sdk_gphone64_x86_64",
+    "device_product": "sdk_gphone64_x86_64",
+    "is_emulator": true,
+    "max_heap_bytes": 201326592,
+    "schema_version": "live-core-android-environment-v1",
+    "screen_density_dpi": 420,
+    "screen_height_pixels": 2209,
+    "screen_width_pixels": 1080
+  },
+  "method": {
+    "latency_unit": "milliseconds",
+    "p50": "sample median",
+    "p95": "nearest-rank percentile",
+    "repository_timing_interpretation": "descriptive repeated path; later repetitions may reuse durable artifacts and provider caches",
+    "ui_timing_interpretation": "single acceptance trace only"
+  },
+  "multi_seed_matrix": [
+    {
+      "graph_duration_ms": 12.671,
+      "graph_edges": 5,
+      "graph_nodes": 6,
+      "graph_status": "READY",
+      "neighbor_arxiv_id": "2010.11929",
+      "open_neighbor_duration_ms": 23.407,
+      "paper_count": 5,
+      "poll_count": 0,
+      "seed_arxiv_id": "2010.11929",
+      "seed_duration_ms": 48021.956,
+      "success": true,
+      "total_duration_ms": 48058.055
+    },
+    {
+      "graph_duration_ms": 10.656,
+      "graph_edges": 6,
+      "graph_nodes": 7,
+      "graph_status": "READY",
+      "neighbor_arxiv_id": "2104.08691",
+      "open_neighbor_duration_ms": 26.281,
+      "paper_count": 5,
+      "poll_count": 0,
+      "seed_arxiv_id": "2106.09685",
+      "seed_duration_ms": 46560.569,
+      "success": true,
+      "total_duration_ms": 46597.527
+    }
+  ],
+  "observed_outputs": {
+    "graph_edge_counts": [
+      5
+    ],
+    "graph_node_counts": [
+      6
+    ],
+    "graph_statuses": [
+      "READY"
+    ],
+    "qa_source_counts": [
+      4
+    ],
+    "qa_source_match_statuses": [
+      "PARTIAL"
+    ],
+    "selected_arxiv_ids": [
+      "1703.03130",
+      "1705.04304"
+    ]
+  },
+  "results": [
+    {
+      "max_ms": 21.375,
+      "min_ms": 2.845,
+      "n": 5,
+      "p50_ms": 3.404,
+      "p95_ms": 21.375,
+      "scenario": "cached_briefing_restore",
+      "success_count": 5,
+      "success_rate": 1.0,
+      "track": "live_repository"
+    },
+    {
+      "max_ms": 56.799,
+      "min_ms": 11.407,
+      "n": 5,
+      "p50_ms": 34.245,
+      "p95_ms": 56.799,
+      "scenario": "citation_graph",
+      "success_count": 5,
+      "success_rate": 1.0,
+      "track": "live_repository"
+    },
+    {
+      "max_ms": 80.005,
+      "min_ms": 39.108,
+      "n": 5,
+      "p50_ms": 58.611,
+      "p95_ms": 80.005,
+      "scenario": "free_question_and_sources",
+      "success_count": 5,
+      "success_rate": 1.0,
+      "track": "live_repository"
+    },
+    {
+      "max_ms": 108.949,
+      "min_ms": 37.414,
+      "n": 5,
+      "p50_ms": 93.136,
+      "p95_ms": 108.949,
+      "scenario": "live_five_paper_briefing",
+      "success_count": 5,
+      "success_rate": 1.0,
+      "track": "live_repository"
+    },
+    {
+      "max_ms": 145.716,
+      "min_ms": 39.857,
+      "n": 5,
+      "p50_ms": 61.787,
+      "p95_ms": 145.716,
+      "scenario": "open_selected_graph_paper",
+      "success_count": 5,
+      "success_rate": 1.0,
+      "track": "live_repository"
+    },
+    {
+      "max_ms": 67.582,
+      "min_ms": 24.926,
+      "n": 5,
+      "p50_ms": 42.009,
+      "p95_ms": 67.582,
+      "scenario": "paper_and_summary",
+      "success_count": 5,
+      "success_rate": 1.0,
+      "track": "live_repository"
+    },
+    {
+      "max_ms": 606.304,
+      "min_ms": 606.304,
+      "n": 1,
+      "p50_ms": 606.304,
+      "p95_ms": 606.304,
+      "scenario": "citation_graph",
+      "success_count": 1,
+      "success_rate": 1.0,
+      "track": "live_ui"
+    },
+    {
+      "max_ms": 887.077,
+      "min_ms": 887.077,
+      "n": 1,
+      "p50_ms": 887.077,
+      "p95_ms": 887.077,
+      "scenario": "free_question_and_sources",
+      "success_count": 1,
+      "success_rate": 1.0,
+      "track": "live_ui"
+    },
+    {
+      "max_ms": 187.935,
+      "min_ms": 187.935,
+      "n": 1,
+      "p50_ms": 187.935,
+      "p95_ms": 187.935,
+      "scenario": "open_paper_source",
+      "success_count": 1,
+      "success_rate": 1.0,
+      "track": "live_ui"
+    },
+    {
+      "max_ms": 408.783,
+      "min_ms": 408.783,
+      "n": 1,
+      "p50_ms": 408.783,
+      "p95_ms": 408.783,
+      "scenario": "open_qa_source",
+      "success_count": 1,
+      "success_rate": 1.0,
+      "track": "live_ui"
+    },
+    {
+      "max_ms": 124.338,
+      "min_ms": 124.338,
+      "n": 1,
+      "p50_ms": 124.338,
+      "p95_ms": 124.338,
+      "scenario": "open_selected_graph_paper",
+      "success_count": 1,
+      "success_rate": 1.0,
+      "track": "live_ui"
+    },
+    {
+      "max_ms": 397.702,
+      "min_ms": 397.702,
+      "n": 1,
+      "p50_ms": 397.702,
+      "p95_ms": 397.702,
+      "scenario": "paper_and_summary",
+      "success_count": 1,
+      "success_rate": 1.0,
+      "track": "live_ui"
+    },
+    {
+      "max_ms": 4665.729,
+      "min_ms": 4665.729,
+      "n": 1,
+      "p50_ms": 4665.729,
+      "p95_ms": 4665.729,
+      "scenario": "seed_to_five_paper_briefing",
+      "success_count": 1,
+      "success_rate": 1.0,
+      "track": "live_ui"
+    },
+    {
+      "max_ms": 823.502,
+      "min_ms": 823.502,
+      "n": 1,
+      "p50_ms": 823.502,
+      "p95_ms": 823.502,
+      "scenario": "select_graph_neighbor",
+      "success_count": 1,
+      "success_rate": 1.0,
+      "track": "live_ui"
+    }
+  ],
+  "run_manifest": {
+    "additional_seed_arxiv_ids": [
+      "2010.11929",
+      "2106.09685"
+    ],
+    "backend_ai_configuration": {
+      "embedding_backend": "fastembed",
+      "embedding_model": "BAAI/bge-small-en-v1.5+fastembed-pad1536-v1",
+      "qa_model": "deepseek-v4-flash",
+      "summary_model": "deepseek-v4-flash"
+    },
+    "branch": "feat/automatic-citation-graph-preparation",
+    "fixed_free_form_question": "What problem does this paper address, and what method does it propose?",
+    "fixed_seed_arxiv_id": "1706.03762",
+    "interpretation": "Acceptance and repeated-path evidence; timings are descriptive and mix cold preparation with durable/cache reuse.",
+    "live_backend_url": "http://10.0.2.2:8000/v1/",
+    "live_token_retained": false,
+    "measured_at_utc": "2026-07-27T15:42:53Z",
+    "minimum_graph_edges": 1,
+    "minimum_graph_nodes": 2,
+    "repository_iterations": 5,
+    "repository_revision": "c4b11256bf21f1511d54fad7d19bbcde244aca4c",
+    "schema_version": "live-core-run-manifest-v1",
+    "test_apk_embeds_live_token": false,
+    "ui_iterations": 1
+  },
+  "schema_version": "live-core-android-summary-v1"
+}

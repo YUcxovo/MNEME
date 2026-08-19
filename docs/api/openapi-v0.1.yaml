@@ -19,6 +19,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Health"
+  /health/ready:
+    get:
+      security: []
+      operationId: getReadiness
+      responses:
+        "200":
+          description: Required dependencies are available
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Readiness"
+        "503":
+          $ref: "#/components/responses/Error"
   /papers:
     get:
       operationId: listPapers
@@ -95,6 +108,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Preferences"
+        default:
+          $ref: "#/components/responses/Error"
+  /users/me/preferences/refresh:
+    post:
+      operationId: refreshPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreferenceUpdate"
+      responses:
+        "200":
+          description: Updated preferences and refreshed briefing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreferenceRefreshResult"
+        default:
+          $ref: "#/components/responses/Error"
+  /onboarding/seed:
+    post:
+      operationId: initializeFromSeed
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SeedInitializationRequest"
+      responses:
+        "200":
+          description: Completed five-paper seed briefing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedInitializationResult"
         default:
           $ref: "#/components/responses/Error"
   /events:
@@ -197,6 +246,34 @@ paths:
                 $ref: "#/components/schemas/Graph"
         default:
           $ref: "#/components/responses/Error"
+  /graph/{paper_id}/prepare:
+    post:
+      operationId: preparePaperGraph
+      parameters:
+        - $ref: "#/components/parameters/PaperId"
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 2
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: Prepared bounded citation graph
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Graph"
+        default:
+          $ref: "#/components/responses/Error"
   /jobs/{job_id}:
     get:
       operationId: getJob
@@ -259,6 +336,25 @@ components:
         status:
           type: string
           enum: [ok, degraded]
+    Readiness:
+      type: object
+      required: [status, dependencies]
+      properties:
+        status:
+          type: string
+          enum: [ready]
+        dependencies:
+          $ref: "#/components/schemas/ReadinessDependencies"
+    ReadinessDependencies:
+      type: object
+      required: [postgresql, redis]
+      properties:
+        postgresql:
+          type: string
+          enum: [ready, unavailable]
+        redis:
+          type: string
+          enum: [ready, unavailable]
     Paper:
       type: object
       required: [id, arxiv_id, title, authors, abstract, primary_category, categories, pdf_url, processing_status, published_at, updated_at]
@@ -293,7 +389,27 @@ components:
         key_claims: {type: array, items: {type: string}}
         methodology: {type: string}
         limitations: {type: string}
-        source_match_status: {type: string, enum: [matched, partial, not_checked]}
+        source_match_status: {type: string, enum: [matched, partial, not_checked, unmatched]}
+        claims: {type: array, items: {$ref: "#/components/schemas/SourcedClaim"}}
+    SourcedClaim:
+      type: object
+      required: [text, matched]
+      properties:
+        text: {type: string}
+        matched: {type: boolean}
+        source:
+          $ref: "#/components/schemas/ClaimProvenance"
+          nullable: true
+    ClaimProvenance:
+      type: object
+      required: [chunk_id, chunk_index, excerpt]
+      properties:
+        chunk_id: {type: string, format: uuid}
+        chunk_index: {type: integer, minimum: 0}
+        section_title: {type: string, nullable: true}
+        page_start: {type: integer, nullable: true}
+        page_end: {type: integer, nullable: true}
+        excerpt: {type: string, maxLength: 300}
     Preferences:
       type: object
       required: [topics, followed_authors, model_version]
@@ -309,6 +425,26 @@ components:
       properties:
         topics: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 100}}
         followed_authors: {type: array, maxItems: 100, uniqueItems: true, items: {type: string, minLength: 1, maxLength: 200}}
+    PreferenceRefreshResult:
+      type: object
+      required: [preferences, digest]
+      properties:
+        preferences: {$ref: "#/components/schemas/Preferences"}
+        digest: {$ref: "#/components/schemas/Digest"}
+    SeedInitializationRequest:
+      type: object
+      required: [arxiv_reference]
+      properties:
+        arxiv_reference: {type: string, minLength: 1, maxLength: 300}
+    SeedInitializationResult:
+      type: object
+      required: [seed_arxiv_id, category, paper_count, preferences, digest]
+      properties:
+        seed_arxiv_id: {type: string}
+        category: {type: string}
+        paper_count: {type: integer}
+        preferences: {$ref: "#/components/schemas/Preferences"}
+        digest: {$ref: "#/components/schemas/Digest"}
     UserEvent:
       type: object
       required: [event_id, event_type, occurred_at]
@@ -319,7 +455,7 @@ components:
           enum: [paper_impression, paper_opened, paper_saved, paper_skipped, paper_shared, question_asked, digest_dismissed]
         paper_id: {type: string, format: uuid, nullable: true}
         occurred_at: {type: string, format: date-time}
-        duration_ms: {type: integer, minimum: 0, nullable: true}
+        duration_ms: {type: integer, minimum: 0, maximum: 2147483647, nullable: true}
         context: {type: object, additionalProperties: true}
     EventIngestionResult:
       type: object
@@ -379,7 +515,7 @@ components:
       properties:
         id: {type: string, format: uuid}
         title: {type: string}
-        category: {type: string}
+        category: {type: string, nullable: true}
         cluster_id: {type: string, nullable: true}
         rank_score: {type: number, nullable: true}
     GraphEdge:

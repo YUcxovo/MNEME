@@ -1,41 +1,280 @@
 # Mneme Android
 
-The Android client uses Kotlin, Jetpack Compose, and Material 3.
+The Android client uses Kotlin, Jetpack Compose, Material 3, MVVM, Retrofit/OkHttp,
+kotlinx.serialization, Room, DataStore, and WorkManager.
 
 ## Requirements
 
 - JDK 17
-- Android SDK 35
+- Android SDK 35 or newer
+- A running Mneme backend for the live skeletal path
 
-## Build
+When `ANDROID_HOME` is not configured, create the ignored `local.properties` file with
+your Android SDK path, for example `sdk.dir=/home/user/Android/Sdk`.
+
+## Build and checks
 
 ```bash
 ./gradlew assembleDebug
 ./gradlew test
 ./gradlew ktlintCheck detekt lintDebug
+./gradlew connectedDebugAndroidTest -PMNEME_ALLOW_CONTROLLED_FIXTURE=true
 ```
 
-Copy `local.properties.example` to `local.properties` and set your local Android SDK path when `ANDROID_HOME` is not configured.
+## One-command local MVP rehearsal
 
-## Skeletal product demo
+Run the following setup once from the repository root:
 
-The debug app currently provides one deterministic end-to-end path:
+```bash
+cd backend
+uv sync --locked --dev --extra local-embeddings
+```
 
-1. Open the daily briefing.
-2. Select the seeded paper.
-3. Review its structured summary and source.
-4. Open the paper Q&A view.
-5. Follow the cited source link.
+On a Linux development host, PostgreSQL, Redis, JDK 17, the Android SDK, and an Android
+Virtual Device must already be installed. Store the DeepSeek key in the ignored
+`backend/.env.local` file; the Semantic Scholar key is optional because the backend can use
+rate-limited public access:
 
-The content comes from `SeededSkeletalContentRepository` and is clearly labelled in the UI as controlled demo data. It does not make a live model call. Keeping the data behind `SkeletalContentRepository` lets a later network-backed implementation replace the seed data without changing the screens or navigation flow.
+```dotenv
+MNEME_DEEPSEEK_API_KEY=<deepseek-key>
+MNEME_SEMANTIC_SCHOLAR_API_KEY=<optional-semantic-scholar-key>
+```
 
-The presentation follows the team UI/UX prototype: deep navy surfaces, warm gold actions, serif research headings, compact source cards, and cited Q&A bubbles. Prototype-only routes such as Search and Graph remain hidden until their behavior is implemented.
+With the default local database URL, the current Linux user must have a matching PostgreSQL
+role with `CREATEDB`; the script creates `mneme_mvp_current` when it is absent. For another
+database, set `MNEME_DATABASE_URL` to an existing database and follow the role setup in the
+backend README. The reset refuses a production environment and a non-local database. A
+remote disposable demo database requires the explicit
+`MNEME_ALLOW_REMOTE_DEMO_RESET=true` safety acknowledgement.
 
-## Local platform status
+Then start a clean, live local demo with one command:
 
-- Room schema version 3 stores papers, digests, preferences, and cache-refresh metadata; explicit 1 -> 2 -> 3 migrations and exported schemas are committed.
-- `OfflineCacheRepository` retains recent briefing content for 14 days and opened papers for 30 days, and records the last successful refresh time.
-- DataStore persists explicit local interests/settings. `DigestSyncScheduler` configures unique constrained periodic work, but `DigestSyncWorker` is still a no-op until the network repository exists.
-- `DigestNotifier` and the notification channel are implemented, but Android 13+ permission-request UX, API-driven refresh, deep-link routing, and reliability validation remain unfinished.
+```bash
+./tools/start_local_mvp_demo.sh
+```
 
-The client currently has no Retrofit/OkHttp service, Hilt graph, production ViewModels, or backend authentication configuration. Treat the current app as an inspectable local demo and UI/infrastructure baseline rather than a live end-to-end product.
+The command applies database migrations, provisions and resets only the configured demo
+identity, starts FastAPI and the ARQ worker, starts or reuses the emulator, installs a live
+debug APK, clears its local state, and opens the seed-paper screen. Shared papers and their
+processed artifacts remain available, so a reset does not replace the real catalog with
+fixtures. The script also rotates the local demo token and validates backend readiness and
+Android authentication before opening the app.
+
+The default AVD is `Mneme_Pixel_9_Pro_XL_API_34`, configured for six CPU cores, 14336 MB
+of RAM, host GPU rendering, and a 1080 by 2400 display override. Override these values when
+needed:
+
+```bash
+MNEME_DEMO_AVD=<avd-name> \
+MNEME_DEMO_EMULATOR_MEMORY_MB=8192 \
+MNEME_DEMO_EMULATOR_CORES=6 \
+./tools/start_local_mvp_demo.sh
+```
+
+After completing seed onboarding and interacting with the briefing, prepare the weekly
+alert used in the MVP demonstration. The production weekly policy requires at least one
+processed paper inside its current recommendation window; the retained local catalog used
+for rehearsal satisfies this precondition. On a new empty database, begin with a recent
+seed so the backend can prepare current candidates.
+
+```bash
+./tools/trigger_local_weekly_notification.sh
+```
+
+This command generates a new weekly briefing through the production recommender and asks
+the existing Android WorkManager path to synchronize it. The normal relevance threshold,
+notification permission, digest deduplication, cache update, and notification navigation
+remain in effect. It refuses to publish before real seed onboarding. The ADB receiver used
+for this rehearsal exists only in the debug build and does not appear in release manifests.
+
+## Live skeletal product demo
+
+The configured debug app now exercises the README's skeletal tier across Android and the
+FastAPI backend:
+
+1. Accept one arXiv abstract/PDF URL or identifier as the first-run seed paper.
+2. Wait while the backend resolves and prepares five arXiv papers connected to the seed by
+   real citation edges, then display the returned briefing as one complete result. If graph
+   provider data is unavailable, the backend returns five recent same-category papers.
+3. Open a paper and request its stored summary.
+4. If later summary work is still running, poll the public job resource and reload the
+   summary after the job succeeds.
+5. Enter and submit one paper-scoped question through the backend RAG path.
+6. Inspect source-linked summary claims by section, page, and excerpt; display truthful
+   unavailable states for unmatched or legacy claims; and open the same arXiv paper.
+7. Display the backend's Q&A source-match status and citations, then open the arXiv paper.
+8. Request the paper's bounded depth-two citation graph, inspect its backend algorithm
+   status, select a local node, and open that paper's detail screen.
+9. Queue visible-paper impressions, paper opens, and submitted paper-scoped questions,
+   then upload them to the M3 behavior endpoint without blocking foreground navigation.
+
+The UI labels cached and explicitly enabled controlled-fixture content separately; normal
+live content has no diagnostic source badge. It also renders
+`matched`, `partial`, `unmatched`, `not_checked`, and `insufficient_evidence` states without
+claiming that every answer or summary is verified.
+
+After one complete briefing is stored in Room, later process starts restore that local
+briefing before checking for backend updates. A fresh install or cleared application data
+still requests a seed paper. This is device-local continuity; the MVP does not add accounts
+or cross-device onboarding state.
+
+### Configure the Android client
+
+The app reads these values at build time. The priority is Gradle project property,
+environment variable, ignored `local.properties`, then the documented default:
+
+- `MNEME_API_BASE_URL`: defaults to `http://10.0.2.2:8000/v1/` for an Android emulator.
+- `MNEME_DEMO_TOKEN`: the raw opaque token whose SHA-256 digest is configured by the
+  backend.
+- `MNEME_ALLOW_CONTROLLED_FIXTURE`: defaults to `false`; set it to `true` only for an
+  intentional offline fixture build.
+
+The base URL must end in `/v1/`. For a persistent local emulator setup, add these lines
+to the ignored `local.properties` file alongside `sdk.dir`:
+
+```properties
+MNEME_API_BASE_URL=http://10.0.2.2:8000/v1/
+MNEME_DEMO_TOKEN=<raw-demo-token>
+```
+
+An environment-based one-off build is also supported:
+
+```bash
+export MNEME_API_BASE_URL=http://10.0.2.2:8000/v1/
+export MNEME_DEMO_TOKEN='<raw-demo-token>'
+./gradlew installDebug
+```
+
+For a physical device, use a reachable HTTPS endpoint or the development machine's LAN
+address instead of `10.0.2.2`. Cleartext HTTP is enabled only by the debug manifest.
+
+Never commit the raw token. Build-time injection keeps it out of source control, but the
+MVP token is still extractable from a debug APK and must be treated as a rotatable demo
+credential rather than production authentication.
+
+### Prepare the backend
+
+Follow [`../backend/README.md`](../backend/README.md) to configure PostgreSQL/pgvector,
+Redis, the demo identity, provider credentials, migrations, API, and ARQ worker. The live
+path requires the API, worker, database, Redis, and configured AI providers. The seed
+request itself fetches and processes the five-paper demo set; a previously processed
+category completes faster because durable jobs and artifacts are reused.
+
+After PostgreSQL and Redis are running, prepare the configured identity once:
+
+```bash
+cd ../backend
+uv sync --locked --dev
+uv run alembic upgrade head
+uv run python -m mneme.cli.bootstrap_demo_user
+```
+
+Run the API and worker in separate terminals:
+
+```bash
+cd ../backend
+uv run uvicorn mneme.main:app --reload
+uv run arq mneme.tasks.worker.WorkerSettings
+```
+
+Optionally warm a category before a time-constrained demo and follow its durable stages in
+the worker log:
+
+```bash
+uv run python -m mneme.tasks.fetch_daily --category cs.AI --max-results 5
+```
+
+The command is idempotent for each category and UTC date. Normal first-run setup does not
+require this warm-up command.
+
+The Android token must be the raw value whose digest is stored in
+`MNEME_DEMO_TOKEN_SHA256`. The app never logs the token and does not send it to the public
+health route.
+
+### Test fixtures
+
+When `MNEME_DEMO_TOKEN` is blank, a normal build shows a configuration error and does not
+substitute sample papers. The controlled fixture is available only to previews and explicit
+UI tests built with `-PMNEME_ALLOW_CONTROLLED_FIXTURE=true`; the UI then states that no live
+backend or model call is made. Its citation graph uses 12 synthetic nodes and 18 synthetic
+directed edges to exercise branching, merging, clusters, rank variation, selection, and
+navigation. A separate 50-node device test covers the bounded endpoint limit; neither
+fixture is part of the live product path or makes a real citation claim.
+
+When a token is configured, a failed live briefing refresh uses Room only if a previous
+backend briefing exists, and labels that content as cached. With no cache, the app shows a
+retryable error instead of silently substituting the fixture. Paper metadata follows the
+same policy. Generated Q&A answers are not persisted locally.
+
+### Citation graph
+
+Paper detail screens expose a citation-graph action backed by the frozen
+`GET /v1/graph/{paper_id}?depth=2&limit=50` contract. The graph includes only locally
+resolved paper UUIDs. Arrows follow the repository contract: the source paper cites the
+target paper.
+
+Rendering uses the repository-vendored d3 v7.9.0 bundle in a local WebView; it does not
+depend on a CDN. The selected node is mirrored in a native Compose card and accessible
+paper selector, remains selected while visiting a paper and navigating back, and can be
+opened through the normal paper-detail route. `ready` identifies the ranked/clustered
+backend result; `fallback` is displayed as the backend's deterministic citation baseline.
+The graph is not cached, so an unavailable backend produces a retryable error.
+
+### Weekly briefing alerts
+
+Live builds periodically synchronize complete weekly briefings and cache every result. A local notification is eligible only when the weekly digest has at least one entry with a relevance score at or above the configured `0.75` threshold. The threshold is injected into `DigestRefreshCoordinator` for configuration and testing; retries and restarts use the stable digest ID so an eligible briefing is announced at most once. Manual and other digest types remain available in the feed but do not trigger this alert.
+### Paper sharing and deep links
+
+The paper-detail Share action opens the Android share chooser with the paper title and the
+paper's public arXiv URL as plain text. The outbound payload does not expose Mneme's internal
+paper UUID, and a recipient can open the paper without installing Mneme.
+
+Mneme also accepts installed-app deep links of the form
+`mneme://paper/<backend-paper-UUID>`; the identifier is the UUID returned by the backend,
+not an arXiv identifier. These links support trusted app-entry flows and are not included in
+the public Share payload.
+
+Opening a valid link can cold-start Mneme or deliver the paper to an existing app task. The
+client then loads the paper through the same repository path used by normal in-app
+navigation; live builds can recover cached paper metadata through the repository's Room
+fallback. If first-run onboarding is still in progress, the requested paper is retained
+until onboarding completes. An unknown or currently unavailable paper remains a retryable
+error, and malformed links are rejected without opening unrelated content.
+Each accepted link carries a stable event UUID through Activity recreation. The client
+awaits the Room write before marking that open as recorded, and a replay of the same UUID
+uses an insert-if-absent boundary so it cannot queue a second `paper_opened` event.
+
+This custom scheme is an installed-app entry point, not a public web page or an account-based
+sharing service. A caller using it therefore needs the Mneme app and access to the referenced
+backend paper or a matching local cache entry.
+
+## Current client boundaries
+
+- Room schema version 6 stores paper metadata, nullable source-linked summary payloads,
+  digest cache payloads, preferences, refresh metadata, and the contract-aligned
+  behavioral-event retry queue. A v4 cache migrates with an empty summary payload, and the
+  v5-to-v6 migration adds the saved-paper lookup index without changing retained events.
+- The default Activity uses a production `MnemeViewModel` and a manually constructed
+  application container. Hilt remains a target-stack choice rather than a dependency of
+  this feature unit.
+- `OfflineCacheRepository` still retains recent briefing content for 14 days and opened
+  papers for 30 days.
+- DataStore persists explicit local settings. `BehavioralEventSyncWorker` uploads pending
+  events with network constraints and exponential backoff. A live configuration also
+  schedules a recovery pass on application start so an interrupted pending batch does not
+  require another user interaction. `DigestSyncWorker` fetches completed weekly briefings,
+  updates the Room cache, and publishes each eligible threshold notification at most once.
+- The client records the interactions exposed by the current product: paper impressions,
+  paper opens, paper-scoped questions, Save actions, and Share chooser launches. Save and
+  Share confirm their Room queue write in a live configuration; a failed or unavailable
+  local write remains visible and retryable instead of being reported as queued. Skip and
+  digest-dismiss events are not fabricated while those UI controls are absent.
+- The Save control writes a durable behavioral event and exposes the corresponding cached
+  paper in the Saved screen across process restarts and offline use. Saved papers open through
+  the same detail route as briefing papers and remain protected from ordinary cache pruning.
+  Search, login/JWT, FCM delivery, and production deployment remain outside this integration
+  unit; the current weekly alert path uses WorkManager and a local Android notification.
+
+The Retrofit DTOs follow [`../docs/api/openapi-v0.1.yaml`](../docs/api/openapi-v0.1.yaml).
+The seed coordinator is an additive API contract change and does not change the database
+schema.

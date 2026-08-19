@@ -14,6 +14,9 @@ interface DigestDao {
     @Query("SELECT * FROM digests WHERE id = :id")
     suspend fun getById(id: String): DigestEntity?
 
+    @Query("SELECT * FROM digests ORDER BY generated_at DESC LIMIT 1")
+    suspend fun getLatest(): DigestEntity?
+
     @Upsert
     suspend fun upsertAll(digests: List<DigestEntity>)
 

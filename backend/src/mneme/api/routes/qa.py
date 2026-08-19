@@ -7,10 +7,10 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mneme.ai.embeddings import EmbeddingService
-from mneme.ai.qa import GroundedAnswerService
+from mneme.ai.qa import GroundedAnswerService, contextualize_question
 from mneme.ai.retrieval import RetrievalService
 from mneme.ai.service import LLMService
-from mneme.ai.types import AIError
+from mneme.ai.types import AIError, ChatMessage
 from mneme.api.dependencies.ai import (
     get_artifact_repository,
     get_embedding_service,
@@ -24,10 +24,14 @@ from mneme.api.errors import ApiError, ErrorResponse
 from mneme.api.schemas.qa import Answer, Question
 from mneme.core.config import Settings, get_settings
 from mneme.db.dependencies import get_session
-from mneme.models.qa import QaMessage
+from mneme.models.qa import QaMessage, QaRole
 from mneme.repositories.artifacts import ArtifactRepository
 from mneme.repositories.paper_catalog import PaperCatalogRepository
-from mneme.repositories.qa import ConversationMismatchError, QaConversationRepository
+from mneme.repositories.qa import (
+    QA_HISTORY_MAX_MESSAGES,
+    ConversationMismatchError,
+    QaConversationRepository,
+)
 
 logger = structlog.get_logger(__name__)
 
@@ -89,6 +93,21 @@ async def ask_question(
             "The requested conversation does not exist for this user and paper.",
         ) from error
 
+    persisted_history = await conversations.get_recent_messages(
+        conversation_id=conversation.id,
+        user_id=principal.user_id,
+        paper_id=payload.paper_id,
+        limit=QA_HISTORY_MAX_MESSAGES,
+    )
+    history = tuple(
+        ChatMessage(
+            role="user" if message.role is QaRole.USER else "assistant",
+            content=message.content,
+        )
+        for message in persisted_history
+    )
+    retrieval_question = contextualize_question(payload.question, history)
+
     retrieval = RetrievalService(
         embedder=embedder, artifacts=artifacts, top_k=settings.ai_retrieval_top_k
     )
@@ -102,9 +121,13 @@ async def ask_question(
         chunks = await retrieval.retrieve(
             paper_id=payload.paper_id,
             paper_version_id=version.id,
-            question=payload.question,
+            question=retrieval_question,
         )
-        grounded = await generator.answer(question=payload.question, chunks=chunks)
+        grounded = await generator.answer(
+            question=payload.question,
+            chunks=chunks,
+            history=history,
+        )
     except AIError as error:
         raise map_ai_error(error) from error
 

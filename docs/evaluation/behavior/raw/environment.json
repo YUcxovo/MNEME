@@ -1,0 +1,11 @@
+{
+  "machine": "x86_64",
+  "operating_system": "Linux",
+  "operating_system_release": "7.1.4-arch1-1",
+  "processor": "unknown",
+  "python_implementation": "CPython",
+  "python_version": "3.12.13",
+  "schema_version": "behavior-evaluation-environment-v1",
+  "timezone": "UTC",
+  "uv_version": "uv 0.11.32 (3010295ae 2026-07-23 x86_64-unknown-linux-gnu)"
+}

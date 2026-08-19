@@ -23,13 +23,15 @@ from mneme.ai.qa import (
 from mneme.ai.retrieval import RetrievedChunk
 from mneme.ai.routing import ModelRouter
 from mneme.ai.service import LLMService
-from mneme.ai.types import AITask, ProviderName
+from mneme.ai.types import AITask, ChatMessage, ProviderName
 from mneme.models.qa import QaSourceMatchStatus
 
 PAPER_ID = uuid4()
 
 
-def _chunk(index: int, content: str, score: float) -> RetrievedChunk:
+def _chunk(
+    index: int, content: str, score: float, *, is_context_anchor: bool = False
+) -> RetrievedChunk:
     return RetrievedChunk(
         chunk_id=uuid4(),
         paper_id=PAPER_ID,
@@ -37,6 +39,7 @@ def _chunk(index: int, content: str, score: float) -> RetrievedChunk:
         section_title=f"Section {index}",
         content=content,
         score=score,
+        is_context_anchor=is_context_anchor,
     )
 
 
@@ -94,6 +97,17 @@ def test_rerank_is_deterministic_on_ties() -> None:
 
 @pytest.mark.base
 @pytest.mark.rag
+def test_rerank_retains_context_anchor_beyond_question_specific_limit() -> None:
+    specific = _chunk(8, "attention mechanism details", 0.9)
+    overview = _chunk(0, "the abstract states the research problem", 0.3, is_context_anchor=True)
+
+    ranked = rerank("how does attention work?", [specific, overview], top_n=1)
+
+    assert [chunk.chunk_index for chunk in ranked] == [8, 0]
+
+
+@pytest.mark.base
+@pytest.mark.rag
 def test_verified_citations_mark_grounded_answer_as_matched() -> None:
     evidence = [
         _chunk(0, "The transformer uses multi-head attention for global dependencies", 0.9),
@@ -107,6 +121,21 @@ def test_verified_citations_mark_grounded_answer_as_matched() -> None:
     assert len(citations) == 1
     assert citations[0].marker == 1
     assert citations[0].source_match is True
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_each_citation_is_checked_against_its_local_claim() -> None:
+    evidence = [
+        _chunk(0, "The method prunes irrelevant tokens before the next turn", 0.9),
+        _chunk(1, "Training used eight GPUs for twelve hours", 0.8),
+    ]
+    answer = "The method prunes irrelevant tokens [1]. Training uses eight GPUs [2]."
+
+    citations, status = verify_citations(answer, evidence)
+
+    assert status is QaSourceMatchStatus.MATCHED
+    assert [citation.source_match for citation in citations] == [True, True]
 
 
 @pytest.mark.base
@@ -152,6 +181,39 @@ def test_answer_flow_returns_verified_citations() -> None:
 
 @pytest.mark.base
 @pytest.mark.rag
+def test_follow_up_history_is_context_not_citable_evidence() -> None:
+    provider = FakeLLMProvider(default_response="The paper proves quantum teleportation [1].")
+    service = _service(provider)
+    chunk = _chunk(
+        0,
+        "The transformer uses multi-head attention instead of recurrence",
+        0.9,
+    )
+    history = (
+        ChatMessage(role="user", content="What is the paper's central claim?"),
+        ChatMessage(
+            role="assistant",
+            content="It proves quantum teleportation [1].",
+        ),
+    )
+
+    grounded = asyncio.run(
+        service.answer(question="What evidence supports it?", chunks=[chunk], history=history)
+    )
+
+    assert grounded.source_match_status is QaSourceMatchStatus.INSUFFICIENT_EVIDENCE
+    assert len(grounded.citations) == 1
+    assert grounded.citations[0].chunk.chunk_id == chunk.chunk_id
+    assert grounded.citations[0].source_match is False
+    request = provider.calls[0][1]
+    assert request.messages[:2] == history
+    assert request.system is not None
+    assert "context, not evidence" in request.system
+    assert chunk.content in request.messages[-1].content
+
+
+@pytest.mark.base
+@pytest.mark.rag
 def test_no_chunks_refuses_without_llm_call() -> None:
     provider = FakeLLMProvider()
     service = _service(provider)
@@ -193,3 +255,23 @@ def test_model_declared_insufficiency_becomes_stable_refusal() -> None:
     assert grounded.answer == REFUSAL_ANSWER
     assert grounded.citations == ()
     assert grounded.source_match_status is QaSourceMatchStatus.INSUFFICIENT_EVIDENCE
+
+
+@pytest.mark.base
+@pytest.mark.rag
+def test_answer_is_kept_when_provider_appends_exclusive_refusal_marker() -> None:
+    provider = FakeLLMProvider(
+        default_response="The experiment evaluates five methods [1].\n\nINSUFFICIENT_EVIDENCE"
+    )
+    service = _service(provider)
+
+    grounded = asyncio.run(
+        service.answer(
+            question="how many methods are evaluated?",
+            chunks=[_chunk(0, "The experiment evaluates five methods", 0.9)],
+        )
+    )
+
+    assert grounded.answer == "The experiment evaluates five methods [1]."
+    assert grounded.source_match_status is QaSourceMatchStatus.MATCHED
+    assert len(grounded.citations) == 1

@@ -221,3 +221,19 @@ def test_mismatched_job_identity_is_not_mutated(monkeypatch: pytest.MonkeyPatch)
 
     assert _run(FakeSession()) == "digest_job_identity_mismatch"
     assert job.status is JobStatus.QUEUED
+
+
+def test_previous_generator_job_cannot_mask_current_generation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    job = _job()
+    job.idempotency_key = weekly_digest_idempotency_key(
+        user_id=USER_ID,
+        week_start=WEEK_START,
+        generator_version="recommender-v1",
+    )
+    _install(monkeypatch, FakeJobRepository(job))
+
+    assert GENERATOR_VERSION == "recommender-v2"
+    assert _run(FakeSession()) == "digest_job_identity_mismatch"
+    assert job.status is JobStatus.QUEUED

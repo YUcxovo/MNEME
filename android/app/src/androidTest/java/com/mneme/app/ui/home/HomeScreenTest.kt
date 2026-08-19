@@ -4,7 +4,6 @@ package com.mneme.app.ui.home
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import com.mneme.app.data.demo.SeededSkeletalContentRepository
 import com.mneme.app.ui.theme.MnemeTheme
@@ -27,8 +26,8 @@ class HomeScreenTest {
             }
         }
 
-        composeRule.onNodeWithTag("controlled-demo-notice").assertIsDisplayed()
         composeRule.onNodeWithText("Attention Is All You Need").assertIsDisplayed()
         composeRule.onNodeWithText("Natural language processing").assertIsDisplayed()
+        composeRule.onNodeWithText("SAMPLE CONTENT").assertIsDisplayed()
     }
 }

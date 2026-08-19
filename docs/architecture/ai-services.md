@@ -22,9 +22,11 @@ CompletionRequest --> ModelRouter --> LLMCache --> BudgetGuard --> LLMProvider
 - `mneme.ai.types.CompletionRequest` is provider-agnostic: task, messages,
   optional system prompt, output-token cap, and a `prompt_version` string.
 - `mneme.ai.providers` implements the `LLMProvider` protocol for Anthropic
-  (Messages API) and OpenAI (Chat Completions), plus `FakeLLMProvider` for
-  tests and evaluation. Vendor exceptions are mapped to `LLMProviderError`
-  with a `retryable` flag (429/5xx/connection errors are retryable).
+  (Messages API), DeepSeek (its OpenAI-compatible Chat Completions API), and
+  OpenAI (Chat Completions), plus `FakeLLMProvider` for tests and evaluation.
+  Vendor exceptions are mapped to `LLMProviderError` with a `retryable` flag
+  (429/5xx/connection errors are retryable). DeepSeek thinking is disabled by
+  default for predictable demo latency and cost, with an environment override.
 - Providers are only registered when their API key is configured; routing to
   an unregistered provider raises `ProviderNotConfiguredError`, which AI
   endpoints will map to `service_unavailable`.
@@ -33,8 +35,9 @@ CompletionRequest --> ModelRouter --> LLMCache --> BudgetGuard --> LLMProvider
 
 `ModelRouter` maps each `AITask` (`summarize`, `qa`) to one model configured
 via settings (`MNEME_LLM_SUMMARY_MODEL`, `MNEME_LLM_QA_MODEL`). The provider
-is inferred from the model name (`claude-*` -> Anthropic, `gpt-*`/`o*-` ->
-OpenAI) and validated at startup so typos fail before the first request.
+is inferred from the model name (`claude-*` -> Anthropic, `deepseek-*` ->
+DeepSeek, `gpt-*`/`o*-` -> OpenAI) and validated at startup so typos fail
+before the first request.
 Defaults target `claude-opus-4-8`; swap to a cheaper model per-environment
 without code changes.
 
@@ -109,12 +112,20 @@ pool.
   deterministic drafts: section titles and page ranges preserved, oversized
   sections split at sentence boundaries with token overlap, content hashed
   for idempotent embedding.
-- `mneme.ai.embeddings` wraps the OpenAI Embeddings API behind an
-  `EmbeddingProvider` protocol (deterministic fake included). Batches are
-  bounded (`MNEME_AI_EMBEDDING_BATCH_SIZE`) and every batch passes through
-  the shared BudgetGuard, so embedding spend counts against the same daily
-  cap as completions. Default model `text-embedding-3-small` (1536 dims,
-  matching the pgvector schema).
+- `mneme.ai.embeddings` wraps both the OpenAI Embeddings API and an opt-in local
+  FastEmbed/ONNX backend behind an `EmbeddingProvider` protocol (deterministic
+  fake included). OpenAI `text-embedding-3-small` remains the default and emits
+  1536 dimensions matching the pgvector schema.
+- The local demo route uses `BAAI/bge-small-en-v1.5`. Its learned 384-dimensional
+  vectors are L2-normalized and zero-padded to 1536 dimensions. Appending zeros
+  preserves cosine similarity and ranking, avoids a schema migration, and is
+  recorded under the qualified identity
+  `BAAI/bge-small-en-v1.5+fastembed-pad1536-v1`. The model package is optional
+  and must be installed/configured explicitly; provider failures never trigger
+  a silent fallback.
+- Batches are bounded (`MNEME_AI_EMBEDDING_BATCH_SIZE`) and every batch passes
+  through the shared BudgetGuard, so external embedding spend counts against
+  the same daily cap as completions. The local model has zero external cost.
 - Pipeline stages (`mneme.ai.pipeline`) are consumed as ARQ jobs
   (`mneme.tasks.ai_jobs`): `summarize_paper`, `chunk_paper` (which enqueues
   `embed_chunks`), and `embed_chunks`. Stages are idempotent and resumable;
@@ -133,17 +144,25 @@ are requeued on the next client retry. AI failures map to stable codes:
 
 ## Retrieval and grounded Q&A (Milestone 3)
 
-- `RetrievalService`: embed the question, pgvector cosine ANN search scoped
-  to one paper, top-k (`MNEME_AI_RETRIEVAL_TOP_K`) chunks with section and
-  page metadata.
+- `RetrievalService`: embed the question, run a pgvector cosine ANN search
+  scoped to one paper, and append the first two document chunks as bounded
+  overview anchors when they are not already dense hits. The anchors improve
+  paper-level recall without displacing question-specific top-k
+  (`MNEME_AI_RETRIEVAL_TOP_K`) evidence.
 - `mneme.ai.qa.rerank` blends vector similarity (0.7) with question/chunk
   content-word overlap (0.3). This is an honest lexical rerank, not a
-  cross-encoder; the seam allows swapping one in later.
+  cross-encoder; the seam allows swapping one in later. Reranking keeps
+  overview anchors after the configured question-specific evidence rather
+  than forcing them into its slots.
 - `GroundedAnswerService` refuses without an LLM call when there is no
   evidence or the best reranked score is below
-  `MNEME_AI_QA_MIN_EVIDENCE_SCORE`, prompts with numbered excerpts, and
-  requires bracketed citation markers. `verify_citations` drops markers that
-  point outside the evidence and checks answer/chunk content-word overlap:
+  `MNEME_AI_QA_MIN_EVIDENCE_SCORE`, prompts with numbered excerpts plus their
+  section/page context, and requires bracketed citation markers. The provider
+  must return either a cited answer or the exact refusal sentinel; an answer
+  is not discarded merely because a provider incorrectly appends that
+  sentinel on a separate line. `verify_citations` drops markers that
+  point outside the evidence and checks each citation-bearing local claim
+  against its corresponding chunk using content-word overlap:
   all citations matched -> `matched`, some -> `partial`, none ->
   `insufficient_evidence`. A model-declared `INSUFFICIENT_EVIDENCE` becomes
   a stable refusal answer.
@@ -151,19 +170,19 @@ are requeued on the next client retry. AI failures map to stable codes:
   generation telemetry) in `qa_conversations` / `qa_messages` and returns
   the frozen `Answer` schema. Papers without embedded chunks get the stable
   refusal with `insufficient_evidence`, not an error.
+- A request carrying `conversation_id` loads at most the latest eight messages,
+  in chronological order, through a query constrained by conversation, authenticated
+  user, and paper. Those turns expand the retrieval query and resolve references in
+  the answering prompt, but are explicitly non-evidence: only newly retrieved chunks
+  from the paper's current revision receive citation numbers, and citation verification
+  runs against that current evidence list.
 
-## Recommendations (Milestone 3)
+## Recommendations
 
-- `mneme.ai.recommendation` scores candidates against the frozen
-  `user_preferences` interface: explicit topic match (0.45), cosine between
-  Ruiyu's behavior embedding and the paper's mean chunk embedding (0.35),
-  and recency with a one-week half-life (0.2). Missing signals redistribute
-  their weight, so cold-start users still get ranked results. Reasons are
-  derived from the dominant components and persisted per entry.
-- `POST /v1/digests/recommended` reuses a digest generated in the last 24
-  hours or scores synchronously (no LLM call) and stores an immutable
-  `manual` digest snapshot. The contract's 202 branch stays reserved for a
-  future slow path.
+- `mneme.ai.recommendation` scores candidates against the frozen `user_preferences` interface. Explicit topic match has nominal weight 0.45, recency with a one-week half-life has weight 0.20, and behavior has weight 0.35. For model version 2, positive and negative cosine similarities form the bounded affinity `0.5 + 0.5 * (positive - negative)`, and the behavior weight is multiplied by profile confidence before available weights are normalized. Zero-confidence profiles therefore follow the cold-start path. Version 1 retains its original positive-vector cosine semantics for replay.
+- Recommendation reasons include behavior only when positive similarity exceeds negative similarity; avoidance evidence cannot be presented as a reason to read a paper. Scores remain in `[0, 1]`, and equal scores retain the UUID tie-break.
+- `POST /v1/digests/recommended` reuses a digest generated in the last 24 hours only when its preference-model version and `recommender-v2` generator identity match the active state. Otherwise it scores synchronously without an LLM call and stores an immutable `manual` digest snapshot. Candidate selection prefers the configured recent window. If that window is empty, a manual refresh ranks the processed catalog so an older seed library can still respond to explicit interest changes. Scheduled weekly generation retains its recent-window boundary. The contract's 202 branch stays reserved for a future slow path.
+- The controlled comparison, ablations, metrics, and evidence limits are defined in `docs/evaluation/behavior/README.md`. The evaluation calls the production profile and scorer rather than duplicating their formulas.
 
 ## Knowledge-graph algorithms (Milestone 3)
 

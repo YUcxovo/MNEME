@@ -1,0 +1,158 @@
+{
+  "fixture_version": "qa-seed-v2",
+  "fixtures": [
+    {
+      "fixture_id": "qa-001-transformer-attention",
+      "arxiv_id": "1706.03762",
+      "arxiv_version": 7,
+      "section_hint": "Model Architecture",
+      "question": "What mechanism does the Transformer use instead of recurrence and convolutions?",
+      "reference_answer": "The Transformer relies entirely on attention mechanisms, specifically multi-head self-attention, to draw global dependencies between input and output, removing recurrence and convolutions.",
+      "expected_keywords": ["attention", "self-attention", "multi-head"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-002-lora-parameters",
+      "arxiv_id": "2106.09685",
+      "arxiv_version": 2,
+      "section_hint": "Method",
+      "question": "How does LoRA reduce the number of trainable parameters when adapting large language models?",
+      "reference_answer": "LoRA freezes the pretrained weights and injects trainable low-rank decomposition matrices into each layer, so only the small rank-decomposition matrices are updated during fine-tuning.",
+      "expected_keywords": ["low-rank", "frozen", "trainable parameters"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-003-ddpm-objective",
+      "arxiv_id": "2006.11239",
+      "arxiv_version": 2,
+      "section_hint": "Diffusion models and denoising autoencoders",
+      "question": "What simplified training objective do denoising diffusion probabilistic models optimize?",
+      "reference_answer": "DDPMs are trained with a simplified variational bound that reduces to predicting the noise added at each diffusion step, a mean-squared error between the true and predicted noise.",
+      "expected_keywords": ["noise", "variational", "denoising"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-004-rag-components",
+      "arxiv_id": "2005.11401",
+      "arxiv_version": 4,
+      "section_hint": "Methods",
+      "question": "What are the two components combined in retrieval-augmented generation and what role does each play?",
+      "reference_answer": "RAG combines a dense retriever that fetches relevant passages from a document index with a sequence-to-sequence generator that conditions on both the query and retrieved passages to produce the answer.",
+      "expected_keywords": ["retriever", "generator", "passages"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-005-dpo-reward-model",
+      "arxiv_id": "2305.18290",
+      "arxiv_version": 3,
+      "section_hint": "Direct Preference Optimization",
+      "question": "Why does Direct Preference Optimization not require training a separate reward model?",
+      "reference_answer": "DPO derives a closed-form mapping between reward functions and optimal policies, letting it optimize the language model directly on preference pairs with a simple classification loss instead of fitting an explicit reward model and running reinforcement learning.",
+      "expected_keywords": ["reward model", "preference", "closed-form"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-006-transformer-positional",
+      "arxiv_id": "1706.03762",
+      "arxiv_version": 7,
+      "section_hint": "Positional Encoding",
+      "question": "How does the Transformer inject information about token order into the model?",
+      "reference_answer": "Because the model contains no recurrence or convolution, sinusoidal positional encodings of different frequencies are added to the input embeddings so the model can use the order of the sequence.",
+      "expected_keywords": ["positional", "sinusoid", "embedding"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-007-lora-inference-latency",
+      "arxiv_id": "2106.09685",
+      "arxiv_version": 2,
+      "section_hint": "Method",
+      "question": "Why does LoRA introduce no additional inference latency compared with a fully fine-tuned model?",
+      "reference_answer": "At deployment the learned low-rank matrices can be merged into the frozen pretrained weights, so the adapted model computes exactly the same matrix multiplications as a fully fine-tuned model.",
+      "expected_keywords": ["merge", "latency", "weights"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-008-ddpm-sampling",
+      "arxiv_id": "2006.11239",
+      "arxiv_version": 2,
+      "section_hint": "Background",
+      "question": "How does a trained DDPM generate a new sample?",
+      "reference_answer": "Sampling starts from Gaussian noise and iteratively applies the learned reverse denoising process, removing predicted noise step by step until a clean sample remains.",
+      "expected_keywords": ["noise", "reverse", "sampling"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-009-rag-variants",
+      "arxiv_id": "2005.11401",
+      "arxiv_version": 4,
+      "section_hint": "Models",
+      "question": "What is the difference between the RAG-Sequence and RAG-Token model variants?",
+      "reference_answer": "RAG-Sequence uses the same retrieved document to generate the complete output sequence, while RAG-Token can condition on a different retrieved document for each generated token.",
+      "expected_keywords": ["rag-sequence", "rag-token", "document"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-010-dpo-loss-form",
+      "arxiv_id": "2305.18290",
+      "arxiv_version": 3,
+      "section_hint": "Direct Preference Optimization",
+      "question": "What form does the DPO training objective take on preference pairs?",
+      "reference_answer": "DPO optimizes a binary classification style logistic loss over preferred and dispreferred completions, expressed through the log-probability ratios of the policy against a frozen reference model.",
+      "expected_keywords": ["classification", "reference", "policy"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-011-bert-pretraining",
+      "arxiv_id": "1810.04805",
+      "arxiv_version": 2,
+      "section_hint": "Pre-training BERT",
+      "question": "What pre-training tasks does BERT use to learn bidirectional representations?",
+      "reference_answer": "BERT is pre-trained with a masked language model objective, predicting randomly masked input tokens from both left and right context, together with a next sentence prediction task.",
+      "expected_keywords": ["masked", "bidirectional", "next sentence"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-012-vit-patches",
+      "arxiv_id": "2010.11929",
+      "arxiv_version": 2,
+      "section_hint": "Method",
+      "question": "How does the Vision Transformer convert an image into a sequence the Transformer can process?",
+      "reference_answer": "The image is split into fixed-size patches, each patch is flattened and linearly projected to an embedding, and position embeddings are added before the resulting sequence is fed to a standard Transformer encoder.",
+      "expected_keywords": ["patches", "embedding", "sequence"],
+      "must_cite": true
+    },
+    {
+      "fixture_id": "qa-013-transformer-dollar-budget",
+      "arxiv_id": "1706.03762",
+      "arxiv_version": 7,
+      "section_hint": null,
+      "question": "How many dollars did the authors spend renting the GPU cluster used to train the Transformer?",
+      "reference_answer": "The paper reports hardware and training schedules but no monetary training budget, so the question is not answerable from the paper and must be refused.",
+      "expected_keywords": [],
+      "must_cite": false,
+      "expect_refusal": true
+    },
+    {
+      "fixture_id": "qa-014-lora-diffusion-scope",
+      "arxiv_id": "2106.09685",
+      "arxiv_version": 2,
+      "section_hint": null,
+      "question": "What does the paper conclude about applying LoRA to image diffusion models?",
+      "reference_answer": "The LoRA paper studies adapting large language models; it draws no conclusions about image diffusion models, so the question is out of scope and must be refused.",
+      "expected_keywords": [],
+      "must_cite": false,
+      "expect_refusal": true
+    },
+    {
+      "fixture_id": "qa-015-rag-clinical-scope",
+      "arxiv_id": "2005.11401",
+      "arxiv_version": 4,
+      "section_hint": null,
+      "question": "What clinical trial outcomes does the paper report for its drug discovery experiments?",
+      "reference_answer": "The RAG paper evaluates knowledge-intensive NLP tasks and reports no clinical trials or drug discovery experiments, so the question is out of scope and must be refused.",
+      "expected_keywords": [],
+      "must_cite": false,
+      "expect_refusal": true
+    }
+  ]
+}

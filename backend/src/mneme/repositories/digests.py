@@ -19,7 +19,7 @@ from mneme.models.artifact import PaperChunk, PaperSummary
 from mneme.models.base import utc_now
 from mneme.models.digest import Digest, DigestEntry, DigestType
 from mneme.models.paper import Paper, PaperAuthor, PaperVersion, ProcessingStatus
-from mneme.models.user import EMBEDDING_DIMENSIONS, UserPreference
+from mneme.models.user import EMBEDDING_DIMENSIONS, User, UserPreference
 
 _CURSOR_VERSION: Final = 1
 _CURSOR_FIELDS: Final = frozenset({"v", "generated_at", "id"})
@@ -101,6 +101,10 @@ class DigestRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def lock_user(self, user_id: UUID) -> None:
+        """Serialize digest snapshots with behavioral preference writers."""
+        await self._session.scalar(select(User.id).where(User.id == user_id).with_for_update())
+
     async def list_digests(
         self,
         *,
@@ -142,6 +146,38 @@ class DigestRepository:
         self, *, since: datetime, limit: int, before: datetime | None = None
     ) -> list[Paper]:
         """Return recent latest-revision papers with a usable summary."""
+        return await self._list_candidates(since=since, limit=limit, before=before, paper_ids=None)
+
+    async def list_ready_candidates(
+        self, *, limit: int, before: datetime | None = None
+    ) -> list[Paper]:
+        """Return latest-revision papers with a usable summary at any age."""
+        return await self._list_candidates(since=None, limit=limit, before=before, paper_ids=None)
+
+    async def list_candidates_by_ids(
+        self,
+        paper_ids: tuple[UUID, ...],
+        *,
+        before: datetime | None = None,
+    ) -> list[Paper]:
+        """Return usable latest revisions for a bounded acquired-paper set."""
+        if not paper_ids:
+            return []
+        return await self._list_candidates(
+            since=None,
+            limit=len(paper_ids),
+            before=before,
+            paper_ids=paper_ids,
+        )
+
+    async def _list_candidates(
+        self,
+        *,
+        since: datetime | None,
+        limit: int,
+        before: datetime | None,
+        paper_ids: tuple[UUID, ...] | None,
+    ) -> list[Paper]:
         latest_version_id = (
             select(PaperVersion.id)
             .where(PaperVersion.paper_id == Paper.id)
@@ -153,7 +189,6 @@ class DigestRepository:
         statement = (
             select(Paper)
             .where(
-                Paper.published_at >= since,
                 Paper.processing_status.in_((ProcessingStatus.READY, ProcessingStatus.PARTIAL)),
                 exists(
                     select(PaperSummary.id).where(
@@ -166,12 +201,21 @@ class DigestRepository:
             .limit(limit)
             .options(selectinload(Paper.author_links).selectinload(PaperAuthor.author))
         )
+        if since is not None:
+            statement = statement.where(Paper.published_at >= since)
         if before is not None:
             statement = statement.where(Paper.published_at < before)
+        if paper_ids is not None:
+            statement = statement.where(Paper.id.in_(paper_ids))
         return list((await self._session.scalars(statement)).all())
 
-    async def mean_chunk_embeddings(self, paper_ids: list[UUID]) -> dict[UUID, tuple[float, ...]]:
-        """Return each paper's mean chunk embedding, where one exists."""
+    async def mean_chunk_embeddings(
+        self,
+        paper_ids: list[UUID],
+        *,
+        embedding_model: str,
+    ) -> dict[UUID, tuple[float, ...]]:
+        """Return latest-revision mean embeddings from exactly one model."""
         if not paper_ids:
             return {}
         latest_versions = (
@@ -199,22 +243,43 @@ class DigestRepository:
                     latest_versions.c.version_number == PaperVersion.version_number,
                 ),
             )
-            .where(PaperChunk.paper_id.in_(paper_ids), PaperChunk.embedding.is_not(None))
+            .where(
+                PaperChunk.paper_id.in_(paper_ids),
+                PaperChunk.embedding.is_not(None),
+                PaperChunk.embedding_model == embedding_model,
+            )
             .group_by(PaperChunk.paper_id)
         )
         rows = (await self._session.execute(statement)).all()
         return {row[0]: tuple(row[1]) for row in rows if row[1] is not None}
 
     async def get_fresh_recommended_digest(
-        self, *, user_id: UUID, max_age: timedelta
+        self,
+        *,
+        user_id: UUID,
+        max_age: timedelta,
+        expected_generator_version: str,
     ) -> Digest | None:
-        """Return the newest manual digest if it is still fresh."""
+        """Return the newest manual digest with the active scoring identity."""
         statement = (
             select(Digest)
+            .outerjoin(UserPreference, UserPreference.user_id == Digest.user_id)
             .where(
                 Digest.user_id == user_id,
                 Digest.digest_type == DigestType.MANUAL,
+                Digest.generator_version == expected_generator_version,
                 Digest.generated_at >= utc_now() - max_age,
+                or_(
+                    and_(
+                        UserPreference.user_id.is_(None),
+                        Digest.preference_model_version == 1,
+                    ),
+                    Digest.preference_model_version == UserPreference.model_version,
+                ),
+                or_(
+                    UserPreference.updated_at.is_(None),
+                    Digest.generated_at >= UserPreference.updated_at,
+                ),
             )
             .order_by(Digest.generated_at.desc())
             .limit(1)
